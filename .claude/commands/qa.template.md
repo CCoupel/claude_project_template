@@ -8,6 +8,26 @@ Executer les tests et valider la qualite du code.
 /qa [scope]
 ```
 
+## Argument recu
+
+$ARGUMENTS
+
+## Mots-cles de controle
+
+**Reference :** Voir `context/COMMON.md` section 12
+
+| Mot-cle | Action |
+|---------|--------|
+| `help` | Affiche l'aide et les mots-cles disponibles |
+| `status` | Affiche l'etat du workflow en cours |
+| `plan` | Affiche le plan sans executer |
+| `resume <phase>` | Reprend a une phase |
+| `skip <phase>` | Saute une phase |
+| `jumpto <tache>` | Demarre a une tache precise du plan |
+
+Si `$ARGUMENTS` commence par un mot-cle -> executer l'action correspondante.
+Sinon -> workflow normal.
+
 ## Scopes
 
 | Scope | Description |
@@ -45,6 +65,8 @@ Le rapport QA inclut :
 | Tests unitaires | 100% pass | 100% pass |
 | Couverture | 70% | >85% |
 | Build | Success | Success |
+
+**Contexte Qualite :** Voir `context/QUALITY.md`
 
 ## Agent
 

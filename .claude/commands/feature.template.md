@@ -8,6 +8,26 @@ Workflow complet pour l'implementation d'une nouvelle fonctionnalite.
 /feature <description de la fonctionnalite>
 ```
 
+## Argument recu
+
+$ARGUMENTS
+
+## Mots-cles de controle
+
+**Reference :** Voir `context/COMMON.md` section 12
+
+| Mot-cle | Action |
+|---------|--------|
+| `help` | Affiche l'aide et les mots-cles disponibles |
+| `status` | Affiche l'etat du workflow en cours |
+| `plan` | Affiche le plan sans executer |
+| `resume <phase>` | Reprend a une phase |
+| `skip <phase>` | Saute une phase |
+| `jumpto <tache>` | Demarre a une tache precise du plan |
+
+Si `$ARGUMENTS` commence par un mot-cle -> executer l'action correspondante.
+Sinon -> workflow normal.
+
 ## Workflow
 
 ```
@@ -35,60 +55,23 @@ Workflow complet pour l'implementation d'une nouvelle fonctionnalite.
 [DEPLOY] --> Deploiement (sur demande)
 ```
 
-## Etapes Detaillees
+## Prompt a transmettre au CDP
 
-### 1. PLAN
+Orchestre le workflow FEATURE pour {PROJECT_NAME}.
 
-L'agent `implementation-planner` analyse la demande et cree :
-- Liste des composants impactes
-- Taches detaillees avec fichiers concernes
-- Tests requis
-- Risques identifies
+**Contexte projet :** Voir `context/COMMON.md` section 1
+**Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
+- Type : FEATURE
+- Phases : section 3
+- Dispatch DEV : section 4
+- Validation : section 5
+- Erreurs : section 6
+- Regles : section 8
 
-### 2. DEV
+**Contexte DEV :** Voir `context/DEVELOPMENT.md`
+**Contexte Qualite :** Voir `context/QUALITY.md`
 
-Les agents de developpement implementent selon la stack :
-- `dev-backend` : API, services, modeles
-- `dev-frontend` : UI, composants, pages
-- `dev-firmware` : Code embarque (si applicable)
-
-**Parallelisation** : Backend et Frontend peuvent etre developpes en parallele si independants.
-
-### 3. TEST
-
-L'agent `test-writer` cree :
-- Tests unitaires
-- Tests integration
-- Tests E2E (si necessaire)
-
-### 4. REVIEW
-
-L'agent `code-reviewer` verifie :
-- Qualite du code
-- Securite (OWASP)
-- Performance
-- Conformite aux standards
-
-### 5. QA
-
-L'agent `qa` execute :
-- Tests unitaires
-- Tests integration
-- Tests E2E
-- Verification du build
-
-### 6. DOC
-
-L'agent `doc-updater` met a jour :
-- CHANGELOG.md
-- Documentation technique
-- README si necessaire
-
-### 7. DEPLOY
-
-Sur demande de l'utilisateur :
-- `/deploy qualif` : Environnement de test
-- `/deploy prod` : Production (apres validation QUALIF)
+**Demande utilisateur :** $ARGUMENTS
 
 ## Exemples
 
@@ -98,13 +81,6 @@ Sur demande de l'utilisateur :
 /feature Creer l'endpoint API pour les notifications
 /feature Ajouter le support du mode sombre
 ```
-
-## Options
-
-Le CDP peut demander des clarifications si la description est ambigue :
-- Scope (backend seul, full-stack, etc.)
-- Priorite des sous-fonctionnalites
-- Contraintes specifiques
 
 ## Sortie Anticipee
 

@@ -8,6 +8,26 @@ Lancer une revue de code manuellement.
 /review [scope]
 ```
 
+## Argument recu
+
+$ARGUMENTS
+
+## Mots-cles de controle
+
+**Reference :** Voir `context/COMMON.md` section 12
+
+| Mot-cle | Action |
+|---------|--------|
+| `help` | Affiche l'aide et les mots-cles disponibles |
+| `status` | Affiche l'etat du workflow en cours |
+| `plan` | Affiche le plan sans executer |
+| `resume <phase>` | Reprend a une phase |
+| `skip <phase>` | Saute une phase |
+| `jumpto <tache>` | Demarre a une tache precise du plan |
+
+Si `$ARGUMENTS` commence par un mot-cle -> executer l'action correspondante.
+Sinon -> workflow normal.
+
 ## Scopes
 
 | Scope | Description |
@@ -35,6 +55,8 @@ Le rapport inclut :
 - Problemes majeurs (a corriger)
 - Suggestions mineures (optionnel)
 - Points positifs
+
+**Contexte Qualite :** Voir `context/QUALITY.md`
 
 ## Agent
 

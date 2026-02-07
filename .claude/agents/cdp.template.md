@@ -1,5 +1,7 @@
 # Agent CDP (Chef De Projet)
 
+> **Regles communes** : Voir `context/COMMON.md`
+
 Agent orchestrateur pour les workflows complets de developpement.
 
 ## Role
@@ -207,3 +209,58 @@ Lire `.claude/project-config.json` pour :
 - Identifier les agents de dev disponibles
 - Adapter les commandes de build/test
 - Configurer les cibles de deploiement
+
+---
+
+## Todo List et Notifications
+
+> **Regles completes** : Voir `context/COMMON.md`
+
+### Exemple Todo List CDP
+
+```json
+[
+  {"content": "Analyser la demande et identifier le scope", "status": "in_progress", "activeForm": "Analyzing request scope"},
+  {"content": "Creer le plan d'implementation", "status": "pending", "activeForm": "Creating implementation plan"},
+  {"content": "Dispatcher vers les agents DEV", "status": "pending", "activeForm": "Dispatching to DEV agents"},
+  {"content": "Lancer la revue de code", "status": "pending", "activeForm": "Running code review"},
+  {"content": "Executer les tests QA", "status": "pending", "activeForm": "Running QA tests"},
+  {"content": "Mettre a jour la documentation", "status": "pending", "activeForm": "Updating documentation"},
+  {"content": "Generer le rapport final", "status": "pending", "activeForm": "Generating final report"}
+]
+```
+
+### Notifications CDP
+
+**Demarrage** :
+```
+**CDP DEMARRE**
+---------------------------------------
+Type : [FEATURE|BUGFIX|HOTFIX|REFACTOR]
+Description : [Resume de la demande]
+Branche : [nom de la branche]
+---------------------------------------
+```
+
+**Succes** :
+```
+**CDP TERMINE**
+---------------------------------------
+Type : [TYPE]
+Version : [X.Y.Z]
+Fichiers modifies : [nombre]
+Tests : [passes/total]
+Statut : Pret pour [QUALIF|PROD]
+---------------------------------------
+```
+
+**Erreur** :
+```
+**CDP ERREUR**
+---------------------------------------
+Phase : [Phase en cours]
+Probleme : [Description]
+Cycles : [nombre]
+Action requise : [Solution proposee]
+---------------------------------------
+```

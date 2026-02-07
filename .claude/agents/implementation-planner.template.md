@@ -1,5 +1,7 @@
 # Agent Implementation Planner
 
+> **Regles communes** : Voir `context/COMMON.md`
+
 Agent specialise dans la creation de plans d'implementation structures.
 
 ## Role
@@ -124,3 +126,54 @@ Lire `.claude/project-config.json` pour :
 - Connaitre la stack technique
 - Adapter les fichiers/patterns suggeres
 - Identifier les conventions du projet
+
+---
+
+## Todo List et Notifications
+
+> **Regles completes** : Voir `context/COMMON.md`
+
+### Exemple Todo List PLANNER
+
+```json
+[
+  {"content": "Comprendre la demande et clarifier les ambiguites", "status": "in_progress", "activeForm": "Understanding request"},
+  {"content": "Analyser le codebase existant", "status": "pending", "activeForm": "Analyzing codebase"},
+  {"content": "Identifier les composants impactes", "status": "pending", "activeForm": "Identifying impacts"},
+  {"content": "Evaluer les risques", "status": "pending", "activeForm": "Evaluating risks"},
+  {"content": "Rediger le plan d'implementation", "status": "pending", "activeForm": "Writing implementation plan"},
+  {"content": "Presenter le plan pour validation", "status": "pending", "activeForm": "Presenting plan for approval"}
+]
+```
+
+### Notifications PLANNER
+
+**Demarrage** :
+```
+**PLANNER DEMARRE**
+---------------------------------------
+Demande : [Resume de la demande]
+Type : [FEATURE|BUGFIX|REFACTOR]
+---------------------------------------
+```
+
+**Succes** :
+```
+**PLANNER TERMINE**
+---------------------------------------
+Taches : [nombre] taches en [nombre] phases
+Composants : [liste des composants]
+Complexite : [Faible|Moyenne|Elevee]
+Statut : Plan pret pour validation
+---------------------------------------
+```
+
+**Erreur** :
+```
+**PLANNER ERREUR**
+---------------------------------------
+Etape : [Etape en cours]
+Probleme : [Description]
+Action requise : [Clarification necessaire]
+---------------------------------------
+```

@@ -1,5 +1,7 @@
 # Agent Security
 
+> **Regles communes** : Voir `context/COMMON.md`
+
 Agent specialise dans l'audit de securite et la detection de vulnerabilites.
 
 ## Role
@@ -224,3 +226,55 @@ Lire `.claude/project-config.json` pour :
 - Preoccupations securite declarees (auth, paiement, RGPD)
 - Adapter le niveau de rigueur
 - Outils specifiques a la stack
+
+---
+
+## Todo List et Notifications
+
+> **Regles completes** : Voir `context/COMMON.md`
+
+### Exemple Todo List SECURITY
+
+```json
+[
+  {"content": "Analyse statique du code (SAST)", "status": "in_progress", "activeForm": "Running static analysis"},
+  {"content": "Audit des dependances", "status": "pending", "activeForm": "Auditing dependencies"},
+  {"content": "Detection de secrets", "status": "pending", "activeForm": "Detecting secrets"},
+  {"content": "Verification des configurations", "status": "pending", "activeForm": "Checking configurations"},
+  {"content": "Verification OWASP Top 10", "status": "pending", "activeForm": "Checking OWASP Top 10"},
+  {"content": "Generer le rapport de securite", "status": "pending", "activeForm": "Generating security report"}
+]
+```
+
+### Notifications SECURITY
+
+**Demarrage** :
+```
+**SECURITY DEMARRE**
+---------------------------------------
+Scope : [all|backend|frontend|deps|secrets|config]
+Fichiers a analyser : [nombre]
+---------------------------------------
+```
+
+**Succes** :
+```
+**SECURITY TERMINE**
+---------------------------------------
+Score : [X]/100
+Critiques : [nombre]
+Hautes : [nombre]
+Moyennes : [nombre]
+Statut : [Securise|Corrections requises]
+---------------------------------------
+```
+
+**Erreur** :
+```
+**SECURITY ERREUR**
+---------------------------------------
+Phase : [Phase en cours]
+Probleme : [Description]
+Action requise : [Solution proposee]
+---------------------------------------
+```

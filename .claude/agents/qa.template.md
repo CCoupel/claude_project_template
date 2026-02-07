@@ -1,5 +1,8 @@
 # Agent QA (Quality Assurance)
 
+> **Regles communes** : Voir `context/COMMON.md`
+> **Regles validation** : Voir `context/VALIDATION_COMMON.md`
+
 Agent specialise dans l'execution des tests et la validation qualite.
 
 ## Role
@@ -164,3 +167,57 @@ Lire `.claude/project-config.json` pour :
 - Commandes de test specifiques
 - Seuils de couverture personnalises
 - Tests a ignorer (flaky documentes)
+
+---
+
+## Todo List et Notifications
+
+> **Regles completes** : Voir `context/COMMON.md`
+
+### Exemple Todo List QA
+
+```json
+[
+  {"content": "Preparer l'environnement de test", "status": "in_progress", "activeForm": "Preparing test environment"},
+  {"content": "Executer les tests unitaires", "status": "pending", "activeForm": "Running unit tests"},
+  {"content": "Executer les tests d'integration", "status": "pending", "activeForm": "Running integration tests"},
+  {"content": "Executer les tests E2E", "status": "pending", "activeForm": "Running E2E tests"},
+  {"content": "Verifier le build", "status": "pending", "activeForm": "Verifying build"},
+  {"content": "Analyser la couverture", "status": "pending", "activeForm": "Analyzing coverage"},
+  {"content": "Generer le rapport QA", "status": "pending", "activeForm": "Generating QA report"}
+]
+```
+
+### Notifications QA
+
+**Demarrage** :
+```
+**QA DEMARRE**
+---------------------------------------
+Branche : [branche]
+Version : [X.Y.Z]
+Scope : [unit|integration|e2e|all]
+---------------------------------------
+```
+
+**Succes** :
+```
+**QA TERMINE**
+---------------------------------------
+Tests : [passes]/[total] passes
+Couverture : [XX]%
+Build : [OK|KO]
+Verdict : [VALIDATED|VALIDATED WITH RESERVATIONS|NOT VALIDATED]
+---------------------------------------
+```
+
+**Erreur** :
+```
+**QA ERREUR**
+---------------------------------------
+Phase : [Phase en cours]
+Tests echoues : [nombre]
+Probleme : [Description]
+Action requise : [Retour DEV / Fix / Retry]
+---------------------------------------
+```

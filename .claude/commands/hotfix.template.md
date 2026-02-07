@@ -8,6 +8,26 @@ Workflow accelere pour les corrections critiques en production.
 /hotfix <description du probleme critique>
 ```
 
+## Argument recu
+
+$ARGUMENTS
+
+## Mots-cles de controle
+
+**Reference :** Voir `context/COMMON.md` section 12
+
+| Mot-cle | Action |
+|---------|--------|
+| `help` | Affiche l'aide et les mots-cles disponibles |
+| `status` | Affiche l'etat du workflow en cours |
+| `plan` | Affiche le plan sans executer |
+| `resume <phase>` | Reprend a une phase |
+| `skip <phase>` | Saute une phase |
+| `jumpto <tache>` | Demarre a une tache precise du plan |
+
+Si `$ARGUMENTS` commence par un mot-cle -> executer l'action correspondante.
+Sinon -> workflow normal.
+
 ## Quand utiliser
 
 - Production cassee ou degradee
@@ -135,6 +155,23 @@ Description du fix.
 3. **Documenter** - Pour ne pas reproduire
 4. **Communiquer** - Equipe informee
 5. **Valider** - Monitoring post-deploy
+
+## Prompt a transmettre au CDP
+
+Orchestre le workflow HOTFIX pour {PROJECT_NAME}.
+
+**Contexte projet :** Voir `context/COMMON.md` section 1
+**Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
+- Type : HOTFIX
+- Phases : section 3
+- Dispatch DEV : section 4
+- Validation : section 5
+- Erreurs : section 6
+- Regles : section 8
+
+**Contexte DEV :** Voir `context/DEVELOPMENT.md`
+
+**Demande utilisateur :** $ARGUMENTS
 
 ## Agent
 

@@ -1,5 +1,8 @@
 # Agent Code Reviewer
 
+> **Regles communes** : Voir `context/COMMON.md`
+> **Regles validation** : Voir `context/VALIDATION_COMMON.md`
+
 Agent specialise dans la revue de code et l'assurance qualite.
 
 ## Role
@@ -138,3 +141,54 @@ Adapter la revue selon `.claude/project-config.json` :
 - Standards de code du langage
 - Regles specifiques au framework
 - Niveau de rigueur securite
+
+---
+
+## Todo List et Notifications
+
+> **Regles completes** : Voir `context/COMMON.md`
+
+### Exemple Todo List CODE-REVIEWER
+
+```json
+[
+  {"content": "Analyser les fichiers modifies", "status": "in_progress", "activeForm": "Analyzing modified files"},
+  {"content": "Verifier la qualite du code", "status": "pending", "activeForm": "Checking code quality"},
+  {"content": "Verifier la securite (OWASP)", "status": "pending", "activeForm": "Checking security"},
+  {"content": "Verifier la performance", "status": "pending", "activeForm": "Checking performance"},
+  {"content": "Verifier les tests", "status": "pending", "activeForm": "Checking tests"},
+  {"content": "Generer le rapport de revue", "status": "pending", "activeForm": "Generating review report"}
+]
+```
+
+### Notifications CODE-REVIEWER
+
+**Demarrage** :
+```
+**CODE-REVIEWER DEMARRE**
+---------------------------------------
+Branche : [branche]
+Fichiers a analyser : [nombre]
+Focus : [qualite|securite|performance|all]
+---------------------------------------
+```
+
+**Succes** :
+```
+**CODE-REVIEWER TERMINE**
+---------------------------------------
+Fichiers analyses : [nombre]
+Issues : [critiques] critiques, [warnings] warnings
+Verdict : [APPROVED|APPROVED WITH RESERVATIONS|REJECTED]
+---------------------------------------
+```
+
+**Erreur** :
+```
+**CODE-REVIEWER ERREUR**
+---------------------------------------
+Etape : [Etape en cours]
+Probleme : [Description]
+Action requise : [Solution proposee]
+---------------------------------------
+```

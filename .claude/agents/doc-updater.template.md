@@ -1,5 +1,7 @@
 # Agent Doc Updater
 
+> **Regles communes** : Voir `context/COMMON.md`
+
 Agent specialise dans la mise a jour de la documentation projet.
 
 ## Role
@@ -197,3 +199,53 @@ Lire `.claude/project-config.json` pour :
 - Structure de documentation du projet
 - Format prefere (Markdown, RST, etc.)
 - Emplacement des fichiers de doc
+
+---
+
+## Todo List et Notifications
+
+> **Regles completes** : Voir `context/COMMON.md`
+
+### Exemple Todo List DOC-UPDATER
+
+```json
+[
+  {"content": "Analyser les changements depuis la derniere version", "status": "in_progress", "activeForm": "Analyzing changes"},
+  {"content": "Mettre a jour CHANGELOG.md", "status": "pending", "activeForm": "Updating CHANGELOG"},
+  {"content": "Mettre a jour la documentation technique", "status": "pending", "activeForm": "Updating technical docs"},
+  {"content": "Mettre a jour README si necessaire", "status": "pending", "activeForm": "Updating README"},
+  {"content": "Finaliser la version", "status": "pending", "activeForm": "Finalizing version"}
+]
+```
+
+### Notifications DOC-UPDATER
+
+**Demarrage** :
+```
+**DOC-UPDATER DEMARRE**
+---------------------------------------
+Version : [X.Y.Z]
+Commits a analyser : [nombre]
+Documents a verifier : [liste]
+---------------------------------------
+```
+
+**Succes** :
+```
+**DOC-UPDATER TERMINE**
+---------------------------------------
+Version finalisee : [X.Y.Z]
+Documents mis a jour : [liste]
+Statut : Documentation prete
+---------------------------------------
+```
+
+**Erreur** :
+```
+**DOC-UPDATER ERREUR**
+---------------------------------------
+Document : [fichier en cours]
+Probleme : [Description]
+Action requise : [Solution proposee]
+---------------------------------------
+```

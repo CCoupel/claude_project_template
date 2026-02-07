@@ -1,5 +1,7 @@
 # Agent Deploy
 
+> **Regles communes** : Voir `context/COMMON.md`
+
 Agent specialise dans le deploiement vers les environnements de qualification et production.
 
 ## Role
@@ -209,3 +211,55 @@ Lire `.claude/project-config.json` pour :
 - Cibles de deploiement (Docker, K8s, VPS, etc.)
 - URLs des environnements
 - Commandes specifiques
+
+---
+
+## Todo List et Notifications
+
+> **Regles completes** : Voir `context/COMMON.md`
+
+### Exemple Todo List DEPLOY
+
+```json
+[
+  {"content": "Verifier les prerequis", "status": "in_progress", "activeForm": "Checking prerequisites"},
+  {"content": "Executer le build", "status": "pending", "activeForm": "Running build"},
+  {"content": "Deployer vers l'environnement cible", "status": "pending", "activeForm": "Deploying to target"},
+  {"content": "Executer les smoke tests", "status": "pending", "activeForm": "Running smoke tests"},
+  {"content": "Generer le rapport de deploiement", "status": "pending", "activeForm": "Generating deploy report"}
+]
+```
+
+### Notifications DEPLOY
+
+**Demarrage** :
+```
+**DEPLOY DEMARRE**
+---------------------------------------
+Environnement : [QUALIF|PROD]
+Version : [X.Y.Z]
+Branche : [branche]
+---------------------------------------
+```
+
+**Succes** :
+```
+**DEPLOY TERMINE**
+---------------------------------------
+Environnement : [QUALIF|PROD]
+Version : [X.Y.Z]
+Smoke tests : [OK|KO]
+Statut : Deploiement reussi
+---------------------------------------
+```
+
+**Erreur** :
+```
+**DEPLOY ERREUR**
+---------------------------------------
+Environnement : [QUALIF|PROD]
+Etape : [Etape en cours]
+Probleme : [Description]
+Action requise : [Rollback / Fix / Retry]
+---------------------------------------
+```

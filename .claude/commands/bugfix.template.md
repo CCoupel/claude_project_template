@@ -8,6 +8,26 @@ Workflow pour la correction d'un bug.
 /bugfix <description du bug>
 ```
 
+## Argument recu
+
+$ARGUMENTS
+
+## Mots-cles de controle
+
+**Reference :** Voir `context/COMMON.md` section 12
+
+| Mot-cle | Action |
+|---------|--------|
+| `help` | Affiche l'aide et les mots-cles disponibles |
+| `status` | Affiche l'etat du workflow en cours |
+| `plan` | Affiche le plan sans executer |
+| `resume <phase>` | Reprend a une phase |
+| `skip <phase>` | Saute une phase |
+| `jumpto <tache>` | Demarre a une tache precise du plan |
+
+Si `$ARGUMENTS` commence par un mot-cle -> executer l'action correspondante.
+Sinon -> workflow normal.
+
 ## Workflow
 
 ```
@@ -101,6 +121,24 @@ Mise a jour CHANGELOG.md :
 | Tests | Complets | Critiques uniquement |
 | Review | Standard | Acceleree |
 | Deploy | Via workflow normal | Direct PROD |
+
+## Prompt a transmettre au CDP
+
+Orchestre le workflow BUGFIX pour {PROJECT_NAME}.
+
+**Contexte projet :** Voir `context/COMMON.md` section 1
+**Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
+- Type : BUGFIX
+- Phases : section 3
+- Dispatch DEV : section 4
+- Validation : section 5
+- Erreurs : section 6
+- Regles : section 8
+
+**Contexte DEV :** Voir `context/DEVELOPMENT.md`
+**Contexte Qualite :** Voir `context/QUALITY.md`
+
+**Demande utilisateur :** $ARGUMENTS
 
 ## Agent
 
