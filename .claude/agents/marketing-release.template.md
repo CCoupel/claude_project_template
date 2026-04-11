@@ -149,11 +149,116 @@ Bonjour communaute,
 
 ### 4. Site Marketing (si applicable)
 
-Si le projet a un site marketing (`gh-pages` ou `MARKETING/`) :
+Si le projet a un site marketing (`gh-pages` ou `MARKETING/`), generer ou mettre a jour
+le site avec la structure suivante. Le site est bilingue (FR/EN) avec un commutateur de langue.
 
-- Mettre a jour la version affichee
-- Ajouter la fonctionnalite cle dans la section features
-- Ajouter une entree dans la page releases/changelog
+#### Structure du site
+
+```
+MARKETING/
+├── index.html              # Page principale (FR par defaut)
+├── assets/
+│   ├── style.css           # Styles communs
+│   ├── lang.js             # Gestion commutateur FR/EN
+│   └── architecture.svg    # Diagramme d'architecture (si disponible)
+└── locales/
+    ├── fr.json             # Textes FR
+    └── en.json             # Textes EN
+```
+
+#### Commutateur de langue
+
+Ajouter dans le `<header>` un toggle visible sur toutes les sections :
+
+```html
+<div class="lang-switcher">
+  <button class="lang-btn active" data-lang="fr">FR</button>
+  <span>|</span>
+  <button class="lang-btn" data-lang="en">EN</button>
+</div>
+```
+
+Le fichier `lang.js` charge le fichier JSON correspondant et remplace tous les
+elements portant l'attribut `data-i18n="cle"` par la valeur traduite.
+
+#### Sections obligatoires
+
+**Section 1 — Problematiques** (`id="problems"`)
+
+Decrire les problemes concrets que le projet resout, de facon accessible :
+- Contexte et situation actuelle
+- Pain points identifies (liste illustree avec icones)
+- Public cible concerne
+
+**Section 2 — Solutions** (`id="solutions"`)
+
+Presenter les reponses apportees par le projet :
+- Correspondance probleme → solution (avant/apres)
+- Benefices mesurables (gain de temps, securite, fiabilite...)
+- Fonctionnalites cles de la version courante
+
+**Section 3 — Architecture** (`id="architecture"`)
+
+Expliquer l'architecture de facon visuelle :
+- Diagramme ASCII ou SVG de l'architecture globale
+- Description des composants principaux et de leurs interactions
+- Stack technique (langage, protocoles, bases de donnees...)
+- Contraintes ou pre-requis materiels si applicable (ex : microcontroleur)
+
+**Section 4 — Deploiement** (`id="deployment"`)
+
+Couvrir les 3 scenarios de deploiement :
+
+##### 4a. Depuis les sources (Linux / macOS / Windows)
+```bash
+# Cloner le depot
+git clone https://github.com/{ORG}/{PROJECT}.git
+cd {PROJECT}
+
+# Installer les dependances
+<commande specifique au projet>
+
+# Configurer
+cp config.example.yml config.yml
+# Editer config.yml selon votre environnement
+
+# Lancer
+<commande de demarrage>
+```
+
+##### 4b. Depuis les releases binaires
+
+| Plateforme | Package | Commande d'installation |
+|------------|---------|------------------------|
+| Windows | `.exe` (installer) | Double-cliquer sur l'installeur |
+| Linux (Debian/Ubuntu) | `.deb` | `sudo dpkg -i {project}_X.Y.Z.deb` |
+| Linux (RHEL/Fedora) | `.rpm` | `sudo rpm -i {project}-X.Y.Z.rpm` |
+| macOS | `.dmg` ou `.pkg` | Ouvrir et suivre l'installeur |
+
+Indiquer l'URL de la page GitHub Releases : `https://github.com/{ORG}/{PROJECT}/releases`
+
+##### 4c. Configuration
+
+Documenter les parametres essentiels apres installation :
+
+```yaml
+# config.yml — parametres principaux
+# Commenter chaque cle avec sa valeur par defaut et son role
+parametre_1: valeur_defaut   # Description
+parametre_2: valeur_defaut   # Description
+```
+
+- Lister les variables d'environnement si applicable (`.env`)
+- Indiquer les ports par defaut et comment les changer
+- Documenter les permissions systeme necessaires si applicable
+
+#### Mise a jour du site existant
+
+Si le site existe deja :
+- Mettre a jour le numero de version affiche dans le header
+- Ajouter la fonctionnalite majeure de la version dans la section Solutions
+- Ajouter une entree dans la section Releases/Changelog si elle existe
+- Verifier que les commandes de deploiement sont toujours valides
 
 ## Regles de Ton
 
