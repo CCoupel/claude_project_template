@@ -73,12 +73,15 @@ Ce projet semble vide. Lancement du questionnaire d'initialisation.
 | Agent | Role | Commande |
 |-------|------|----------|
 | **CDP** | Chef de projet, orchestration | `/cdp` |
-| **Planner** | Planification d'implementation | `/plan` |
-| **Reviewer** | Revue de code | `/review` |
+| **Planner** | Planification + contrats API (contract-first) | `/plan` |
+| **Reviewer** | Revue de code (general, security, perf, rationalization) | `/review` |
 | **QA** | Tests et validation | `/qa` |
 | **Security** | Audit de securite | `/secu` |
 | **Doc** | Documentation | `/doc` |
 | **Deploy** | Deploiement | `/deploy` |
+| **Infra** | Infrastructure (Docker, Helm, CI/CD) | `/infra` |
+| **PR Reviewer** | Validation PR externes (4 phases) | `/pr` |
+| **Marketing** | Communication de release | `/marketing` |
 
 ### Agents de Developpement
 
@@ -119,6 +122,15 @@ Ce projet semble vide. Lancement du questionnaire d'initialisation.
 | `/deploy qualif` | Deploiement qualification | `/deploy qualif` |
 | `/deploy prod` | Deploiement production | `/deploy prod` |
 
+### Gestion de Projet
+
+| Commande | Description | Usage |
+|----------|-------------|-------|
+| `/backlog` | Consulter / traiter les GitHub Issues | `/backlog [description]` |
+| `/pr <numero>` | Valider une PR externe (4 phases) | `/pr 42` |
+| `/infra <description>` | Modifier l'infrastructure | `/infra <description>` |
+| `/marketing [version]` | Communication de release | `/marketing v2.1.0` |
+
 ### Utilitaires
 
 | Commande | Description | Usage |
@@ -126,6 +138,7 @@ Ce projet semble vide. Lancement du questionnaire d'initialisation.
 | `/init-project` | Initialiser/reconfigurer le projet | `/init-project` |
 | `/doc` | Mettre a jour la documentation | `/doc` |
 | `/cdp` | Lancer l'orchestrateur complet | `/cdp <description>` |
+| `/end-session` | Cloturer la session (memoire + git) | `/end-session` |
 
 ---
 
@@ -225,6 +238,21 @@ Ce projet semble vide. Lancement du questionnaire d'initialisation.
 
 ---
 
+## Memoire Projet
+
+Le fichier `.claude/memory/MEMORY.md` est la **source de verite pour demarrer une session**.
+Il est mis a jour par `/end-session` et contient :
+
+- Version courante par environnement (dev / staging / prod)
+- Travail en cours (phase, branche, issues actives)
+- Decisions techniques importantes
+- Regles critiques du projet
+- Corrections de comportement Claude
+
+**Au demarrage de chaque session** : lire `.claude/memory/MEMORY.md` avant toute action.
+
+---
+
 ## Structure Projet Recommandee
 
 ```
@@ -232,8 +260,15 @@ project/
 ├── .claude/
 │   ├── agents/           # Agents specialises
 │   ├── commands/         # Commandes slash
-│   ├── templates/        # Templates d'agents
+│   │   └── context/      # Fichiers de contexte partages
+│   ├── memory/
+│   │   └── MEMORY.md     # Memoire persistante du projet
+│   ├── templates/        # Templates d'agents par stack
 │   └── project-config.json
+├── contracts/            # Contrats API (contract-first)
+│   ├── http-endpoints.md
+│   ├── websocket-actions.md
+│   └── models.md
 ├── docs/                 # Documentation
 ├── src/                  # Code source
 ├── tests/                # Tests
@@ -248,11 +283,14 @@ project/
 
 ### Regles Critiques
 
-1. **Toujours verifier l'initialisation** au debut de chaque session
-2. **Utiliser les agents specialises** selon la tache
-3. **Suivre les workflows** definis pour chaque type de tache
-4. **Commiter regulierement** avec des messages clairs
-5. **Ne jamais push sur main** sans validation
+1. **Lire `.claude/memory/MEMORY.md`** au debut de chaque session
+2. **Toujours verifier l'initialisation** (`project-config.json` existe ?)
+3. **Contract-first** : creer les contrats API dans `contracts/` AVANT le code
+4. **Utiliser les agents specialises** selon la tache
+5. **Suivre les workflows** definis pour chaque type de tache
+6. **Commiter regulierement** avec des messages clairs
+7. **Ne jamais push sur main** sans validation
+8. **Fermer la session avec `/end-session`** pour mettre a jour la memoire
 
 ### Detection du Contexte
 

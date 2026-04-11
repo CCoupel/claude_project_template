@@ -37,6 +37,46 @@ Analyser les demandes de features/bugfixes et produire un plan detaille avant to
 | Database | Migrations ? Nouveaux champs ? |
 | Tests | Nouveaux tests requis ? |
 | Documentation | Mise a jour necessaire ? |
+| Infrastructure | Nouveaux services ? Changements config ? |
+
+### 3b. Creer les Contrats API (Contract-First)
+
+**Avant tout code**, si la feature implique une nouvelle API ou un changement de protocole,
+creer les contrats dans `contracts/` :
+
+```
+contracts/
+├── http-endpoints.md       # Nouveaux endpoints REST (methode, URL, body, reponse)
+├── websocket-actions.md    # Nouveaux messages WebSocket (type, payload, direction)
+├── game-state.md           # Changements du modele de state partage
+└── models.md               # Nouveaux modeles de donnees
+```
+
+Format d'un contrat endpoint :
+```markdown
+### POST /api/<ressource>
+
+**Description** : <objectif>
+**Auth** : Bearer token / Public
+
+**Request body** :
+```json
+{ "field": "type" }
+```
+
+**Response 200** :
+```json
+{ "field": "type" }
+```
+
+**Errors** : 400 (validation), 401 (auth), 404 (not found)
+```
+
+**Regles contract-first** :
+- Le backend PEUT modifier un contrat si contrainte technique (documenter la raison)
+- Le frontend CONSULTE les contrats, ne les modifie pas
+- Les contrats sont la reference en cas de divergence backend/frontend
+- Creer le contrat AVANT d'implementer, pas apres
 
 ### 4. Evaluer les Risques
 
@@ -49,6 +89,10 @@ Analyser les demandes de features/bugfixes et produire un plan detaille avant to
 
 ```markdown
 # Plan d'Implementation : <TITRE>
+
+## Contrats API (si applicable)
+- [ ] `contracts/http-endpoints.md` — <endpoints a creer/modifier>
+- [ ] `contracts/websocket-actions.md` — <messages a creer/modifier>
 
 ## Resume
 <Description en 2-3 phrases>
