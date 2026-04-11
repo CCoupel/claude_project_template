@@ -34,7 +34,7 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 
 | Phase | FEATURE | BUGFIX | HOTFIX | REFACTOR |
 |-------|---------|--------|--------|----------|
-| Backlog | Oui | Non | Non | Non |
+| Backlog (GitHub Issues) | Oui | Non | Non | Non |
 | Plan | Oui | Souvent | Non | Rarement |
 | Dev | Complet | Cible | Minimal | Structure |
 | Review | Oui | Oui | Rapide | Oui |
@@ -111,7 +111,7 @@ Si cycle > 3 -> ESCALADE utilisateur
 
 | Point | Conditions | Options |
 |-------|------------|---------|
-| Backlog | FEATURE uniquement | Confirmer / Refuser / Autre |
+| Backlog (GitHub Issues) | FEATURE uniquement | Confirmer / Refuser / Autre |
 | Plan | Si creation plan | Valider / Modifier / Refuser |
 | QA reserves | Reserves mineures | Continuer / Corriger |
 | Escalade | 3 cycles atteints | Continuer / Abandonner |
@@ -122,7 +122,7 @@ Si cycle > 3 -> ESCALADE utilisateur
 
 | Situation | Action |
 |-----------|--------|
-| Backlog non trouve | Proposer creation ou continuer sans |
+| Issue GitHub non trouvee | Proposer creation via `gh issue create` ou continuer sans |
 | Plan refuse | Demander modifications |
 | Review rejetee | Retour DEV avec corrections |
 | QA echoue | Retour DEV avec erreurs |

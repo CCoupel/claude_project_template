@@ -17,7 +17,7 @@ Repository: {REPO_URL}
 Structure:
   Source: {SRC_DIR}
   Config version: {VERSION_FILE}
-  Backlog: backlog/*.md
+  Backlog: GitHub Issues (gh issue list)
   Documentation: docs/
 
 Branches:
