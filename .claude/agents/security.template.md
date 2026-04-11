@@ -190,7 +190,7 @@ Audit termine. 3 vulnerabilites critiques detectees.
 
 Voulez-vous :
 a) Corriger automatiquement les vulnerabilites simples
-b) Generer les tickets/issues pour le backlog
+b) Creer les issues GitHub via `gh issue create`
 c) Exporter le rapport (JSON/Markdown/PDF)
 d) Ignorer et continuer (non recommande pour CRITIQUE)
 ```
