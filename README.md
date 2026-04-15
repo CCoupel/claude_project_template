@@ -26,11 +26,13 @@ cp claude_project_template/.gitignore votre-projet/
 
 ### 2. Initialiser votre projet
 
-```bash
-cd votre-projet
-# Au premier lancement, Claude détectera automatiquement 
-# que le projet n'est pas initialisé et lancera /init-project
+Ouvrez Claude Code dans votre projet et lancez :
+
 ```
+/init-project
+```
+
+Claude va automatiquement détecter votre stack technique et générer la configuration adaptée. Vous pouvez aussi relancer cette commande à tout moment pour reconfigurer ou mettre à jour le projet.
 
 ## 📖 Documentation Complète
 
@@ -53,6 +55,8 @@ Au premier lancement de Claude dans votre projet, il :
 ### Commandes Principales
 
 ```bash
+/init-project             # Initialiser ou reconfigurer le projet (obligatoire au 1er lancement)
+
 /feature <description>    # Nouvelle fonctionnalité (workflow complet)
 /bugfix <description>     # Correction de bug
 /hotfix <description>     # Correction urgente production

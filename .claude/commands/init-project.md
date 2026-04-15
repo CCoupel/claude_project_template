@@ -99,8 +99,90 @@ c) Annuler l'initialisation
 
 ```
 Ce projet ne contient pas encore de code.
-Lancement du questionnaire d'initialisation...
+
+Comment souhaitez-vous initialiser le projet ?
+
+a) Workshop de cadrage (recommande)
+   → Entretien guidé pour définir vision, objectifs, stack et contraintes
+   → Génère un CLAUDE.md complet et project-config.json
+b) Questionnaire rapide
+   → Questions directes sur la stack technique
+   → Génère uniquement project-config.json et les agents
+c) Annuler
 ```
+
+### Option a : Workshop de Cadrage
+
+Mener un entretien structuré en 6 phases, comme un avant-vente ou directeur de projet le ferait avant de constituer son équipe.
+
+---
+
+**Phase 1 — Identification du problème**
+```
+1. Quel est le nom du projet ?
+2. Quel est le problème central que ce projet cherche à résoudre ?
+   (Formuler en "Aujourd'hui, [persona] n'arrive pas à... parce que...")
+3. Pourquoi ce problème n'est-il pas résolu aujourd'hui ?
+   (Absence d'outil, outil inadapté, processus manuel, coût trop élevé...)
+4. Quelle est l'urgence ou l'impact si le problème n'est pas résolu ?
+```
+
+**Phase 2 — Solution envisagée**
+```
+5. Comment le projet compte-t-il résoudre ce problème ?
+   (Approche générale : automatisation, centralisation, nouveau service...)
+6. Quels sont les 3 cas d'usage principaux de la v1 ?
+7. Quels cas d'usage sont explicitement hors périmètre (v1) ?
+8. Existe-t-il des solutions concurrentes ou comparables ? Qu'est-ce qui différencie ce projet ?
+```
+
+**Phase 3 — Parties prenantes et utilisateurs**
+```
+9.  Qui sont les utilisateurs finaux ? (rôles, profils, niveau technique)
+10. Qui sont les commanditaires / décideurs du projet ?
+11. Y a-t-il des parties prenantes externes (clients, partenaires, régulateurs) ?
+12. Quel est le contexte de distribution (interne entreprise, SaaS public, B2B, B2C, embarqué) ?
+```
+
+**Phase 4 — Contraintes et risques**
+```
+13. Quelles sont les contraintes de délai ? (deadline, jalons, MVP attendu pour quand ?)
+14. Quelles sont les contraintes budgétaires ou d'équipe ?
+    (taille de l'équipe prévue, profils disponibles)
+15. Y a-t-il des contraintes techniques imposées ?
+    (langage, infra existante, compatibilité avec un SI, hébergement imposé...)
+16. Y a-t-il des contraintes réglementaires ou de conformité ?
+    (RGPD, HDS, PCI-DSS, ISO 27001, accessibilité RGAA...)
+17. Quels sont les principaux risques identifiés ?
+    (technique, organisationnel, marché, dépendances externes...)
+```
+
+**Phase 5 — Stack et architecture**
+```
+→ Enchaîner les étapes 2 à 10 du questionnaire standard
+   (backend, frontend, mobile, firmware, BDD, CI/CD, déploiement, tests, sécurité)
+```
+
+**Phase 6 — Conventions d'équipe**
+```
+18. Quelle est la convention de nommage des branches ?
+    (ex: feature/xxx, feat/xxx, fix/xxx)
+19. Quel format de commit utilises-tu ?
+    (ex: Conventional Commits, Gitmoji, libre)
+20. Quelle est la politique de revue de code ? (nombre d'approbateurs, règles de merge)
+21. Y a-t-il des règles de code ou des standards qualité spécifiques à documenter ?
+```
+
+---
+
+A la fin du workshop, générer :
+- `CLAUDE.md` complet avec toutes les informations collectées (vision, problème, solution, contraintes, stack, conventions)
+- `project-config.json`
+- Les agents adaptés à la stack
+
+### Option b : Questionnaire Rapide
+
+Enchaîner directement les étapes 1 à 10 ci-dessous.
 
 ---
 
