@@ -1,27 +1,12 @@
-# WORKFLOW TEMPLATE — NE PAS UTILISER DIRECTEMENT
+# Workflow du repo template — cree une GitHub Release a chaque tag vX.Y.Z
 #
-# Ce fichier est un exemple generique pour un projet Go + React.
-# Le workflow specifique a votre projet est genere par /init-project
-# depuis .claude/templates/workflows/ en fonction de votre stack.
+# Ce fichier est propre au repo CCoupel/claude_project_template.
+# Les templates de workflows pour les projets utilisateurs sont dans :
+#   .claude/templates/workflows/release-go-react.yml
 #
-# Placeholders a remplacer lors de la generation :
-#   {PROJECT_NAME}    - Nom du projet (ex: MyApp)
-#   {BINARY_NAME}     - Nom du binaire produit (ex: myapp)
-#   {BACKEND_DIR}     - Repertoire du backend (ex: backend)
-#   {FRONTEND_DIR}    - Repertoire du frontend (ex: frontend)
-#   {EMBED_DIR}       - Repertoire d'embed dans le backend (ex: cmd/server/dist)
-#   {GO_MAIN_PKG}     - Package main Go (ex: ./cmd/server)
-#   {VERSION_FILE}    - Fichier de version backend (ex: config.json)
-#   {GO_VERSION}      - Version Go (ex: 1.21)
-#   {NODE_VERSION}    - Version Node (ex: 20)
-#   {MIN_BINARY_SIZE} - Taille minimale du binaire en octets (ex: 5242880)
-#
-# Templates disponibles dans .claude/templates/workflows/ :
-#   release-go-react.yml   — Go backend + React frontend (binaires multi-plateforme)
-#
-# Pour generer le workflow : /init-project → etape CI/CD
+# Pour generer le workflow d'un projet : /init-project → etape CI/CD
 
-name: Build and Release
+name: Release
 
 on:
   push:
@@ -33,14 +18,14 @@ permissions:
 
 jobs:
   release:
-    name: 🚀 Release
+    name: Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "{PROJECT_NAME} v${{ github.ref_name }}"
+          name: "claude_project_template ${{ github.ref_name }}"
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
