@@ -27,11 +27,11 @@ Si `$ARGUMENTS` est vide -> afficher les issues ouvertes.
 ```markdown
 ## Backlog - Issues ouvertes
 
-| # | Titre | Labels | Assignee | Maj |
-|---|-------|--------|----------|-----|
-| 42 | Ajouter auth OAuth2 | feature | - | 2025-01-10 |
-| 38 | Crash au demarrage iOS | bug | @user | 2025-01-08 |
-| 35 | Refactor module auth | refactor | - | 2025-01-05 |
+| # | Titre | Labels | Milestone | Assignee | Maj |
+|---|-------|--------|-----------|----------|-----|
+| 42 | Ajouter auth OAuth2 | feature | v1.2.0 | - | 2025-01-10 |
+| 38 | Crash au demarrage iOS | bug | v1.2.0 | @user | 2025-01-08 |
+| 35 | Refactor module auth | refactor | — | - | 2025-01-05 |
 ```
 
 3. Proposer les actions disponibles :
@@ -120,6 +120,27 @@ Afficher le resume :
 <body de l'issue>
 ```
 
+#### 3b. Association au milestone actif
+
+Si l'issue n'est pas encore associee a un milestone, verifier s'il existe un milestone actif :
+
+```bash
+gh api repos/{owner}/{repo}/milestones \
+  --jq '[.[] | select(.state=="open")] | .[0] | {title, open_issues, closed_issues}'
+```
+
+Si un milestone actif existe et que l'issue n'y est pas liee :
+
+```
+Un milestone actif existe : <version> (<N> issues, <X>% complete)
+Assigner cette issue au milestone <version> ? [O/n]
+```
+
+Si oui :
+```bash
+gh issue edit <numero> --milestone "<version>"
+```
+
 #### 4. Detection du type de workflow
 
 Analyser les labels de l'issue pour determiner le workflow adapte :
@@ -195,6 +216,8 @@ automatiquement les messages de commit.
 ---
 
 ## Prerequis
+
+**Reference** : Voir `context/GITHUB.md` sections 1 (auth), 2 (issues), 3 (milestones)
 
 - CLI GitHub (`gh`) installe et authentifie (`gh auth login`)
 - Le projet doit etre un repo GitHub (remote `origin` pointe vers GitHub)

@@ -9,6 +9,7 @@ color: red
 
 > **Protocole** : Voir `context/TEAMMATES_PROTOCOL.md`
 > **Regles communes** : Voir `context/COMMON.md`
+> **GitHub CLI** : Voir `context/GITHUB.md`
 
 Agent specialise dans le deploiement vers les environnements de qualification et production.
 
@@ -138,6 +139,30 @@ gh release create v1.2.0 --title "v1.2.0" --notes-file RELEASE_NOTES.md
 # 6. Monitoring
 # Verifier logs, metriques, alertes
 ```
+
+### Etape 7 — Cloture du milestone (apres CI OK)
+
+Apres un deploiement PROD reussi, verifier si un milestone correspond a la version deployee :
+
+```bash
+# Chercher le milestone correspondant a la version
+gh api repos/{owner}/{repo}/milestones \
+  --jq '.[] | select(.state=="open" and .title=="<version>")'
+```
+
+Si un milestone actif correspond a la version :
+
+```
+Milestone <version> detecte (<N> issues — <X>% complete).
+Cloturer le milestone <version> ? [O/n]
+```
+
+Si oui → executer la logique de cloture (identique a `/milestone close <version>`) :
+
+1. Lister les issues ouvertes restantes dans le milestone
+2. Si issues ouvertes → proposer : reporter vers prochain milestone / fermer / laisser en suspens
+3. Fermer le milestone : `gh api repos/{owner}/{repo}/milestones/<numero> --method PATCH -f state=closed`
+4. Afficher le bilan de cloture
 
 ## Gestion des Echecs CI
 

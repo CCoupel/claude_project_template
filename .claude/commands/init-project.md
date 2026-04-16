@@ -15,6 +15,9 @@ Initialisation interactive du projet pour configurer l'environnement Claude Code
 /init-project
     |
     v
+[FETCH TEMPLATE] --> Fetcher la derniere version depuis GitHub
+    |                (.template-source.json → gh api)
+    v
 [DETECTION] --> Analyser le code existant
     |
     |-- Code detecte --> Proposer analyse auto ou manuel
@@ -30,6 +33,10 @@ Initialisation interactive du projet pour configurer l'environnement Claude Code
     v
 [FINALISATION] --> Mise a jour CLAUDE.md
 ```
+
+> La phase **FETCH TEMPLATE** est toujours executee en premier.
+> Elle garantit que les commandes, agents et contextes sont a la derniere version
+> avant toute configuration projet. Voir section "Fetch du Template depuis GitHub".
 
 ---
 
@@ -393,6 +400,10 @@ Enchaîner directement les étapes 1 à 10 ci-dessous.
 - Copier les templates de commandes (`.template.md` → `.md`)
 - Mettre a jour CLAUDE.md avec les valeurs reelles
 - Adapter l'agent CDP selon les agents generes
+- Creer `.claude/.gitignore` depuis `gitignore-for-projects` :
+  ```bash
+  cp .claude/gitignore-for-projects .claude/.gitignore
+  ```
 
 ---
 
@@ -422,18 +433,110 @@ Bonne utilisation de Claude Code !
 
 ---
 
+---
+
+## Architecture : separation TEMPLATE / PROJET
+
+Les fichiers `.claude/` sont classes en deux categories :
+
+| Categorie | Fichiers | Comportement |
+|-----------|----------|--------------|
+| **TEMPLATE** | `commands/`, `agents/*.template.md`, `agents/context/`, `templates/` | Fetchés depuis GitHub, gitignores, jamais edites manuellement |
+| **PROJET** | `CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md`, `settings.json` | Git trackes, jamais ecrases par une sync |
+
+Le fichier `.claude/.template-source.json` enregistre la source du template :
+```json
+{
+  "repo": "owner/claude_project_template",
+  "branch": "main",
+  "commit": "<sha du dernier fetch>",
+  "synced_at": "YYYY-MM-DD"
+}
+```
+
+Le fichier `.claude/.gitignore` (cree par `/init-project` depuis `gitignore-for-projects`) exclut les fichiers TEMPLATE du repo projet.
+
+---
+
+## Fetch du Template depuis GitHub
+
+### Quand fetcher
+
+- **Premiere initialisation** : toujours
+- **Reinitialisation** : option d) ci-dessous
+- **Synchronisation manuelle** : `/init-project` → option d)
+
+### Procedure de fetch
+
+#### 1. Lire la source
+
+```bash
+cat .claude/.template-source.json
+# → repo, branch, commit connu
+```
+
+#### 2. Verifier si une mise a jour est disponible
+
+```bash
+TEMPLATE_REPO=$(cat .claude/.template-source.json | jq -r '.repo')
+KNOWN_COMMIT=$(cat .claude/.template-source.json | jq -r '.commit // ""')
+
+# Dernier commit sur la branche main
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/main --jq '.sha')
+
+if [ "$KNOWN_COMMIT" = "$LATEST_COMMIT" ]; then
+  echo "Template deja a jour ($LATEST_COMMIT)"
+  # Continuer quand meme (les fichiers peuvent etre absents si gitignores)
+fi
+```
+
+#### 3. Fetcher les fichiers TEMPLATE depuis GitHub
+
+```bash
+TEMPLATE_REPO=$(cat .claude/.template-source.json | jq -r '.repo')
+
+# Lister tous les fichiers TEMPLATE dans le repo
+gh api repos/$TEMPLATE_REPO/git/trees/main?recursive=1 \
+  --jq '.tree[] | select(.type=="blob") | .path' \
+  | grep -E '^\.claude/(commands/|agents/.*\.template\.md|agents/context/|templates/)' \
+  | while read FILE; do
+      # Creer le dossier destination si necessaire
+      mkdir -p ".$(dirname $FILE)"
+      # Telecharger le fichier
+      gh api repos/$TEMPLATE_REPO/contents/$FILE \
+        --jq '.content' | base64 -d > ".$FILE"
+      echo "  ✓ $FILE"
+    done
+```
+
+#### 4. Mettre a jour .template-source.json
+
+```bash
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/main --jq '.sha')
+TODAY=$(date +%Y-%m-%d)
+
+jq --arg commit "$LATEST_COMMIT" --arg date "$TODAY" \
+  '.commit = $commit | .synced_at = $date' \
+  .claude/.template-source.json > /tmp/tpl.json && \
+  mv /tmp/tpl.json .claude/.template-source.json
+```
+
+---
+
 ## Reinitialisation
 
 Si le projet est deja initialise :
 
 ```
 Ce projet est deja initialise (config du YYYY-MM-DD).
+Template : <repo> — dernier sync : <date> (<commit>)
 
 Voulez-vous :
 a) Reconfigurer completement (ecrase la config)
 b) Modifier certains parametres
 c) Re-analyser le code (detecter les changements)
-d) Annuler
+d) Synchroniser le template depuis GitHub (fetch derniere version)
+e) Annuler
 ```
 
 ### Option b : Modification partielle
@@ -454,3 +557,58 @@ h) Retour
 
 Utile apres evolution du projet (nouvelle techno, migration).
 Re-analyse le code et propose les mises a jour.
+
+### Option d : Synchronisation du template depuis GitHub
+
+Fetche la derniere version du template et met a jour les fichiers TEMPLATE.
+Les fichiers PROJET ne sont jamais touches.
+
+#### Etape 1 — Verifier les mises a jour disponibles
+
+Executer la procedure "Fetch du Template depuis GitHub" ci-dessus.
+
+Afficher le rapport avant toute action :
+
+```
+Synchronisation template depuis github.com/<repo>
+
+  Commit actuel : abc1234  (synced: 2026-03-01)
+  Dernier commit : def5678  (2026-04-16) ← mise a jour disponible
+
+  NOUVEAUX fichiers :
+    + .claude/commands/milestone.md
+    + .claude/commands/context/GITHUB.md
+    + .claude/agents/context/GITHUB.md
+
+  MODIFIES :
+    ~ .claude/commands/backlog.md
+    ~ .claude/agents/deploy.template.md
+
+  INCHANGES : 18 fichiers
+
+Continuer ?
+  [A] Tout appliquer
+  [B] Nouveaux fichiers uniquement
+  [C] Annuler
+```
+
+#### Etape 2 — Application
+
+**Si [A]** : fetcher tous les fichiers TEMPLATE (nouveaux + modifies)
+**Si [B]** : fetcher uniquement les fichiers absents localement
+
+#### Etape 3 — Rapport final
+
+```
+Template synchronise — commit def5678 (2026-04-16)
+
+  Nouveaux  : 3 fichiers
+  Mis a jour : 2 fichiers
+  Inchanges : 18 fichiers
+
+Fichiers PROJET preserves (non touches) :
+  ✓ CLAUDE.md
+  ✓ project-config.json
+  ✓ agents/dev-backend.md
+  ✓ memory/MEMORY.md
+```

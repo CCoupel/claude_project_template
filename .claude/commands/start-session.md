@@ -66,7 +66,20 @@ Tu fais partie de la team {TEAM_NAME} sur le projet {PROJECT_NAME}.
 Reste en mode IDLE et attends les ordres du CDP avant de commencer tout travail.
 ```
 
-### Etape 3 — Confirmation a l'utilisateur
+### Etape 3 — Lecture du milestone actif
+
+Apres lecture de MEMORY.md, interroger l'API GitHub pour le milestone actif :
+
+```bash
+gh api repos/{owner}/{repo}/milestones \
+  --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0] | {title, open_issues, closed_issues, due_on}'
+```
+
+Calculer : `progress = closed_issues / (open_issues + closed_issues) * 100`
+
+Si aucun milestone actif → ne pas afficher le bloc milestone.
+
+### Etape 4 — Confirmation a l'utilisateur
 
 ```markdown
 ## Session demarree — {PROJECT_NAME}
@@ -74,6 +87,9 @@ Reste en mode IDLE et attends les ordres du CDP avant de commencer tout travail.
 **Team** : {TEAM_NAME}
 **Version** : [lue depuis MEMORY.md]
 **Branche** : [lue depuis MEMORY.md]
+
+**Milestone actif** : <version>  ████████░░  <X>%  (<closed>/<total> issues)
+**Echeance** : <date ou "non definie">
 
 **Agents actifs (IDLE)** :
 - cdp (Chef de Projet — interlocuteur principal)
@@ -87,6 +103,7 @@ Reste en mode IDLE et attends les ordres du CDP avant de commencer tout travail.
 - `/feature <description>` — Nouvelle feature complete
 - `/bugfix <description>` — Correction de bug
 - `/backlog [description]` — Consulter ou traiter les GitHub Issues
+- `/milestone status` — Progression du milestone actif
 - `/review [scope] [mode]` — Revue de code
 - `/secu [scope]` — Audit securite
 - `/deploy qualif|prod` — Deployer

@@ -58,10 +58,13 @@ La version recuperee est utilisee dans toutes les sections du site (Hero, Featur
 
 ## Prerequis
 
+**Reference** : Voir `context/GITHUB.md` sections 1 (auth), 3 (milestones), 5 (releases/tags)
+
 - [ ] Un tag Git existe sur le repo (`git tag --list`)
 - [ ] `CHANGELOG.md` a jour
 - [ ] `README.md` a jour avec le positionnement produit
 - [ ] Issues GitHub ouvertes/fermees (pour la Roadmap)
+- [ ] Milestone GitHub correspondant a la version (recommande)
 
 ## Workflow
 
@@ -69,7 +72,7 @@ La version recuperee est utilisee dans toutes les sections du site (Hero, Featur
 /marketing [version]
     |
     v
-[COLLECTE] --> Lire CHANGELOG, README, releases GitHub, issues GitHub
+[COLLECTE] --> Lire CHANGELOG, README, releases GitHub, issues GitHub, milestone GitHub
     |
     v
 [GENERATION] --> Generer ou mettre a jour les sections du site
@@ -83,6 +86,29 @@ La version recuperee est utilisee dans toutes les sections du site (Hero, Featur
     v
 [RAPPORT] --> Confirmer les sections mises a jour
 ```
+
+## Collecte du milestone
+
+Dans la phase COLLECTE, recuperer les donnees du milestone correspondant a la version :
+
+```bash
+# Milestone cloture correspondant a la version (source principale)
+gh api repos/{owner}/{repo}/milestones \
+  --jq '.[] | select(.title=="<version>")'
+
+# Issues fermees dans ce milestone (= ce qui a ete livre)
+gh issue list --milestone "<version>" --state closed \
+  --json number,title,labels \
+  --jq '.[] | [.number, .title, (.labels | map(.name) | join(", "))] | @tsv'
+
+# Issues ouvertes dans le prochain milestone (= roadmap "a venir")
+gh api repos/{owner}/{repo}/milestones \
+  --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0]' | \
+  xargs -I{} gh issue list --milestone "{}" --state open \
+  --json number,title,labels
+```
+
+Si aucun milestone n'existe pour la version → fallback sur CHANGELOG.md et issues GitHub classiques.
 
 ## Structure du site genere
 
@@ -156,20 +182,25 @@ cd {PROJECT}
 
 ### Roadmap (`id="roadmap"`)
 
-Generer automatiquement depuis les issues GitHub :
+Generer automatiquement en privilegiant les milestones GitHub (source la plus precise) :
 
-**Issues fermees recentes** → colonne "Livre" (les N dernieres releases)
-**Issues ouvertes avec label `roadmap` ou `enhancement`** → colonne "A venir"
-**Issues ouvertes avec label `in progress`** → colonne "En cours"
+**Source prioritaire — milestones** :
+- **Milestone cloture** correspondant a la version → colonne "Livre" (issues fermees du milestone)
+- **Milestone(s) ouvert(s)** → colonnes "En cours" et "A venir" selon les labels des issues
+
+**Fallback sans milestone** :
+- Issues fermees recentes → colonne "Livre"
+- Issues ouvertes avec label `roadmap` ou `enhancement` → colonne "A venir"
+- Issues ouvertes avec label `in progress` → colonne "En cours"
 
 Format :
 ```
-[ Livre ✓ ]          [ En cours ⚙ ]        [ A venir ○ ]
-- Feature A (v1.2)   - Feature C (#42)      - Feature E (#55)
-- Bugfix B (v1.3)    - Feature D (#43)      - Feature F (#60)
+[ Livre ✓ ]                    [ En cours ⚙ ]           [ A venir ○ ]
+- #42 Auth OAuth2 (v1.2.0)    - #51 Export PDF (#v1.3)  - #60 API v2 (#v2.0)
+- #38 Fix crash iOS (v1.2.0)  - #47 Perf dashboard      - #61 Mode offline
 ```
 
-Si aucune issue disponible : afficher les elements du `CHANGELOG.md` comme historique.
+Si aucune issue ni milestone disponible : afficher les elements du `CHANGELOG.md` comme historique.
 
 ## Commutateur de langue
 
