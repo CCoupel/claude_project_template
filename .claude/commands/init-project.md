@@ -395,6 +395,33 @@ Enchaîner directement les étapes 1 à 10 ci-dessous.
 | Vue.js | `templates/dev-frontend-vue.md` | `agents/dev-frontend.md` |
 | ESP32 | `templates/dev-firmware-esp32.md` | `agents/dev-firmware.md` |
 
+### 2b. Generer le Workflow CI/CD
+
+Choisir le template workflow adapte a la stack, le copier vers `.github/workflows/release.yml`
+et remplacer les placeholders par les valeurs du projet :
+
+| Stack detectee | Template workflow |
+|----------------|------------------|
+| Go + React/Vue | `templates/workflows/release-go-react.yml` |
+| (autres stacks) | Generer un workflow minimal adapte |
+
+**Placeholders a remplacer :**
+
+| Placeholder | Valeur | Exemple |
+|-------------|--------|---------|
+| `{PROJECT_NAME}` | Nom du projet | `MyApp` |
+| `{BINARY_NAME}` | Nom du binaire (minuscules) | `myapp` |
+| `{BACKEND_DIR}` | Repertoire backend | `backend` |
+| `{FRONTEND_DIR}` | Repertoire frontend | `frontend` |
+| `{EMBED_DIR}` | Chemin embed dans backend | `cmd/server/dist` |
+| `{GO_MAIN_PKG}` | Package main Go | `./cmd/server` |
+| `{VERSION_FILE}` | Fichier version backend | `config.json` |
+| `{GO_VERSION}` | Version Go | `1.22` |
+| `{NODE_VERSION}` | Version Node | `20` |
+| `{MIN_BINARY_SIZE}` | Taille min binaire (octets) | `5242880` |
+
+Si des informations manquent, demander a l'utilisateur ou utiliser des valeurs par defaut raisonnables.
+
 ### 3. Finaliser
 
 - Copier les templates de commandes (`.template.md` → `.md`)
