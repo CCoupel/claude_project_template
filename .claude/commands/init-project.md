@@ -588,13 +588,125 @@ echo "✓ .template-source.json mis a jour ($LATEST_COMMIT)"
 
 ---
 
-## Reinitialisation
+## Detection de version et migration
 
-Si le projet est deja initialise :
+**Avant tout**, detecter la version du projet pour adapter le comportement :
+
+```bash
+HAS_CONFIG=$([ -f .claude/project-config.json ] && echo "yes" || echo "no")
+HAS_SOURCE=$([ -f .claude/.template-source.json ] && echo "yes" || echo "no")
+HAS_COMMANDS=$([ -d .claude/commands ] && echo "yes" || echo "no")
+```
+
+| `project-config.json` | `.template-source.json` | Diagnostic |
+|-----------------------|------------------------|------------|
+| absent | absent | Nouveau projet → flux normal |
+| present | present | Projet v2 → Reinitialisation |
+| present | absent | **Projet v1 → Migration requise** |
+
+---
+
+## Migration v1 → v2
+
+Declenche si `project-config.json` existe **mais pas** `.template-source.json`.
+
+Afficher :
+
+```
+Projet initialise avec une version anterieure (v1 — architecture sans template-source).
+
+Architecture v1 (actuelle) :
+  Tous les fichiers .claude/ sont trackes dans git.
+
+Architecture v2 (cible) :
+  Seuls les fichiers PROJET sont trackes.
+  Les fichiers TEMPLATE sont gitignores et fetchés depuis GitHub.
+
+Migration requise. Continuer ? [O/n]
+```
+
+### Etape M1 — Fetch des fichiers template depuis GitHub
+
+Executer la procedure "Fetch du Template depuis GitHub" (section ci-dessous).
+Cela remplace les fichiers template locaux par la derniere version.
+
+### Etape M2 — Appliquer le .gitignore
+
+Copier `gitignore-for-projects` en `.claude/.gitignore` :
+
+```bash
+cp .claude/gitignore-for-projects .claude/.gitignore
+```
+
+### Etape M3 — Retirer les fichiers TEMPLATE du tracking git
+
+```bash
+# Retirer du tracking sans supprimer les fichiers du disque
+git rm --cached -r .claude/commands/
+git rm --cached -r .claude/agents/context/
+git rm --cached .claude/agents/cdp.template.md
+git rm --cached .claude/agents/code-reviewer.template.md
+git rm --cached .claude/agents/deploy.template.md
+git rm --cached .claude/agents/doc-updater.template.md
+git rm --cached .claude/agents/implementation-planner.template.md
+git rm --cached .claude/agents/infra.template.md
+git rm --cached .claude/agents/marketing-release.template.md
+git rm --cached .claude/agents/pr-reviewer.template.md
+git rm --cached .claude/agents/qa.template.md
+git rm --cached .claude/agents/security.template.md
+git rm --cached -r .claude/templates/ 2>/dev/null || true
+```
+
+> Les fichiers restent sur le disque — seul le tracking git est supprime.
+> `.claude/.gitignore` les exclura desormais des futurs commits.
+
+### Etape M4 — Commiter la migration
+
+```bash
+git add .claude/.gitignore .claude/.template-source.json
+git commit -m "chore(claude): Migrate to v2 template architecture
+
+- Add .claude/.gitignore to exclude template files from git tracking
+- Add .claude/.template-source.json to track template source
+- Untrack template files (commands/, agents/*.template.md, agents/context/, templates/)
+  These are now fetched from CCoupel/claude_project_template on /init-project"
+```
+
+### Etape M5 — Rapport de migration
+
+```
+Migration v1 → v2 terminee.
+
+  Fichiers retires du tracking git (toujours presents sur disque) :
+    - .claude/commands/       (N fichiers)
+    - .claude/agents/context/ (N fichiers)
+    - .claude/agents/*.template.md (N fichiers)
+    - .claude/templates/      (N fichiers)
+
+  Fichiers PROJET preserves (toujours trackes) :
+    ✓ .claude/CLAUDE.md
+    ✓ .claude/project-config.json
+    ✓ .claude/memory/
+    ✓ .claude/agents/dev-backend.md  (si present)
+    ✓ .claude/agents/dev-frontend.md (si present)
+
+  Nouveau fichier .claude/.template-source.json :
+    repo    : CCoupel/claude_project_template
+    commit  : <sha>
+    synced  : <date>
+
+Prochaines syncs : /init-project → option d)
+```
+
+---
+
+## Reinitialisation (projet v2)
+
+Si le projet est deja initialise **en v2** (`project-config.json` + `.template-source.json`) :
 
 ```
 Ce projet est deja initialise (config du YYYY-MM-DD).
-Template : <repo> — dernier sync : <date> (<commit>)
+Template : CCoupel/claude_project_template — dernier sync : <date> (<commit>)
 
 Voulez-vous :
 a) Reconfigurer completement (ecrase la config)
