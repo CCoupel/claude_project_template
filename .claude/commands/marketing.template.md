@@ -38,11 +38,27 @@ Sinon -> workflow normal.
 
 Generer ou mettre a jour le site statique publie sur la branche `gh-pages`.
 Le site est **bilingue (FR/EN)** avec un commutateur de langue.
-La version affichee est recuperee dynamiquement depuis les releases GitHub.
+La version affichee est recuperee dynamiquement depuis les **tags Git** du repo.
+
+## Recuperation de la version
+
+Si aucune version n'est passee en argument, recuperer le dernier tag semantique :
+
+```bash
+git tag --sort=-version:refname | head -1
+```
+
+Si le repo est GitHub, on peut aussi utiliser l'API :
+
+```bash
+gh api repos/{ORG}/{PROJECT}/tags --jq '.[0].name'
+```
+
+La version recuperee est utilisee dans toutes les sections du site (Hero, Features, Roadmap).
 
 ## Prerequis
 
-- [ ] Une release taguee existe sur le repo (`git tag` ou GitHub Releases)
+- [ ] Un tag Git existe sur le repo (`git tag --list`)
 - [ ] `CHANGELOG.md` a jour
 - [ ] `README.md` a jour avec le positionnement produit
 - [ ] Issues GitHub ouvertes/fermees (pour la Roadmap)
@@ -86,7 +102,7 @@ gh-pages/
 ### Hero / Accroche (`id="hero"`)
 
 - Nom du projet et baseline en FR et EN
-- **Version courante recuperee dynamiquement** depuis les releases GitHub
+- **Version courante recuperee dynamiquement** via `git tag --sort=-version:refname | head -1`
 - Bouton "Voir les releases" pointant vers `https://github.com/{ORG}/{PROJECT}/releases`
 - Call-to-action principal (ex : "Installer", "Voir la doc")
 
