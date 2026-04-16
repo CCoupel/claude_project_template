@@ -1,199 +1,222 @@
 # Claude Code Project Template
 
 Template de gestion de projet pour Claude Code.
+Fournit un ensemble de commandes, agents et contextes partagés pour orchestrer
+le développement, la qualité, le déploiement et la communication de release.
 
-## Installation
+---
 
-1. Copier le contenu du dossier `.claude/` dans votre projet
-2. Copier `CLAUDE_TEMPLATE.md` vers `CLAUDE.md` a la racine du projet
-3. Au premier demarrage, Claude detectera que le projet n'est pas initialise et lancera `/init-project`
+## Installation — Un seul fichier
+
+```bash
+mkdir -p <mon-projet>/.claude/commands
+
+# Telecharger init-project.md depuis GitHub
+curl -o <mon-projet>/.claude/commands/init-project.md \
+  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/.claude/commands/init-project.md
+
+# Ouvrir le projet dans Claude Code et lancer :
+/init-project
+```
+
+`/init-project` fetche automatiquement tous les fichiers du template depuis GitHub,
+détecte la stack et génère la configuration du projet.
+
+---
+
+## Architecture : TEMPLATE vs PROJET
+
+Les fichiers `.claude/` sont séparés en deux catégories :
+
+| Catégorie | Fichiers | Comportement |
+|-----------|----------|--------------|
+| **TEMPLATE** | `commands/`, `agents/*.template.md`, `agents/context/`, `templates/` | Fetchés depuis GitHub, gitignorés, jamais édités manuellement |
+| **PROJET** | `CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md`, `settings.json` | Trackés dans git, jamais écrasés par une sync |
+
+Le fichier `.claude/.template-source.json` enregistre la source et le dernier commit fetché.
+Le fichier `.claude/.gitignore` (créé par `/init-project`) exclut les fichiers TEMPLATE du repo projet.
+
+---
 
 ## Structure
 
 ```
 .claude/
-├── README.md                 # Ce fichier
-├── INITIALIZATION.md         # Guide complet d'initialisation (publiable)
-├── CLAUDE_TEMPLATE.md        # Template CLAUDE.md (copier vers ../CLAUDE.md)
-├── project-config.json       # Configuration generee (apres init)
-├── agents/                   # Agents specialises
-│   ├── cdp.template.md       # Chef de projet / orchestrateur
+├── README.md                        # Ce fichier
+├── INITIALIZATION.md                # Guide d'initialisation détaillé
+├── CLAUDE_TEMPLATE.md               # Template CLAUDE.md à copier à la racine
+├── .template-source.json            # Source GitHub + commit du dernier fetch
+├── gitignore-for-projects           # Copié en .gitignore par /init-project
+│
+├── commands/                        # TEMPLATE — Commandes slash
+│   ├── init-project.md              # Bootstrap et synchronisation
+│   ├── start-session.md             # Démarrage de session + milestone actif
+│   ├── end-session.md               # Clôture de session
+│   ├── feature.template.md          # Nouvelle fonctionnalité
+│   ├── bugfix.template.md           # Correction de bug
+│   ├── hotfix.template.md           # Correctif urgent production
+│   ├── refactor.template.md         # Refactoring
+│   ├── review.template.md           # Revue de code
+│   ├── qa.template.md               # Tests et validation
+│   ├── secu.md                      # Audit de sécurité
+│   ├── deploy.template.md           # Déploiement qualif / prod
+│   ├── backlog.md                   # Gestion du backlog GitHub Issues
+│   ├── milestone.md                 # Gestion des milestones GitHub
+│   ├── marketing.template.md        # Mise à jour site marketing
+│   └── context/                     # Contextes partagés commandes
+│       ├── COMMON.md
+│       ├── CDP_WORKFLOWS.md
+│       ├── DEVELOPMENT.md
+│       ├── QUALITY.md
+│       └── GITHUB.md                # Patterns gh CLI centralisés
+│
+├── agents/                          # Agents spécialisés
+│   ├── cdp.template.md              # TEMPLATE — Chef de projet / orchestrateur
 │   ├── implementation-planner.template.md
 │   ├── code-reviewer.template.md
 │   ├── qa.template.md
 │   ├── security.template.md
 │   ├── doc-updater.template.md
-│   └── deploy.template.md
-├── commands/                 # Commandes slash
-│   ├── init-project.md       # Initialisation projet
-│   ├── feature.template.md
-│   ├── bugfix.template.md
-│   ├── hotfix.template.md
-│   ├── refactor.template.md
-│   ├── review.template.md
-│   ├── qa.template.md
-│   ├── secu.md
-│   └── deploy.template.md
-└── templates/                # Templates par technologie
+│   ├── deploy.template.md
+│   ├── infra.template.md
+│   ├── pr-reviewer.template.md
+│   ├── marketing-release.template.md
+│   ├── dev-backend.md               # PROJET — généré selon la stack
+│   ├── dev-frontend.md              # PROJET — généré selon la stack
+│   └── context/                     # TEMPLATE — Contextes partagés agents
+│       ├── COMMON.md
+│       ├── DEV_COMMON.md
+│       ├── TEAMMATES_PROTOCOL.md
+│       ├── VALIDATION_COMMON.md
+│       └── GITHUB.md
+│
+└── templates/                       # TEMPLATE — Templates par technologie
     ├── dev-backend-go.md
     ├── dev-backend-node.md
     ├── dev-backend-python.md
     ├── dev-frontend-react.md
     ├── dev-frontend-vue.md
-    └── dev-firmware-esp32.md
+    ├── dev-firmware-esp32.md
+    └── workflows/
+        └── release-go-react.yml     # Template CI/CD Go + React
 ```
 
-## Premiere Utilisation
+---
 
-Au premier demarrage, Claude detecte automatiquement l'etat du projet.
+## Commandes disponibles
 
-> **Documentation complete** : [INITIALIZATION.md](INITIALIZATION.md)
-
-### Etape 1 : Detection de code existant
-
-Claude analyse le projet pour detecter :
-- Fichiers de configuration (`package.json`, `go.mod`, `requirements.txt`, etc.)
-- Dependances et frameworks utilises
-- CI/CD et outils de deploiement
-
-### Etape 2 : Proposition d'initialisation
-
-**Si du code existe :**
-```
-Technologies detectees :
-- Backend : Go (go.mod)
-- Frontend : React + TypeScript (package.json)
-- CI/CD : GitHub Actions
-
-Voulez-vous :
-a) Initialiser avec cette configuration (recommande)
-b) Initialiser manuellement (questionnaire complet)
-c) Annuler
-```
-
-**Si projet vide :** Questionnaire complet pose.
-
-### Questions (mode manuel ou complement) :
-
-1. **Nom du projet** et **Description**
-2. **Stack backend** : Go, Node.js, Python, Java, etc.
-3. **Stack frontend** : React, Vue, Angular, etc.
-4. **Mobile** : React Native, Flutter, natif, etc.
-5. **Firmware** : ESP32, Raspberry Pi, etc.
-6. **Base de donnees** : PostgreSQL, MongoDB, SQLite, etc.
-7. **CI/CD** : GitHub Actions, GitLab CI, Jenkins, etc.
-8. **Deploiement** : Docker, Kubernetes, VPS, etc.
-9. **Tests** : Frameworks utilises
-10. **Securite** : Preoccupations specifiques
-
-### Resultat :
-
-- `project-config.json` genere avec la configuration
-- Agents de dev crees selon la stack (ex: `dev-backend.md`, `dev-frontend.md`)
-- CLAUDE.md mis a jour avec les informations du projet
-
-## Commandes Disponibles
-
-### Developpement
+### Session
 
 | Commande | Description |
 |----------|-------------|
-| `/feature <desc>` | Nouvelle fonctionnalite (workflow complet) |
+| `/start-session` | Démarre la session, lit la mémoire projet, affiche le milestone actif |
+| `/end-session` | Clôture la session, met à jour la mémoire |
+| `/init-project` | Bootstrap, réinitialisation ou synchronisation du template |
+
+### Développement
+
+| Commande | Description |
+|----------|-------------|
+| `/feature <desc>` | Nouvelle fonctionnalité (workflow PLAN→DEV→REVIEW→QA→DOC→DEPLOY) |
 | `/bugfix <desc>` | Correction de bug |
-| `/hotfix <desc>` | Correction urgente production |
+| `/hotfix <desc>` | Correctif urgent production |
 | `/refactor <desc>` | Refactoring sans changement fonctionnel |
+
+### Backlog et Milestones
+
+| Commande | Description |
+|----------|-------------|
+| `/backlog` | Lister les issues GitHub ouvertes (avec colonne milestone) |
+| `/backlog <desc>` | Rechercher une issue et lancer le workflow adapté |
+| `/milestone new <version> [date]` | Créer un milestone et associer des issues |
+| `/milestone status` | Progression du milestone actif (barre %, issues restantes) |
+| `/milestone close [version]` | Clôturer avec gestion des issues non terminées |
 
 ### Validation
 
 | Commande | Description |
 |----------|-------------|
 | `/review` | Revue de code |
-| `/qa` | Tests et validation qualite |
-| `/secu` | Audit de securite |
+| `/qa` | Tests et validation qualité |
+| `/secu` | Audit de sécurité |
 
-### Deploiement
-
-| Commande | Description |
-|----------|-------------|
-| `/deploy qualif` | Deploiement en qualification |
-| `/deploy prod` | Deploiement en production |
-
-### Utilitaires
+### Déploiement et Communication
 
 | Commande | Description |
 |----------|-------------|
-| `/init-project` | (Re)initialiser la configuration |
-| `/doc` | Mettre a jour la documentation |
-| `/cdp <desc>` | Lancer l'orchestrateur complet |
+| `/deploy qualif` | Déploiement en qualification |
+| `/deploy prod` | Déploiement en production (+ clôture milestone automatique) |
+| `/marketing [version]` | Mise à jour site gh-pages depuis milestone + CHANGELOG |
 
-## Workflows
+---
 
-### Workflow Standard (/feature, /bugfix)
-
-```
-PLAN --> DEV --> TEST --> REVIEW --> QA --> DOC --> DEPLOY
-```
-
-### Workflow Securite (/secu)
+## Flux de travail type
 
 ```
-SCAN --> DEPS --> SECRETS --> OWASP --> REPORT --> FIX
+/milestone new v1.2.0 2026-06-01    Créer le milestone + associer les issues
+        ↓
+/start-session                       Voir la progression du milestone
+        ↓
+/backlog #42                         Travailler une issue (auto-assignée au milestone)
+        ↓
+/feature "#42 - Auth OAuth"          Workflow complet
+        ↓
+/deploy prod                         CI/CD → proposition de clôture du milestone
+        ↓
+/marketing v1.2.0                    Release notes depuis le milestone clos
 ```
 
-### Workflow Hotfix (/hotfix)
+---
+
+## Migration depuis v1
+
+Les projets créés avant la v2 (tous les fichiers `.claude/` trackés dans git)
+sont détectés automatiquement :
+
+```bash
+# Copier init-project.md dans le projet v1
+cp init-project.md <projet-v1>/.claude/commands/
+
+# Dans Claude Code :
+/init-project
+# → "Projet v1 détecté — migration v2 requise"
+# → Fetch GitHub + .gitignore + git rm --cached + commit automatique
+```
+
+---
+
+## Synchronisation du template
+
+Pour récupérer les nouvelles fonctionnalités du template dans un projet existant :
 
 ```
-ANALYSE --> FIX --> TESTS CRITIQUES --> DEPLOY PROD --> POST-MORTEM
+/init-project → d) Synchroniser le template depuis GitHub
 ```
 
-## Agents
+Fetche la dernière version depuis `CCoupel/claude_project_template` et met à jour
+les fichiers TEMPLATE sans toucher aux fichiers PROJET.
 
-### Agents de Workflow (toujours presents)
-
-- **CDP** : Chef de projet, orchestre les autres agents
-- **Planner** : Cree les plans d'implementation
-- **Reviewer** : Revue de code
-- **QA** : Tests et validation
-- **Security** : Audit de securite
-- **Doc** : Documentation
-- **Deploy** : Deploiement
-
-### Agents de Dev (generes selon stack)
-
-- **dev-backend** : Genere depuis `templates/dev-backend-*.md`
-- **dev-frontend** : Genere depuis `templates/dev-frontend-*.md`
-- **dev-firmware** : Genere depuis `templates/dev-firmware-*.md`
-- **dev-mobile** : Genere depuis `templates/dev-mobile-*.md`
+---
 
 ## Personnalisation
 
-### Ajouter un template technologique
+### Modifier l'URL source du template
 
-1. Creer un fichier dans `templates/` (ex: `dev-backend-rust.md`)
-2. Suivre le format des templates existants
-3. Mettre a jour `/init-project` pour proposer cette option
+Si vous forkez ce template, mettre à jour `.claude/.template-source.json` :
 
-### Modifier un workflow
+```json
+{
+  "repo": "votre-org/votre-fork",
+  "branch": "main"
+}
+```
 
-1. Editer l'agent concerne dans `agents/`
-2. Adapter les etapes selon les besoins du projet
+### Ajouter un template de stack
 
-### Ajouter une commande
+1. Créer `templates/dev-backend-rust.md` (suivre le format existant)
+2. Mettre à jour la liste dans `commands/init-project.md`
 
-1. Creer un fichier dans `commands/` (ex: `perf.md`)
-2. Documenter l'usage et le workflow
-3. Creer l'agent associe si necessaire
+### Ajouter un template de workflow CI/CD
 
-## Bonnes Pratiques
-
-1. **Toujours initialiser** avant de commencer a travailler
-2. **Utiliser les commandes** appropriees selon le contexte
-3. **Suivre les workflows** pour une qualite constante
-4. **Documenter** les decisions importantes
-5. **Commiter regulierement** avec des messages clairs
-
-## Support
-
-Ce template est concu pour etre utilise avec Claude Code (CLI Anthropic).
-
-Pour signaler un probleme ou suggerer une amelioration, ouvrir une issue sur le repository du template.
+1. Créer `templates/workflows/release-node-react.yml`
+2. Référencer dans la section "Generer le Workflow CI/CD" de `init-project.md`
