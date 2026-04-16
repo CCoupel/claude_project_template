@@ -485,31 +485,65 @@ Le fichier `.claude/.gitignore` (cree par `/init-project` depuis `gitignore-for-
 
 ---
 
+## Bootstrap : fichier unique
+
+**Ce fichier (`init-project.md`) est le seul fichier a copier** pour initialiser
+un nouveau projet ou synchroniser un projet existant.
+
+Pour bootstrapper un nouveau projet :
+```bash
+mkdir -p .claude/commands
+# Copier ce fichier dans .claude/commands/init-project.md
+# Puis lancer /init-project dans Claude Code
+```
+
+`init-project.md` contient l'URL du template en dur comme fallback.
+Si `.template-source.json` n'existe pas encore, cette URL est utilisee automatiquement.
+
+---
+
 ## Fetch du Template depuis GitHub
+
+### URL du template (fallback bootstrap)
+
+```
+TEMPLATE_REPO_DEFAULT = "CCoupel/claude_project_template"
+TEMPLATE_BRANCH_DEFAULT = "main"
+```
+
+> Si `.claude/.template-source.json` n'existe pas → utiliser ces valeurs par defaut.
+> Apres le premier fetch, creer `.template-source.json` avec le commit fetche.
 
 ### Quand fetcher
 
-- **Premiere initialisation** : toujours
+- **Premiere initialisation** : toujours (meme si `.template-source.json` absent)
 - **Reinitialisation** : option d) ci-dessous
 - **Synchronisation manuelle** : `/init-project` → option d)
 
 ### Procedure de fetch
 
-#### 1. Lire la source
+#### 1. Lire la source (avec fallback)
 
 ```bash
-cat .claude/.template-source.json
-# → repo, branch, commit connu
+# Si .template-source.json existe → lire le repo/branch
+if [ -f .claude/.template-source.json ]; then
+  TEMPLATE_REPO=$(cat .claude/.template-source.json | jq -r '.repo')
+  TEMPLATE_BRANCH=$(cat .claude/.template-source.json | jq -r '.branch')
+else
+  # Fallback bootstrap : URL integree dans ce fichier
+  TEMPLATE_REPO="CCoupel/claude_project_template"
+  TEMPLATE_BRANCH="main"
+fi
 ```
 
 #### 2. Verifier si une mise a jour est disponible
 
 ```bash
-TEMPLATE_REPO=$(cat .claude/.template-source.json | jq -r '.repo')
-KNOWN_COMMIT=$(cat .claude/.template-source.json | jq -r '.commit // ""')
+KNOWN_COMMIT=$([ -f .claude/.template-source.json ] && \
+  cat .claude/.template-source.json | jq -r '.commit // ""' || echo "")
 
-# Dernier commit sur la branche main
-LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/main --jq '.sha')
+# Dernier commit sur la branche
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/$TEMPLATE_BRANCH --jq '.sha')
 
 if [ "$KNOWN_COMMIT" = "$LATEST_COMMIT" ]; then
   echo "Template deja a jour ($LATEST_COMMIT)"
@@ -520,7 +554,6 @@ fi
 #### 3. Fetcher les fichiers TEMPLATE depuis GitHub
 
 ```bash
-TEMPLATE_REPO=$(cat .claude/.template-source.json | jq -r '.repo')
 
 # Lister tous les fichiers TEMPLATE dans le repo
 gh api repos/$TEMPLATE_REPO/git/trees/main?recursive=1 \
@@ -536,16 +569,21 @@ gh api repos/$TEMPLATE_REPO/git/trees/main?recursive=1 \
     done
 ```
 
-#### 4. Mettre a jour .template-source.json
+#### 4. Creer ou mettre a jour .template-source.json
 
 ```bash
-LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/main --jq '.sha')
 TODAY=$(date +%Y-%m-%d)
 
-jq --arg commit "$LATEST_COMMIT" --arg date "$TODAY" \
-  '.commit = $commit | .synced_at = $date' \
-  .claude/.template-source.json > /tmp/tpl.json && \
-  mv /tmp/tpl.json .claude/.template-source.json
+# Creer le fichier s'il n'existe pas (premier bootstrap)
+cat > .claude/.template-source.json <<EOF
+{
+  "repo": "$TEMPLATE_REPO",
+  "branch": "$TEMPLATE_BRANCH",
+  "commit": "$LATEST_COMMIT",
+  "synced_at": "$TODAY"
+}
+EOF
+echo "✓ .template-source.json mis a jour ($LATEST_COMMIT)"
 ```
 
 ---
