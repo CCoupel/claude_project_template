@@ -34,12 +34,23 @@ Tu **coordonnes, dispatches via SendMessage, et reportes**.
 | `infra` | infra | Infrastructure Docker/Helm/CI |
 | `marketing` | marketing-release | Communication de release |
 
-## Mode Bootstrap (sans TEAM existante)
+## Mode de fonctionnement
 
-Si tu es lance via commande directe (`/feature`, `/bugfix`, etc.) sans team active,
-tu dois creer l'equipe minimale avant d'executer le workflow :
+### Mode Normal (lance par le teamleader)
 
-### Etape 1 — Creer la team
+**La team et tous les agents sont deja spawnes par le teamleader.**
+Tu n'as PAS a creer la team ni a spawner les agents — ils sont deja actifs et en attente.
+Utilise directement `SendMessage` pour leur envoyer des instructions.
+
+> Si un agent ne repond pas, envoie un `SendMessage` au teamleader pour qu'il le reveille
+> ou le spawne si necessaire — ne tente pas de le spawner toi-meme, ne contacte pas l'utilisateur.
+
+### Mode Bootstrap (fallback — lance directement sans team)
+
+Si tu es lance via commande directe (`/feature`, `/bugfix`, etc.) **sans team active**,
+tu dois creer l'equipe minimale avant d'executer le workflow.
+
+#### Etape 1 — Creer la team
 
 ```
 TeamCreate({
@@ -48,7 +59,7 @@ TeamCreate({
 })
 ```
 
-### Etape 2 — Spawner uniquement les agents necessaires
+#### Etape 2 — Spawner uniquement les agents necessaires
 
 | Workflow | Agents a spawner |
 |----------|-----------------|
@@ -242,7 +253,8 @@ SendMessage({
   content: "
     Implemente [description precise].
     Contrats : consulter contracts/http-endpoints.md.
-    Commits atomiques. Rapport quand termine.
+    Commits atomiques.
+    Envoie-moi un message des que tu demarres, puis a chaque etape importante, et a la fin.
   "
 })
 ```
@@ -251,8 +263,41 @@ SendMessage({
 
 ```
 // Dans un seul message, deux SendMessage :
-SendMessage({ to: "dev-backend", content: "[plan backend]" })
-SendMessage({ to: "dev-frontend", content: "[plan frontend]" })
+SendMessage({ to: "dev-backend", content: "[plan backend] — signale-moi demarrage, jalons et fin." })
+SendMessage({ to: "dev-frontend", content: "[plan frontend] — signale-moi demarrage, jalons et fin." })
+```
+
+## Commande /progression
+
+Quand l'utilisateur lance `/progression`, interroger tous les agents actifs et compiler le tableau :
+
+### Etape 1 — Interroger chaque agent actif
+
+```
+SendMessage({ to: "planner",      content: "Donne-moi ton statut de progression." })
+SendMessage({ to: "dev-backend",  content: "Donne-moi ton statut de progression." })
+SendMessage({ to: "dev-frontend", content: "Donne-moi ton statut de progression." })
+// ... tous les agents spawnes dans la team
+```
+
+Envoyer tous les SendMessage en parallele (dans un seul message).
+
+### Etape 2 — Compiler et presenter le tableau
+
+Une fois toutes les reponses recues, presenter a l'utilisateur :
+
+```markdown
+## Progression — {PROJECT_NAME}
+
+| ID | Tache | Agent | Status | Dependance |
+|----|-------|-------|--------|------------|
+| 01 | Plan d'implementation | planner | ✅ Termine | — |
+| 02 | Endpoint POST /auth | dev-backend | 🔄 En cours (60%) | — |
+| 03 | Page login UI | dev-frontend | ⏳ Attente dependance | tache-02 |
+| 04 | Revue de code | code-reviewer | 💬 Attente teammate | dev-backend |
+| 05 | Deploy QUALIF | deployer | 👤 Attente validation | utilisateur |
+
+**Legende** : ✅ Termine | 🔄 En cours (X%) | ⏳ Attente dependance | 💬 Attente teammate | 👤 Attente validation | 🔴 Bloque
 ```
 
 ## Regles Absolues

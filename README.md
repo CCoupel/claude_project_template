@@ -81,6 +81,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │   ├── deploy.template.md
 │   ├── backlog.md
 │   ├── milestone.md
+│   ├── progression.md
 │   ├── marketing.template.md
 │   └── context/
 │       ├── COMMON.md
@@ -148,6 +149,12 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 | `/milestone new <version> [date]` | Créer un milestone et associer des issues |
 | `/milestone status` | Progression du milestone actif (barre %) |
 | `/milestone close [version]` | Clôturer avec gestion des issues non terminées |
+
+### Suivi d'équipe
+
+| Commande | Description |
+|----------|-------------|
+| `/progression` | Tableau de bord temps réel — statut de chaque agent actif (`✅ Terminé`, `🔄 En cours`, `⏳ Attente dépendance`, `💬 Attente teammate`, `👤 Attente validation`, `🔴 Bloqué`) |
 
 ### Validation
 

@@ -32,10 +32,14 @@ Recevoir l'ordre du CDP
 Lire et comprendre la tache
     |
     v
-Executer le travail
+Signaler le DEMARRAGE au CDP
     |
     v
-Envoyer le rapport au CDP (SendMessage)
+Executer le travail
+  (signaler les jalons au CDP en cours de route)
+    |
+    v
+Envoyer le rapport TERMINE au CDP (SendMessage)
     |
     v
 Retourner en mode IDLE
@@ -59,6 +63,44 @@ SendMessage({
   to: "cdp",
   content: "[rapport en texte naturel]"
 })
+```
+
+### Push proactif de progression
+
+**REGLE** : Ne pas attendre d'etre sollicite. Envoyer un `SendMessage` au CDP a chaque jalon :
+
+| Jalon | Quand |
+|-------|-------|
+| DEMARRE | Des le debut de l'execution de la tache |
+| PROGRESSION | A chaque etape significative (ex: "migration schema OK, endpoints en cours...") |
+| BLOQUE | Des qu'un blocage survient |
+| TERMINE | Quand la tache est completement terminee |
+
+Format de mise a jour de progression :
+
+```
+**[NOM-AGENT] EN COURS — [X]%**
+---------------------------------------
+Tache : [description]
+Fait : [ce qui est termine]
+En cours : [ce qui est en train d'etre fait]
+Restant : [ce qui reste]
+---------------------------------------
+```
+
+### Reponse a une demande de progression (/progression)
+
+Quand le CDP demande un statut de progression, repondre avec ce format exact :
+
+```
+**[NOM-AGENT] STATUT**
+---------------------------------------
+Tache ID    : [id ou "—"]
+Tache       : [nom court de la tache]
+Status      : [TERMINE | EN COURS (X%) | ATTENTE DEPENDANCE | ATTENTE TEAMMATE | ATTENTE VALIDATION | BLOQUE]
+Dependance  : [agent ou tache dont je depends, ou "—"]
+Detail      : [une ligne sur ce qui se passe actuellement]
+---------------------------------------
 ```
 
 ### Format du rapport de fin de tache
@@ -103,9 +145,10 @@ SendMessage({
 1. **IDLE par defaut** — l'etat de repos est l'attente, pas le polling
 2. **Un travail a la fois** — terminer une tache avant d'en accepter une autre
 3. **Rapport systematique** — toujours envoyer un rapport au CDP apres chaque tache
-4. **Pas d'initiative** — ne jamais commencer un travail sans ordre du CDP
-5. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
-6. **Texte naturel** — les messages sont lisibles, pas en JSON
+4. **Push proactif** — signaler demarrage, jalons importants, blocages sans attendre d'etre sollicite
+5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du CDP
+6. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
+7. **Texte naturel** — les messages sont lisibles, pas en JSON
 
 ---
 
