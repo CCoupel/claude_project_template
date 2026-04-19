@@ -15,6 +15,53 @@
 #   Ajouter dans ~/.tmux.conf :
 #   bind R run-shell "bash /chemin/vers/claude.sh --relayout '#{session_name}' '#{window_id}'"
 
+# ════════════════════════════════════════════════════════════════════════════
+# VÉRIFICATION DES PRÉREQUIS
+# ════════════════════════════════════════════════════════════════════════════
+check_prerequisites() {
+  local missing=()
+  local warnings=()
+
+  for cmd in tmux fzf jq curl gh claude; do
+    command -v "$cmd" &>/dev/null || missing+=("$cmd")
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    printf "\033[1;31m  ✗ Prérequis manquants : %s\033[0m\n" "${missing[*]}"
+    printf "\n  Installation :\n"
+    local apt_pkgs=() brew_pkgs=()
+    for cmd in "${missing[@]}"; do
+      case "$cmd" in
+        tmux|fzf|jq|curl) apt_pkgs+=("$cmd"); brew_pkgs+=("$cmd") ;;
+        gh)    apt_pkgs+=("gh");     brew_pkgs+=("gh") ;;
+        claude) printf "    claude  → npm install -g @anthropic-ai/claude-code\n" ;;
+      esac
+    done
+    [[ ${#apt_pkgs[@]} -gt 0 ]] && \
+      printf "    apt     → sudo apt install %s\n" "${apt_pkgs[*]}"
+    [[ ${#brew_pkgs[@]} -gt 0 ]] && \
+      printf "    brew    → brew install %s\n" "${brew_pkgs[*]}"
+    printf "\n"
+    exit 1
+  fi
+
+  # Avertissements non bloquants
+  if ! gh auth status &>/dev/null; then
+    warnings+=("gh non authentifié — définir GITHUB_TOKEN dans la config ou lancer : gh auth login")
+  fi
+
+  for w in "${warnings[@]}"; do
+    printf "\033[1;33m  ⚠  %s\033[0m\n" "$w"
+  done
+  [[ ${#warnings[@]} -gt 0 ]] && printf "\n"
+}
+
+# Sauter la vérification pour les modes internes (appelés par tmux en arrière-plan)
+case "${1:-}" in
+  --do-layout|--debug-layout|--relayout|--layout-watch) ;;
+  *) check_prerequisites ;;
+esac
+
 SESSION="claude-hub"
 TEMPLATE_REPO="CCoupel/claude_project_template"
 TEMPLATE_BRANCH="main"
@@ -529,6 +576,11 @@ fi
 if [[ "$1" == "--menu" ]]; then
   SCRIPT_PATH="${2:-$(realpath "$0")}"
 
+  if [[ -n "$GITHUB_TOKEN" ]] && command -v gh &>/dev/null; then
+    printf '%s' "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null \
+      && printf "\033[0;90m  ✓ gh auth configuré\033[0m\n"
+  fi
+
   cleanup_orphan_teams
 
   while true; do
@@ -611,9 +663,15 @@ if [[ "$1" == "--menu" ]]; then
       # Toujours récupérer la dernière version de init-project.md
       mkdir -p "$project_dir/.claude/commands"
       local init_cmd="$project_dir/.claude/commands/init-project.md"
-      if ! curl -fsSL --ipv4 --max-time 5 \
-          "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/init-project.md" \
-          -o "$init_cmd" 2>/dev/null; then
+      local _dl_ok=0
+      if command -v gh &>/dev/null; then
+        local _b64
+        if _b64=$(gh api "repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}" \
+            --jq '.content' 2>/dev/null); then
+          printf '%s' "$_b64" | base64 -d > "$init_cmd" && _dl_ok=1
+        fi
+      fi
+      if [[ $_dl_ok -eq 0 ]]; then
         if [[ ! -f "$init_cmd" ]]; then
           # Fallback : cherche une copie locale à côté du launcher ou dans le projet
           local _fallback=""
