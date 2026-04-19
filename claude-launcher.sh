@@ -670,31 +670,14 @@ if [[ "$1" == "--menu" ]]; then
       # Toujours récupérer la dernière version de init-project.md
       mkdir -p "$project_dir/.claude/commands"
       local init_cmd="$project_dir/.claude/commands/init-project.md"
-      local _dl_ok=0
-      if command -v gh &>/dev/null; then
-        local _b64
-        if _b64=$(gh api "repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}" \
-            --jq '.content' 2>/dev/null); then
-          printf '%s' "$_b64" | base64 -d > "$init_cmd" && _dl_ok=1
-        fi
-      fi
-      if [[ $_dl_ok -eq 0 ]]; then
-        if [[ ! -f "$init_cmd" ]]; then
-          # Fallback : copie depuis le repo template cloné localement
-          local _fallback=""
-          for _try in \
-            "$GITHUB_DIR/claude_project_template/.claude/commands/init-project.md" \
-            "$GITHUB_DIR/claude_project_template/init-project.md"; do
-            if [[ -f "$_try" ]]; then _fallback="$_try"; break; fi
-          done
-          if [[ -n "$_fallback" ]]; then
-            cp "$_fallback" "$init_cmd"
-          else
-            tmux send-keys -t "$SESSION:$project" \
-              "echo '⚠  init-project.md introuvable (GitHub inaccessible) — /init-project indisponible'" \
-              Enter
-          fi
-        fi
+      local _b64
+      if _b64=$(gh api "repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}" \
+          --jq '.content' 2>/dev/null); then
+        printf '%s' "$_b64" | base64 -d > "$init_cmd"
+      elif [[ ! -f "$init_cmd" ]]; then
+        tmux send-keys -t "$SESSION:$project" \
+          "echo '⚠  init-project.md introuvable (GitHub inaccessible) — /init-project indisponible'" \
+          Enter
       fi
 
       CLAUDE_EXPORTS=$(build_claude_exports)
