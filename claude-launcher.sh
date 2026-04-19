@@ -680,13 +680,11 @@ if [[ "$1" == "--menu" ]]; then
       fi
       if [[ $_dl_ok -eq 0 ]]; then
         if [[ ! -f "$init_cmd" ]]; then
-          # Fallback : cherche une copie locale du repo template
+          # Fallback : copie depuis le repo template cloné localement
           local _fallback=""
           for _try in \
-            "$(dirname "$SCRIPT_PATH")/init-project.md" \
-            "$(dirname "$SCRIPT_PATH")/.claude/commands/init-project.md" \
-            "$GITHUB_DIR/claude_project_template/init-project.md" \
-            "$GITHUB_DIR/claude_project_template/.claude/commands/init-project.md"; do
+            "$GITHUB_DIR/claude_project_template/.claude/commands/init-project.md" \
+            "$GITHUB_DIR/claude_project_template/init-project.md"; do
             if [[ -f "$_try" ]]; then _fallback="$_try"; break; fi
           done
           if [[ -n "$_fallback" ]]; then
