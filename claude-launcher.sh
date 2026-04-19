@@ -78,7 +78,7 @@ build_claude_exports() {
 auto_update() {
   local tmp
   tmp=$(mktemp)
-  if curl -fsSL --max-time 5 \
+  if curl -fsSL --ipv4 --max-time 5 \
       "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/claude-launcher.sh" \
       -o "$tmp" 2>/dev/null; then
     if ! cmp -s "$tmp" "$SCRIPT_PATH"; then
@@ -494,7 +494,7 @@ if [[ "$1" == "--update" ]]; then
   SCRIPT_PATH="$(realpath "$0")"
   echo "Mise à jour du launcher depuis GitHub (${TEMPLATE_REPO}@${TEMPLATE_BRANCH})..."
   tmp=$(mktemp)
-  if curl -fsSL \
+  if curl -fsSL --ipv4 \
       "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/claude-launcher.sh" \
       -o "$tmp"; then
     chmod +x "$tmp"
@@ -611,13 +611,24 @@ if [[ "$1" == "--menu" ]]; then
       # Toujours récupérer la dernière version de init-project.md
       mkdir -p "$project_dir/.claude/commands"
       local init_cmd="$project_dir/.claude/commands/init-project.md"
-      if ! curl -fsSL --max-time 5 \
+      if ! curl -fsSL --ipv4 --max-time 5 \
           "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/init-project.md" \
           -o "$init_cmd" 2>/dev/null; then
         if [[ ! -f "$init_cmd" ]]; then
-          tmux send-keys -t "$SESSION:$project" \
-            "echo '⚠  init-project.md introuvable (GitHub inaccessible) — /init-project indisponible'" \
-            Enter
+          # Fallback : cherche une copie locale à côté du launcher ou dans le projet
+          local _fallback=""
+          for _try in \
+            "$(dirname "$SCRIPT_PATH")/init-project.md" \
+            "$project_dir/init-project.md"; do
+            if [[ -f "$_try" ]]; then _fallback="$_try"; break; fi
+          done
+          if [[ -n "$_fallback" ]]; then
+            cp "$_fallback" "$init_cmd"
+          else
+            tmux send-keys -t "$SESSION:$project" \
+              "echo '⚠  init-project.md introuvable (GitHub inaccessible) — /init-project indisponible'" \
+              Enter
+          fi
         fi
       fi
 
