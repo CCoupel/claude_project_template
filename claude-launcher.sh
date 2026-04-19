@@ -686,12 +686,7 @@ if [[ "$1" == "--menu" ]]; then
 claude ${CLAUDE_OPTIONS}" \
         Enter
 
-      watcher_name="_w_${project}"
-      tmux new-window -t "$SESSION" -n "$watcher_name"
-      tmux send-keys -t "$SESSION:$watcher_name" \
-        "bash '$SCRIPT_PATH' --layout-watch '$SESSION' '$win_id' '$leader_pane' '$project_dir' '$SCRIPT_PATH'
-         tmux kill-window -t '${SESSION}:${watcher_name}' 2>/dev/null" \
-        Enter
+      tmux run-shell -b "bash '$SCRIPT_PATH' --layout-watch '$SESSION' '$win_id' '$leader_pane' '$project_dir' '$SCRIPT_PATH'"
 
       tmux select-window -t "$SESSION:$project"
     fi
