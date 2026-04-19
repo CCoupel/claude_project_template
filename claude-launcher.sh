@@ -583,6 +583,7 @@ if [[ "$1" == "--menu" ]]; then
   SCRIPT_PATH="${2:-$(realpath "$0")}"
 
   if [[ -n "$GITHUB_TOKEN" ]] && command -v gh &>/dev/null; then
+    export GH_TOKEN="$GITHUB_TOKEN"
     printf '%s' "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null \
       && printf "\033[0;90m  ✓ gh auth configuré\033[0m\n"
   fi
