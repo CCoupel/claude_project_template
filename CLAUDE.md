@@ -25,7 +25,8 @@ Il se développe lui-même avec les mêmes pratiques qu'il préconise.
 ```
 README.md                    # Documentation utilisateur
 CLAUDE.md                    # Ce fichier
-init-project.md              # Seul fichier à copier pour bootstrapper un projet cible
+init-project.md              # Bootstrapper un projet (téléchargé par le launcher)
+claude-launcher.sh           # Launcher tmux — point d'entrée utilisateur
 .claude/
 ├── memory/                  # Mémoire des sessions de développement
 └── settings.local.json      # Config Claude Code locale
@@ -56,8 +57,11 @@ TEMPLATE_claude/             # Racine de tous les composants template
 ### Comment un projet cible consomme ce template
 
 ```
+claude-launcher.sh           # Téléchargé une fois par l'utilisateur
+    ↓ ouverture d'un projet
 Projet cible
-├── init-project.md          # Copié manuellement (bootstrap)
+├── .claude/commands/
+│   └── init-project.md      # Téléchargé automatiquement par le launcher
 │       ↓ /init-project
 ├── TEMPLATE_claude/         # Fetché depuis GitHub — gitignored
 └── .claude/

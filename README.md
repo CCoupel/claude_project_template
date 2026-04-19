@@ -6,13 +6,64 @@ le développement, la qualité, le déploiement et la communication de release.
 
 ---
 
-## Installation — Un seul fichier
+## Installation
+
+### Option A — Launcher tmux (recommandé)
+
+```bash
+curl -fsSL \
+  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/claude-launcher.sh \
+  -o ~/claude-launcher.sh && chmod +x ~/claude-launcher.sh
+```
+
+Au premier lancement, le launcher crée `~/.config/claude-launcher.conf` :
+
+```bash
+~/claude-launcher.sh --configure   # édite la config (GITHUB_DIR, token…)
+~/claude-launcher.sh               # démarre le hub tmux
+```
+
+**Variables disponibles dans la config :**
+
+| Variable | Rôle |
+|----------|------|
+| `GITHUB_DIR` | Répertoire contenant vos projets |
+| `GITHUB_TOKEN` | Token GitHub (gh CLI + MCP) |
+| `CLAUDE_DISABLE_MOUSE` | `1` = désactive la souris |
+| `CLAUDE_EXPERIMENTAL_TEAMS` | `1` = active les agent teams |
+| `CLAUDE_OPTIONS` | Options passées à `claude` |
+| `EXTRA_ENVS` | Variables d'environnement supplémentaires |
+
+`EXTRA_ENVS` permet de passer n'importe quelle variable d'env à Claude Code (clés d'API tierces, URLs…) :
+
+```bash
+EXTRA_ENVS=(
+  "ANTHROPIC_API_KEY=sk-ant-..."
+  "MY_API_URL=https://api.example.com"
+)
+```
+
+**Comportements automatiques à l'ouverture d'un projet :**
+- Le launcher se met à jour silencieusement depuis GitHub à chaque lancement
+- `init-project.md` est rafraîchi depuis GitHub à chaque ouverture de projet
+- Si GitHub est inaccessible et que le fichier existait déjà, l'ancienne version est conservée
+- Si GitHub est inaccessible et que c'est la première ouverture, un avertissement s'affiche dans le terminal
+
+Lancer ensuite `/init-project` dans Claude Code.
+
+**Mettre à jour le launcher :**
+```bash
+~/claude-launcher.sh --update      # remplace le script, préserve la config
+```
+
+### Option B — Fichier seul
 
 ```bash
 mkdir -p <mon-projet>/.claude/commands
 
-curl -o <mon-projet>/.claude/commands/init-project.md \
-  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/init-project.md
+curl -fsSL \
+  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/init-project.md \
+  -o <mon-projet>/.claude/commands/init-project.md
 ```
 
 Ouvrir le projet dans Claude Code et lancer `/init-project`.
@@ -194,12 +245,15 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 
 ## Migration depuis v1 ou v2
 
-Les projets créés avec une architecture antérieure sont détectés automatiquement :
+Les projets créés avec une architecture antérieure sont détectés automatiquement.
 
+**Avec le launcher** : ouvrir le projet depuis le menu — `init-project.md` est bootstrappé automatiquement, puis `/init-project` détecte et migre.
+
+**Sans le launcher** :
 ```bash
-# Copier init-project.md dans le projet existant
-curl -o <projet>/.claude/commands/init-project.md \
-  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/init-project.md
+curl -fsSL \
+  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/init-project.md \
+  -o <projet>/.claude/commands/init-project.md
 
 # Dans Claude Code :
 /init-project
