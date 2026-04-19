@@ -22,13 +22,19 @@ check_prerequisites() {
   local missing=()
   local warnings=()
 
+  printf "\033[0;90m  Vérification des prérequis...\033[0m\n"
   for cmd in tmux fzf jq curl gh claude; do
-    command -v "$cmd" &>/dev/null || missing+=("$cmd")
+    if command -v "$cmd" &>/dev/null; then
+      printf "\033[1;32m  ✓\033[0m %-10s %s\n" "$cmd" "$(command -v "$cmd")"
+    else
+      printf "\033[1;31m  ✗\033[0m %-10s manquant\n" "$cmd"
+      missing+=("$cmd")
+    fi
   done
+  printf "\n"
 
   if [[ ${#missing[@]} -gt 0 ]]; then
-    printf "\033[1;31m  ✗ Prérequis manquants : %s\033[0m\n" "${missing[*]}"
-    printf "\n  Installation :\n"
+    printf "\033[1;31m  Installation requise :\033[0m\n"
     local apt_pkgs=() brew_pkgs=()
     for cmd in "${missing[@]}"; do
       case "$cmd" in
