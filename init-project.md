@@ -839,6 +839,29 @@ done
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
 ```
 
+**Apres le deploiement (A ou B) — Corriger les fichiers mal nommes :**
+
+Verifier et corriger tout fichier deploye dans `.claude/commands/` et `.claude/agents/`
+qui contiendrait encore `.template` dans son nom (reliquat d'un deploiement incorrect).
+
+```bash
+# Renommer les fichiers .template.md residuels dans .claude/commands/
+for f in .claude/commands/*.template.md; do
+  [[ -f "$f" ]] || continue
+  dest="${f/.template.md/.md}"   # "feature.template.md" → "feature.md"
+  mv "$f" "$dest"
+  echo "  ✓ renomme : $(basename $f) → $(basename $dest)"
+done
+
+# Renommer les fichiers .template.md residuels dans .claude/agents/
+for f in .claude/agents/*.template.md; do
+  [[ -f "$f" ]] || continue
+  dest="${f/.template.md/.md}"   # "cdp.template.md" → "cdp.md"
+  mv "$f" "$dest"
+  echo "  ✓ renomme : $(basename $f) → $(basename $dest)"
+done
+```
+
 **Apres le deploiement (A ou B) — Appliquer les placeholders :**
 
 Executer la procedure "Application des placeholders" (section 4 ci-dessus)
