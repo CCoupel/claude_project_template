@@ -645,7 +645,7 @@ if [[ "$1" == "--menu" ]]; then
     project="${selected%%$'\t'*}"
 
     if [[ "$project" == "__quit__" ]]; then
-      tmux kill-session -t "$SESSION"
+      tmux detach-client
       exit 0
     fi
 
