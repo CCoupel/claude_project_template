@@ -463,8 +463,15 @@ if [[ "$1" == "--layout-watch" ]]; then
   while true; do
     sleep 1
 
-    # Quitte si le window projet n'existe plus
-    if ! tmux list-windows -t "$TARGET_SESSION" -F '#{window_id}' 2>/dev/null         | grep -qxF "$WIN_ID"; then
+    # Quitte si le window projet n'existe plus → supprime la team associée
+    if ! tmux list-windows -t "$TARGET_SESSION" -F '#{window_id}' 2>/dev/null \
+        | grep -qxF "$WIN_ID"; then
+      cfg=$(find_team_config "$PROJECT_DIR")
+      if [[ -n "$cfg" ]]; then
+        team_name=$(basename "$(dirname "$cfg")")
+        rm -rf "$(dirname "$cfg")"
+        rm -rf "$HOME/.claude/tasks/$team_name"
+      fi
       exit 0
     fi
 
