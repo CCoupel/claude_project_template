@@ -8,7 +8,46 @@ $ARGUMENTS
 
 ## Instructions
 
-### Etape 1 — Lecture de la memoire projet
+### Etape 1 — Verification des mises a jour du template
+
+**Premiere action, avant tout le reste.**
+
+Si `TEMPLATE_claude/.template-source.json` existe :
+
+```bash
+TEMPLATE_REPO=$(cat TEMPLATE_claude/.template-source.json | jq -r '.repo')
+TEMPLATE_BRANCH=$(cat TEMPLATE_claude/.template-source.json | jq -r '.branch')
+KNOWN_COMMIT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.commit // ""')
+SYNCED_AT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.synced_at // ""')
+
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/$TEMPLATE_BRANCH --jq '.sha' 2>/dev/null || echo "")
+```
+
+| Resultat | Action |
+|----------|--------|
+| `LATEST_COMMIT` vide (pas de reseau / gh non auth) | Continuer silencieusement |
+| `LATEST_COMMIT` = `KNOWN_COMMIT` | Template a jour — continuer |
+| `LATEST_COMMIT` ≠ `KNOWN_COMMIT` | **Avertir et demander confirmation** |
+
+Si mise a jour disponible, afficher **avant de continuer** :
+
+```
+⚠️  Mise a jour du template disponible
+
+   Template  : $TEMPLATE_REPO
+   Sync local : $SYNCED_AT ($KNOWN_COMMIT)
+   Disponible : $LATEST_COMMIT
+
+   Il est recommande de synchroniser avant de demarrer la session.
+   Lancez /init-project (option d) pour mettre a jour commandes et agents.
+
+   Continuer quand meme ? [O/n]
+```
+
+- Si **non** → stopper ici, l'utilisateur lance `/init-project`
+- Si **oui** → continuer avec les etapes suivantes
+
+### Etape 2 — Lecture de la memoire projet
 
 Lire `.claude/memory/MEMORY.md` (source de verite unique).
 
@@ -18,7 +57,7 @@ Extraire :
 - Regles critiques du projet
 - Corrections de comportement a appliquer
 
-### Etape 2 — Creation de la TEAM
+### Etape 3 — Creation de la TEAM
 
 **Sans demander confirmation**, creer immediatement la team :
 
@@ -66,25 +105,6 @@ Tu fais partie de la team {TEAM_NAME} sur le projet {PROJECT_NAME}.
 Reste en mode IDLE et attends les ordres du CDP avant de commencer tout travail.
 ```
 
-### Etape 3 — Verification des mises a jour du template
-
-Si `TEMPLATE_claude/.template-source.json` existe, verifier si une mise a jour est disponible :
-
-```bash
-TEMPLATE_REPO=$(cat TEMPLATE_claude/.template-source.json | jq -r '.repo')
-TEMPLATE_BRANCH=$(cat TEMPLATE_claude/.template-source.json | jq -r '.branch')
-KNOWN_COMMIT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.commit // ""')
-SYNCED_AT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.synced_at // ""')
-
-LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/$TEMPLATE_BRANCH --jq '.sha' 2>/dev/null || echo "")
-```
-
-| Resultat | Action |
-|----------|--------|
-| `LATEST_COMMIT` vide (pas de reseau / gh non auth) | Ignorer silencieusement |
-| `LATEST_COMMIT` = `KNOWN_COMMIT` | Template a jour — ne rien afficher |
-| `LATEST_COMMIT` ≠ `KNOWN_COMMIT` | Stocker l'info pour l'afficher en etape 4 |
-
 ### Etape 4 — Etat du backlog GitHub
 
 Executer les deux requetes en parallele :
@@ -105,6 +125,8 @@ gh issue list --state open --limit 50 \
 ```
 
 ### Etape 5 — Confirmation a l'utilisateur
+
+
 
 ```markdown
 ## Session demarree — {PROJECT_NAME}
@@ -128,14 +150,6 @@ gh issue list --state open --limit 50 \
 | 35 | ... | refactor | — | - | 2026-01-05 |
 
 _(Si aucune issue ouverte : "Aucune issue ouverte.")_
-
----
-
-**⚠️ Mise a jour du template disponible** *(afficher uniquement si LATEST_COMMIT ≠ KNOWN_COMMIT)*
-```
-Template : $TEMPLATE_REPO — nouveau commit disponible depuis $SYNCED_AT
-Lancez /init-project (option d) pour synchroniser commandes et agents.
-```
 
 ---
 
