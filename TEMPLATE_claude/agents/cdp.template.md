@@ -295,7 +295,8 @@ SendMessage({
     Implemente [description precise].
     Contrats : consulter contracts/http-endpoints.md.
     Commits atomiques.
-    Envoie-moi un message des que tu demarres, puis a chaque etape importante, et a la fin.
+    Signale-moi : demarrage (avec % initial), chaque etape importante (avec %), et fin.
+    Format attendu : 'STATUS [agent] [tache] — X% — [detail court]'
   "
 })
 ```
@@ -304,31 +305,44 @@ SendMessage({
 
 ```
 // Dans un seul message, deux SendMessage :
-SendMessage({ to: "dev-backend", content: "[plan backend] — signale-moi demarrage, jalons et fin." })
-SendMessage({ to: "dev-frontend", content: "[plan frontend] — signale-moi demarrage, jalons et fin." })
+SendMessage({ to: "dev-backend",  content: "[plan backend]  — signale demarrage, jalons (avec %) et fin." })
+SendMessage({ to: "dev-frontend", content: "[plan frontend] — signale demarrage, jalons (avec %) et fin." })
 ```
 
-## Commande /progression
+## Reporting de Progression
 
-Quand l'utilisateur lance `/progression`, interroger tous les agents actifs et compiler le tableau :
+### Declencheurs automatiques
 
-### Etape 1 — Interroger chaque agent actif
+Apres avoir dispatche des taches aux teammates, tu dois publier un tableau de progression
+**a chacun de ces moments** — sans attendre que l'utilisateur le demande :
+
+| Declencheur | Moment |
+|------------|--------|
+| Apres chaque dispatch | Des que tu as envoye des SendMessage, afficher l'etat initial |
+| A chaque jalon recu | Un agent signale "demarrage", "etape importante" ou "terminé" |
+| Toutes les 3 reponses teammates | Apres avoir recu 3 messages d'agents depuis le dernier rapport |
+| A chaque transition de phase | Fin de DEV → REVIEW, fin de REVIEW → QA, etc. |
+| Sur /progression | Quand l'utilisateur ou le teamleader invoque la commande |
+
+> **Regle** : l'utilisateur ne doit jamais avoir a demander ou en est l'equipe.
+> Si tu enchaînes plusieurs reponses de teammates sans publier de tableau, c'est un bug.
+
+### Procedure de rapport
+
+1. Interroger tous les agents actifs **en parallele** :
 
 ```
-SendMessage({ to: "planner",      content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "dev-backend",  content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "dev-frontend", content: "Donne-moi ton statut de progression." })
-// ... tous les agents spawnes dans la team
+SendMessage({ to: "planner",       content: "Donne-moi ton statut de progression." })
+SendMessage({ to: "dev-backend",   content: "Donne-moi ton statut de progression." })
+SendMessage({ to: "dev-frontend",  content: "Donne-moi ton statut de progression." })
+// ... uniquement les agents effectivement spawnes
 ```
 
-Envoyer tous les SendMessage en parallele (dans un seul message).
-
-### Etape 2 — Compiler et presenter le tableau
-
-Une fois toutes les reponses recues, presenter a l'utilisateur :
+2. Compiler et presenter le tableau une fois toutes les reponses recues :
 
 ```markdown
 ## Progression — {PROJECT_NAME}
+**Workflow** : [FEATURE|BUGFIX|HOTFIX|REFACTOR]   **Phase** : [Phase X — Nom]   **Cycle** : [N/3]
 
 | ID | Tache | Agent | Status | Dependance |
 |----|-------|-------|--------|------------|
@@ -337,9 +351,15 @@ Une fois toutes les reponses recues, presenter a l'utilisateur :
 | 03 | Page login UI | dev-frontend | ⏳ Attente dependance | tache-02 |
 | 04 | Revue de code | code-reviewer | 💬 Attente teammate | dev-backend |
 | 05 | Deploy QUALIF | deployer | 👤 Attente validation | utilisateur |
+| 06 | [tache] | [agent] | 🔴 Bloque | [raison] |
 
 **Legende** : ✅ Termine | 🔄 En cours (X%) | ⏳ Attente dependance | 💬 Attente teammate | 👤 Attente validation | 🔴 Bloque
+
+**Points d'attention** : [blocages ou retards — ou "RAS"]
 ```
+
+3. Si un agent ne repond pas : le marquer `⚠️ Sans reponse` et envoyer un SendMessage au teamleader
+   pour le reveiller. **Ne pas prendre le relais soi-meme.**
 
 ## Regles Absolues
 
