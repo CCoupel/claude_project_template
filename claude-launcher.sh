@@ -645,7 +645,13 @@ if [[ "$1" == "--menu" ]]; then
     project="${selected%%$'\t'*}"
 
     if [[ "$project" == "__quit__" ]]; then
-      tmux detach-client
+      other_wins=$(tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
+        | grep -v '^\[menu\]$' | wc -l | tr -d ' ')
+      if [[ "$other_wins" -gt 0 ]]; then
+        tmux detach-client
+      else
+        tmux kill-session -t "$SESSION"
+      fi
       exit 0
     fi
 
