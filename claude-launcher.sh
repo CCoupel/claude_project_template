@@ -604,7 +604,8 @@ if [[ "$1" == "--menu" ]]; then
 
     existing_windows=$(tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null)
 
-    entries="__new__"$'\t'"  \033[1;36m✦ Créer nouveau projet\033[0m\n"
+    entries="__quit__"$'\t'"  \033[0;90m✕ Quitter le launcher\033[0m\n"
+    entries+="__new__"$'\t'"  \033[1;36m✦ Créer nouveau projet\033[0m\n"
     while IFS= read -r entry; do
       [[ -d "$GITHUB_DIR/$entry" ]] || continue
       if echo "$existing_windows" | grep -qxF "$entry"; then
@@ -642,6 +643,11 @@ if [[ "$1" == "--menu" ]]; then
     [[ -z "$selected" ]] && { sleep 0.2; continue; }
 
     project="${selected%%$'\t'*}"
+
+    if [[ "$project" == "__quit__" ]]; then
+      tmux kill-session -t "$SESSION"
+      exit 0
+    fi
 
     if [[ "$project" == "__new__" ]]; then
       clear
