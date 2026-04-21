@@ -11,7 +11,7 @@ Au demarrage, chaque agent :
 
 ```
 1. Lit ce fichier (TEAMMATES_PROTOCOL.md)
-2. Lit son propre fichier de spec (.claude/agents/<nom>.template.md)
+2. Lit son propre fichier de spec (.claude/agents/<nom>.md)
 3. Attend les instructions du CDP
 ```
 
@@ -157,7 +157,7 @@ SendMessage({
 ```
 [AGENT DEMARRE]
 → Lit TEAMMATES_PROTOCOL.md ✓
-→ Lit .claude/agents/[nom].template.md ✓
+→ Lit .claude/agents/[nom].md ✓
 → MODE IDLE — en attente d'un ordre du CDP
 
 [CDP envoie un ordre via SendMessage]

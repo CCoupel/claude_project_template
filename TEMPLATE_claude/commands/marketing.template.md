@@ -256,4 +256,4 @@ c) Regenerer la roadmap uniquement
 
 ## Agent
 
-Lance l'agent `marketing-release` defini dans `.claude/agents/marketing-release.template.md`
+Lance l'agent `marketing-release` defini dans `.claude/agents/marketing-release.md`

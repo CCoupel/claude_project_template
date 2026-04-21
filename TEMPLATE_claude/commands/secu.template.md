@@ -83,4 +83,4 @@ Le rapport inclut :
 
 ## Agent
 
-Lance l'agent `security` defini dans `.claude/agents/security.template.md`
+Lance l'agent `security` defini dans `.claude/agents/security.md`

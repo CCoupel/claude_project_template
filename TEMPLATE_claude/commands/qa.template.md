@@ -70,4 +70,4 @@ Le rapport QA inclut :
 
 ## Agent
 
-Lance l'agent `qa` defini dans `.claude/agents/qa.template.md`
+Lance l'agent `qa` defini dans `.claude/agents/qa.md`

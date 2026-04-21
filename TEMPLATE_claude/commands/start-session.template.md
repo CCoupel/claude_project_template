@@ -48,7 +48,7 @@ Extraire :
 **Prompt pour `cdp`** (team leader) :
 
 ```
-Lis .claude/agents/cdp.template.md et applique ces instructions pour toute la session.
+Lis .claude/agents/cdp.md et applique ces instructions pour toute la session.
 
 Tu es le Chef de Projet de {PROJECT_NAME} dans la team {TEAM_NAME}.
 Memoire projet : .claude/memory/MEMORY.md
@@ -59,25 +59,31 @@ Attends les instructions de l'utilisateur avant de demarrer un workflow.
 **Prompt pour tous les autres agents** :
 
 ```
-Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/[nom].template.md,
+Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/[nom].md,
 et applique ces instructions pour toute la session.
 
 Tu fais partie de la team {TEAM_NAME} sur le projet {PROJECT_NAME}.
 Reste en mode IDLE et attends les ordres du CDP avant de commencer tout travail.
 ```
 
-### Etape 3 — Lecture du milestone actif
+### Etape 3 — Etat du backlog GitHub
 
-Apres lecture de MEMORY.md, interroger l'API GitHub pour le milestone actif :
+Executer les deux requetes en parallele :
 
+**Milestone actif :**
 ```bash
 gh api repos/{owner}/{repo}/milestones \
   --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0] | {title, open_issues, closed_issues, due_on}'
 ```
-
 Calculer : `progress = closed_issues / (open_issues + closed_issues) * 100`
-
 Si aucun milestone actif → ne pas afficher le bloc milestone.
+
+**Issues ouvertes :**
+```bash
+gh issue list --state open --limit 50 \
+  --json number,title,labels,milestone,assignees,updatedAt \
+  --jq 'sort_by(.milestone.title, .number) | .[] | [.number, .title, ([.labels[].name] | join(",")), (.milestone.title // "—"), ([.assignees[].login] | join(",") | if . == "" then "-" else . end), .updatedAt[:10]] | @tsv'
+```
 
 ### Etape 4 — Confirmation a l'utilisateur
 
@@ -87,17 +93,30 @@ Si aucun milestone actif → ne pas afficher le bloc milestone.
 **Team** : {TEAM_NAME}
 **Version** : [lue depuis MEMORY.md]
 **Branche** : [lue depuis MEMORY.md]
+**Travail en cours** : [lu depuis MEMORY.md]
+
+---
 
 **Milestone actif** : <version>  ████████░░  <X>%  (<closed>/<total> issues)
 **Echeance** : <date ou "non definie">
+
+### Backlog — Issues ouvertes
+
+| # | Titre | Labels | Milestone | Assignee | Maj |
+|---|-------|--------|-----------|----------|-----|
+| 42 | ... | feature | v1.2.0 | - | 2026-01-10 |
+| 38 | ... | bug | v1.2.0 | @user | 2026-01-08 |
+| 35 | ... | refactor | — | - | 2026-01-05 |
+
+_(Si aucune issue ouverte : "Aucune issue ouverte.")_
+
+---
 
 **Agents actifs (IDLE)** :
 - cdp (Chef de Projet — interlocuteur principal)
 - planner / dev-backend / dev-frontend
 - code-reviewer / qa / security
 - doc-updater / deployer / infra / marketing
-
-**Travail en cours** : [lu depuis MEMORY.md]
 
 **Commandes disponibles** :
 - `/feature <description>` — Nouvelle feature complete

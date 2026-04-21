@@ -106,4 +106,4 @@ Le rapport inclut :
 
 ## Agent
 
-Lance l'agent `code-reviewer` defini dans `.claude/agents/code-reviewer.template.md`
+Lance l'agent `code-reviewer` defini dans `.claude/agents/code-reviewer.md`

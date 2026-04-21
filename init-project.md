@@ -68,8 +68,8 @@ puis deploiera les commandes et agents dans `.claude/`.
 | Categorie | Emplacement | Comportement |
 |-----------|-------------|--------------|
 | **TEMPLATE** | `TEMPLATE_claude/` (racine projet) | Fetche depuis GitHub, gitignore, jamais edite manuellement |
-| **COMMANDES** | `.claude/commands/` | Copies depuis `TEMPLATE_claude/commands/`, gitignore (sauf `init-project.md`) |
-| **AGENTS TEMPLATE** | `.claude/agents/*.template.md` + `.claude/agents/context/` | Copies depuis `TEMPLATE_claude/agents/`, gitignore |
+| **COMMANDES** | `.claude/commands/` | Depuis `TEMPLATE_claude/commands/*.template.md`, suffixe `.template` stripe — gitignore (sauf `init-project.md`) |
+| **AGENTS TEMPLATE** | `.claude/agents/*.md` + `.claude/agents/context/` | Depuis `TEMPLATE_claude/agents/*.template.md`, suffixe `.template` stripe — gitignore |
 | **PROJET** | `.claude/CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md` | Trackes dans git, jamais ecrases |
 
 ---
@@ -134,14 +134,26 @@ gh api repos/$TEMPLATE_REPO/git/trees/$TEMPLATE_BRANCH?recursive=1 \
 
 #### 4. Deployer dans .claude/
 
-```bash
-# Commandes (lues par Claude Code depuis .claude/commands/)
-mkdir -p .claude/commands
-cp -r TEMPLATE_claude/commands/. .claude/commands/
+Les fichiers source portent tous le suffixe `.template.md`. Le deploiement le stripe pour obtenir le nom final utilisable (`cdp.template.md` → `cdp.md`, `feature.template.md` → `feature.md`, etc.).
 
-# Agents template
-mkdir -p .claude/agents
-cp TEMPLATE_claude/agents/*.template.md .claude/agents/ 2>/dev/null || true
+```bash
+mkdir -p .claude/commands .claude/agents
+
+# Commandes : strip du suffixe .template
+for src in TEMPLATE_claude/commands/*.template.md; do
+  name=$(basename "$src" .template.md)
+  cp "$src" ".claude/commands/${name}.md"
+  echo "  ✓ .claude/commands/${name}.md"
+done
+
+# Agents : strip du suffixe .template
+for src in TEMPLATE_claude/agents/*.template.md; do
+  name=$(basename "$src" .template.md)
+  cp "$src" ".claude/agents/${name}.md"
+  echo "  ✓ .claude/agents/${name}.md"
+done
+
+# Contextes partagés (copiés tels quels)
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
 ```
 
@@ -207,7 +219,7 @@ Executer la procedure "Fetch du Template depuis GitHub" ci-dessus.
 ```bash
 git rm --cached -r .claude/commands/ 2>/dev/null || true
 git rm --cached -r .claude/agents/context/ 2>/dev/null || true
-git rm --cached .claude/agents/*.template.md 2>/dev/null || true
+git rm --cached .claude/agents/*.md 2>/dev/null || true
 git rm --cached -r .claude/templates/ 2>/dev/null || true
 git rm --cached .claude/.template-source.json 2>/dev/null || true
 git rm --cached .claude/INITIALIZATION.md 2>/dev/null || true
@@ -647,27 +659,138 @@ d) Synchroniser le template depuis GitHub
 e) Annuler
 ```
 
-### Option d : Synchronisation
+### Option d : Synchronisation avec diff et nettoyage
 
-Afficher le rapport avant action :
+#### Etape d1 — Fetcher le nouveau template depuis GitHub
+
+Executer la procedure "Fetch du Template depuis GitHub" pour mettre a jour `TEMPLATE_claude/`.
+
+#### Etape d2 — Calculer les noms deployes attendus
+
+```bash
+# Noms attendus pour les commandes (strip .template)
+EXPECTED_COMMANDS=$(for f in TEMPLATE_claude/commands/*.template.md; do
+  basename "$f" .template.md
+done)
+
+# Noms attendus pour les agents (strip .template), hors dev-*
+EXPECTED_AGENTS=$(for f in TEMPLATE_claude/agents/*.template.md; do
+  basename "$f" .template.md
+done)
+```
+
+#### Etape d3 — Comparer avec les fichiers deployes
+
+```bash
+# Commandes actuellement deployees (hors init-project.md)
+DEPLOYED_COMMANDS=$(ls .claude/commands/*.md 2>/dev/null \
+  | xargs -I{} basename {} .md \
+  | grep -v "^init-project$")
+
+# Agents deployes (hors dev-* qui sont des fichiers projet)
+DEPLOYED_AGENTS=$(ls .claude/agents/*.md 2>/dev/null \
+  | xargs -I{} basename {} .md \
+  | grep -v "^dev-")
+```
+
+Pour chaque fichier compare, determiner le statut :
+
+| Statut | Critere |
+|--------|---------|
+| `NOUVEAU` | Present dans EXPECTED, absent de DEPLOYED |
+| `MODIFIE` | Present dans les deux, contenu different |
+| `INCHANGE` | Present dans les deux, contenu identique |
+| `RELIQUAT` | Present dans DEPLOYED, absent de EXPECTED |
+
+#### Etape d4 — Presenter le rapport
 
 ```
 Synchronisation depuis github.com/<repo>
 
   Commit actuel  : abc1234  (synced: 2026-03-01)
-  Dernier commit : def5678  (2026-04-16) ← mise a jour disponible
+  Dernier commit : def5678  (2026-04-16)
 
-  NOUVEAUX : 1 fichier
-  MODIFIES : 2 fichiers
-  INCHANGES : 18 fichiers
+  Commandes :
+  [+] feature          ← nouveau
+  [~] bugfix           ← modifie
+  [=] backlog          ← inchange (x12...)
+  [!] old-command      ← RELIQUAT (absent du nouveau template)
 
-  [A] Tout appliquer   [B] Nouveaux uniquement   [C] Annuler
+  Agents :
+  [~] cdp              ← modifie
+  [=] code-reviewer    ← inchange (x7...)
+  [!] old-agent        ← RELIQUAT (absent du nouveau template)
+
+  Nouveaux   : N
+  Modifies   : N
+  Inchanges  : N
+  Reliquats  : N  ← a supprimer
+
+Actions :
+  [A] Tout appliquer (nouveaux + modifies) et supprimer les reliquats
+  [B] Appliquer uniquement les nouveaux et modifies (garder les reliquats)
+  [C] Annuler
 ```
 
-Apres application, re-deployer dans `.claude/` :
+#### Etape d5 — Appliquer selon le choix
+
+**Option A ou B — Deployer les fichiers nouveaux et modifies :**
 
 ```bash
-cp -r TEMPLATE_claude/commands/. .claude/commands/
-cp TEMPLATE_claude/agents/*.template.md .claude/agents/
+for src in TEMPLATE_claude/commands/*.template.md; do
+  name=$(basename "$src" .template.md)
+  # Ne pas ecraser si inchange
+  dest=".claude/commands/${name}.md"
+  if ! cmp -s "$src" "$dest" 2>/dev/null; then
+    cp "$src" "$dest"
+    echo "  ✓ ${name}.md mis a jour"
+  fi
+done
+
+for src in TEMPLATE_claude/agents/*.template.md; do
+  name=$(basename "$src" .template.md)
+  dest=".claude/agents/${name}.md"
+  if ! cmp -s "$src" "$dest" 2>/dev/null; then
+    cp "$src" "$dest"
+    echo "  ✓ agents/${name}.md mis a jour"
+  fi
+done
+
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
+```
+
+**Option A uniquement — Supprimer les reliquats :**
+
+```bash
+# Supprimer les commandes reliquats
+for name in $DEPLOYED_COMMANDS; do
+  if ! echo "$EXPECTED_COMMANDS" | grep -q "^${name}$"; then
+    rm ".claude/commands/${name}.md"
+    echo "  ✗ .claude/commands/${name}.md supprime (reliquat)"
+  fi
+done
+
+# Supprimer les agents reliquats
+for name in $DEPLOYED_AGENTS; do
+  if ! echo "$EXPECTED_AGENTS" | grep -q "^${name}$"; then
+    rm ".claude/agents/${name}.md"
+    echo "  ✗ .claude/agents/${name}.md supprime (reliquat)"
+  fi
+done
+```
+
+#### Etape d6 — Rapport final
+
+```
+Synchronisation terminee.
+
+  Commandes mises a jour : N
+  Agents mis a jour      : N
+  Reliquats supprimes    : N
+
+  Fichiers PROJET preserves (non touches) :
+    ✓ .claude/CLAUDE.md
+    ✓ .claude/project-config.json
+    ✓ .claude/memory/
+    ✓ .claude/agents/dev-*.md
 ```

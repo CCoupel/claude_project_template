@@ -87,4 +87,4 @@ En cas de probleme :
 
 ## Agent
 
-Lance l'agent `deploy` defini dans `.claude/agents/deploy.template.md`
+Lance l'agent `deploy` defini dans `.claude/agents/deploy.md`
