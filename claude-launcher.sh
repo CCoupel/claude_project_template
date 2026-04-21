@@ -68,6 +68,13 @@ case "${1:-}" in
   *) check_prerequisites ;;
 esac
 
+# --no-update : désactive l'auto-update GitHub pour cette exécution
+NO_AUTO_UPDATE=0
+if [[ "${1:-}" == "--no-update" ]]; then
+  NO_AUTO_UPDATE=1
+  shift
+fi
+
 SESSION="claude-hub"
 TEMPLATE_REPO="CCoupel/claude_project_template"
 TEMPLATE_BRANCH="main"
@@ -744,8 +751,8 @@ style_project_window() {
 # ════════════════════════════════════════════════════════════════════════════
 SCRIPT_PATH="$(realpath "$0")"
 
-# Auto-update silencieux au lancement
-auto_update
+# Auto-update silencieux au lancement (sauf si --no-update)
+[[ "$NO_AUTO_UPDATE" == "0" ]] && auto_update
 
 # Premier lancement : créer la config par défaut si absente
 if [[ ! -f "$CONFIG_FILE" ]]; then
