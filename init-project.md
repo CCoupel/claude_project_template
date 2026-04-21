@@ -34,6 +34,9 @@ Initialisation interactive du projet pour configurer l'environnement Claude Code
 [GENERATION] --> project-config.json + agents dev-*
     |
     v
+[PLACEHOLDERS] --> Substituer {VAR} dans commandes et agents deployes
+    |
+    v
 [FINALISATION] --> CLAUDE.md + .gitignore + CI/CD workflow
 ```
 
@@ -542,6 +545,9 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ```json
 {
   "name": "<PROJECT_NAME>",
+  "team_name": "<PROJECT_NAME>-team",
+  "org": "<GITHUB_ORG>",
+  "project": "<REPO_NAME>",
   "description": "<DESCRIPTION>",
   "version": "0.1.0",
   "initialized_at": "<TIMESTAMP>",
@@ -564,9 +570,29 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
   },
   "security": {
     "concerns": ["auth", "api-public"]
+  },
+  "commands": {
+    "build": "<BUILD_CMD>",
+    "test": "<TEST_CMD>",
+    "lint": "<LINT_CMD>",
+    "audit": "<AUDIT_CMD>",
+    "typecheck": "<TYPECHECK_CMD>"
   }
 }
 ```
+
+Valeurs a deriver si elles ne sont pas fournies explicitement :
+
+| Champ | Derivation |
+|-------|-----------|
+| `team_name` | `<PROJECT_NAME>-team` (minuscules, tirets) |
+| `org` | `git remote get-url origin` → extraire l'organisation GitHub |
+| `project` | `git remote get-url origin` → extraire le nom du repo (sans `.git`) |
+| `commands.build` | Stack backend : `go build ./...` / `npm run build` / `python -m build` |
+| `commands.test` | Stack : `go test ./...` / `npm test` / `pytest` |
+| `commands.lint` | Stack : `golangci-lint run` / `npm run lint` / `ruff check .` |
+| `commands.audit` | Stack : `govulncheck ./...` / `npm audit` / `pip-audit` |
+| `commands.typecheck` | Frontend TS : `npm run typecheck` / `tsc --noEmit` — vide sinon |
 
 ### 2. Agents dev-*
 
@@ -602,7 +628,48 @@ et remplacer les placeholders :
 | `{NODE_VERSION}` | `20` |
 | `{MIN_BINARY_SIZE}` | `5242880` |
 
-### 4. Finalisation
+### 4. Application des placeholders dans les commandes et agents deployes
+
+A executer **apres** la creation de `project-config.json`.
+
+Lire les valeurs :
+
+```bash
+PROJECT_NAME=$(jq -r '.name'                         .claude/project-config.json)
+TEAM_NAME=$(jq -r '.team_name'                       .claude/project-config.json)
+ORG=$(jq -r '.org'                                   .claude/project-config.json)
+PROJECT=$(jq -r '.project'                           .claude/project-config.json)
+BUILD_CMD=$(jq -r '.commands.build     // ""'        .claude/project-config.json)
+TEST_CMD=$(jq -r '.commands.test      // ""'         .claude/project-config.json)
+LINT_CMD=$(jq -r '.commands.lint      // ""'         .claude/project-config.json)
+AUDIT_CMD=$(jq -r '.commands.audit    // ""'         .claude/project-config.json)
+TYPECHECK_CMD=$(jq -r '.commands.typecheck // ""'    .claude/project-config.json)
+```
+
+Appliquer la substitution sur les fichiers deployes (commandes + agents generiques) :
+
+```bash
+for f in .claude/commands/*.md .claude/agents/*.md; do
+  name=$(basename "$f")
+  # Ne pas toucher aux fichiers projet
+  [[ "$name" == "init-project.md" ]] && continue
+  [[ "$name" =~ ^dev- ]]             && continue
+  sed -i \
+    -e "s|{PROJECT_NAME}|${PROJECT_NAME}|g" \
+    -e "s|{TEAM_NAME}|${TEAM_NAME}|g"       \
+    -e "s|{ORG}|${ORG}|g"                   \
+    -e "s|{PROJECT}|${PROJECT}|g"            \
+    -e "s|{BUILD_CMD}|${BUILD_CMD}|g"        \
+    -e "s|{TEST_CMD}|${TEST_CMD}|g"          \
+    -e "s|{LINT_CMD}|${LINT_CMD}|g"          \
+    -e "s|{AUDIT_CMD}|${AUDIT_CMD}|g"        \
+    -e "s|{TYPECHECK_CMD}|${TYPECHECK_CMD}|g" \
+    "$f"
+  echo "  ✓ placeholders appliques dans $name"
+done
+```
+
+### 5. Finalisation
 
 ```bash
 # CLAUDE.md depuis le template
@@ -758,6 +825,11 @@ done
 
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
 ```
+
+**Apres le deploiement (A ou B) — Appliquer les placeholders :**
+
+Executer la procedure "Application des placeholders" (section 4 ci-dessus)
+en lisant les valeurs depuis `.claude/project-config.json` existant.
 
 **Option A uniquement — Supprimer les reliquats :**
 
