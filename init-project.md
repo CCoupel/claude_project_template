@@ -137,26 +137,37 @@ gh api repos/$TEMPLATE_REPO/git/trees/$TEMPLATE_BRANCH?recursive=1 \
 
 #### 4. Deployer dans .claude/
 
-Les fichiers source portent tous le suffixe `.template.md`. Le deploiement le stripe pour obtenir le nom final utilisable (`cdp.template.md` → `cdp.md`, `feature.template.md` → `feature.md`, etc.).
+> **REGLE ABSOLUE — RENOMMAGE OBLIGATOIRE**
+>
+> Les fichiers source ont tous le suffixe `.template.md`.
+> La destination **NE DOIT JAMAIS** contenir `.template` dans le nom.
+> Supprimer systematiquement `.template` avant d'ecrire la destination.
+>
+> | Source (TEMPLATE_claude/) | Destination (.claude/) |
+> |---------------------------|------------------------|
+> | `commands/feature.template.md` | `commands/feature.md` ✅ — PAS `feature.template.md` ❌ |
+> | `commands/end-session.template.md` | `commands/end-session.md` ✅ |
+> | `agents/cdp.template.md` | `agents/cdp.md` ✅ — PAS `cdp.template.md` ❌ |
+> | `agents/qa.template.md` | `agents/qa.md` ✅ |
 
 ```bash
 mkdir -p .claude/commands .claude/agents
 
-# Commandes : strip du suffixe .template
+# Commandes : le nom de destination = basename SANS .template.md + .md
 for src in TEMPLATE_claude/commands/*.template.md; do
-  name=$(basename "$src" .template.md)
-  cp "$src" ".claude/commands/${name}.md"
+  name=$(basename "$src" .template.md)   # "feature.template.md" → "feature"
+  cp "$src" ".claude/commands/${name}.md"  # destination : "feature.md" (sans .template)
   echo "  ✓ .claude/commands/${name}.md"
 done
 
-# Agents : strip du suffixe .template
+# Agents : meme logique
 for src in TEMPLATE_claude/agents/*.template.md; do
-  name=$(basename "$src" .template.md)
-  cp "$src" ".claude/agents/${name}.md"
+  name=$(basename "$src" .template.md)   # "cdp.template.md" → "cdp"
+  cp "$src" ".claude/agents/${name}.md"    # destination : "cdp.md" (sans .template)
   echo "  ✓ .claude/agents/${name}.md"
 done
 
-# Contextes partagés (copiés tels quels)
+# Contextes partagés (copiés tels quels, pas de renommage)
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
 ```
 
@@ -803,11 +814,13 @@ Actions :
 
 **Option A ou B — Deployer les fichiers nouveaux et modifies :**
 
+> **REGLE ABSOLUE** : la destination est toujours `<nom>.md` — jamais `<nom>.template.md`.
+> `basename "cdp.template.md" .template.md` → `cdp` → destination `cdp.md`.
+
 ```bash
 for src in TEMPLATE_claude/commands/*.template.md; do
-  name=$(basename "$src" .template.md)
-  # Ne pas ecraser si inchange
-  dest=".claude/commands/${name}.md"
+  name=$(basename "$src" .template.md)   # strip .template → "feature" pas "feature.template"
+  dest=".claude/commands/${name}.md"     # destination sans .template
   if ! cmp -s "$src" "$dest" 2>/dev/null; then
     cp "$src" "$dest"
     echo "  ✓ ${name}.md mis a jour"
@@ -815,8 +828,8 @@ for src in TEMPLATE_claude/commands/*.template.md; do
 done
 
 for src in TEMPLATE_claude/agents/*.template.md; do
-  name=$(basename "$src" .template.md)
-  dest=".claude/agents/${name}.md"
+  name=$(basename "$src" .template.md)   # strip .template → "cdp" pas "cdp.template"
+  dest=".claude/agents/${name}.md"       # destination sans .template
   if ! cmp -s "$src" "$dest" 2>/dev/null; then
     cp "$src" "$dest"
     echo "  ✓ agents/${name}.md mis a jour"
