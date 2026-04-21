@@ -731,6 +731,19 @@ e) Annuler
 
 Executer la procedure "Fetch du Template depuis GitHub" pour mettre a jour `TEMPLATE_claude/`.
 
+#### Etape d1b — Migration : renommer les fichiers legacy *.template.md
+
+Avant tout calcul, renommer tous les fichiers `*.template.md` residuels
+dans `.claude/commands/` et `.claude/agents/` (deployes avant la v2.4.0).
+
+```bash
+for f in .claude/commands/*.template.md .claude/agents/*.template.md; do
+  [[ -f "$f" ]] || continue
+  mv "$f" "${f/.template.md/.md}"
+  echo "  ✓ migration : $(basename $f) → $(basename ${f/.template.md/.md})"
+done
+```
+
 #### Etape d2 — Calculer les noms deployes attendus
 
 ```bash
