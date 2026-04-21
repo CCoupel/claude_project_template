@@ -697,6 +697,37 @@ claude ${CLAUDE_OPTIONS}" \
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
+# FONCTION : setup_tmux_style SESSION
+# Configure la status bar et les styles de fenêtres :
+#   [menu]           → orange, italique
+#   projet inactif   → gris discret
+#   fenêtre active   → blanc gras sur fond bleu, bien visible
+# ════════════════════════════════════════════════════════════════════════════
+setup_tmux_style() {
+  local s="$1"
+
+  # ── Status bar ──────────────────────────────────────────────────────────
+  tmux set-option -t "$s" status on
+  tmux set-option -t "$s" status-position top
+  tmux set-option -t "$s" status-style        "bg=colour235,fg=colour250"
+  tmux set-option -t "$s" status-left         "#[fg=colour81,bold] ❯ Claude Hub #[fg=colour240,nobold]│ "
+  tmux set-option -t "$s" status-left-length  25
+  tmux set-option -t "$s" status-right        "#[fg=colour240] %H:%M "
+  tmux set-option -t "$s" status-right-length 10
+  tmux set-option -t "$s" window-status-separator "  "
+
+  # ── Fenêtre inactive ────────────────────────────────────────────────────
+  # [menu] → orange italique  |  projet → gris
+  tmux set-option -t "$s" window-status-format \
+    "#{?#{==:#{window_name},[menu]},#[fg=colour214,italics] ☰ menu ,#[fg=colour242] #W }"
+
+  # ── Fenêtre active ──────────────────────────────────────────────────────
+  # [menu] → orange gras sur fond sombre  |  projet → blanc gras sur bleu
+  tmux set-option -t "$s" window-status-current-format \
+    "#{?#{==:#{window_name},[menu]},#[bold,fg=colour214,bg=colour236,italics] ☰ menu ,#[bold,fg=colour255,bg=colour24] ◆ #W }"
+}
+
+# ════════════════════════════════════════════════════════════════════════════
 # POINT D'ENTRÉE PRINCIPAL
 # ════════════════════════════════════════════════════════════════════════════
 SCRIPT_PATH="$(realpath "$0")"
@@ -722,6 +753,9 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
 fi
 
 tmux new-session -d -s "$SESSION" -n "[menu]"
+
+setup_tmux_style "$SESSION"
+
 tmux send-keys -t "$SESSION:[menu]" \
   "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
 
