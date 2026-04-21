@@ -709,23 +709,27 @@ setup_tmux_style() {
 
   # ── Status bar ──────────────────────────────────────────────────────────
   tmux set-option -t "$s" status on
-  tmux set-option -t "$s" status-position top
-  tmux set-option -t "$s" status-style        "bg=colour235,fg=colour250"
-  tmux set-option -t "$s" status-left         "#[fg=colour81,bold] ❯ Claude Hub #[fg=colour240,nobold]│ "
+  tmux set-option -t "$s" status-position bottom
+  tmux set-option -t "$s" status-style        "bg=colour234,fg=colour250"
+  tmux set-option -t "$s" status-left         "#[fg=colour81,bold] ❯ Claude Hub #[fg=colour240,nobold] │ "
   tmux set-option -t "$s" status-left-length  25
   tmux set-option -t "$s" status-right        "#[fg=colour240] %H:%M "
   tmux set-option -t "$s" status-right-length 10
   tmux set-option -t "$s" window-status-separator "  "
 
-  # ── Fenêtre inactive ────────────────────────────────────────────────────
-  # [menu] → orange italique  |  projet → gris
-  tmux set-option -t "$s" window-status-format \
-    "#{?#{==:#{window_name},[menu]},#[fg=colour214,italics] ☰ menu ,#[fg=colour242] #W }"
+  # ── Formats (sans styles inline — gérés par window-status-style) ────────
+  tmux set-option -t "$s" window-status-format         " #W "
+  tmux set-option -t "$s" window-status-current-format " ◆ #W "
 
-  # ── Fenêtre active ──────────────────────────────────────────────────────
-  # [menu] → orange gras sur fond sombre  |  projet → blanc gras sur bleu
-  tmux set-option -t "$s" window-status-current-format \
-    "#{?#{==:#{window_name},[menu]},#[bold,fg=colour214,bg=colour236,italics] ☰ menu ,#[bold,fg=colour255,bg=colour24] ◆ #W }"
+  # ── Styles session (projets) ─────────────────────────────────────────────
+  # inactif → gris discret  |  actif → blanc gras sur bleu
+  tmux set-option -t "$s" window-status-style         "fg=colour242,bg=colour234"
+  tmux set-option -t "$s" window-status-current-style "bold,fg=colour255,bg=colour24"
+
+  # ── Style spécifique au window [menu] ───────────────────────────────────
+  # inactif → orange italique  |  actif → orange gras sur bordeaux
+  tmux set-window-option -t "$s:[menu]" window-status-style         "fg=colour214,italics,bg=colour234"
+  tmux set-window-option -t "$s:[menu]" window-status-current-style "bold,fg=colour214,bg=colour52,italics"
 }
 
 # ════════════════════════════════════════════════════════════════════════════
