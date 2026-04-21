@@ -360,11 +360,11 @@ Les placeholders `{{...}}` sont remplaces avec les vraies valeurs :
 
 ### 4. Commandes personnalisees
 
-Les fichiers `.template.md` sont copies vers leurs versions finales :
+Les fichiers sont copies directement depuis `TEMPLATE_claude/` vers `.claude/` :
 
 ```
-commands/feature.template.md → commands/feature.md
-commands/bugfix.template.md → commands/bugfix.md
+commands/feature.md → .claude/commands/feature.md
+agents/cdp.md       → .claude/agents/cdp.md
 ...
 ```
 

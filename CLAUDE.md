@@ -79,8 +79,8 @@ Projet cible
 ### Modifier une commande ou un agent
 
 Les fichiers dans `TEMPLATE_claude/commands/` et `TEMPLATE_claude/agents/` sont des templates.
-Les noms `.template.md` signalent qu'ils contiennent des placeholders `{VARIABLE}` remplacés à l'init.
-Les fichiers sans `.template` (ex: `backlog.md`, `milestone.md`) sont copiés tels quels.
+Les fichiers dans ces dossiers sont des templates (placeholders `{VARIABLE}` remplacés à l'init).
+Ils sont copiés tels quels dans `.claude/` — le dossier `TEMPLATE_claude/` suffit à les identifier comme templates.
 
 ### Ajouter un template de stack
 

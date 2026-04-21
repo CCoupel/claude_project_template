@@ -83,7 +83,7 @@ init-project.md          ──┐
 CLAUDE.md                  │     .claude/
 TEMPLATE_claude/           │     ├── commands/         ← copié depuis TEMPLATE_claude/
 ├── commands/              │     ├── agents/
-│   └── context/           │     │   ├── *.template.md ← copié depuis TEMPLATE_claude/
+│   └── context/           │     │   ├── *.md          ← copié depuis TEMPLATE_claude/
 ├── agents/                │     │   ├── context/      ← copié depuis TEMPLATE_claude/
 │   └── context/           │     │   └── dev-*.md      ← généré (tracké git)
 ├── templates/             └──►  ├── CLAUDE.md         ← généré (tracké git)
@@ -100,7 +100,7 @@ TEMPLATE_claude/           │     ├── commands/         ← copié depuis
 |---------|----------------------|----------|
 | `TEMPLATE_claude/` | Source template | Non (gitignore) |
 | `.claude/commands/` | Commandes slash | Non (gitignore, sauf `init-project.md`) |
-| `.claude/agents/*.template.md` | Agents génériques | Non (gitignore) |
+| `.claude/agents/*.md` | Agents génériques | Non (gitignore) |
 | `.claude/agents/dev-*.md` | Agents projet | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
 
@@ -122,18 +122,18 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 ├── commands/                    # Commandes slash
 │   ├── start-session.md
 │   ├── end-session.md
-│   ├── feature.template.md
-│   ├── bugfix.template.md
-│   ├── hotfix.template.md
-│   ├── refactor.template.md
-│   ├── review.template.md
-│   ├── qa.template.md
+│   ├── feature.md
+│   ├── bugfix.md
+│   ├── hotfix.md
+│   ├── refactor.md
+│   ├── review.md
+│   ├── qa.md
 │   ├── secu.md
-│   ├── deploy.template.md
+│   ├── deploy.md
 │   ├── backlog.md
 │   ├── milestone.md
 │   ├── progression.md
-│   ├── marketing.template.md
+│   ├── marketing.md
 │   └── context/
 │       ├── COMMON.md
 │       ├── CDP_WORKFLOWS.md
@@ -142,16 +142,16 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │       └── GITHUB.md
 │
 ├── agents/                      # Agents spécialisés
-│   ├── cdp.template.md
-│   ├── implementation-planner.template.md
-│   ├── code-reviewer.template.md
-│   ├── qa.template.md
-│   ├── security.template.md
-│   ├── doc-updater.template.md
-│   ├── deploy.template.md
-│   ├── infra.template.md
-│   ├── pr-reviewer.template.md
-│   ├── marketing-release.template.md
+│   ├── cdp.md
+│   ├── implementation-planner.md
+│   ├── code-reviewer.md
+│   ├── qa.md
+│   ├── security.md
+│   ├── doc-updater.md
+│   ├── deploy.md
+│   ├── infra.md
+│   ├── pr-reviewer.md
+│   ├── marketing-release.md
 │   └── context/
 │       ├── COMMON.md
 │       ├── DEV_COMMON.md

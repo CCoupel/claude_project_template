@@ -71,8 +71,8 @@ puis deploiera les commandes et agents dans `.claude/`.
 | Categorie | Emplacement | Comportement |
 |-----------|-------------|--------------|
 | **TEMPLATE** | `TEMPLATE_claude/` (racine projet) | Fetche depuis GitHub, gitignore, jamais edite manuellement |
-| **COMMANDES** | `.claude/commands/` | Depuis `TEMPLATE_claude/commands/*.template.md`, suffixe `.template` stripe — gitignore (sauf `init-project.md`) |
-| **AGENTS TEMPLATE** | `.claude/agents/*.md` + `.claude/agents/context/` | Depuis `TEMPLATE_claude/agents/*.template.md`, suffixe `.template` stripe — gitignore |
+| **COMMANDES** | `.claude/commands/` | Depuis `TEMPLATE_claude/commands/*.md`, copie directe — gitignore (sauf `init-project.md`) |
+| **AGENTS TEMPLATE** | `.claude/agents/*.md` + `.claude/agents/context/` | Depuis `TEMPLATE_claude/agents/*.md`, copie directe — gitignore |
 | **PROJET** | `.claude/CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md` | Trackes dans git, jamais ecrases |
 
 ---
@@ -137,37 +137,25 @@ gh api repos/$TEMPLATE_REPO/git/trees/$TEMPLATE_BRANCH?recursive=1 \
 
 #### 4. Deployer dans .claude/
 
-> **REGLE ABSOLUE — RENOMMAGE OBLIGATOIRE**
->
-> Les fichiers source ont tous le suffixe `.template.md`.
-> La destination **NE DOIT JAMAIS** contenir `.template` dans le nom.
-> Supprimer systematiquement `.template` avant d'ecrire la destination.
->
-> | Source (TEMPLATE_claude/) | Destination (.claude/) |
-> |---------------------------|------------------------|
-> | `commands/feature.template.md` | `commands/feature.md` ✅ — PAS `feature.template.md` ❌ |
-> | `commands/end-session.template.md` | `commands/end-session.md` ✅ |
-> | `agents/cdp.template.md` | `agents/cdp.md` ✅ — PAS `cdp.template.md` ❌ |
-> | `agents/qa.template.md` | `agents/qa.md` ✅ |
+Les fichiers source sont nommés directement `feature.md`, `cdp.md`, etc.
+La copie est directe — aucun renommage nécessaire.
 
 ```bash
 mkdir -p .claude/commands .claude/agents
 
-# Commandes : le nom de destination = basename SANS .template.md + .md
-for src in TEMPLATE_claude/commands/*.template.md; do
-  name=$(basename "$src" .template.md)   # "feature.template.md" → "feature"
-  cp "$src" ".claude/commands/${name}.md"  # destination : "feature.md" (sans .template)
-  echo "  ✓ .claude/commands/${name}.md"
+# Commandes : copie directe
+for src in TEMPLATE_claude/commands/*.md; do
+  cp "$src" ".claude/commands/$(basename $src)"
+  echo "  ✓ .claude/commands/$(basename $src)"
 done
 
-# Agents : meme logique
-for src in TEMPLATE_claude/agents/*.template.md; do
-  name=$(basename "$src" .template.md)   # "cdp.template.md" → "cdp"
-  cp "$src" ".claude/agents/${name}.md"    # destination : "cdp.md" (sans .template)
-  echo "  ✓ .claude/agents/${name}.md"
+# Agents : copie directe
+for src in TEMPLATE_claude/agents/*.md; do
+  cp "$src" ".claude/agents/$(basename $src)"
+  echo "  ✓ .claude/agents/$(basename $src)"
 done
 
-# Contextes partagés (copiés tels quels, pas de renommage)
+# Contextes partagés
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
 ```
 
@@ -747,13 +735,13 @@ Executer la procedure "Fetch du Template depuis GitHub" pour mettre a jour `TEMP
 
 ```bash
 # Noms attendus pour les commandes (strip .template)
-EXPECTED_COMMANDS=$(for f in TEMPLATE_claude/commands/*.template.md; do
-  basename "$f" .template.md
+EXPECTED_COMMANDS=$(for f in TEMPLATE_claude/commands/*.md; do
+  basename "$f" .md
 done)
 
-# Noms attendus pour les agents (strip .template), hors dev-*
-EXPECTED_AGENTS=$(for f in TEMPLATE_claude/agents/*.template.md; do
-  basename "$f" .template.md
+# Noms attendus pour les agents, hors dev-*
+EXPECTED_AGENTS=$(for f in TEMPLATE_claude/agents/*.md; do
+  basename "$f" .md
 done)
 ```
 
@@ -814,45 +802,24 @@ Actions :
 
 **Option A ou B — Deployer les fichiers nouveaux et modifies :**
 
-> **REGLE ABSOLUE** : la destination est toujours `<nom>.md` — jamais `<nom>.template.md`.
-> `basename "cdp.template.md" .template.md` → `cdp` → destination `cdp.md`.
-
 ```bash
-for src in TEMPLATE_claude/commands/*.template.md; do
-  name=$(basename "$src" .template.md)   # strip .template → "feature" pas "feature.template"
-  dest=".claude/commands/${name}.md"     # destination sans .template
+for src in TEMPLATE_claude/commands/*.md; do
+  dest=".claude/commands/$(basename $src)"
   if ! cmp -s "$src" "$dest" 2>/dev/null; then
     cp "$src" "$dest"
-    echo "  ✓ ${name}.md mis a jour"
+    echo "  ✓ $(basename $src) mis a jour"
   fi
 done
 
-for src in TEMPLATE_claude/agents/*.template.md; do
-  name=$(basename "$src" .template.md)   # strip .template → "cdp" pas "cdp.template"
-  dest=".claude/agents/${name}.md"       # destination sans .template
+for src in TEMPLATE_claude/agents/*.md; do
+  dest=".claude/agents/$(basename $src)"
   if ! cmp -s "$src" "$dest" 2>/dev/null; then
     cp "$src" "$dest"
-    echo "  ✓ agents/${name}.md mis a jour"
+    echo "  ✓ agents/$(basename $src) mis a jour"
   fi
 done
 
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
-```
-
-**Etape systematique — Corriger TOUS les fichiers mal nommes (independamment du choix A/B) :**
-
-Apres tout deploiement, scanner l'integralite de `.claude/commands/` et `.claude/agents/`
-et renommer **tous** les fichiers qui contiennent encore `.template` dans leur nom,
-qu'ils viennent d'etre deployes ou qu'ils soient la depuis une session precedente.
-
-```bash
-# Scanner TOUS les fichiers de .claude/commands/ et .claude/agents/
-for f in .claude/commands/*.template.md .claude/agents/*.template.md; do
-  [[ -f "$f" ]] || continue
-  dest="${f/.template.md/.md}"   # "feature.template.md" → "feature.md"
-  mv "$f" "$dest"
-  echo "  ✓ renomme : $(basename $f) → $(basename $dest)"
-done
 ```
 
 **Etape systematique — Appliquer les placeholders sur TOUS les fichiers deployes :**
