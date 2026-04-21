@@ -749,6 +749,7 @@ fi
 
 # Si on arrive ici sans argument reconnu et que la session existe → attach
 if tmux has-session -t "$SESSION" 2>/dev/null; then
+  setup_tmux_style "$SESSION"
   exec tmux attach-session -t "$SESSION"
 fi
 
