@@ -34,6 +34,9 @@ verification de l'etat du projet.
 [GIT] --> S'assurer que tout est commite/pousse
     |
     v
+[TEAM] --> Dissoudre la team (TeamDelete)
+    |
+    v
 [RAPPORT] --> Rapport de session
 ```
 
@@ -88,7 +91,17 @@ git stash list
 Si des changements non commites existent :
 - Demander confirmation : commiter, stasher, ou laisser ?
 
-### 5. RAPPORT — Rapport de Session
+### 5. TEAM — Dissolution de la Team
+
+Si une team est active (verifier dans CLAUDE.md la valeur de `{TEAM_NAME}`) :
+
+1. Envoyer un message de cloture a chaque agent via **SendMessage** :
+   > "Session terminee. Merci pour la session. En attente de la prochaine."
+2. Appeler **TeamDelete** avec le nom `{TEAM_NAME}` pour dissoudre la team
+
+Si aucune team n'est active, passer cette etape.
+
+### 6. RAPPORT — Rapport de Session
 
 ```markdown
 ## Rapport de Session — <date>
@@ -126,6 +139,7 @@ Si des changements non commites existent :
 [DOC] CHANGELOG.md : a jour ✅
 [MEMOIRE] MEMORY.md mis a jour ✅
 [GIT] Tout est pousse sur origin/feature/auth ✅
+[TEAM] TeamDelete my-project-team ✅
 
 --- Rapport de Session ---
 Branche : feature/auth
