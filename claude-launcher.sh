@@ -630,7 +630,7 @@ if [[ "$1" == "--menu" ]]; then
       --preview "bash -c '$preview_script' -- {}" \
       --color 'hl:#5DCAA5,hl+:#1D9E75' \
       --bind 'esc:abort' \
-      --bind 'click:accept')
+      --bind 'left-click:accept')
 
     [[ -z "$selected" ]] && { sleep 0.2; continue; }
 
