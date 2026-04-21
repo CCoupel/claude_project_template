@@ -66,7 +66,26 @@ Tu fais partie de la team {TEAM_NAME} sur le projet {PROJECT_NAME}.
 Reste en mode IDLE et attends les ordres du CDP avant de commencer tout travail.
 ```
 
-### Etape 3 — Etat du backlog GitHub
+### Etape 3 — Verification des mises a jour du template
+
+Si `TEMPLATE_claude/.template-source.json` existe, verifier si une mise a jour est disponible :
+
+```bash
+TEMPLATE_REPO=$(cat TEMPLATE_claude/.template-source.json | jq -r '.repo')
+TEMPLATE_BRANCH=$(cat TEMPLATE_claude/.template-source.json | jq -r '.branch')
+KNOWN_COMMIT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.commit // ""')
+SYNCED_AT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.synced_at // ""')
+
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/$TEMPLATE_BRANCH --jq '.sha' 2>/dev/null || echo "")
+```
+
+| Resultat | Action |
+|----------|--------|
+| `LATEST_COMMIT` vide (pas de reseau / gh non auth) | Ignorer silencieusement |
+| `LATEST_COMMIT` = `KNOWN_COMMIT` | Template a jour — ne rien afficher |
+| `LATEST_COMMIT` ≠ `KNOWN_COMMIT` | Stocker l'info pour l'afficher en etape 4 |
+
+### Etape 4 — Etat du backlog GitHub
 
 Executer les deux requetes en parallele :
 
@@ -85,7 +104,7 @@ gh issue list --state open --limit 50 \
   --jq 'sort_by(.milestone.title, .number) | .[] | [.number, .title, ([.labels[].name] | join(",")), (.milestone.title // "—"), ([.assignees[].login] | join(",") | if . == "" then "-" else . end), .updatedAt[:10]] | @tsv'
 ```
 
-### Etape 4 — Confirmation a l'utilisateur
+### Etape 5 — Confirmation a l'utilisateur
 
 ```markdown
 ## Session demarree — {PROJECT_NAME}
@@ -109,6 +128,14 @@ gh issue list --state open --limit 50 \
 | 35 | ... | refactor | — | - | 2026-01-05 |
 
 _(Si aucune issue ouverte : "Aucune issue ouverte.")_
+
+---
+
+**⚠️ Mise a jour du template disponible** *(afficher uniquement si LATEST_COMMIT ≠ KNOWN_COMMIT)*
+```
+Template : $TEMPLATE_REPO — nouveau commit disponible depuis $SYNCED_AT
+Lancez /init-project (option d) pour synchroniser commandes et agents.
+```
 
 ---
 
