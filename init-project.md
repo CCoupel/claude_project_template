@@ -839,32 +839,26 @@ done
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
 ```
 
-**Apres le deploiement (A ou B) — Corriger les fichiers mal nommes :**
+**Etape systematique — Corriger TOUS les fichiers mal nommes (independamment du choix A/B) :**
 
-Verifier et corriger tout fichier deploye dans `.claude/commands/` et `.claude/agents/`
-qui contiendrait encore `.template` dans son nom (reliquat d'un deploiement incorrect).
+Apres tout deploiement, scanner l'integralite de `.claude/commands/` et `.claude/agents/`
+et renommer **tous** les fichiers qui contiennent encore `.template` dans leur nom,
+qu'ils viennent d'etre deployes ou qu'ils soient la depuis une session precedente.
 
 ```bash
-# Renommer les fichiers .template.md residuels dans .claude/commands/
-for f in .claude/commands/*.template.md; do
+# Scanner TOUS les fichiers de .claude/commands/ et .claude/agents/
+for f in .claude/commands/*.template.md .claude/agents/*.template.md; do
   [[ -f "$f" ]] || continue
   dest="${f/.template.md/.md}"   # "feature.template.md" → "feature.md"
   mv "$f" "$dest"
   echo "  ✓ renomme : $(basename $f) → $(basename $dest)"
 done
-
-# Renommer les fichiers .template.md residuels dans .claude/agents/
-for f in .claude/agents/*.template.md; do
-  [[ -f "$f" ]] || continue
-  dest="${f/.template.md/.md}"   # "cdp.template.md" → "cdp.md"
-  mv "$f" "$dest"
-  echo "  ✓ renomme : $(basename $f) → $(basename $dest)"
-done
 ```
 
-**Apres le deploiement (A ou B) — Appliquer les placeholders :**
+**Etape systematique — Appliquer les placeholders sur TOUS les fichiers deployes :**
 
-Executer la procedure "Application des placeholders" (section 4 ci-dessus)
+Scanner l'integralite de `.claude/commands/` et `.claude/agents/` et appliquer
+la procedure "Application des placeholders" (section 4 ci-dessus) sur tous les fichiers,
 en lisant les valeurs depuis `.claude/project-config.json` existant.
 
 **Option A uniquement — Supprimer les reliquats :**
