@@ -584,6 +584,47 @@ if [[ "$1" == "--configure" ]]; then
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
+# FONCTION : setup_tmux_style SESSION
+# Configure la status bar et les styles de fenêtres :
+#   [menu]           → orange, italique
+#   projet inactif   → gris discret
+#   fenêtre active   → blanc gras sur fond bleu, bien visible
+# ════════════════════════════════════════════════════════════════════════════
+setup_tmux_style() {
+  local s="$1"
+
+  # ── Status bar ──────────────────────────────────────────────────────────
+  tmux set-option -t "$s" status on
+  tmux set-option -t "$s" status-position bottom
+  tmux set-option -t "$s" status-style        "bg=colour236,fg=colour250"
+  tmux set-option -t "$s" status-left         "#[fg=colour81,bold] ❯ Claude Hub #[fg=colour240,nobold] │ "
+  tmux set-option -t "$s" status-left-length  25
+  tmux set-option -t "$s" status-right        "#[fg=colour240] %H:%M "
+  tmux set-option -t "$s" status-right-length 10
+  tmux set-option -t "$s" window-status-separator "  "
+  tmux set-option -t "$s" window-status-format         " #W "
+  tmux set-option -t "$s" window-status-current-format " ◆ #W "
+
+  # ── Style [menu] ────────────────────────────────────────────────────────
+  # inactif → orange italique  |  actif → noir sur orange vif
+  tmux set-window-option -t "$s:[menu]" window-status-style         "fg=colour214,italics,bg=colour236"
+  tmux set-window-option -t "$s:[menu]" window-status-current-style "bold,fg=colour232,bg=colour208,italics"
+
+  # ── Style fenêtres projet existantes ────────────────────────────────────
+  # Appliqué explicitement sur chaque fenêtre (l'héritage session est instable)
+  tmux list-windows -t "$s" -F '#{window_name}' | grep -v '^\[menu\]$' | while read -r win; do
+    style_project_window "$s" "$win"
+  done
+}
+
+# Applique le style projet sur une fenêtre (inactif gris / actif blanc-bleu)
+style_project_window() {
+  local s="$1" win="$2"
+  tmux set-window-option -t "$s:$win" window-status-style         "fg=colour242,bg=colour236"
+  tmux set-window-option -t "$s:$win" window-status-current-style "bold,fg=colour255,bg=colour27"
+}
+
+# ════════════════════════════════════════════════════════════════════════════
 # MODE --menu  (boucle fzf dans le window [menu])
 # ════════════════════════════════════════════════════════════════════════════
 if [[ "$1" == "--menu" ]]; then
@@ -716,47 +757,6 @@ claude ${CLAUDE_OPTIONS}" \
   done
   exit 0
 fi
-
-# ════════════════════════════════════════════════════════════════════════════
-# FONCTION : setup_tmux_style SESSION
-# Configure la status bar et les styles de fenêtres :
-#   [menu]           → orange, italique
-#   projet inactif   → gris discret
-#   fenêtre active   → blanc gras sur fond bleu, bien visible
-# ════════════════════════════════════════════════════════════════════════════
-setup_tmux_style() {
-  local s="$1"
-
-  # ── Status bar ──────────────────────────────────────────────────────────
-  tmux set-option -t "$s" status on
-  tmux set-option -t "$s" status-position bottom
-  tmux set-option -t "$s" status-style        "bg=colour236,fg=colour250"
-  tmux set-option -t "$s" status-left         "#[fg=colour81,bold] ❯ Claude Hub #[fg=colour240,nobold] │ "
-  tmux set-option -t "$s" status-left-length  25
-  tmux set-option -t "$s" status-right        "#[fg=colour240] %H:%M "
-  tmux set-option -t "$s" status-right-length 10
-  tmux set-option -t "$s" window-status-separator "  "
-  tmux set-option -t "$s" window-status-format         " #W "
-  tmux set-option -t "$s" window-status-current-format " ◆ #W "
-
-  # ── Style [menu] ────────────────────────────────────────────────────────
-  # inactif → orange italique  |  actif → noir sur orange vif
-  tmux set-window-option -t "$s:[menu]" window-status-style         "fg=colour214,italics,bg=colour236"
-  tmux set-window-option -t "$s:[menu]" window-status-current-style "bold,fg=colour232,bg=colour208,italics"
-
-  # ── Style fenêtres projet existantes ────────────────────────────────────
-  # Appliqué explicitement sur chaque fenêtre (l'héritage session est instable)
-  tmux list-windows -t "$s" -F '#{window_name}' | grep -v '^\[menu\]$' | while read -r win; do
-    style_project_window "$s" "$win"
-  done
-}
-
-# Applique le style projet sur une fenêtre (inactif gris / actif blanc-bleu)
-style_project_window() {
-  local s="$1" win="$2"
-  tmux set-window-option -t "$s:$win" window-status-style         "fg=colour242,bg=colour236"
-  tmux set-window-option -t "$s:$win" window-status-current-style "bold,fg=colour255,bg=colour27"
-}
 
 # ════════════════════════════════════════════════════════════════════════════
 # POINT D'ENTRÉE PRINCIPAL
