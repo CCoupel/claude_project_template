@@ -189,7 +189,7 @@ SendMessage({ to: "qa", content: "
 " })
 ```
 
-- VALIDATED → Phase DOC
+- VALIDATED → Phase DOC (automatique, sans attendre l'utilisateur)
 - NOT VALIDATED → Retour Phase DEV (cycle++) — max 3 cycles
 - Si cycle > 3 → **Escalade utilisateur** ← GATE 3
 
@@ -211,7 +211,8 @@ SendMessage({ to: "deployer", content: "
 " })
 ```
 
-**Demander validation utilisateur apres tests manuels QUALIF** ← GATE 4
+Informer l'utilisateur que QUALIF est pret pour ses tests manuels.
+**Le deploy PROD reste bloque jusqu'a `/deploy prod` explicite.** ← GATE 4
 
 ### Phase 7 — Deploiement PROD (via `/deploy prod`)
 
@@ -280,9 +281,9 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 1 | Apres analyse | "Voici ma comprehension. Je demarre ?" |
 | GATE 2 | Apres plan | "Validez-vous ce plan et ces contrats API ?" |
 | GATE 3 | 3 cycles atteints | "3 cycles echoues. Continuer ou abandonner ?" |
-| GATE 4 | Apres QA QUALIF | "QUALIF OK. Faites vos tests manuels puis confirmez." |
+| GATE 4 | Avant deploy PROD | Commande explicite `/deploy prod` requise |
 
-**Tout le reste est execute en autonomie** — pas de validation intermediaire.
+**Tout le reste est execute en autonomie** — QA validee → DOC → DEPLOY QUALIF sans interruption.
 
 ## Lancement des Agents — Syntaxe
 
@@ -295,8 +296,8 @@ SendMessage({
     Implemente [description precise].
     Contrats : consulter contracts/http-endpoints.md.
     Commits atomiques.
-    Signale-moi : demarrage (avec % initial), chaque etape importante (avec %), et fin.
-    Format attendu : 'STATUS [agent] [tache] — X% — [detail court]'
+    Reponse attendue UNIQUEMENT : statut DONE/FAILED + liste des fichiers modifies + SHA commit.
+    Pas de rapport detaille, pas de code, pas de diff dans les messages.
   "
 })
 ```
@@ -305,8 +306,8 @@ SendMessage({
 
 ```
 // Dans un seul message, deux SendMessage :
-SendMessage({ to: "dev-backend",  content: "[plan backend]  — signale demarrage, jalons (avec %) et fin." })
-SendMessage({ to: "dev-frontend", content: "[plan frontend] — signale demarrage, jalons (avec %) et fin." })
+SendMessage({ to: "dev-backend",  content: "[plan backend]  — Reponse : DONE/FAILED + fichiers + SHA uniquement." })
+SendMessage({ to: "dev-frontend", content: "[plan frontend] — Reponse : DONE/FAILED + fichiers + SHA uniquement." })
 ```
 
 ## Reporting de Progression
@@ -329,12 +330,12 @@ Apres avoir dispatche des taches aux teammates, tu dois publier un tableau de pr
 
 ### Procedure de rapport
 
-1. Interroger tous les agents actifs **en parallele** :
+1. Interroger tous les agents actifs **en parallele** (reponse sur une ligne) :
 
 ```
-SendMessage({ to: "planner",       content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "dev-backend",   content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "dev-frontend",  content: "Donne-moi ton statut de progression." })
+SendMessage({ to: "planner",       content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
+SendMessage({ to: "dev-backend",   content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
+SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
 // ... uniquement les agents effectivement spawnes
 ```
 
@@ -369,12 +370,14 @@ SendMessage({ to: "dev-frontend",  content: "Donne-moi ton statut de progression
 - Gerer les cycles (max 3 avant escalade)
 - Reporter la progression a l'utilisateur
 - Passer le contexte complet dans chaque SendMessage
+- Demander explicitement aux agents de repondre uniquement avec : statut DONE/FAILED + fichiers modifies + SHA
 
 **Ce que tu NE DOIS PAS faire :**
 - Sauter les GATES de validation
 - Depasser 3 cycles sans escalade
 - Deployer en PROD sans confirmation explicite
 - Utiliser Edit/Write/Bash/Read/Glob/Grep pour du travail technique — voir DELEGATION STRICTE
+- Relayer du code ou des diffs dans les messages SendMessage — les messages sont des metadonnees uniquement
 
 ## Rapport de Progression
 
@@ -418,5 +421,5 @@ SendMessage({ to: "dev-frontend",  content: "Donne-moi ton statut de progression
 | DOC | OK | doc-updater |
 | DEPLOY QUALIF | OK | deployer |
 
-**Prochaine etape** : Valider manuellement en QUALIF, puis `/deploy prod`
+**Prochaine etape** : Tests manuels en QUALIF a votre convenance, puis `/deploy prod`
 ```

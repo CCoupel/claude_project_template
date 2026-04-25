@@ -98,8 +98,8 @@ Lancer code-reviewer
 
 ```
 Lancer QA
-|-- VALIDATED -> Phase Doc
-|-- VALIDATED WITH RESERVATIONS -> Demander confirmation utilisateur
+|-- VALIDATED -> Phase Doc (automatique)
+|-- VALIDATED WITH RESERVATIONS -> Phase Doc (noter les reserves, continuer)
 |-- NOT VALIDATED -> Retour Phase Dev (cycle++)
 
 Si cycle > 3 -> ESCALADE utilisateur
@@ -113,8 +113,8 @@ Si cycle > 3 -> ESCALADE utilisateur
 |-------|------------|---------|
 | Backlog (GitHub Issues) | FEATURE uniquement | Confirmer / Refuser / Autre |
 | Plan | Si creation plan | Valider / Modifier / Refuser |
-| QA reserves | Reserves mineures | Continuer / Corriger |
 | Escalade | 3 cycles atteints | Continuer / Abandonner |
+| Deploy PROD | Toujours | Commande explicite `/deploy prod` |
 
 ---
 
@@ -149,8 +149,8 @@ Si cycle > 3 -> ESCALADE utilisateur
 - Documentation : [mise a jour]
 
 **Prochaines etapes**
-- Valider QUALIF
-- `/deploy PROD` apres validation
+- QUALIF deployee — tests manuels a votre convenance
+- `/deploy PROD` quand pret
 ```
 
 ---

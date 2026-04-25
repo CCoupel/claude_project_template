@@ -61,9 +61,12 @@ Retourner en mode IDLE
 ```
 SendMessage({
   to: "cdp",
-  content: "[rapport en texte naturel]"
+  content: "[rapport minimaliste — voir formats ci-dessous]"
 })
 ```
+
+> **REGLE ABSOLUE** : Jamais de contenu de code, de diff, ni d'extraits de fichiers dans les messages.
+> Les messages sont des metadonnees, pas des rapports techniques.
 
 ### Push proactif de progression
 
@@ -72,20 +75,13 @@ SendMessage({
 | Jalon | Quand |
 |-------|-------|
 | DEMARRE | Des le debut de l'execution de la tache |
-| PROGRESSION | A chaque etape significative (ex: "migration schema OK, endpoints en cours...") |
 | BLOQUE | Des qu'un blocage survient |
 | TERMINE | Quand la tache est completement terminee |
 
-Format de mise a jour de progression :
+Format de mise a jour de progression (une seule ligne) :
 
 ```
-**[NOM-AGENT] EN COURS — [X]%**
----------------------------------------
-Tache : [description]
-Fait : [ce qui est termine]
-En cours : [ce qui est en train d'etre fait]
-Restant : [ce qui reste]
----------------------------------------
+[NOM-AGENT] EN COURS — X% — [etape courante en < 10 mots]
 ```
 
 ### Reponse a une demande de progression (/progression)
@@ -93,36 +89,31 @@ Restant : [ce qui reste]
 Quand le CDP demande un statut de progression, repondre avec ce format exact :
 
 ```
-**[NOM-AGENT] STATUT**
----------------------------------------
-Tache ID    : [id ou "—"]
-Tache       : [nom court de la tache]
-Status      : [TERMINE | EN COURS (X%) | ATTENTE DEPENDANCE | ATTENTE TEAMMATE | ATTENTE VALIDATION | BLOQUE]
-Dependance  : [agent ou tache dont je depends, ou "—"]
-Detail      : [une ligne sur ce qui se passe actuellement]
----------------------------------------
+[NOM-AGENT] | [TERMINE | EN COURS X% | ATTENTE | BLOQUE] | [une ligne]
 ```
 
 ### Format du rapport de fin de tache
 
 ```
-**[NOM-AGENT] TERMINE**
----------------------------------------
-Tache : [description de la tache recue]
-Resultat : SUCCES / ECHEC
-[Details pertinents : fichiers modifies, verdict, points importants...]
----------------------------------------
+[NOM-AGENT] DONE
+Fichiers : chemin/fichier1, chemin/fichier2
+SHA : <commit-sha>
+```
+
+ou en cas d'echec :
+
+```
+[NOM-AGENT] FAILED
+Raison : [une ligne — cause technique precise]
+Action requise : [ce dont j'ai besoin]
 ```
 
 ### Format de rapport de blocage
 
 ```
-**[NOM-AGENT] BLOQUE**
----------------------------------------
-Tache : [description]
-Probleme : [description precise — qu'est-ce qui empeche de continuer]
+[NOM-AGENT] BLOQUE
+Raison : [une ligne]
 Action requise : [ce dont j'ai besoin]
----------------------------------------
 ```
 
 ---
@@ -162,9 +153,9 @@ SendMessage({
 
 [CDP envoie un ordre via SendMessage]
 → "Implemente l'endpoint POST /api/auth avec JWT. Voir contracts/http-endpoints.md."
+→ SendMessage(cdp, "DEV-BACKEND EN COURS — 0% — demarrage implementation /api/auth")
 → [Travail effectue...]
-→ SendMessage(cdp, "**DEV-BACKEND TERMINE** — endpoint POST /api/auth implemente,
-   tests unitaires ajoutés, commits atomiques effectues.")
+→ SendMessage(cdp, "DEV-BACKEND DONE\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
 → MODE IDLE — en attente du prochain ordre
 
 [CDP envoie shutdown_request]
