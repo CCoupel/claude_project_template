@@ -371,6 +371,8 @@ fi
 
 ### 8.2 Labels standards
 
+**Labels de type (detection du workflow) :**
+
 | Label | Usage |
 |-------|-------|
 | `feature`, `enhancement` | Nouvelle fonctionnalite → `/feature` |
@@ -379,11 +381,67 @@ fi
 | `refactor`, `tech-debt` | Refactoring → `/refactor` |
 | `security`, `vulnerability` | Securite → `/secu` |
 | `roadmap` | Visible sur le site marketing |
-| `in progress` | En cours de traitement |
+
+**Labels de phase (cycle de vie dans le workflow) :**
+
+| Label | Posé par | Moment |
+|-------|----------|--------|
+| `en cours` | CDP (via deployer) | GATE 1 passé — DEV démarré |
+| `en review` | CDP (via deployer) | REVIEW + TEST-WRITER démarrés |
+| `en qa` | CDP (via deployer) | QA démarrée |
+| — (issue fermée) | CDP (via deployer) | DEPLOY PROD terminé |
+
+Ces labels sont mutuellement exclusifs et remplacent le précédent à chaque transition.
 
 ### 8.3 Format des commits avec issue
 
 ```bash
 feat(scope): Description (#42)
 fix(scope): Description (#38)
+```
+
+---
+
+## 9. Gestion des Labels de Phase
+
+Le deployer utilise ces commandes pour mettre à jour les labels d'issue
+à chaque transition de phase du workflow CDP.
+
+### 9.1 Transition vers `en cours`
+
+```bash
+gh issue edit <numero> \
+  --add-label "en cours" \
+  --remove-label "en review,en qa"
+```
+
+### 9.2 Transition vers `en review`
+
+```bash
+gh issue edit <numero> \
+  --add-label "en review" \
+  --remove-label "en cours,en qa"
+```
+
+### 9.3 Transition vers `en qa`
+
+```bash
+gh issue edit <numero> \
+  --add-label "en qa" \
+  --remove-label "en cours,en review"
+```
+
+### 9.4 Fermeture en fin de workflow (PROD deployé)
+
+```bash
+gh issue close <numero> --comment \
+  "✅ Livré en production — version [X.Y.Z] — branche [branche]"
+```
+
+### 9.5 Création des labels (si absents du repo)
+
+```bash
+gh label create "en cours"  --color "0075ca" --description "Workflow en cours"
+gh label create "en review" --color "e4e669" --description "En revue de code et tests"
+gh label create "en qa"     --color "d93f0b" --description "En validation QA"
 ```

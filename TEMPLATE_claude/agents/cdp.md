@@ -154,7 +154,13 @@ ANALYSE → PLAN → DEV → [REVIEW ∥ TEST-WRITER] → QA → DOC → DEPLOY
 - Comprendre la demande (feature / bugfix / refactor / hotfix)
 - Identifier les composants impactes (backend / frontend / firmware)
 - Estimer la complexite
+- Extraire le numéro d'issue depuis la description si présent (pattern `#\d+`) → `ISSUE_NUM`
 - **Demander confirmation de demarrage a l'utilisateur** ← GATE 1
+
+> GATE 1 passé + `ISSUE_NUM` détecté → label `en cours` (fire-and-forget) :
+> ```
+> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'en cours' (retirer 'en review', 'en qa' si présents). Voir context/GITHUB.md section 9.1." })
+> ```
 
 ### Phase 1 — Planification
 
@@ -210,6 +216,11 @@ SendMessage({ to: "dev-backend", content: "
 
 ### Phase 3 — Revue + Ecriture des Tests (parallele)
 
+> `ISSUE_NUM` détecté → label `en review` (fire-and-forget, avant dispatch) :
+> ```
+> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'en review' (retirer 'en cours'). Voir context/GITHUB.md section 9.2." })
+> ```
+
 Dispatcher les deux agents dans le **meme message** :
 
 ```
@@ -235,6 +246,11 @@ Attendre les deux reponses avant de continuer.
 - Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR ← GATE 3
 
 ### Phase 4 — Tests QA
+
+> `ISSUE_NUM` détecté → label `en qa` (fire-and-forget, avant dispatch) :
+> ```
+> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'en qa' (retirer 'en review'). Voir context/GITHUB.md section 9.3." })
+> ```
 
 ```
 SendMessage({ to: "qa", content: "
@@ -319,6 +335,8 @@ SendMessage({ to: "infra", content: "
 SendMessage({ to: "deployer", content: "
   Deploie en PROD la version [X.Y.Z].
   Workflow : squash merge → main → tag vX.Y.Z → push → monitoring CI.
+  [Si ISSUE_NUM détecté] : après deploy OK, fermer l'issue #[ISSUE_NUM] avec commentaire
+  de résumé. Voir context/GITHUB.md section 9.4.
 " })
 ```
 
