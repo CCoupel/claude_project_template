@@ -157,12 +157,10 @@ ANALYSE → PLAN → DEV → [REVIEW ∥ TEST-WRITER] → QA → DOC → DEPLOY
 - Extraire le numéro d'issue depuis la description si présent (pattern `#\d+`) → `ISSUE_NUM`
 - **Demander confirmation de demarrage a l'utilisateur** ← GATE 1
 
-> GATE 1 passé + `ISSUE_NUM` détecté → label `EN COURS` (fire-and-forget) :
-> ```
-> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'EN COURS'. Voir context/GITHUB.md section 9.1." })
-> ```
-
 ### Phase 1 — Planification
+
+> `ISSUE_NUM` détecté → label `PLANNING` via GitHub MCP :
+> `mcp__plugin_github_github__issue_write` — add label `PLANNING`, remove `EN COURS`, `EN REVIEW`, `EN QA`, `DONE`
 
 ```
 SendMessage({ to: "planner", content: "
@@ -181,6 +179,9 @@ signaler explicitement à l'utilisateur lors du GATE 2 :
 **Presenter le plan a l'utilisateur et demander validation** ← GATE 2
 
 ### Phase 2 — Developpement
+
+> `ISSUE_NUM` détecté → label `EN COURS` via GitHub MCP :
+> `mcp__plugin_github_github__issue_write` — add label `EN COURS`, remove `PLANNING`, `EN REVIEW`, `EN QA`, `DONE`
 
 Determiner la strategie selon les dependances :
 
@@ -216,10 +217,8 @@ SendMessage({ to: "dev-backend", content: "
 
 ### Phase 3 — Revue + Ecriture des Tests (parallele)
 
-> `ISSUE_NUM` détecté → label `EN REVIEW` (fire-and-forget) :
-> ```
-> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'EN REVIEW'. Voir context/GITHUB.md section 9.2." })
-> ```
+> `ISSUE_NUM` détecté → label `EN REVIEW` via GitHub MCP :
+> `mcp__plugin_github_github__issue_write` — add label `EN REVIEW`, remove `EN COURS`, `PLANNING`, `EN QA`, `DONE`
 
 Dispatcher les deux agents dans le **meme message** :
 
@@ -241,16 +240,16 @@ Attendre les deux reponses avant de continuer.
 
 **Apres reception des deux reponses :**
 - code-reviewer APPROUVE (ou AVEC RESERVES) → Phase QA avec les tests du test-writer
-- code-reviewer REFUSE → cycle++ → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points du rapport]" })
-  puis relancer REVIEW + TEST-WRITER en parallele (le test-writer met a jour ses tests)
+- code-reviewer REFUSE → cycle++
+  > `ISSUE_NUM` détecté → reset label `EN COURS` via GitHub MCP
+  → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points du rapport]" })
+  → relancer REVIEW + TEST-WRITER en parallele (le test-writer met a jour ses tests)
 - Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR ← GATE 3
 
 ### Phase 4 — Tests QA
 
-> `ISSUE_NUM` détecté → label `EN QA` (fire-and-forget) :
-> ```
-> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'EN QA'. Voir context/GITHUB.md section 9.3." })
-> ```
+> `ISSUE_NUM` détecté → label `EN QA` via GitHub MCP :
+> `mcp__plugin_github_github__issue_write` — add label `EN QA`, remove `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE`
 
 ```
 SendMessage({ to: "qa", content: "
@@ -263,12 +262,13 @@ SendMessage({ to: "qa", content: "
 ```
 
 - VALIDATED →
-  > `ISSUE_NUM` détecté → label `DONE` (fire-and-forget) :
-  > ```
-  > SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'DONE'. Voir context/GITHUB.md section 9.4." })
-  > ```
+  > `ISSUE_NUM` détecté → label `DONE` via GitHub MCP :
+  > `mcp__plugin_github_github__issue_write` — add label `DONE`, remove `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`
+
   Phase DOC (automatique, sans attendre l'utilisateur)
-- NOT VALIDATED → Retour Phase DEV (cycle++) puis relance REVIEW + TEST-WRITER en parallele
+- NOT VALIDATED → cycle++
+  > `ISSUE_NUM` détecté → reset label `EN COURS` via GitHub MCP
+  → Retour Phase DEV, puis relance REVIEW + TEST-WRITER en parallele
 - Si cycle > 3 → **Escalade utilisateur** ← GATE 3
 
 ### Phase 5 — Documentation
@@ -319,12 +319,22 @@ Lire `tests/procedures/[feature].md` (ecrit par le test-writer) et presenter a l
 [Prerequis, donnees de test, acces requis — depuis le fichier de procedure]
 
 ---
-Quand vos tests sont satisfaisants : `/deploy prod`
+Validé ? répondre OUI (ou `/deploy prod`) — Pas conforme ? répondre NON + description de l'écart
 ```
 
-**Le deploy PROD reste bloque jusqu'a `/deploy prod` explicite.** ← GATE 4
+**Le deploy PROD reste bloque jusqu'a confirmation explicite.** ← GATE 4
 
-### Phase 7 — Deploiement PROD (via `/deploy prod`)
+Selon la réponse utilisateur :
+- **OUI / `/deploy prod`** →
+  > `ISSUE_NUM` détecté → fermer l'issue via GitHub MCP :
+  > `mcp__plugin_github_github__add_issue_comment` — "✅ Validé — QA OK — documentation mise à jour"
+  > `mcp__plugin_github_github__issue_write` — state: closed
+  Phase 7 (PROD)
+- **NON** →
+  > `ISSUE_NUM` détecté → reset label `EN COURS` via GitHub MCP
+  Retour Phase 2 (DEV) ou Phase 1 (PLAN) selon l'écart décrit
+
+### Phase 7 — Deploiement PROD (via confirmation GATE 4)
 
 **Validation infra préalable :**
 ```
@@ -340,12 +350,24 @@ SendMessage({ to: "infra", content: "
 SendMessage({ to: "deployer", content: "
   Deploie en PROD la version [X.Y.Z].
   Workflow : squash merge → main → tag vX.Y.Z → push → monitoring CI.
-  [Si ISSUE_NUM détecté] : après deploy OK, fermer l'issue #[ISSUE_NUM].
-  Voir context/GITHUB.md section 9.5.
 " })
 ```
 
-Informer l'utilisateur du resultat.
+Après CI PROD OK — vérifier le milestone via GitHub MCP :
+```
+mcp__plugin_github_github__issue_read — lister les issues ouvertes du milestone actif
+```
+- **Milestone à 100%** (aucune issue ouverte) → fermer le milestone :
+  `mcp__plugin_github_github__issue_write` (milestone state: closed) + informer l'utilisateur
+- **Issues encore ouvertes** → alerter :
+  ```
+  ⚠ Milestone [version] — [N] issue(s) encore ouverte(s) :
+  - #[num] [titre]
+  ...
+  Le milestone reste ouvert jusqu'à leur livraison.
+  ```
+
+Informer l'utilisateur du résultat du déploiement.
 
 ## Dispatch selon le Type de Workflow
 

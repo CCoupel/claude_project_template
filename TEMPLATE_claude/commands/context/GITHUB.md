@@ -386,13 +386,16 @@ fi
 
 | Label | Posé par | Moment |
 |-------|----------|--------|
-| `EN COURS` | CDP (via deployer) | GATE 1 passé — DEV démarré |
-| `EN REVIEW` | CDP (via deployer) | REVIEW + TEST-WRITER en cours |
-| `EN QA` | CDP (via deployer) | QA en cours |
-| `DONE` | CDP (via deployer) | QA validée |
-| — (issue fermée) | CDP (via deployer) | Déployé en PROD |
+| `PLANNING` | CDP (MCP) | Phase 1 — plan en cours |
+| `EN COURS` | CDP (MCP) | GATE 2 validé — DEV démarré |
+| `EN REVIEW` | CDP (MCP) | Phase 3 — REVIEW + TEST-WRITER en cours |
+| `EN QA` | CDP (MCP) | Phase 4 — QA en cours |
+| `DONE` | CDP (MCP) | QA validée |
+| — (issue fermée) | CDP (MCP) | Validation utilisateur à GATE 4 |
 
 Ces labels évoluent séquentiellement et sont mutuellement exclusifs.
+Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
+Si l'utilisateur rejette à GATE 4, l'issue repasse à `EN COURS`.
 
 ### 8.3 Format des commits avec issue
 
@@ -432,11 +435,11 @@ gh issue edit <numero> --add-label "EN QA" --remove-label "EN COURS,EN REVIEW,DO
 gh issue edit <numero> --add-label "DONE" --remove-label "EN COURS,EN REVIEW,EN QA"
 ```
 
-### 9.5 Fermeture (déployé en PROD)
+### 9.5 Fermeture (validation utilisateur à GATE 4)
 
 ```bash
-gh issue close <numero> --comment \
-  "✅ Livré en production — version [X.Y.Z] — branche [branche] — documentation mise à jour"
+gh issue comment <numero> --body "✅ Validé — QA OK — documentation mise à jour"
+gh issue close <numero>
 ```
 
 ### 9.6 Création des labels (si absents du repo)

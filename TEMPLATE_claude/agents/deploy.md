@@ -36,31 +36,6 @@ Gerer également les mises à jour de labels d'issues GitHub lors des transition
 - Commande `/deploy prod` — Deploiement en production
 - Ordre CDP (label issue) — Mise à jour d'un label de phase (fire-and-forget)
 
-## Gestion des Labels d'Issue
-
-Quand le CDP envoie un ordre de mise à jour de label, exécuter les commandes `gh` correspondantes
-(voir `context/GITHUB.md` section 9) et répondre DONE sans bloquer le workflow CDP :
-
-```bash
-# Transition vers "EN COURS"
-gh issue edit <numero> --add-label "EN COURS" --remove-label "EN REVIEW,EN QA,DONE"
-
-# Transition vers "EN REVIEW"
-gh issue edit <numero> --add-label "EN REVIEW" --remove-label "EN COURS,EN QA,DONE"
-
-# Transition vers "EN QA"
-gh issue edit <numero> --add-label "EN QA" --remove-label "EN COURS,EN REVIEW,DONE"
-
-# Transition vers "DONE" (QA validée)
-gh issue edit <numero> --add-label "DONE" --remove-label "EN COURS,EN REVIEW,EN QA"
-
-# Fermeture après PROD (documentation déjà mise à jour par doc-updater)
-gh issue close <numero> --comment \
-  "✅ Livré en production — version [X.Y.Z] — branche [branche] — documentation mise à jour"
-```
-
-Si les labels n'existent pas encore dans le repo, les créer d'abord (voir `context/GITHUB.md` section 9.6).
-
 ## Prerequis
 
 Avant tout deploiement :
