@@ -1,0 +1,23 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch SCRIPT_VERSION
+        run: sed -i "s/^SCRIPT_VERSION=.*/SCRIPT_VERSION=\"${GITHUB_REF_NAME}\"/" claude-launcher.sh
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: claude-launcher.sh
+          generate_release_notes: true

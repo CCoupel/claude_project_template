@@ -112,18 +112,33 @@ Format conventionnel : `type(scope): message`
 Types : `feat`, `fix`, `docs`, `refactor`, `chore`
 Scopes courants : `commands`, `agents`, `templates`, `init-project`, `ci`, `readme`
 
-### Versions
+### Versions et releases
 
 - **minor** (Y) : nouvelle commande, nouvel agent, nouveau template de stack
 - **patch** (Z) : correction, amélioration d'un template existant
 - **major** (X) : changement d'architecture (ex: v1→v2 = introduction de TEMPLATE_claude/)
+
+Pour publier une release, pousser un tag SemVer sur main :
+
+```bash
+git tag vX.Y.Z && git push origin vX.Y.Z
+```
+
+La CI (`.github/workflows/release.yml`) se déclenche automatiquement et :
+1. Patche `SCRIPT_VERSION` dans `claude-launcher.sh` avec le tag exact (sans commit)
+2. Publie la GitHub Release avec le launcher pré-patché en asset
+
+L'asset est disponible à :
+`https://github.com/CCoupel/claude_project_template/releases/download/vX.Y.Z/claude-launcher.sh`
+
+Ne jamais modifier `SCRIPT_VERSION` à la main — c'est la CI qui le gère.
 
 ---
 
 ## Ce qu'il ne faut PAS faire
 
 - Ne pas mettre de fichiers spécifiques à un projet dans `TEMPLATE_claude/` (pas de noms de projets, pas d'URLs hardcodées sauf `CCoupel/claude_project_template`)
-- Ne pas créer de `.github/workflows/` ici — ce repo n'a pas de CI ; les workflows sont dans `TEMPLATE_claude/templates/workflows/`
+- Ne pas ajouter d'autres workflows dans `.github/workflows/` — seul `release.yml` existe (gestion des releases du launcher) ; les workflows CI/CD pour les projets cibles sont dans `TEMPLATE_claude/templates/workflows/`
 - Ne pas éditer `CLAUDE_TEMPLATE.md` comme si c'était le `CLAUDE.md` de ce repo (c'est le modèle pour les projets cibles)
 
 ---

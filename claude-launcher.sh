@@ -78,6 +78,7 @@ fi
 SESSION="claude-hub"
 TEMPLATE_REPO="CCoupel/claude_project_template"
 TEMPLATE_BRANCH="main"
+SCRIPT_VERSION="v2.4.1"
 CONFIG_FILE="${HOME}/.config/claude-launcher.conf"
 
 # ── Valeurs par défaut (écrasées par le fichier de config) ───────────────────
@@ -136,18 +137,32 @@ build_claude_exports() {
 }
 
 auto_update() {
+  local latest_tag
+  latest_tag=$(curl -fsSL --ipv4 --max-time 5 \
+    "https://api.github.com/repos/${TEMPLATE_REPO}/tags" 2>/dev/null \
+    | jq -r '.[0].name // empty')
+  [[ -z "$latest_tag" ]] && return
+
+  # Compare versions: si le tag distant est identique à la version locale, rien à faire
+  [[ "$latest_tag" == "$SCRIPT_VERSION" ]] && return
+
+  # Tri sémantique : met à jour seulement si le tag distant est plus récent
+  local newer
+  newer=$(printf '%s\n%s\n' "$SCRIPT_VERSION" "$latest_tag" \
+    | sort -V | tail -1)
+  [[ "$newer" == "$SCRIPT_VERSION" ]] && return
+
   local tmp
   tmp=$(mktemp)
   if curl -fsSL --ipv4 --max-time 5 \
-      "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/claude-launcher.sh" \
-      -o "$tmp" 2>/dev/null; then
-    if ! cmp -s "$tmp" "$SCRIPT_PATH"; then
-      printf "\033[1;32m  ↑ Nouvelle version disponible — mise à jour...\033[0m\n"
-      chmod +x "$tmp"
-      mv "$tmp" "$SCRIPT_PATH"
-      printf "  ✓ Launcher mis à jour. Relancement...\n\n"
-      exec "$SCRIPT_PATH"
-    fi
+      "https://github.com/${TEMPLATE_REPO}/releases/download/${latest_tag}/claude-launcher.sh" \
+      -o "$tmp" 2>/dev/null && [[ -s "$tmp" ]]; then
+    printf "\033[1;32m  ↑ Nouvelle version %s disponible (installée : %s) — mise à jour...\033[0m\n" \
+      "$latest_tag" "$SCRIPT_VERSION"
+    chmod +x "$tmp"
+    mv "$tmp" "$SCRIPT_PATH"
+    printf "  ✓ Launcher mis à jour. Relancement...\n\n"
+    exec "$SCRIPT_PATH"
   fi
   rm -f "$tmp"
 }
