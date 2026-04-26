@@ -157,9 +157,9 @@ ANALYSE → PLAN → DEV → [REVIEW ∥ TEST-WRITER] → QA → DOC → DEPLOY
 - Extraire le numéro d'issue depuis la description si présent (pattern `#\d+`) → `ISSUE_NUM`
 - **Demander confirmation de demarrage a l'utilisateur** ← GATE 1
 
-> GATE 1 passé + `ISSUE_NUM` détecté → label `en cours` (fire-and-forget) :
+> GATE 1 passé + `ISSUE_NUM` détecté → label `EN COURS` (fire-and-forget) :
 > ```
-> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'en cours' (retirer 'en review', 'en qa' si présents). Voir context/GITHUB.md section 9.1." })
+> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'EN COURS'. Voir context/GITHUB.md section 9.1." })
 > ```
 
 ### Phase 1 — Planification
@@ -216,9 +216,9 @@ SendMessage({ to: "dev-backend", content: "
 
 ### Phase 3 — Revue + Ecriture des Tests (parallele)
 
-> `ISSUE_NUM` détecté → label `en review` (fire-and-forget, avant dispatch) :
+> `ISSUE_NUM` détecté → label `EN REVIEW` (fire-and-forget) :
 > ```
-> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'en review' (retirer 'en cours'). Voir context/GITHUB.md section 9.2." })
+> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'EN REVIEW'. Voir context/GITHUB.md section 9.2." })
 > ```
 
 Dispatcher les deux agents dans le **meme message** :
@@ -247,9 +247,9 @@ Attendre les deux reponses avant de continuer.
 
 ### Phase 4 — Tests QA
 
-> `ISSUE_NUM` détecté → label `en qa` (fire-and-forget, avant dispatch) :
+> `ISSUE_NUM` détecté → label `EN QA` (fire-and-forget) :
 > ```
-> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'en qa' (retirer 'en review'). Voir context/GITHUB.md section 9.3." })
+> SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'EN QA'. Voir context/GITHUB.md section 9.3." })
 > ```
 
 ```
@@ -262,7 +262,12 @@ SendMessage({ to: "qa", content: "
 " })
 ```
 
-- VALIDATED → Phase DOC (automatique, sans attendre l'utilisateur)
+- VALIDATED →
+  > `ISSUE_NUM` détecté → label `DONE` (fire-and-forget) :
+  > ```
+  > SendMessage({ to: "deployer", content: "Label issue #[ISSUE_NUM] → 'DONE'. Voir context/GITHUB.md section 9.4." })
+  > ```
+  Phase DOC (automatique, sans attendre l'utilisateur)
 - NOT VALIDATED → Retour Phase DEV (cycle++) puis relance REVIEW + TEST-WRITER en parallele
 - Si cycle > 3 → **Escalade utilisateur** ← GATE 3
 
@@ -335,8 +340,8 @@ SendMessage({ to: "infra", content: "
 SendMessage({ to: "deployer", content: "
   Deploie en PROD la version [X.Y.Z].
   Workflow : squash merge → main → tag vX.Y.Z → push → monitoring CI.
-  [Si ISSUE_NUM détecté] : après deploy OK, fermer l'issue #[ISSUE_NUM] avec commentaire
-  de résumé. Voir context/GITHUB.md section 9.4.
+  [Si ISSUE_NUM détecté] : après deploy OK, fermer l'issue #[ISSUE_NUM].
+  Voir context/GITHUB.md section 9.5.
 " })
 ```
 

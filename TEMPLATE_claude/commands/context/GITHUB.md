@@ -386,12 +386,13 @@ fi
 
 | Label | Posé par | Moment |
 |-------|----------|--------|
-| `en cours` | CDP (via deployer) | GATE 1 passé — DEV démarré |
-| `en review` | CDP (via deployer) | REVIEW + TEST-WRITER démarrés |
-| `en qa` | CDP (via deployer) | QA démarrée |
-| — (issue fermée) | CDP (via deployer) | DEPLOY PROD terminé |
+| `EN COURS` | CDP (via deployer) | GATE 1 passé — DEV démarré |
+| `EN REVIEW` | CDP (via deployer) | REVIEW + TEST-WRITER en cours |
+| `EN QA` | CDP (via deployer) | QA en cours |
+| `DONE` | CDP (via deployer) | QA validée |
+| — (issue fermée) | CDP (via deployer) | Déployé en PROD |
 
-Ces labels sont mutuellement exclusifs et remplacent le précédent à chaque transition.
+Ces labels évoluent séquentiellement et sont mutuellement exclusifs.
 
 ### 8.3 Format des commits avec issue
 
@@ -405,43 +406,44 @@ fix(scope): Description (#38)
 ## 9. Gestion des Labels de Phase
 
 Le deployer utilise ces commandes pour mettre à jour les labels d'issue
-à chaque transition de phase du workflow CDP.
+lors des transitions de phase du workflow CDP.
 
-### 9.1 Transition vers `en cours`
-
-```bash
-gh issue edit <numero> \
-  --add-label "en cours" \
-  --remove-label "en review,en qa"
-```
-
-### 9.2 Transition vers `en review`
+### 9.1 Transition vers `EN COURS` (DEV démarré)
 
 ```bash
-gh issue edit <numero> \
-  --add-label "en review" \
-  --remove-label "en cours,en qa"
+gh issue edit <numero> --add-label "EN COURS" --remove-label "EN REVIEW,EN QA,DONE"
 ```
 
-### 9.3 Transition vers `en qa`
+### 9.2 Transition vers `EN REVIEW` (REVIEW en cours)
 
 ```bash
-gh issue edit <numero> \
-  --add-label "en qa" \
-  --remove-label "en cours,en review"
+gh issue edit <numero> --add-label "EN REVIEW" --remove-label "EN COURS,EN QA,DONE"
 ```
 
-### 9.4 Fermeture en fin de workflow (PROD deployé)
+### 9.3 Transition vers `EN QA` (QA en cours)
+
+```bash
+gh issue edit <numero> --add-label "EN QA" --remove-label "EN COURS,EN REVIEW,DONE"
+```
+
+### 9.4 Transition vers `DONE` (QA validée)
+
+```bash
+gh issue edit <numero> --add-label "DONE" --remove-label "EN COURS,EN REVIEW,EN QA"
+```
+
+### 9.5 Fermeture (déployé en PROD)
 
 ```bash
 gh issue close <numero> --comment \
-  "✅ Livré en production — version [X.Y.Z] — branche [branche]"
+  "✅ Livré en production — version [X.Y.Z] — branche [branche] — documentation mise à jour"
 ```
 
-### 9.5 Création des labels (si absents du repo)
+### 9.6 Création des labels (si absents du repo)
 
 ```bash
-gh label create "en cours"  --color "0075ca" --description "Workflow en cours"
-gh label create "en review" --color "e4e669" --description "En revue de code et tests"
-gh label create "en qa"     --color "d93f0b" --description "En validation QA"
+gh label create "EN COURS"  --color "0075ca" --description "En cours de developpement"
+gh label create "EN REVIEW" --color "e4e669" --description "En cours de revue"
+gh label create "EN QA"     --color "d93f0b" --description "En cours de validation QA"
+gh label create "DONE"      --color "0e8a16" --description "Implementation validee (QA OK)"
 ```
