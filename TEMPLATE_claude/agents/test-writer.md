@@ -150,6 +150,31 @@ Commiter tous les fichiers de tests en un seul commit :
 test([scope]): add tests and procedures for [feature]
 ```
 
+### 5. Tests de Performance (si scope `perf` demandé par le CDP)
+
+Déclenché uniquement si le CDP spécifie `scope: perf` — typiquement pour les features
+touchant des endpoints critiques, des requêtes DB, ou des traitements volumétriques.
+
+Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disponible (k6, locust, wrk)
+
+```markdown
+# Test de Performance — [Feature]
+
+## Seuils cibles
+| Endpoint | P95 | P99 | Erreurs max |
+|----------|-----|-----|-------------|
+| POST /api/xxx | < 200ms | < 500ms | < 0.1% |
+
+## Scénario de charge
+- Utilisateurs simultanés : [N]
+- Durée : [X] minutes
+- Rampe : [montée progressive ou pic]
+
+## Procédure manuelle (si pas de framework)
+1. [étape]
+2. [étape]
+```
+
 ## Livrables
 
 | Type | Localisation | Description |
@@ -158,6 +183,7 @@ test([scope]): add tests and procedures for [feature]
 | Tests integration | `tests/integration/` | Scripts de flux complets |
 | Tests E2E | `e2e/` | Scripts parcours utilisateur |
 | Procedures manuelles | `tests/procedures/[feature].md` | Guides pas-a-pas pour QA |
+| Tests de performance | `tests/perf/` | Procédure et/ou script de charge (si scope perf) |
 
 ## Regles
 

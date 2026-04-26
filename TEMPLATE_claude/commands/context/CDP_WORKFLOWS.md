@@ -312,6 +312,54 @@ La commande `/cdp` permet le controle direct de l'orchestrateur :
 
 ---
 
+## 11. État Persistant du Workflow
+
+Le CDP maintient `.claude/workflow-state.json` mis à jour à chaque transition de phase.
+Ce fichier est la source de vérité pour les commandes `status`, `resume`, `skip`, `jumpto`.
+
+### Format
+
+```json
+{
+  "type": "FEATURE",
+  "description": "...",
+  "branch": "feature/xxx",
+  "version": "X.Y.Z",
+  "started_at": "2026-04-26T14:30:00Z",
+  "cycles": 1,
+  "phases": {
+    "plan":         { "status": "completed", "report": ".claude/reports/plan-xxx.md", "timestamp": "..." },
+    "dev-backend":  { "status": "completed", "sha": "abc123", "handoff": ".claude/handoff/dev-backend-xxx.md" },
+    "dev-frontend": { "status": "completed", "sha": "def456", "handoff": ".claude/handoff/dev-frontend-xxx.md" },
+    "test-writer":  { "status": "completed", "sha": "ghi789", "handoff": ".claude/handoff/test-writer-xxx.md" },
+    "review":       { "status": "completed", "report": ".claude/reports/code-review-xxx.md" },
+    "qa":           { "status": "in_progress", "report": null },
+    "doc":          { "status": "pending" },
+    "deploy-qualif":{ "status": "pending" },
+    "deploy-prod":  { "status": "pending" }
+  }
+}
+```
+
+### Règles de mise à jour
+
+| Moment | Action CDP |
+|--------|------------|
+| Démarrage workflow | Créer le fichier avec toutes les phases à `pending` |
+| Dispatch d'un agent | Passer la phase à `in_progress` |
+| Réception DONE conforme | Passer la phase à `completed`, enregistrer refs |
+| Renvoi pour correction | Laisser `in_progress`, incrémenter `cycles` |
+| Échec définitif | Passer à `failed`, noter la raison |
+
+### Utilisation par les commandes de contrôle
+
+- `status` : lire le fichier, afficher le tableau de phases
+- `resume <phase>` : lire le fichier, reprendre à la phase indiquée
+- `skip <phase>` : marquer la phase `skipped` et passer à la suivante
+- `jumpto <tache>` : rechercher dans les phases et tâches, se positionner
+
+---
+
 ## Usage
 
 Dans les commandes CDP, referencer ce fichier :
@@ -324,4 +372,5 @@ Dans les commandes CDP, referencer ce fichier :
 - Erreurs : section 6
 - Mots-cles controle : section 9
 - Commande /cdp : section 10
+- Etat persistant : section 11
 ```

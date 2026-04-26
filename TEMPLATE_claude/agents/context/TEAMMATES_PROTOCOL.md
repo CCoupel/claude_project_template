@@ -72,6 +72,36 @@ Le message au CDP ne contient que la reference, jamais le contenu :
 Rapport : .claude/reports/[filename]
 ```
 
+### Handoff — Transmission de Contexte
+
+Avant d'envoyer le DONE, chaque agent écrit son handoff dans `.claude/handoff/[agent]-[YYYYMMDD-HHmmss].md` :
+
+```markdown
+# Handoff — [Agent]
+
+**Feature** : [description courte]
+**SHA** : [commit sha ou N/A]
+
+## Ce qui a été fait
+[résumé en 3-5 lignes]
+
+## Décisions clés
+[décisions techniques prises, avec justification courte]
+
+## Points d'attention
+[ce que l'agent suivant doit savoir : risques, TODO, dépendances]
+
+## Fichiers modifiés
+[liste]
+```
+
+Le CDP passe la référence du handoff dans le SendMessage au prochain agent :
+```
+Handoff [agent précédent] : .claude/handoff/[agent]-[timestamp].md
+```
+
+**Règle** : un agent qui reçoit une référence handoff doit la lire avant de commencer son travail.
+
 ### Envoyer un rapport au CDP
 
 ```
@@ -113,6 +143,7 @@ Quand le CDP demande un statut de progression, repondre avec ce format exact :
 Agent de code (dev-*, test-writer) :
 ```
 [NOM-AGENT] DONE
+Handoff : .claude/handoff/[agent]-[YYYYMMDD-HHmmss].md
 Fichiers : chemin/fichier1, chemin/fichier2
 SHA : <commit-sha>
 ```
@@ -120,6 +151,7 @@ SHA : <commit-sha>
 Agent d'analyse (planner, code-reviewer, qa, security) :
 ```
 [NOM-AGENT] DONE
+Handoff : .claude/handoff/[agent]-[YYYYMMDD-HHmmss].md
 Rapport : .claude/reports/[agent]-[YYYYMMDD-HHmmss].md
 ```
 

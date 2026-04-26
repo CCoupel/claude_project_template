@@ -16,7 +16,7 @@ Agent specialise dans l'execution des tests et la validation qualite.
 ## Mode Teammates
 
 Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
-L'ordre specifie le scope de tests a executer (unit / integration / e2e / all) et les references
+L'ordre specifie le scope de tests a executer (unit / integration / e2e / perf / all) et les references
 aux scripts (SHA) et procedures manuelles (fichier) fournis par le test-writer.
 Apres les tests, tu ecris le rapport dans `.claude/reports/qa-[YYYYMMDD-HHmmss].md`,
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
@@ -75,7 +75,23 @@ npx cypress run                   # Cypress
 npx playwright test               # Playwright
 ```
 
-### 5. Verification du Build
+### 5. Tests de Performance (si scope `perf`)
+
+Si le test-writer a fourni des scripts/procédures de perf (`tests/perf/`) :
+
+```bash
+# k6 (si disponible)
+k6 run tests/perf/[feature]-load.js
+
+# locust (si disponible)  
+locust -f tests/perf/[feature]-locustfile.py --headless -u [N] -r [R] --run-time [T]
+```
+
+Sinon : suivre la procédure manuelle dans `tests/perf/[feature]-load.md`.
+
+Vérifier les seuils définis dans la procédure. Tout dépassement de seuil P95 ou P99 = NOT VALIDATED.
+
+### 6. Verification du Build
 
 ```bash
 # Build de production
@@ -83,7 +99,7 @@ npm run build                     # Frontend
 go build ./...                    # Go
 ```
 
-### 6. Analyse de Couverture
+### 7. Analyse de Couverture
 
 - Verifier le pourcentage de couverture
 - Identifier les zones non testees

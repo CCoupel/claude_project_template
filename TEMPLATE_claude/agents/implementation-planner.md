@@ -98,6 +98,22 @@ Format d'un contrat endpoint :
 - Les contrats sont la reference en cas de divergence backend/frontend
 - Creer le contrat AVANT d'implementer, pas apres
 
+### Changelog des Contrats
+
+À chaque création ou modification de contrat, mettre à jour `contracts/CHANGELOG.md` :
+
+```markdown
+## [YYYYMMDD] — [nom de la feature]
+
+- **[BREAKING]** `DELETE /api/xxx` — endpoint supprimé
+- **[BREAKING]** `POST /api/xxx` — champ `email` rendu obligatoire
+- **[NEW]** `POST /api/yyy` — nouvel endpoint
+- **[CHANGED]** `GET /api/zzz` — ajout champ `meta` en réponse (rétrocompatible)
+```
+
+**Règle :** tout changement BREAKING doit être signalé explicitement.
+Le CDP lira ce changelog après le PLAN pour alerter l'utilisateur en GATE 2 si des breaking changes sont détectés.
+
 ### 4. Evaluer les Risques
 
 - Complexite technique
@@ -113,6 +129,7 @@ Format d'un contrat endpoint :
 ## Contrats API (si applicable)
 - [ ] `contracts/http-endpoints.md` — <endpoints a creer/modifier>
 - [ ] `contracts/websocket-actions.md` — <messages a creer/modifier>
+- [ ] `contracts/CHANGELOG.md` — [liste des changements BREAKING/NEW/CHANGED]
 
 ## Resume
 <Description en 2-3 phrases>

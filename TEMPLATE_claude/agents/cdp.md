@@ -164,6 +164,11 @@ SendMessage({ to: "planner", content: "
 ```
 
 Recevoir le plan → valider les contrats API crees
+
+Lire `contracts/CHANGELOG.md` — si des changements **BREAKING** sont détectés :
+signaler explicitement à l'utilisateur lors du GATE 2 :
+`⚠ Breaking changes détectés : [liste] — impact sur les clients existants`
+
 **Presenter le plan a l'utilisateur et demander validation** ← GATE 2
 
 ### Phase 2 — Developpement
@@ -183,6 +188,22 @@ Backend seul :
 Frontend seul :
   → SendMessage(dev-frontend, "[instructions detaillees]")
 ```
+
+**Après DEV parallèle — Résolution des conflits de merge**
+
+Si backend et frontend ont travaillé en parallèle, avant de passer à REVIEW :
+
+```
+SendMessage({ to: "dev-backend", content: "
+  Merge la branche dev-frontend dans la branche courante.
+  Résoudre les éventuels conflits (tu es lead merge).
+  Handoff dev-frontend : .claude/handoff/dev-frontend-[timestamp].md
+  Réponse : DONE/FAILED + conflits résolus + SHA merge commit.
+" })
+```
+
+- DONE → Phase REVIEW + TEST-WRITER (en parallèle)
+- FAILED → escalade utilisateur (conflits non résolvables automatiquement) ← GATE 2b
 
 ### Phase 3 — Revue + Ecriture des Tests (parallele)
 
@@ -237,6 +258,16 @@ SendMessage({ to: "doc-updater", content: "
 
 ### Phase 6 — Deploiement QUALIF
 
+**Validation infra préalable :**
+```
+SendMessage({ to: "infra", content: "
+  Valide que la procedure de deploiement QUALIF est coherente avec l'infrastructure definie.
+  Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans .claude/reports/infra-[timestamp].md
+" })
+```
+- VALIDATED → lancer le deployer
+- NOT VALIDATED → escalade utilisateur avec le rapport d'écarts ← GATE 4b
+
 ```
 SendMessage({ to: "deployer", content: "
   Deploie en QUALIF la version [X.Y.Z] depuis la branche [branche].
@@ -270,6 +301,16 @@ Quand vos tests sont satisfaisants : `/deploy prod`
 **Le deploy PROD reste bloque jusqu'a `/deploy prod` explicite.** ← GATE 4
 
 ### Phase 7 — Deploiement PROD (via `/deploy prod`)
+
+**Validation infra préalable :**
+```
+SendMessage({ to: "infra", content: "
+  Valide que la procedure de deploiement PROD est coherente avec l'infrastructure definie.
+  Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans .claude/reports/infra-[timestamp].md
+" })
+```
+- VALIDATED → lancer le deployer
+- NOT VALIDATED → escalade utilisateur avec le rapport d'écarts ← GATE 4c
 
 ```
 SendMessage({ to: "deployer", content: "
@@ -363,8 +404,8 @@ SendMessage({
 
 ```
 // Dans un seul message, deux SendMessage :
-SendMessage({ to: "dev-backend",  content: "[plan backend]  — Reponse : DONE/FAILED + fichiers + SHA uniquement." })
-SendMessage({ to: "dev-frontend", content: "[plan frontend] — Reponse : DONE/FAILED + fichiers + SHA uniquement." })
+SendMessage({ to: "dev-backend",  content: "[plan backend]\nHandoff planner : .claude/handoff/planner-[timestamp].md" })
+SendMessage({ to: "dev-frontend", content: "[plan frontend]\nHandoff planner : .claude/handoff/planner-[timestamp].md" })
 ```
 
 ## Reporting de Progression
@@ -418,6 +459,13 @@ SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATU
 
 3. Si un agent ne repond pas : le marquer `⚠️ Sans reponse` et envoyer un SendMessage au teamleader
    pour le reveiller. **Ne pas prendre le relais soi-meme.**
+
+## État Persistant du Workflow
+
+Le CDP maintient `.claude/workflow-state.json` à chaque transition de phase.
+Voir format complet dans `context/CDP_WORKFLOWS.md` section 11.
+
+Règle : toute commande `status` / `resume` / `skip` / `jumpto` doit lire ce fichier en priorité.
 
 ## Regles Absolues
 
