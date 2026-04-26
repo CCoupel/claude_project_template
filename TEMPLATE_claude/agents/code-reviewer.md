@@ -75,6 +75,8 @@ Analyser le code implemente pour detecter les problemes de qualite, securite, pe
 - [ ] Cas limites couverts
 - [ ] Mocks/stubs appropries
 - [ ] Tests lisibles
+- [ ] Chaque endpoint/comportement defini dans `contracts/` a un test correspondant
+- [ ] Aucun test existant modifie sans changement documente dans `contracts/CHANGELOG.md`
 
 ### 6. Conformite Projet
 

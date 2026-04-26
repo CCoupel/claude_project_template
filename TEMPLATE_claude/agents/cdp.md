@@ -178,25 +178,38 @@ signaler explicitement à l'utilisateur lors du GATE 2 :
 
 **Presenter le plan a l'utilisateur et demander validation** ← GATE 2
 
-### Phase 2 — Developpement
+### Phase 2 — Developpement + Ecriture des Tests (parallele)
 
 > `ISSUE_NUM` détecté → label `EN COURS` via GitHub MCP :
 > `mcp__plugin_github_github__issue_write` — add label `EN COURS`, remove `PLANNING`, `EN REVIEW`, `EN QA`, `DONE`
 
-Determiner la strategie selon les dependances :
+Le test-writer démarre **en même temps que DEV** — il travaille depuis le plan et les contrats, pas depuis le code.
 
 ```
 Backend + Frontend avec dependances API :
-  → Sequentiel : SendMessage(dev-backend) → attendre → SendMessage(dev-frontend)
+  → dev-backend + test-writer dans le meme message
+  → dev-frontend apres dev-backend DONE
 
 Backend + Frontend independants :
-  → Parallele : SendMessage(dev-backend) ET SendMessage(dev-frontend) dans le meme message
+  → dev-backend + dev-frontend + test-writer dans le meme message
 
 Backend seul :
-  → SendMessage(dev-backend, "[instructions detaillees]")
+  → dev-backend + test-writer dans le meme message
 
 Frontend seul :
-  → SendMessage(dev-frontend, "[instructions detaillees]")
+  → dev-frontend + test-writer dans le meme message
+```
+
+Message test-writer (Phase 2) :
+```
+SendMessage({ to: "test-writer", content: "
+  Ecris les tests pour : [description]
+  Plan : [resume ou reference handoff planner]
+  Contrats API : contracts/ — les tests DOIVENT valider la conformite aux contrats.
+  Source : plan + contrats uniquement (le code n'est pas encore final).
+  Produire : scripts de tests (unit/integration/E2E) + procedures manuelles tests/procedures/.
+  Ne pas modifier les tests existants sauf changement documente dans contracts/CHANGELOG.md.
+" })
 ```
 
 **Après DEV parallèle — Résolution des conflits de merge**
@@ -212,38 +225,32 @@ SendMessage({ to: "dev-backend", content: "
 " })
 ```
 
-- DONE → Phase REVIEW + TEST-WRITER (en parallèle)
+- DONE → Phase REVIEW (test-writer a déjà produit ses livrables)
 - FAILED → escalade utilisateur (conflits non résolvables automatiquement) ← GATE 2b
 
-### Phase 3 — Revue + Ecriture des Tests (parallele)
+### Phase 3 — Revue
 
 > `ISSUE_NUM` détecté → label `EN REVIEW` via GitHub MCP :
 > `mcp__plugin_github_github__issue_write` — add label `EN REVIEW`, remove `EN COURS`, `PLANNING`, `EN QA`, `DONE`
 
-Dispatcher les deux agents dans le **meme message** :
-
 ```
 SendMessage({ to: "code-reviewer", content: "
   Revue du code depuis [branche/commit].
+  Tests ecrits par test-writer : SHA [sha].
   Focus : [general|security|performance|rationalization]
+  Verifier aussi : les tests couvrent-ils les contrats API (contracts/) ?
   Retourne : verdict APPROUVE / APPROUVE AVEC RESERVES / REFUSE + rapport detaille.
-" })
-SendMessage({ to: "test-writer", content: "
-  Ecris les tests pour la feature [description] implementee dans [branche/commit].
-  Plan : [resume du plan ou reference au message planner].
-  Contrats API : contracts/ si disponibles.
-  Produire : scripts de tests (unit/integration/E2E) + procedures manuelles dans tests/procedures/.
 " })
 ```
 
-Attendre les deux reponses avant de continuer.
-
-**Apres reception des deux reponses :**
-- code-reviewer APPROUVE (ou AVEC RESERVES) → Phase QA avec les tests du test-writer
-- code-reviewer REFUSE → cycle++
+**Apres reception :**
+- APPROUVE (ou AVEC RESERVES) → Phase QA
+- REFUSE → cycle++
   > `ISSUE_NUM` détecté → reset label `EN COURS` via GitHub MCP
   → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points du rapport]" })
-  → relancer REVIEW + TEST-WRITER en parallele (le test-writer met a jour ses tests)
+  → Si la correction touche le scope fonctionnel (BREAKING/CHANGED dans contracts/CHANGELOG.md) :
+    relancer TEST-WRITER + REVIEW en parallèle
+  → Sinon : relancer REVIEW seul
 - Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR ← GATE 3
 
 ### Phase 4 — Tests QA
