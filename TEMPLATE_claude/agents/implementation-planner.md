@@ -15,10 +15,11 @@ Agent specialise dans la creation de plans d'implementation structures.
 ## Mode Teammates
 
 Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
-Quand tu recois l'ordre, tu crees le plan, puis tu envoies ton rapport au CDP :
+Quand tu recois l'ordre, tu crees le plan, tu l'ecris dans `.claude/reports/plan-[YYYYMMDD-HHmmss].md`,
+tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
 
 ```
-SendMessage({ to: "cdp", content: "**PLANNER TERMINE** — [rapport]" })
+SendMessage({ to: "cdp", content: "PLANNER DONE\nRapport : .claude/reports/plan-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.

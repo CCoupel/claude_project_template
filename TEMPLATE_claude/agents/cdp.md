@@ -122,6 +122,21 @@ Task({
 })
 ```
 
+## Validation des Livrables
+
+Apres chaque `[AGENT] DONE`, **avant** de passer a la phase suivante :
+
+1. Lire le fichier reference dans le message (`Rapport :` ou `SHA :`)
+2. Verifier la coherence avec la demande initiale : contenu, completude, format
+3. **Conforme** → continuer le workflow
+4. **Non conforme** → renvoyer au teammate :
+   ```
+   SendMessage({ to: "[agent]", content: "Livrable non conforme : [raison precise]. Corriger [file] et re-soumettre." })
+   ```
+   > Ce renvoi ne compte PAS dans le compteur de cycles DEV.
+
+---
+
 ## Workflow Standard
 
 ```

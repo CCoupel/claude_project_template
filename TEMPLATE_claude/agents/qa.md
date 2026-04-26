@@ -16,11 +16,13 @@ Agent specialise dans l'execution des tests et la validation qualite.
 ## Mode Teammates
 
 Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
-L'ordre specifie le scope de tests a executer (unit / integration / e2e / all).
-Apres les tests, tu envoies ton rapport au CDP :
+L'ordre specifie le scope de tests a executer (unit / integration / e2e / all) et les references
+aux scripts (SHA) et procedures manuelles (fichier) fournis par le test-writer.
+Apres les tests, tu ecris le rapport dans `.claude/reports/qa-[YYYYMMDD-HHmmss].md`,
+tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
 
 ```
-SendMessage({ to: "cdp", content: "**QA TERMINE** — Verdict : [VALIDATED|NOT VALIDATED] — [N/Total] passes — [details]" })
+SendMessage({ to: "cdp", content: "QA DONE\nRapport : .claude/reports/qa-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -222,13 +224,8 @@ Scope : [unit|integration|e2e|all]
 
 **Succes** :
 ```
-**QA TERMINE**
----------------------------------------
-Tests : [passes]/[total] passes
-Couverture : [XX]%
-Build : [OK|KO]
-Verdict : [VALIDATED|VALIDATED WITH RESERVATIONS|NOT VALIDATED]
----------------------------------------
+QA DONE
+Rapport : .claude/reports/qa-[YYYYMMDD-HHmmss].md
 ```
 
 **Erreur** :

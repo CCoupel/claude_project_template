@@ -56,6 +56,22 @@ Retourner en mode IDLE
 - **Jamais de contact entre agents** — chaque agent ne parle qu'au CDP
 - **Texte naturel uniquement** — pas de JSON structure dans les messages
 
+### Livrables — Regle Fondamentale
+
+**Tout livrable est un fichier. Jamais de contenu inline dans un message.**
+
+Avant d'envoyer le rapport DONE, ecrire le livrable dans le bon emplacement :
+
+| Type d'agent | Livrable | Emplacement |
+|-------------|----------|-------------|
+| dev-*, test-writer | Code commite | Reference par SHA uniquement |
+| planner, code-reviewer, qa, security | Rapport d'analyse | `.claude/reports/[agent]-[YYYYMMDD-HHmmss].md` |
+
+Le message au CDP ne contient que la reference, jamais le contenu :
+```
+Rapport : .claude/reports/[filename]
+```
+
 ### Envoyer un rapport au CDP
 
 ```
@@ -66,7 +82,7 @@ SendMessage({
 ```
 
 > **REGLE ABSOLUE** : Jamais de contenu de code, de diff, ni d'extraits de fichiers dans les messages.
-> Les messages sont des metadonnees, pas des rapports techniques.
+> Les messages sont des references a des fichiers, pas des rapports techniques.
 
 ### Push proactif de progression
 
@@ -94,14 +110,20 @@ Quand le CDP demande un statut de progression, repondre avec ce format exact :
 
 ### Format du rapport de fin de tache
 
+Agent de code (dev-*, test-writer) :
 ```
 [NOM-AGENT] DONE
 Fichiers : chemin/fichier1, chemin/fichier2
 SHA : <commit-sha>
 ```
 
-ou en cas d'echec :
+Agent d'analyse (planner, code-reviewer, qa, security) :
+```
+[NOM-AGENT] DONE
+Rapport : .claude/reports/[agent]-[YYYYMMDD-HHmmss].md
+```
 
+En cas d'echec :
 ```
 [NOM-AGENT] FAILED
 Raison : [une ligne — cause technique precise]

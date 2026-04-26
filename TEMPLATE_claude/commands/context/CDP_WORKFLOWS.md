@@ -88,19 +88,29 @@ Analyser le scope :
 ### Phase Review
 
 ```
-Lancer code-reviewer
-|-- APPROVED -> Phase QA
-|-- APPROVED WITH RESERVATIONS -> Phase QA (noter reserves)
-|-- REJECTED -> Retour Phase Dev (cycle++)
+Lancer code-reviewer (+ test-writer en parallele)
+|-- Recevoir DONE + ref fichier rapport
+|-- CDP lit le rapport et valide la conformite
+    |-- Non conforme -> renvoyer pour correction (hors cycle)
+    |-- Conforme :
+        |-- APPROVED            -> Phase QA
+        |-- APPROVED WITH RESERVATIONS -> Phase QA (noter reserves)
+        |-- REJECTED            -> Retour Phase Dev (cycle++)
+                                   relancer code-reviewer + test-writer
 ```
 
 ### Phase QA
 
 ```
-Lancer QA
-|-- VALIDATED -> Phase Doc (automatique)
-|-- VALIDATED WITH RESERVATIONS -> Phase Doc (noter les reserves, continuer)
-|-- NOT VALIDATED -> Retour Phase Dev (cycle++)
+Lancer QA (avec ref scripts SHA + procedures test-writer)
+|-- Recevoir DONE + ref fichier rapport
+|-- CDP lit le rapport et valide la conformite
+    |-- Non conforme -> renvoyer pour correction (hors cycle)
+    |-- Conforme :
+        |-- VALIDATED                   -> Phase Doc (automatique)
+        |-- VALIDATED WITH RESERVATIONS -> Phase Doc (noter reserves, continuer)
+        |-- NOT VALIDATED               -> Retour Phase Dev (cycle++)
+                                           relancer code-reviewer + test-writer
 
 Si cycle > 3 -> ESCALADE utilisateur
 ```
