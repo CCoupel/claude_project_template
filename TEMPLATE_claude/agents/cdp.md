@@ -244,7 +244,29 @@ SendMessage({ to: "deployer", content: "
 " })
 ```
 
-Informer l'utilisateur que QUALIF est pret pour ses tests manuels.
+Lire `tests/procedures/[feature].md` (ecrit par le test-writer) et presenter a l'utilisateur :
+
+```markdown
+## QUALIF prete — Validation manuelle requise
+
+**Version** : [X.Y.Z]   **Branche** : [branche]   **URL** : [url qualif]
+
+### Ce qu'il faut valider
+
+[Pour chaque scenario de la procedure :]
+**Scenario N — [Nom]**
+| Etape | Action | Resultat attendu |
+|-------|--------|-----------------|
+| 1 | [action] | [attendu] |
+...
+
+### Methode de test
+[Prerequis, donnees de test, acces requis — depuis le fichier de procedure]
+
+---
+Quand vos tests sont satisfaisants : `/deploy prod`
+```
+
 **Le deploy PROD reste bloque jusqu'a `/deploy prod` explicite.** ← GATE 4
 
 ### Phase 7 — Deploiement PROD (via `/deploy prod`)
@@ -456,5 +478,5 @@ SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATU
 | DOC | OK | doc-updater |
 | DEPLOY QUALIF | OK | deployer |
 
-**Prochaine etape** : Tests manuels en QUALIF a votre convenance, puis `/deploy prod`
+**Prochaine etape** : Voir scenarios de validation ci-dessus, puis `/deploy prod`
 ```

@@ -159,7 +159,7 @@ Si cycle > 3 -> ESCALADE utilisateur
 - Documentation : [mise a jour]
 
 **Prochaines etapes**
-- QUALIF deployee — tests manuels a votre convenance
+- QUALIF deployee — voir scenarios de validation fournis ci-dessus
 - `/deploy PROD` quand pret
 ```
 
