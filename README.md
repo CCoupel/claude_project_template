@@ -44,10 +44,9 @@ EXTRA_ENVS=(
 ```
 
 **Comportements automatiques à l'ouverture d'un projet :**
-- Le launcher se met à jour silencieusement depuis GitHub à chaque lancement
+- Le launcher vérifie le dernier tag GitHub et se met à jour silencieusement si une nouvelle version est disponible
 - `init-project.md` est rafraîchi depuis GitHub à chaque ouverture de projet
 - Si GitHub est inaccessible et que le fichier existait déjà, l'ancienne version est conservée
-- Si GitHub est inaccessible et que c'est la première ouverture, un avertissement s'affiche dans le terminal
 
 Lancer ensuite `/init-project` dans Claude Code.
 
@@ -142,8 +141,9 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │       └── GITHUB.md
 │
 ├── agents/                      # Agents spécialisés
-│   ├── cdp.md
+│   ├── cdp.md                   # Chef De Projet — orchestrateur
 │   ├── implementation-planner.md
+│   ├── test-writer.md
 │   ├── code-reviewer.md
 │   ├── qa.md
 │   ├── security.md
@@ -172,6 +172,151 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 
 ---
 
+## Orchestration multi-agents
+
+Les workflows sont orchestrés par le **CDP (Chef De Projet)**, seul interlocuteur entre
+l'utilisateur et l'équipe technique. Le CDP dispatche via `SendMessage` vers les agents
+spécialisés, valide leurs livrables et reporte la progression.
+
+### Agents disponibles
+
+| Agent | Rôle |
+|-------|------|
+| `cdp` | Orchestrateur — coordonne, dispatche, reporte |
+| `planner` | Plan d'implémentation + contrats API (contract-first) |
+| `dev-backend` | Développement backend (stack détectée) |
+| `dev-frontend` | Développement frontend (stack détectée) |
+| `dev-firmware` | Développement firmware (si configuré) |
+| `test-writer` | Scripts de tests automatisés + procédures manuelles QA |
+| `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) |
+| `qa` | Exécution des tests et validation (unit/integration/E2E/perf) |
+| `infra` | Validation des procédures de déploiement + infra Docker/Helm/CI |
+| `deployer` | Déploiement QUALIF et PROD |
+| `doc-updater` | Mise à jour CHANGELOG, README, documentation technique |
+| `security` | Audit de sécurité (SAST, dépendances, secrets) |
+| `pr-reviewer` | Validation des Pull Requests externes |
+| `marketing` | Communication de release depuis les données GitHub |
+
+### Principes de communication
+
+- **Livrable = fichier** : chaque agent écrit son résultat dans un fichier, le message ne contient que la référence
+  - Agents d'analyse → `.claude/reports/[agent]-[timestamp].md`
+  - Agents de code → SHA du commit
+- **Handoff** : chaque agent écrit `.claude/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant
+- **Validation CDP** : à réception de chaque DONE, le CDP lit le fichier livrable et vérifie la conformité avant de continuer
+- **État persistant** : `.claude/workflow-state.json` mis à jour à chaque transition de phase — source de vérité pour `status`/`resume`/`skip`
+
+---
+
+## Workflows
+
+### Feature — workflow complet
+
+```
+[GATE 1] Confirmation démarrage
+    ↓
+PLAN ──────────────────────── contrats API + contracts/CHANGELOG.md
+    ↓
+[GATE 2] Validation plan (+ alerte breaking changes si détectés)
+    ↓
+DEV ───────────────────────── backend et/ou frontend
+    ↓  (si parallèle → merge conflicts résolus par dev-backend)
+    ↓  [GATE 2b] escalade si conflits non résolvables
+    ├──────────────────┐
+  REVIEW           TEST-WRITER ── scripts (unit/integration/E2E/perf) + procédures QA
+    └──────────────────┘
+    ↓  (attente des deux)
+QA ────────────────────────── exécute scripts + suit procédures manuelles
+    ↓
+DOC ───────────────────────── CHANGELOG + documentation technique
+    ↓
+INFRA validation QUALIF ────── cohérence procédure/infrastructure
+    ↓  [GATE 4b] escalade si écart détecté
+DEPLOY QUALIF
+    ↓
+[GATE 4] Validation manuelle ── CDP présente les scénarios à tester (depuis procédures test-writer)
+    ↓  /deploy prod
+INFRA validation PROD
+    ↓  [GATE 4c] escalade si écart détecté
+DEPLOY PROD
+```
+
+**Points de validation utilisateur (GATES) :**
+
+| Gate | Moment | Action requise |
+|------|--------|----------------|
+| 1 | Après analyse | Confirmer le démarrage |
+| 2 | Après plan | Valider le plan et les contrats API |
+| 2b | Conflits merge non résolvables | Résoudre manuellement |
+| 3 | 3 cycles DEV atteints | Continuer ou abandonner |
+| 4 | QUALIF prête | `/deploy prod` explicite |
+| 4b | Procédure QUALIF incohérente | Corriger avant deploy |
+| 4c | Procédure PROD incohérente | Corriger avant deploy |
+
+**Cycles de correction** (max 3 avant escalade) :
+- REVIEW refuse → DEV corrige → REVIEW + TEST-WRITER relancés en parallèle
+- QA échoue → DEV corrige → REVIEW + TEST-WRITER relancés en parallèle
+
+### Bugfix
+
+```
+ANALYSE ── cause racine
+    ↓
+DEV ── fix minimal et ciblé
+    ├──────────────────┐
+  REVIEW           TEST-WRITER ── test de régression (reproduit le bug, valide le fix)
+    └──────────────────┘
+    ↓
+QA ── exécute les tests + procédure manuelle
+    ↓
+DOC ── CHANGELOG (Fixed)
+    ↓
+DEPLOY QUALIF → /deploy prod
+```
+
+### Hotfix (urgence production)
+
+```
+DEV ── fix minimal uniquement
+    ↓
+REVIEW rapide
+    ↓
+DEPLOY PROD direct
+    ↓
+DOC ── post-mortem
+```
+
+### Refactor
+
+```
+QA (avant) ── capture l'état actuel des tests
+    ↓
+DEV ── refactoring (comportement identique obligatoire)
+    ├──────────────────┐
+  REVIEW           TEST-WRITER
+    └──────────────────┘
+    ↓
+QA (après) ── vérifie la non-régression
+    ↓
+DEPLOY QUALIF
+```
+
+### Contrats API (contract-first)
+
+Pour toute feature impliquant une API, le planner crée les contrats **avant** le développement :
+
+```
+contracts/
+├── http-endpoints.md       # Endpoints REST
+├── websocket-actions.md    # Messages WebSocket
+├── models.md               # Modèles de données
+└── CHANGELOG.md            # Historique BREAKING/NEW/CHANGED
+```
+
+Le frontend consulte les contrats sans les modifier. Le CDP alerte l'utilisateur en GATE 2 si des changements **BREAKING** sont détectés.
+
+---
+
 ## Commandes disponibles
 
 ### Session
@@ -186,10 +331,10 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 
 | Commande | Description |
 |----------|-------------|
-| `/feature <desc>` | Nouvelle fonctionnalité (PLAN→DEV→REVIEW→QA→DOC→DEPLOY) |
-| `/bugfix <desc>` | Correction de bug |
-| `/hotfix <desc>` | Correctif urgent production |
-| `/refactor <desc>` | Refactoring sans changement fonctionnel |
+| `/feature <desc>` | Nouvelle fonctionnalité — workflow complet avec PLAN, DEV parallèle, tests, deploy |
+| `/bugfix <desc>` | Correction de bug avec test de régression obligatoire |
+| `/hotfix <desc>` | Correctif urgent production — deploy direct sans attendre QUALIF |
+| `/refactor <desc>` | Refactoring sans changement fonctionnel — QA avant et après |
 
 ### Backlog et Milestones
 
@@ -205,23 +350,23 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 
 | Commande | Description |
 |----------|-------------|
-| `/progression` | Tableau de bord temps réel — statut de chaque agent actif (`✅ Terminé`, `🔄 En cours`, `⏳ Attente dépendance`, `💬 Attente teammate`, `👤 Attente validation`, `🔴 Bloqué`) |
+| `/progression` | Tableau de bord temps réel — statut de chaque agent actif |
 
 ### Validation
 
 | Commande | Description |
 |----------|-------------|
-| `/review` | Revue de code |
-| `/qa` | Tests et validation qualité |
-| `/secu` | Audit de sécurité |
+| `/review` | Revue de code directe (sans passer par /feature) |
+| `/qa` | Tests et validation qualité directs |
+| `/secu` | Audit de sécurité complet (SAST, OWASP, dépendances, secrets) |
 
 ### Déploiement et Communication
 
 | Commande | Description |
 |----------|-------------|
-| `/deploy qualif` | Déploiement en qualification |
-| `/deploy prod` | Déploiement en production (+ clôture milestone automatique) |
-| `/marketing [version]` | Mise à jour site gh-pages depuis milestone + CHANGELOG |
+| `/deploy qualif` | Déploiement en qualification (avec validation infra préalable) |
+| `/deploy prod` | Déploiement en production (gate explicite requis) |
+| `/marketing [version]` | Release notes depuis milestone + CHANGELOG GitHub |
 
 ---
 
@@ -234,7 +379,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
         ↓
 /backlog #42                         Travailler une issue
         ↓
-/feature "#42 - Auth OAuth"          Workflow complet
+/feature "#42 - Auth OAuth"          Workflow complet multi-agents
         ↓
 /deploy prod                         CI/CD → proposition de clôture du milestone
         ↓
