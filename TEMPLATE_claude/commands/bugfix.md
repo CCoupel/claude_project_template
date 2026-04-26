@@ -41,15 +41,12 @@ Sinon -> workflow normal.
     |
     v
 [DEV] --> Implementation du fix
-    |
-    v
-[TEST] --> Test de non-regression
-    |
-    v
-[REVIEW] --> Revue de code
-    |
-    v
-[QA] --> Validation
+    |           |
+    v           v
+[REVIEW]   [TEST-WRITER] --> test de regression (en parallele)
+    \           /
+     v         v
+      [QA] --> Execution + procedure manuelle
     |
     v
 [DOC] --> CHANGELOG (Fixed)
@@ -77,12 +74,12 @@ Pour les bugs complexes uniquement :
 - Eviter les changements non lies au bug
 - Ajouter des commentaires si logique complexe
 
-### 4. TEST
+### 4. TEST-WRITER (parallele avec REVIEW)
 
-**Obligatoire** : Test de non-regression
-- Reproduit le bug avant le fix
-- Valide que le fix corrige le probleme
-- S'assure qu'il n'y a pas de regression
+**Obligatoire** : Test de non-regression ecrit par test-writer
+- Script qui reproduit le bug avant le fix (red) et passe apres (green)
+- Procedure manuelle dans `tests/procedures/` pour que QA valide le scenario
+- Execute en parallele avec le code-reviewer — independants l'un de l'autre
 
 ### 5. REVIEW
 

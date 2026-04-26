@@ -34,25 +34,22 @@ Sinon -> workflow normal.
 /feature <description>
     |
     v
-[PLAN] --> Plan d'implementation detaille
+[PLAN] --> Plan d'implementation + contrats API
     |
     v
 [DEV] --> Implementation (agents tech selon stack)
-    |
-    v
-[TEST] --> Ecriture des tests
-    |
-    v
-[REVIEW] --> Revue de code
-    |
-    v
-[QA] --> Execution tests + validation
+    |           |
+    v           v
+[REVIEW]   [TEST-WRITER] --> (en parallele)
+    \           /
+     v         v
+      [QA] --> Execution scripts + procedures manuelles
     |
     v
 [DOC] --> Documentation
     |
     v
-[DEPLOY] --> Deploiement (sur demande)
+[DEPLOY] --> Deploiement QUALIF (PROD sur /deploy prod)
 ```
 
 ## Prompt a transmettre au CDP

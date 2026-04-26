@@ -67,8 +67,9 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `dev-backend` | dev-backend | Backend (stack detectee) |
 | `dev-frontend` | dev-frontend | Frontend (stack detectee) |
 | `dev-firmware` | dev-firmware | Firmware (si configure) |
+| `test-writer` | test-writer | Scripts de tests + procedures manuelles QA |
 | `code-reviewer` | code-reviewer | Revue de code |
-| `qa` | qa | Tests et validation |
+| `qa` | qa | Execution des tests et validation |
 | `security` | security | Audit securite |
 | `doc-updater` | doc-updater | Documentation |
 | `deployer` | deploy | Deploiement QUALIF/PROD |
@@ -104,10 +105,10 @@ TeamCreate({
 
 | Workflow | Agents a spawner |
 |----------|-----------------|
-| Feature | planner + dev(s) concernes + code-reviewer + qa + doc-updater + deployer |
-| Bugfix | dev(s) concernes + code-reviewer + qa + doc-updater + deployer |
+| Feature | planner + dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + deployer |
+| Bugfix | dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + deployer |
 | Hotfix | dev(s) concernes + deployer |
-| Refactor | dev(s) concernes + code-reviewer + qa |
+| Refactor | dev(s) concernes + test-writer + code-reviewer + qa |
 | Secu | security |
 | Deploy | deployer |
 
@@ -124,8 +125,11 @@ Task({
 ## Workflow Standard
 
 ```
-ANALYSE → PLAN → DEV → REVIEW → QA → DOC → DEPLOY
+ANALYSE → PLAN → DEV → [REVIEW ∥ TEST-WRITER] → QA → DOC → DEPLOY
 ```
+
+> REVIEW et TEST-WRITER s'executent **en parallele** apres DEV.
+> Si REVIEW refuse : DEV corrige → relance REVIEW + TEST-WRITER en parallele.
 
 ### Phase 0 — Analyse
 
@@ -165,7 +169,9 @@ Frontend seul :
   → SendMessage(dev-frontend, "[instructions detaillees]")
 ```
 
-### Phase 3 — Revue
+### Phase 3 — Revue + Ecriture des Tests (parallele)
+
+Dispatcher les deux agents dans le **meme message** :
 
 ```
 SendMessage({ to: "code-reviewer", content: "
@@ -173,24 +179,36 @@ SendMessage({ to: "code-reviewer", content: "
   Focus : [general|security|performance|rationalization]
   Retourne : verdict APPROUVE / APPROUVE AVEC RESERVES / REFUSE + rapport detaille.
 " })
+SendMessage({ to: "test-writer", content: "
+  Ecris les tests pour la feature [description] implementee dans [branche/commit].
+  Plan : [resume du plan ou reference au message planner].
+  Contrats API : contracts/ si disponibles.
+  Produire : scripts de tests (unit/integration/E2E) + procedures manuelles dans tests/procedures/.
+" })
 ```
 
-- APPROUVE → Phase QA
-- APPROUVE AVEC RESERVES → Phase QA (noter les reserves)
-- REFUSE → Retour Phase DEV (cycle++) — max 3 cycles
+Attendre les deux reponses avant de continuer.
+
+**Apres reception des deux reponses :**
+- code-reviewer APPROUVE (ou AVEC RESERVES) → Phase QA avec les tests du test-writer
+- code-reviewer REFUSE → cycle++ → SendMessage(dev, "Corriger : [points]")
+  puis relancer REVIEW + TEST-WRITER en parallele (le test-writer met a jour ses tests)
+- Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR ← GATE 3
 
 ### Phase 4 — Tests QA
 
 ```
 SendMessage({ to: "qa", content: "
   Execute les tests sur la branche [branche].
+  Scripts de tests : commites par test-writer (SHA [sha]).
+  Procedures manuelles : tests/procedures/[feature].md.
   Scope : [unit|integration|e2e|all]
   Retourne : verdict VALIDATED / NOT VALIDATED + rapport detaille.
 " })
 ```
 
 - VALIDATED → Phase DOC (automatique, sans attendre l'utilisateur)
-- NOT VALIDATED → Retour Phase DEV (cycle++) — max 3 cycles
+- NOT VALIDATED → Retour Phase DEV (cycle++) puis relance REVIEW + TEST-WRITER en parallele
 - Si cycle > 3 → **Escalade utilisateur** ← GATE 3
 
 ### Phase 5 — Documentation
@@ -230,13 +248,13 @@ Informer l'utilisateur du resultat.
 ### Feature
 
 ```
-PLAN → (infra si necessaire) → DEV → REVIEW → QA → DOC → DEPLOY QUALIF
+PLAN → (infra si necessaire) → DEV → [REVIEW ∥ TEST-WRITER] → QA → DOC → DEPLOY QUALIF
 ```
 
 ### Bugfix
 
 ```
-DEV → REVIEW → QA → DOC → DEPLOY QUALIF
+ANALYSE → DEV → [REVIEW ∥ TEST-WRITER (regression)] → QA → DOC → DEPLOY QUALIF
 ```
 
 ### Hotfix
@@ -248,7 +266,7 @@ DEV (minimal) → [REVIEW rapide] → DEPLOY PROD direct → DOC (post-mortem)
 ### Refactor
 
 ```
-QA (avant) → DEV → REVIEW → QA (apres) → DEPLOY QUALIF
+QA (avant) → DEV → [REVIEW ∥ TEST-WRITER] → QA (apres) → DEPLOY QUALIF
 ```
 
 ### Securite
@@ -269,8 +287,10 @@ Phase C : Validation fonctionnelle → Phase D : Merge
 ```
 MAX_CYCLES = 3
 
-Si REVIEW = REFUSE → cycle++ → SendMessage(dev, "Corriger : [points du rapport]")
-Si QA = NOT VALIDATED → cycle++ → SendMessage(dev, "Corriger les tests : [erreurs]")
+Si REVIEW = REFUSE    → cycle++ → SendMessage(dev, "Corriger : [points]")
+                                 → relancer REVIEW + TEST-WRITER en parallele
+Si QA = NOT VALIDATED → cycle++ → SendMessage(dev, "Corriger : [erreurs]")
+                                 → relancer REVIEW + TEST-WRITER en parallele
 Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ```
 
