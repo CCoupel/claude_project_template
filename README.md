@@ -187,8 +187,8 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `dev-backend` | Développement backend (stack détectée) |
 | `dev-frontend` | Développement frontend (stack détectée) |
 | `dev-firmware` | Développement firmware (si configuré) |
-| `test-writer` | Scripts de tests automatisés + procédures manuelles QA |
-| `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) |
+| `test-writer` | Tests TDD depuis le plan/contrats (en parallèle du DEV) — unit/integration/E2E/perf + procédures QA |
+| `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) + vérification couverture des contrats |
 | `qa` | Exécution des tests et validation (unit/integration/E2E/perf) |
 | `infra` | Validation des procédures de déploiement + infra Docker/Helm/CI |
 | `deployer` | Déploiement QUALIF et PROD |
@@ -216,29 +216,31 @@ spécialisés, valide leurs livrables et reporte la progression.
 [GATE 1] Confirmation démarrage
     ↓
 PLAN ──────────────────────── contrats API + contracts/CHANGELOG.md
-    ↓
+    ↓  label PLANNING
 [GATE 2] Validation plan (+ alerte breaking changes si détectés)
-    ↓
-DEV ───────────────────────── backend et/ou frontend
-    ↓  (si parallèle → merge conflicts résolus par dev-backend)
+    ↓  label EN COURS
+    ├──────────────────────────┐
+  DEV                     TEST-WRITER ── depuis plan + contrats (TDD)
+    └──────────────────────────┘
+    ↓  (si backend+frontend parallèle → merge conflicts résolus par dev-backend)
     ↓  [GATE 2b] escalade si conflits non résolvables
-    ├──────────────────┐
-  REVIEW           TEST-WRITER ── scripts (unit/integration/E2E/perf) + procédures QA
-    └──────────────────┘
-    ↓  (attente des deux)
-QA ────────────────────────── exécute scripts + suit procédures manuelles
+    ↓  label EN REVIEW
+REVIEW ─────────────────────── code + vérifie couverture des contrats par les tests
     ↓
+    ↓  label EN QA
+QA ────────────────────────── exécute scripts + suit procédures manuelles
+    ↓  label DONE
 DOC ───────────────────────── CHANGELOG + documentation technique
     ↓
 INFRA validation QUALIF ────── cohérence procédure/infrastructure
     ↓  [GATE 4b] escalade si écart détecté
 DEPLOY QUALIF
     ↓
-[GATE 4] Validation manuelle ── CDP présente les scénarios à tester (depuis procédures test-writer)
-    ↓  /deploy prod
-INFRA validation PROD
-    ↓  [GATE 4c] escalade si écart détecté
-DEPLOY PROD
+[GATE 4] Validation manuelle ── CDP présente les scénarios à tester
+    ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD → milestone si 100%
+    └─ NON → label EN COURS → retour DEV ou PLAN selon l'écart
+    ↓  [GATE 4c] escalade si infra PROD incohérente
+DEPLOY PROD ────────────────── CI/CD → si milestone 100% : fermeture automatique
 ```
 
 **Points de validation utilisateur (GATES) :**
@@ -249,29 +251,31 @@ DEPLOY PROD
 | 2 | Après plan | Valider le plan et les contrats API |
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
-| 4 | QUALIF prête | `/deploy prod` explicite |
+| 4 | QUALIF prête | OUI (issue fermée + deploy prod) ou NON (retour DEV) |
 | 4b | Procédure QUALIF incohérente | Corriger avant deploy |
 | 4c | Procédure PROD incohérente | Corriger avant deploy |
 
 **Cycles de correction** (max 3 avant escalade) :
-- REVIEW refuse → DEV corrige → REVIEW + TEST-WRITER relancés en parallèle
-- QA échoue → DEV corrige → REVIEW + TEST-WRITER relancés en parallèle
+- REVIEW refuse → DEV corrige → REVIEW seul (TEST-WRITER uniquement si scope change)
+- QA échoue → DEV corrige → REVIEW seul (TEST-WRITER uniquement si scope change)
+- Scope change = changement `BREAKING` ou `CHANGED` dans `contracts/CHANGELOG.md`
 
 ### Bugfix
 
 ```
 ANALYSE ── cause racine
-    ↓
-DEV ── fix minimal et ciblé
-    ├──────────────────┐
-  REVIEW           TEST-WRITER ── test de régression (reproduit le bug, valide le fix)
-    └──────────────────┘
-    ↓
+    ↓  label EN COURS
+    ├──────────────────────────┐
+  DEV ── fix minimal       TEST-WRITER ── test de régression depuis la spec du bug
+    └──────────────────────────┘
+    ↓  label EN REVIEW
+REVIEW
+    ↓  label EN QA
 QA ── exécute les tests + procédure manuelle
-    ↓
+    ↓  label DONE
 DOC ── CHANGELOG (Fixed)
     ↓
-DEPLOY QUALIF → /deploy prod
+DEPLOY QUALIF → [GATE 4] OUI → issue fermée → DEPLOY PROD
 ```
 
 ### Hotfix (urgence production)
@@ -314,6 +318,36 @@ contracts/
 ```
 
 Le frontend consulte les contrats sans les modifier. Le CDP alerte l'utilisateur en GATE 2 si des changements **BREAKING** sont détectés.
+
+### Suivi des issues GitHub
+
+Le CDP met à jour les labels de l'issue associée (via plugin GitHub MCP) à chaque transition de phase :
+
+| Label | Moment |
+|-------|--------|
+| `PLANNING` | Phase 1 — plan en cours |
+| `EN COURS` | GATE 2 validé — DEV + TEST-WRITER démarrés |
+| `EN REVIEW` | Phase 3 — REVIEW en cours |
+| `EN QA` | Phase 4 — QA en cours |
+| `DONE` | QA validée |
+| *(issue fermée)* | GATE 4 — utilisateur confirme que l'implémentation est conforme |
+
+Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
+Si l'utilisateur rejette à GATE 4, l'issue repasse à `EN COURS` et repart en DEV ou PLAN.
+
+### Clôture de milestone
+
+Après un déploiement PROD (CI OK), le CDP vérifie le milestone actif :
+- **100% des issues fermées** → milestone clos automatiquement
+- **Issues encore ouvertes** → alerte utilisateur avec la liste
+
+---
+
+## Approche TDD
+
+Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les contrats API — pas depuis le code livré. Les tests définissent le comportement attendu ; le développeur implémente pour les faire passer.
+
+**Règle de non-régression** : les tests existants sont immuables. Seul un changement `BREAKING` ou `CHANGED` documenté dans `contracts/CHANGELOG.md` autorise leur mise à jour. Le `code-reviewer` vérifie que les tests couvrent bien tous les contrats.
 
 ---
 
