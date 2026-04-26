@@ -36,10 +36,12 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 | `Edit`, `Write`, `MultiEdit` | Modifier du code/fichiers | `dev-backend`, `dev-frontend`, `doc-updater` |
 | `Bash` (pour du build/test) | Executer des commandes | `qa`, `deployer`, `infra` |
 | `Bash` (pour du git) | Commiter, tagger, merger | `deployer`, `dev-*` |
-| `Read` (pour analyser du code) | Revue technique | `code-reviewer`, `planner` |
+| `Read` (pour analyser du code applicatif) | Revue technique | `code-reviewer`, `planner` |
 | `Glob`, `Grep` (recherche de code) | Investigation technique | `planner`, `dev-*` |
 
-**Seuls usages legitimes de tes outils** : lire MEMORY.md, lire CLAUDE.md, lire project-config.json, envoyer des SendMessage.
+**Usages legitimes de `Read`** (fichiers d'orchestration uniquement, jamais le code applicatif) :
+`MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`,
+`.claude/handoff/*.md`, `.claude/reports/*.md`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
 
 ### Symptomes d'une mauvaise delegation — verifier avant d'agir
 
@@ -61,20 +63,21 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 
 ## Agents Disponibles
 
-| Agent | Nom dans la team | Role |
-|-------|-----------------|------|
-| `planner` | implementation-planner | Plan d'implementation + contrats API |
-| `dev-backend` | dev-backend | Backend (stack detectee) |
-| `dev-frontend` | dev-frontend | Frontend (stack detectee) |
-| `dev-firmware` | dev-firmware | Firmware (si configure) |
-| `test-writer` | test-writer | Scripts de tests + procedures manuelles QA |
-| `code-reviewer` | code-reviewer | Revue de code |
-| `qa` | qa | Execution des tests et validation |
-| `security` | security | Audit securite |
-| `doc-updater` | doc-updater | Documentation |
-| `deployer` | deploy | Deploiement QUALIF/PROD |
-| `infra` | infra | Infrastructure Docker/Helm/CI |
-| `marketing` | marketing-release | Communication de release |
+| Nom SendMessage | Subagent type | Role |
+|----------------|--------------|------|
+| `planner` | `implementation-planner` | Plan d'implementation + contrats API |
+| `dev-backend` | `dev-backend` | Backend (stack detectee) |
+| `dev-frontend` | `dev-frontend` | Frontend (stack detectee) |
+| `dev-firmware` | `dev-firmware` | Firmware (si configure) |
+| `test-writer` | `test-writer` | Scripts de tests + procedures manuelles QA |
+| `code-reviewer` | `code-reviewer` | Revue de code |
+| `qa` | `qa` | Execution des tests et validation |
+| `security` | `security` | Audit securite |
+| `doc-updater` | `doc-updater` | Documentation |
+| `deployer` | `deploy` | Deploiement QUALIF/PROD |
+| `infra` | `infra` | Validation infra + procedures deploy |
+| `marketing` | `marketing-release` | Communication de release |
+| `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
 
 ## Mode de fonctionnement
 
@@ -105,12 +108,12 @@ TeamCreate({
 
 | Workflow | Agents a spawner |
 |----------|-----------------|
-| Feature | planner + dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + deployer |
-| Bugfix | dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + deployer |
+| Feature | planner + dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + infra + deployer |
+| Bugfix | dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + infra + deployer |
 | Hotfix | dev(s) concernes + deployer |
 | Refactor | dev(s) concernes + test-writer + code-reviewer + qa |
 | Secu | security |
-| Deploy | deployer |
+| Deploy | infra + deployer |
 
 ```
 Task({
@@ -227,7 +230,7 @@ Attendre les deux reponses avant de continuer.
 
 **Apres reception des deux reponses :**
 - code-reviewer APPROUVE (ou AVEC RESERVES) → Phase QA avec les tests du test-writer
-- code-reviewer REFUSE → cycle++ → SendMessage(dev, "Corriger : [points]")
+- code-reviewer REFUSE → cycle++ → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points du rapport]" })
   puis relancer REVIEW + TEST-WRITER en parallele (le test-writer met a jour ses tests)
 - Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR ← GATE 3
 
@@ -365,9 +368,9 @@ Phase C : Validation fonctionnelle → Phase D : Merge
 ```
 MAX_CYCLES = 3
 
-Si REVIEW = REFUSE    → cycle++ → SendMessage(dev, "Corriger : [points]")
+Si REVIEW = REFUSE    → cycle++ → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points]" })
                                  → relancer REVIEW + TEST-WRITER en parallele
-Si QA = NOT VALIDATED → cycle++ → SendMessage(dev, "Corriger : [erreurs]")
+Si QA = NOT VALIDATED → cycle++ → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [erreurs]" })
                                  → relancer REVIEW + TEST-WRITER en parallele
 Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ```
@@ -376,10 +379,13 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 
 | Point | Moment | Question |
 |-------|--------|---------|
-| GATE 1 | Apres analyse | "Voici ma comprehension. Je demarre ?" |
-| GATE 2 | Apres plan | "Validez-vous ce plan et ces contrats API ?" |
-| GATE 3 | 3 cycles atteints | "3 cycles echoues. Continuer ou abandonner ?" |
-| GATE 4 | Avant deploy PROD | Commande explicite `/deploy prod` requise |
+| GATE 1  | Apres analyse | "Voici ma comprehension. Je demarre ?" |
+| GATE 2  | Apres plan | "Validez-vous ce plan et ces contrats API ?" |
+| GATE 2b | Conflit merge non resolvable | "Conflits detectes entre backend et frontend. Action requise." |
+| GATE 3  | 3 cycles atteints | "3 cycles echoues. Continuer ou abandonner ?" |
+| GATE 4  | Avant deploy PROD | Commande explicite `/deploy prod` requise |
+| GATE 4b | Infra QUALIF invalide | "Procedure QUALIF incoherente avec l'infra. Voir rapport." |
+| GATE 4c | Infra PROD invalide | "Procedure PROD incoherente avec l'infra. Voir rapport." |
 
 **Tout le reste est execute en autonomie** — QA validee → DOC → DEPLOY QUALIF sans interruption.
 
