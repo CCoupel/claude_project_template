@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Template de gestion de projet pour Claude Code — agents spécialisés, workflows orchestrés, GitHub intégré." />
+  <meta name="description" content="Template de gestion de projet pour Claude Code — agents spécialisés, workflows orchestrés, GitHub intégré, TDD natif." />
   <title>Claude Project Template</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,20 +12,16 @@
 </head>
 <body>
 
-<!-- ============================
-     Navigation
-     ============================ -->
 <nav>
   <div class="container nav-inner">
-    <div class="nav-logo">
-      ⬡ <span>claude</span>_project_template
-    </div>
+    <div class="nav-logo">⬡ <span>claude</span>_project_template</div>
     <ul class="nav-links">
       <li><a href="#problems" data-i18n="nav.problems">Problèmes</a></li>
-      <li><a href="#solutions" data-i18n="nav.solutions">Solutions</a></li>
+      <li><a href="#workflow" data-i18n="nav.workflow">Workflow</a></li>
+      <li><a href="#github"   data-i18n="nav.github">GitHub</a></li>
       <li><a href="#features" data-i18n="nav.features">Fonctionnalités</a></li>
-      <li><a href="#install" data-i18n="nav.install">Installation</a></li>
-      <li><a href="#roadmap" data-i18n="nav.roadmap">Roadmap</a></li>
+      <li><a href="#install"  data-i18n="nav.install">Installation</a></li>
+      <li><a href="#roadmap"  data-i18n="nav.roadmap">Roadmap</a></li>
     </ul>
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="fr">FR</button>
@@ -35,241 +31,297 @@
   </div>
 </nav>
 
-<!-- ============================
-     Hero
-     ============================ -->
 <section id="hero">
   <div class="container">
-    <div class="hero-badge">
-      <span class="dot"></span>
-      v2.0.0
-    </div>
-    <h1>
-      <em>Claude Code</em><br>
-      Project Template
-    </h1>
-    <p class="hero-tagline" data-i18n="hero.tagline">Template de gestion de projet pour Claude Code</p>
-    <p class="hero-tagline" data-i18n="hero.description" style="font-size:.95rem;margin-top:-.5rem"></p>
-    <div class="hero-version">
-      $ curl -o .claude/commands/init-project.md https://raw.githubusercontent.com/CCoupel/claude_project_template/main/.claude/commands/init-project.md
-    </div>
+    <div class="hero-badge"><span class="dot"></span><span class="version-tag">…</span></div>
+    <h1><em>Claude Code</em><br>Project Template</h1>
+    <p class="hero-tagline" data-i18n="hero.tagline"></p>
+    <p class="hero-sub" data-i18n="hero.description"></p>
     <div class="hero-ctas">
-      <a href="#install" class="btn btn-primary" data-i18n="hero.cta.install">Démarrer en 1 minute</a>
+      <a href="#install" class="btn btn-primary" data-i18n="hero.cta.install">Démarrer</a>
       <a href="https://github.com/CCoupel/claude_project_template/releases" class="btn btn-outline" target="_blank" rel="noopener" data-i18n="hero.cta.releases">Voir les releases</a>
     </div>
   </div>
 </section>
 
-<!-- ============================
-     Problems
-     ============================ -->
 <section id="problems">
   <div class="container">
     <div class="section-header">
-      <h2 data-i18n="problems.title">Le développement assisté par IA manque de structure</h2>
-      <p data-i18n="problems.subtitle">Claude Code est puissant — mais sans cadre, chaque projet repart de zéro.</p>
+      <h2 data-i18n="problems.title"></h2>
+      <p data-i18n="problems.subtitle"></p>
     </div>
     <div class="problems-grid">
-      <div class="problem-card">
-        <div class="problem-icon">🔀</div>
-        <h3 data-i18n="problems.p1.title">Workflows incohérents</h3>
-        <p data-i18n="problems.p1.desc">Chaque feature, bugfix ou deploy suit un chemin différent. Pas de standard, pas de revue systématique, des oublis fréquents.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">🧠</div>
-        <h3 data-i18n="problems.p2.title">Contexte perdu entre sessions</h3>
-        <p data-i18n="problems.p2.desc">Claude ne se souvient pas de la session précédente. Version en cours, décisions prises, règles du projet — tout se répète.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">🏝️</div>
-        <h3 data-i18n="problems.p3.title">GitHub en silo</h3>
-        <p data-i18n="problems.p3.desc">Issues, milestones, PRs et releases sont gérés manuellement, en dehors du flux de développement.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">🧊</div>
-        <h3 data-i18n="problems.p4.title">Template figé après l'init</h3>
-        <p data-i18n="problems.p4.desc">Les outils d'amorçage copient des fichiers et disparaissent. Impossible de récupérer les améliorations sans tout refaire.</p>
-      </div>
+      <div class="problem-card"><div class="problem-icon">🔀</div><h3 data-i18n="problems.p1.title"></h3><p data-i18n="problems.p1.desc"></p></div>
+      <div class="problem-card"><div class="problem-icon">🧠</div><h3 data-i18n="problems.p2.title"></h3><p data-i18n="problems.p2.desc"></p></div>
+      <div class="problem-card"><div class="problem-icon">🐙</div><h3 data-i18n="problems.p3.title"></h3><p data-i18n="problems.p3.desc"></p></div>
+      <div class="problem-card"><div class="problem-icon">🧪</div><h3 data-i18n="problems.p4.title"></h3><p data-i18n="problems.p4.desc"></p></div>
     </div>
   </div>
 </section>
 
-<!-- ============================
-     Solutions
-     ============================ -->
-<section id="solutions">
+<section id="workflow">
   <div class="container">
     <div class="section-header">
-      <h2 data-i18n="solutions.title">Un cadre complet, toujours à jour</h2>
-      <p data-i18n="solutions.subtitle">Architecture TEMPLATE / PROJET : les commandes viennent de GitHub, votre code reste le vôtre.</p>
+      <h2 data-i18n="workflow.title"></h2>
+      <p data-i18n="workflow.subtitle"></p>
     </div>
-    <div class="solutions-grid">
-      <div class="solution-card">
-        <div class="solution-icon">🎯</div>
-        <h3 data-i18n="solutions.s1.title">Workflows orchestrés par le CDP</h3>
-        <p data-i18n="solutions.s1.desc">Le Chef de Projet coordonne planner, devs, reviewer, QA, doc et deploy. Chaque commande suit un flux précis avec points de validation.</p>
+    <div class="pipeline">
+
+      <div class="pipeline-gate">
+        <span class="gate-label">GATE 1</span>
+        <span class="gate-desc" data-i18n="wf.gate1"></span>
       </div>
-      <div class="solution-card">
-        <div class="solution-icon">💾</div>
-        <h3 data-i18n="solutions.s2.title">Mémoire de session persistante</h3>
-        <p data-i18n="solutions.s2.desc">/start-session lit l'état du projet, la version courante, le milestone actif et le travail en cours. Aucune répétition.</p>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-step step-plan">
+        <div class="step-agent">planner</div>
+        <div class="step-title" data-i18n="wf.plan"></div>
+        <div class="step-desc" data-i18n="wf.plan.desc"></div>
+        <span class="step-label label-planning">PLANNING</span>
       </div>
-      <div class="solution-card">
-        <div class="solution-icon">🐙</div>
-        <h3 data-i18n="solutions.s3.title">GitHub natif</h3>
-        <p data-i18n="solutions.s3.desc">Issues, milestones, PRs, releases, CI/CD — tout s'orchestre via context/GITHUB.md partagé entre tous les agents.</p>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-gate">
+        <span class="gate-label">GATE 2</span>
+        <span class="gate-desc" data-i18n="wf.gate2"></span>
       </div>
-      <div class="solution-card">
-        <div class="solution-icon">🔄</div>
-        <h3 data-i18n="solutions.s4.title">Toujours à jour</h3>
-        <p data-i18n="solutions.s4.desc">Un seul fichier à copier. /init-project fetche la dernière version depuis GitHub et migre automatiquement les projets existants.</p>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-parallel-block">
+        <div class="parallel-header" data-i18n="wf.parallel"></div>
+        <div class="pipeline-parallel">
+          <div class="pipeline-step step-dev">
+            <div class="step-agent">dev-backend · dev-frontend</div>
+            <div class="step-title" data-i18n="wf.dev"></div>
+            <div class="step-desc" data-i18n="wf.dev.desc"></div>
+          </div>
+          <div class="parallel-sep">∥</div>
+          <div class="pipeline-step step-test">
+            <div class="step-agent">test-writer</div>
+            <div class="step-title" data-i18n="wf.tests"></div>
+            <div class="step-desc" data-i18n="wf.tests.desc"></div>
+          </div>
+        </div>
+        <span class="step-label label-encours" style="margin-top:.75rem;display:inline-block">EN COURS</span>
       </div>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-step step-review">
+        <div class="step-agent">code-reviewer</div>
+        <div class="step-title" data-i18n="wf.review"></div>
+        <div class="step-desc" data-i18n="wf.review.desc"></div>
+        <span class="step-label label-review">EN REVIEW</span>
+      </div>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-step step-qa">
+        <div class="step-agent">qa</div>
+        <div class="step-title" data-i18n="wf.qa"></div>
+        <div class="step-desc" data-i18n="wf.qa.desc"></div>
+        <span class="step-label label-qa">EN QA</span>
+      </div>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-step step-doc">
+        <div class="step-agent">doc-updater</div>
+        <div class="step-title" data-i18n="wf.doc"></div>
+        <div class="step-desc" data-i18n="wf.doc.desc"></div>
+        <span class="step-label label-done">DONE</span>
+      </div>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-step step-qualif">
+        <div class="step-agent">infra · deployer</div>
+        <div class="step-title" data-i18n="wf.qualif"></div>
+        <div class="step-desc" data-i18n="wf.qualif.desc"></div>
+      </div>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-gate gate-user">
+        <span class="gate-label">GATE 4</span>
+        <span class="gate-desc" data-i18n="wf.gate4"></span>
+        <div class="gate-branches">
+          <span class="gate-ok" data-i18n="wf.gate4.ok"></span>
+          <span class="gate-ko" data-i18n="wf.gate4.ko"></span>
+        </div>
+      </div>
+      <div class="pipeline-arrow">↓</div>
+
+      <div class="pipeline-step step-prod">
+        <div class="step-agent">infra · deployer</div>
+        <div class="step-title" data-i18n="wf.prod"></div>
+        <div class="step-desc" data-i18n="wf.prod.desc"></div>
+      </div>
+
+    </div>
+    <div class="pipeline-note" data-i18n="wf.cycles"></div>
+  </div>
+</section>
+
+<section id="github">
+  <div class="container">
+    <div class="section-header">
+      <h2 data-i18n="github.title"></h2>
+      <p data-i18n="github.subtitle"></p>
+    </div>
+    <div class="github-grid">
+
+      <div class="github-card">
+        <h3 data-i18n="github.labels.title"></h3>
+        <p data-i18n="github.labels.desc"></p>
+        <div class="label-chain">
+          <div class="label-step"><span class="phase-badge badge-planning">PLANNING</span><span class="label-step-desc" data-i18n="github.l1"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-encours">EN COURS</span><span class="label-step-desc" data-i18n="github.l2"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-review">EN REVIEW</span><span class="label-step-desc" data-i18n="github.l3"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-qa">EN QA</span><span class="label-step-desc" data-i18n="github.l4"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-done">DONE</span><span class="label-step-desc" data-i18n="github.l5"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-closed">✓ closed</span><span class="label-step-desc" data-i18n="github.l6"></span></div>
+        </div>
+        <p class="label-note" data-i18n="github.labels.reset"></p>
+      </div>
+
+      <div class="github-card">
+        <h3 data-i18n="github.milestone.title"></h3>
+        <p data-i18n="github.milestone.desc"></p>
+        <div class="milestone-demo">
+          <div class="milestone-header">
+            <span class="milestone-name">v2.6.0</span>
+            <span class="milestone-pct">78%</span>
+          </div>
+          <div class="milestone-bar"><div class="milestone-fill" style="width:78%"></div></div>
+          <div class="milestone-issues">
+            <span class="mi-closed" data-i18n="github.m.closed"></span>
+            <span class="mi-open" data-i18n="github.m.open"></span>
+          </div>
+        </div>
+        <ul class="milestone-features">
+          <li><code>/milestone new v1.2.0 2026-06-01</code></li>
+          <li><code>/milestone status</code> — <span data-i18n="github.m.f2"></span></li>
+          <li data-i18n="github.m.f3"></li>
+          <li data-i18n="github.m.f4"></li>
+        </ul>
+      </div>
+
+      <div class="github-card">
+        <h3 data-i18n="github.backlog.title"></h3>
+        <p data-i18n="github.backlog.desc"></p>
+        <div class="label-map">
+          <div class="lm-row"><span class="lm-label">feature · enhancement</span><span class="lm-arrow">→</span><span class="lm-cmd">/feature</span></div>
+          <div class="lm-row"><span class="lm-label">bug · fix · defect</span><span class="lm-arrow">→</span><span class="lm-cmd">/bugfix</span></div>
+          <div class="lm-row"><span class="lm-label">hotfix · urgent · critical</span><span class="lm-arrow">→</span><span class="lm-cmd">/hotfix</span></div>
+          <div class="lm-row"><span class="lm-label">refactor · tech-debt</span><span class="lm-arrow">→</span><span class="lm-cmd">/refactor</span></div>
+          <div class="lm-row"><span class="lm-label">security · vulnerability</span><span class="lm-arrow">→</span><span class="lm-cmd">/secu</span></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
 
-<!-- ============================
-     Features
-     ============================ -->
 <section id="features">
   <div class="container">
-    <div class="section-header">
-      <h2 data-i18n="features.title">Fonctionnalités</h2>
-    </div>
+    <div class="section-header"><h2 data-i18n="features.title"></h2></div>
     <div class="features-grid">
-
-      <div class="feature-card">
-        <div class="feature-icon">🏁</div>
-        <div class="feature-body">
-          <h3>
-            <span data-i18n="features.f1.title">Gestion des Milestones</span>
-            <span class="badge-new" data-i18n="features.new">Nouveau</span>
-          </h3>
-          <p data-i18n="features.f1.desc">Créez un milestone, associez vos issues, suivez la progression en temps réel. Clôture automatique au deploy prod avec gestion des issues non terminées.</p>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">📋</div>
-        <div class="feature-body">
-          <h3>
-            <span data-i18n="features.f2.title">Backlog intégré</span>
-            <span class="badge-new" data-i18n="features.new">Nouveau</span>
-          </h3>
-          <p data-i18n="features.f2.desc">/backlog liste vos issues GitHub, détecte le type de workflow depuis les labels et propose l'assignation au milestone actif.</p>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🤖</div>
-        <div class="feature-body">
-          <h3><span data-i18n="features.f3.title">Agents spécialisés</span></h3>
-          <p data-i18n="features.f3.desc">CDP, Planner, Dev, Reviewer, QA, Security, Doc, Deploy, Marketing — chaque agent a un rôle précis et communique via SendMessage.</p>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🚀</div>
-        <div class="feature-body">
-          <h3><span data-i18n="features.f4.title">Deploy QUALIF → PROD</span></h3>
-          <p data-i18n="features.f4.desc">Pipeline de déploiement en deux étapes avec smoke tests, rollback intégré et clôture du milestone en production.</p>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">📣</div>
-        <div class="feature-body">
-          <h3>
-            <span data-i18n="features.f5.title">Site marketing auto-généré</span>
-            <span class="badge-new" data-i18n="features.new">Nouveau</span>
-          </h3>
-          <p data-i18n="features.f5.desc">Ce site est généré par /marketing depuis les issues du milestone clos, le CHANGELOG et le README. Bilingue FR/EN, pushé sur gh-pages.</p>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🐙</div>
-        <div class="feature-body">
-          <h3>
-            <span data-i18n="features.f6.title">Contexte GitHub centralisé</span>
-            <span class="badge-new" data-i18n="features.new">Nouveau</span>
-          </h3>
-          <p data-i18n="features.f6.desc">context/GITHUB.md unifie tous les patterns gh CLI : issues, milestones, PRs, releases, CI. Un seul fichier à mettre à jour.</p>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">⬆️</div>
-        <div class="feature-body">
-          <h3>
-            <span data-i18n="features.f7.title">Migration v1→v2 automatique</span>
-            <span class="badge-new" data-i18n="features.new">Nouveau</span>
-          </h3>
-          <p data-i18n="features.f7.desc">Les projets v1 sont détectés et migrés : git rm --cached des fichiers template, .gitignore appliqué, commit propre.</p>
-        </div>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🗺️</div>
-        <div class="feature-body">
-          <h3><span data-i18n="features.f8.title">Workshop de cadrage</span></h3>
-          <p data-i18n="features.f8.desc">Pour les nouveaux projets : entretien guidé en 6 phases pour générer un CLAUDE.md complet avec vision, stack et conventions.</p>
-        </div>
-      </div>
-
+      <div class="feature-card"><div class="feature-icon">🧪</div><div class="feature-body"><h3><span data-i18n="features.f1.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f1.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">📐</div><div class="feature-body"><h3><span data-i18n="features.f2.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f2.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">⚡</div><div class="feature-body"><h3><span data-i18n="features.f3.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f3.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🏁</div><div class="feature-body"><h3><span data-i18n="features.f4.title"></span></h3><p data-i18n="features.f4.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🤖</div><div class="feature-body"><h3><span data-i18n="features.f5.title"></span></h3><p data-i18n="features.f5.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🚀</div><div class="feature-body"><h3><span data-i18n="features.f6.title"></span></h3><p data-i18n="features.f6.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🧠</div><div class="feature-body"><h3><span data-i18n="features.f7.title"></span></h3><p data-i18n="features.f7.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">📣</div><div class="feature-body"><h3><span data-i18n="features.f8.title"></span></h3><p data-i18n="features.f8.desc"></p></div></div>
     </div>
   </div>
 </section>
 
-<!-- ============================
-     Installation
-     ============================ -->
 <section id="install">
   <div class="container">
     <div class="section-header">
-      <h2 data-i18n="install.title">Installation</h2>
-      <p data-i18n="install.subtitle">Un seul fichier suffit pour démarrer.</p>
+      <h2 data-i18n="install.title"></h2>
+      <p data-i18n="install.subtitle"></p>
     </div>
-
     <div class="install-steps">
 
       <div class="install-step">
         <div class="step-num">1</div>
         <div class="step-content">
-          <h3 data-i18n="install.step1.title">Copier init-project.md</h3>
-          <p data-i18n="install.step1.desc">Téléchargez le seul fichier nécessaire au bootstrap :</p>
-          <pre><span class="code-comment"># Créer le dossier de commandes</span>
-<span class="code-cmd">mkdir -p</span> <span class="code-arg">.claude/commands</span>
-
-<span class="code-comment"># Télécharger init-project.md</span>
-<span class="code-cmd">curl -o</span> <span class="code-arg">.claude/commands/init-project.md</span> \
-  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/.claude/commands/init-project.md</pre>
+          <h3 data-i18n="install.step1.title"></h3>
+          <p data-i18n="install.step1.desc"></p>
+          <pre><span class="code-cmd">curl</span> -fsSL \
+  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/claude-launcher.sh \
+  -o ~/claude-launcher.sh &amp;&amp; <span class="code-cmd">chmod</span> +x ~/claude-launcher.sh</pre>
+          <div class="launcher-features">
+            <div class="lf-item"><span class="lf-icon">⊞</span> <span data-i18n="install.lf1"></span></div>
+            <div class="lf-item"><span class="lf-icon">🔄</span> <span data-i18n="install.lf2"></span></div>
+            <div class="lf-item"><span class="lf-icon">🔑</span> <span data-i18n="install.lf3"></span></div>
+            <div class="lf-item"><span class="lf-icon">📦</span> <span data-i18n="install.lf4"></span></div>
+          </div>
         </div>
       </div>
 
       <div class="install-step">
         <div class="step-num">2</div>
         <div class="step-content">
-          <h3 data-i18n="install.step2.title">Lancer /init-project</h3>
-          <p data-i18n="install.step2.desc">Ouvrez le projet dans Claude Code et tapez :</p>
-          <pre><span class="code-cmd">/init-project</span></pre>
-          <p style="margin-top:.75rem" data-i18n="install.step2.cmd">Claude fetche automatiquement tous les fichiers du template depuis GitHub, détecte votre stack et génère la configuration.</p>
+          <h3 data-i18n="install.step2.title"></h3>
+          <p data-i18n="install.step2.desc"></p>
+          <pre><span class="code-cmd">~/claude-launcher.sh</span> --configure   <span class="code-comment"># édite GITHUB_DIR, token…</span>
+<span class="code-cmd">~/claude-launcher.sh</span>               <span class="code-comment"># ouvre le hub tmux</span></pre>
         </div>
       </div>
 
       <div class="install-step">
         <div class="step-num">3</div>
         <div class="step-content">
-          <h3 data-i18n="install.step3.title">Travailler</h3>
-          <p data-i18n="install.step3.desc">Votre équipe d'agents est prête :</p>
+          <h3 data-i18n="install.step3.title"></h3>
+          <p data-i18n="install.step3.intro"></p>
+          <div class="install-cases">
+            <div class="install-case">
+              <div class="case-header"><span class="case-icon">✨</span><strong data-i18n="install.case1.title"></strong></div>
+              <p data-i18n="install.case1.desc"></p>
+              <ol class="case-steps">
+                <li data-i18n="install.case1.s1"></li>
+                <li data-i18n="install.case1.s2"></li>
+                <li data-i18n="install.case1.s3"></li>
+                <li data-i18n="install.case1.s4"></li>
+                <li data-i18n="install.case1.s5"></li>
+                <li data-i18n="install.case1.s6"></li>
+              </ol>
+            </div>
+            <div class="install-case">
+              <div class="case-header"><span class="case-icon">🔄</span><strong data-i18n="install.case2.title"></strong></div>
+              <p data-i18n="install.case2.desc"></p>
+              <ul class="case-steps">
+                <li data-i18n="install.case2.s1"></li>
+                <li data-i18n="install.case2.s2"></li>
+                <li data-i18n="install.case2.s3"></li>
+                <li data-i18n="install.case2.s4"></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3 data-i18n="install.step4.title"></h3>
+          <p data-i18n="install.step4.desc"></p>
           <div class="commands-list">
             <span class="cmd-tag">/start-session</span>
+            <span class="cmd-tag">/milestone new v1.0.0</span>
+            <span class="cmd-tag">/backlog</span>
             <span class="cmd-tag">/feature</span>
             <span class="cmd-tag">/bugfix</span>
-            <span class="cmd-tag">/backlog</span>
-            <span class="cmd-tag">/milestone</span>
+            <span class="cmd-tag">/hotfix</span>
             <span class="cmd-tag">/review</span>
             <span class="cmd-tag">/qa</span>
+            <span class="cmd-tag">/secu</span>
+            <span class="cmd-tag">/deploy qualif</span>
             <span class="cmd-tag">/deploy prod</span>
             <span class="cmd-tag">/marketing</span>
           </div>
@@ -277,153 +329,32 @@
       </div>
 
     </div>
-
-    <div class="install-existing">
-      <h4 data-i18n="install.existing.title">Projet existant (v1) ?</h4>
-      <p data-i18n="install.existing.desc">Copiez init-project.md dans votre projet et lancez /init-project — la migration v1→v2 est automatique.</p>
-    </div>
-
   </div>
 </section>
 
-<!-- ============================
-     Roadmap
-     ============================ -->
 <section id="roadmap">
   <div class="container">
     <div class="section-header">
-      <h2 data-i18n="roadmap.title">Roadmap</h2>
+      <h2 data-i18n="roadmap.title"></h2>
+      <p class="roadmap-source" data-i18n="roadmap.source"></p>
     </div>
-    <div class="roadmap-grid">
-
-      <div class="roadmap-col">
-        <div class="roadmap-col-header">
-          <span class="status-dot status-done"></span>
-          <span data-i18n="roadmap.v1.title">v1.0.0 — Fondations</span>
-        </div>
-        <div class="roadmap-items">
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title">Commandes /feature, /bugfix, /hotfix, /refactor</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title">Agents CDP, Planner, Dev, Reviewer, QA, Security, Doc, Deploy</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title">Session start/end avec mémoire persistante</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title">Templates de stack Go, Node, Python, React, Vue, ESP32</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title">Workshop de cadrage pour nouveaux projets</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title">Commande /backlog avec détection de workflow</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="roadmap-col">
-        <div class="roadmap-col-header">
-          <span class="status-dot status-done"></span>
-          <span data-i18n="roadmap.v2.title">v2.0.0 — Milestones &amp; GitHub</span>
-        </div>
-        <div class="roadmap-items">
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.v2.f1">/milestone command (new, status, close)</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.v2.f2">context/GITHUB.md — patterns gh CLI centralisés</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.v2.f3">Architecture TEMPLATE / PROJET — fetch depuis GitHub</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.v2.f4">Migration v1→v2 automatique</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">✅</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.v2.f5">Site marketing gh-pages</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="roadmap-col">
-        <div class="roadmap-col-header">
-          <span class="status-dot status-plan"></span>
-          <span data-i18n="roadmap.next.title">À venir</span>
-        </div>
-        <div class="roadmap-items">
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">○</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.next.f1">Support GitHub Projects v2</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">○</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.next.f2">Templates de stack supplémentaires (Rust, .NET, Flutter)</div>
-            </div>
-          </div>
-          <div class="roadmap-item">
-            <span class="roadmap-item-icon">○</span>
-            <div>
-              <div class="roadmap-item-title" data-i18n="roadmap.next.f3">Tableau de bord de session interactif</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div id="roadmap-content" class="roadmap-grid">
+      <div class="roadmap-loading" data-i18n="roadmap.loading">Chargement…</div>
     </div>
   </div>
 </section>
 
-<!-- ============================
-     Footer
-     ============================ -->
 <footer>
   <div class="container">
     <p>
-      <span data-i18n="footer.made">Généré par</span>
-      <a href="https://github.com/CCoupel/claude_project_template" data-i18n="footer.template">claude_project_template</a>
-      · <span data-i18n="footer.rights">Tous droits réservés</span>
+      <a href="https://github.com/CCoupel/claude_project_template" target="_blank" rel="noopener">CCoupel/claude_project_template</a>
+      · <span data-i18n="footer.made">Généré par</span> /marketing
+      · <span class="version-tag">…</span>
     </p>
   </div>
 </footer>
 
 <script src="assets/lang.js"></script>
+<script src="assets/github.js"></script>
 </body>
 </html>
