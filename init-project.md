@@ -645,6 +645,18 @@ AUDIT_CMD=$(jq -r '.commands.audit    // ""'         .claude/project-config.json
 TYPECHECK_CMD=$(jq -r '.commands.typecheck // ""'    .claude/project-config.json)
 ```
 
+Echapper les caracteres speciaux sed (`&`, `\`, `|`) dans les valeurs de commandes
+(un `&` dans la chaine de remplacement sed signifie "texte matche" — ex: `cd frontend && npm run build` serait corrompu sans echappement) :
+
+```bash
+escape_sed() { printf '%s' "$1" | sed 's/[&\|]/\\&/g'; }
+BUILD_CMD_ESC=$(escape_sed "$BUILD_CMD")
+TEST_CMD_ESC=$(escape_sed "$TEST_CMD")
+LINT_CMD_ESC=$(escape_sed "$LINT_CMD")
+AUDIT_CMD_ESC=$(escape_sed "$AUDIT_CMD")
+TYPECHECK_CMD_ESC=$(escape_sed "$TYPECHECK_CMD")
+```
+
 Appliquer la substitution sur les fichiers deployes (commandes + agents generiques) :
 
 ```bash
@@ -658,11 +670,11 @@ for f in .claude/commands/*.md .claude/agents/*.md; do
     -e "s|{TEAM_NAME}|${TEAM_NAME}|g"       \
     -e "s|{ORG}|${ORG}|g"                   \
     -e "s|{PROJECT}|${PROJECT}|g"            \
-    -e "s|{BUILD_CMD}|${BUILD_CMD}|g"        \
-    -e "s|{TEST_CMD}|${TEST_CMD}|g"          \
-    -e "s|{LINT_CMD}|${LINT_CMD}|g"          \
-    -e "s|{AUDIT_CMD}|${AUDIT_CMD}|g"        \
-    -e "s|{TYPECHECK_CMD}|${TYPECHECK_CMD}|g" \
+    -e "s|{BUILD_CMD}|${BUILD_CMD_ESC}|g"        \
+    -e "s|{TEST_CMD}|${TEST_CMD_ESC}|g"          \
+    -e "s|{LINT_CMD}|${LINT_CMD_ESC}|g"          \
+    -e "s|{AUDIT_CMD}|${AUDIT_CMD_ESC}|g"        \
+    -e "s|{TYPECHECK_CMD}|${TYPECHECK_CMD_ESC}|g" \
     "$f"
   echo "  ✓ placeholders appliques dans $name"
 done
