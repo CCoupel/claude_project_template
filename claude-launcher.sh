@@ -735,10 +735,16 @@ if [[ "$1" == "--menu" ]]; then
     # Toujours récupérer la dernière version de init-project.md
     mkdir -p "$project_dir/.claude/commands"
     local init_cmd="$project_dir/.claude/commands/init-project.md"
-    local _b64
-    if _b64=$(gh api "repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}" \
-        --jq '.content' 2>/dev/null); then
-      printf '%s' "$_b64" | base64 -d > "$init_cmd"
+    local _curl_opts=(-fsSL --max-time 5)
+    [[ -n "$GITHUB_TOKEN" ]] && _curl_opts+=(-H "Authorization: token ${GITHUB_TOKEN}")
+    if ! curl "${_curl_opts[@]}" \
+        "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/init-project.md" \
+        -o "$init_cmd" 2>/dev/null || [[ ! -s "$init_cmd" ]]; then
+      local _b64
+      if _b64=$(gh api "repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}" \
+          --jq '.content' 2>/dev/null); then
+        printf '%s' "$_b64" | base64 -d > "$init_cmd"
+      fi
     fi
 
     if tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
