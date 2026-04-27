@@ -167,6 +167,20 @@ auto_update() {
   rm -f "$tmp"
 }
 
+sync_init_project() {
+  local tmp
+  tmp=$(mktemp)
+  if curl -fsSL --ipv4 --max-time 10 \
+      "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/init-project.md" \
+      -o "$tmp" 2>/dev/null && [[ -s "$tmp" ]]; then
+    mv "$tmp" "$INIT_PROJECT_CACHE"
+  else
+    rm -f "$tmp"
+    [[ ! -s "$INIT_PROJECT_CACHE" ]] && \
+      printf "\033[1;33m  ⚠  init-project.md non téléchargé — /init-project indisponible\033[0m\n"
+  fi
+}
+
 load_config
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -644,6 +658,7 @@ style_project_window() {
 # ════════════════════════════════════════════════════════════════════════════
 if [[ "$1" == "--menu" ]]; then
   SCRIPT_PATH="${2:-$(realpath "$0")}"
+  INIT_PROJECT_CACHE="$(dirname "$SCRIPT_PATH")/init-project.md"
 
   if [[ -n "$GITHUB_TOKEN" ]] && command -v gh &>/dev/null; then
     export GH_TOKEN="$GITHUB_TOKEN"
@@ -744,18 +759,12 @@ if [[ "$1" == "--menu" ]]; then
       leader_pane=$(tmux list-panes -t "$SESSION:$project" -F '#{pane_id}' 2>/dev/null \
         | head -1)
 
-      local _dl_url="https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/init-project.md"
-      local _api_path="repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}"
       CLAUDE_EXPORTS=$(build_claude_exports)
       tmux send-keys -t "$SESSION:$project" \
         "cd '$project_dir'${CLAUDE_EXPORTS}
 mkdir -p .claude/commands
 _ip=.claude/commands/init-project.md
-_curl_opts=(-fsSL --max-time 10)
-[[ -n \"\$GH_TOKEN\" ]] && _curl_opts+=(-H \"Authorization: token \$GH_TOKEN\")
-curl \"\${_curl_opts[@]}\" '${_dl_url}' -o \"\$_ip\" 2>/dev/null
-[[ -s \"\$_ip\" ]] || { _b=\$(gh api '${_api_path}' --jq '.content' 2>/dev/null) && printf '%s' \"\$_b\" | base64 -d > \"\$_ip\"; }
-[[ -s \"\$_ip\" ]] || echo '⚠  init-project.md introuvable (GitHub inaccessible) — /init-project indisponible'
+[[ -s '${INIT_PROJECT_CACHE}' ]] && cp '${INIT_PROJECT_CACHE}' \"\$_ip\" || echo '⚠  init-project.md non disponible — relancer le launcher connecté'
 claude ${CLAUDE_OPTIONS}" \
         Enter
 
@@ -773,9 +782,11 @@ fi
 # POINT D'ENTRÉE PRINCIPAL
 # ════════════════════════════════════════════════════════════════════════════
 SCRIPT_PATH="$(realpath "$0")"
+INIT_PROJECT_CACHE="$(dirname "$SCRIPT_PATH")/init-project.md"
 
 # Auto-update silencieux au lancement (sauf si --no-update)
 [[ "$NO_AUTO_UPDATE" == "0" ]] && auto_update
+sync_init_project
 
 # Premier lancement : créer la config par défaut si absente
 if [[ ! -f "$CONFIG_FILE" ]]; then
