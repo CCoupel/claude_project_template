@@ -725,17 +725,37 @@ Bonne utilisation de Claude Code !
 
 Si `project-config.json` + `TEMPLATE_claude/` existent :
 
+### Etape pre-menu — Calcul automatique des changements disponibles
+
+Avant d'afficher le menu, calculer silencieusement les changements entre le template
+local (`TEMPLATE_claude/`) et les fichiers deployes (`.claude/commands/`, `.claude/agents/`).
+Ne pas fetcher GitHub a ce stade — utiliser le template local tel qu'il est.
+
+Calculer le statut de chaque fichier (NOUVEAU / MODIFIE / INCHANGE / RELIQUAT) selon
+la meme logique que l'etape d3 ci-dessous, puis afficher la synthese :
+
 ```
 Ce projet est deja initialise (config du YYYY-MM-DD).
-Template : CCoupel/claude_project_template — dernier sync : <date> (<commit>)
+Template local : CCoupel/claude_project_template — dernier sync : <date> (<commit>)
+
+Changements disponibles (template local) :
+  [+] feature, hotfix                   ← 2 nouveaux
+  [~] cdp, bugfix                       ← 2 modifies
+  [!] old-command                       ← 1 reliquat
+  (12 fichiers inchanges)
+
+  → Aucun changement detecte            ← afficher si tout est INCHANGE
 
 Voulez-vous :
 a) Reconfigurer completement (ecrase la config)
 b) Modifier certains parametres
 c) Re-analyser le code (detecter les changements)
-d) Synchroniser le template depuis GitHub
+d) Synchroniser le template depuis GitHub (fetch + appliquer)
 e) Annuler
 ```
+
+> Si aucun changement local n'est detecte, indiquer clairement que l'option d)
+> fetchera quand meme GitHub pour verifier s'il existe une version plus recente.
 
 ### Option d : Synchronisation avec diff et nettoyage
 
