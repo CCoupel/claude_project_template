@@ -732,21 +732,6 @@ if [[ "$1" == "--menu" ]]; then
       project_dir="$GITHUB_DIR/$project"
     fi
 
-    # Toujours récupérer la dernière version de init-project.md
-    mkdir -p "$project_dir/.claude/commands"
-    local init_cmd="$project_dir/.claude/commands/init-project.md"
-    local _curl_opts=(-fsSL --max-time 5)
-    [[ -n "$GITHUB_TOKEN" ]] && _curl_opts+=(-H "Authorization: token ${GITHUB_TOKEN}")
-    if ! curl "${_curl_opts[@]}" \
-        "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/init-project.md" \
-        -o "$init_cmd" 2>/dev/null || [[ ! -s "$init_cmd" ]]; then
-      local _b64
-      if _b64=$(gh api "repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}" \
-          --jq '.content' 2>/dev/null); then
-        printf '%s' "$_b64" | base64 -d > "$init_cmd"
-      fi
-    fi
-
     if tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
         | grep -qxF "$project"; then
       tmux select-window -t "$SESSION:$project"
@@ -759,15 +744,18 @@ if [[ "$1" == "--menu" ]]; then
       leader_pane=$(tmux list-panes -t "$SESSION:$project" -F '#{pane_id}' 2>/dev/null \
         | head -1)
 
-      if [[ ! -f "$init_cmd" ]]; then
-        tmux send-keys -t "$SESSION:$project" \
-          "echo '⚠  init-project.md introuvable (GitHub inaccessible) — /init-project indisponible'" \
-          Enter
-      fi
-
+      local _dl_url="https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/init-project.md"
+      local _api_path="repos/${TEMPLATE_REPO}/contents/init-project.md?ref=${TEMPLATE_BRANCH}"
       CLAUDE_EXPORTS=$(build_claude_exports)
       tmux send-keys -t "$SESSION:$project" \
         "cd '$project_dir'${CLAUDE_EXPORTS}
+mkdir -p .claude/commands
+_ip=.claude/commands/init-project.md
+_curl_opts=(-fsSL --max-time 10)
+[[ -n \"\$GH_TOKEN\" ]] && _curl_opts+=(-H \"Authorization: token \$GH_TOKEN\")
+curl \"\${_curl_opts[@]}\" '${_dl_url}' -o \"\$_ip\" 2>/dev/null
+[[ -s \"\$_ip\" ]] || { _b=\$(gh api '${_api_path}' --jq '.content' 2>/dev/null) && printf '%s' \"\$_b\" | base64 -d > \"\$_ip\"; }
+[[ -s \"\$_ip\" ]] || echo '⚠  init-project.md introuvable (GitHub inaccessible) — /init-project indisponible'
 claude ${CLAUDE_OPTIONS}" \
         Enter
 
