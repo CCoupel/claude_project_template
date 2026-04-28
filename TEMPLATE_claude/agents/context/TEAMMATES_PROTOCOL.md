@@ -12,24 +12,24 @@ Au demarrage, chaque agent :
 ```
 1. Lit ce fichier (TEAMMATES_PROTOCOL.md)
 2. Lit son propre fichier de spec (.claude/agents/<nom>.md)
-3. Attend les instructions du teamleader
+3. Attend les instructions du Claude principal
 ```
 
-**REGLE ABSOLUE** : Rester en mode IDLE jusqu'a recevoir un ordre explicite du teamleader.
+**REGLE ABSOLUE** : Rester en mode IDLE jusqu'a recevoir un ordre explicite du Claude principal.
 Ne pas verifier la TaskList. Ne pas prendre d'initiative. Attendre.
 
 **REGLE DE CONFIRMATION** : Si tu souhaites confirmer ton demarrage, envoie
-`SendMessage({to: "teamleader", content: "[NOM-AGENT] DEMARRE — en attente d'ordres"})` — jamais a Claude directement.
+`SendMessage({to: "main", content: "[NOM-AGENT] DEMARRE — en attente d'ordres"})` — jamais a Claude directement.
 
 ---
 
 ## 2. Reception d'un Ordre
 
 Le CDP active un agent en lui envoyant un message via `SendMessage`.
-Quand un agent recoit un message du teamleader :
+Quand un agent recoit un message du Claude principal :
 
 ```
-Recevoir l'ordre du teamleader
+Recevoir l'ordre du Claude principal
     |
     v
 Lire et comprendre la tache
@@ -54,7 +54,7 @@ Retourner en mode IDLE
 
 ### Regles absolues
 
-- **Jamais d'initiative** — attendre l'ordre du teamleader
+- **Jamais d'initiative** — attendre l'ordre du Claude principal
 - **Jamais de communication directe** avec l'utilisateur — tout passe par le CDP
 - **Jamais de contact entre agents** — chaque agent ne parle qu'au CDP
 - **Texte naturel uniquement** — pas de JSON structure dans les messages
@@ -109,7 +109,7 @@ Handoff [agent précédent] : _work/handoff/[agent]-[timestamp].md
 
 ```
 SendMessage({
-  to: "teamleader",
+  to: "main",
   content: "[rapport minimaliste — voir formats ci-dessous]"
 })
 ```
@@ -181,7 +181,7 @@ Quand le CDP envoie un `shutdown_request` :
 
 ```
 SendMessage({
-  to: "teamleader",
+  to: "main",
   content: "shutdown_response approve: true"
 })
 ```
@@ -194,7 +194,7 @@ SendMessage({
 2. **Un travail a la fois** — terminer une tache avant d'en accepter une autre
 3. **Rapport systematique** — toujours envoyer un rapport au CDP apres chaque tache
 4. **Push proactif** — signaler demarrage, jalons importants, blocages sans attendre d'etre sollicite
-5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du teamleader
+5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du Claude principal
 6. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
 7. **Texte naturel** — les messages sont lisibles, pas en JSON
 
@@ -206,15 +206,15 @@ SendMessage({
 [AGENT DEMARRE]
 → Lit TEAMMATES_PROTOCOL.md ✓
 → Lit .claude/agents/[nom].md ✓
-→ MODE IDLE — en attente d'un ordre du teamleader
+→ MODE IDLE — en attente d'un ordre du Claude principal
 
 [CDP envoie un ordre via SendMessage]
 → "Implemente l'endpoint POST /api/auth avec JWT. Voir contracts/http-endpoints.md."
-→ SendMessage(teamleader, "DEV-BACKEND EN COURS — 0% — demarrage implementation /api/auth")
+→ SendMessage(main, "DEV-BACKEND EN COURS — 0% — demarrage implementation /api/auth")
 → [Travail effectue...]
-→ SendMessage(teamleader, "DEV-BACKEND DONE\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
+→ SendMessage(main, "DEV-BACKEND DONE\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
 → MODE IDLE — en attente du prochain ordre
 
 [CDP envoie shutdown_request]
-→ SendMessage(teamleader, "shutdown_response approve: true")
+→ SendMessage(main, "shutdown_response approve: true")
 ```

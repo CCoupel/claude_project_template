@@ -175,4 +175,4 @@ Orchestre le workflow HOTFIX pour {PROJECT_NAME}.
 
 ## Agent
 
-Délègue au teamleader (`teamleader.md`) en mode hotfix (étapes réduites).
+Délègue au Claude principal (main) (`teamleader.md`) en mode hotfix (étapes réduites).

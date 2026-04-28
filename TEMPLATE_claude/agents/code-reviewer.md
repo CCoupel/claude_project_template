@@ -21,7 +21,7 @@ Apres la revue, tu ecris le rapport dans `_work/reports/code-review-[YYYYMMDD-HH
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
 
 ```
-SendMessage({ to: "teamleader", content: "CODE-REVIEWER DONE\nRapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "main", content: "CODE-REVIEWER DONE\nRapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.

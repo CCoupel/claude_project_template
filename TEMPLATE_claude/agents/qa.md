@@ -22,7 +22,7 @@ Apres les tests, tu ecris le rapport dans `_work/reports/qa-[YYYYMMDD-HHmmss].md
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
 
 ```
-SendMessage({ to: "teamleader", content: "QA DONE\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "main", content: "QA DONE\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.

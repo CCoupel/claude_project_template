@@ -72,29 +72,8 @@ Extraire :
 
 1. **TeamCreate** avec le nom `{TEAM_NAME}` (defini dans CLAUDE.md)
 
-2. **Spawner uniquement le teamleader** :
-
-```
-Task({
-  subagent_type: "teamleader",
-  team_name: "{TEAM_NAME}",
-  name: "teamleader",
-  prompt: "
-Lis .claude/agents/teamleader.md puis .claude/agents/cdp.md
-et applique ces instructions pour toute la session.
-
-Tu es le Team Leader de {PROJECT_NAME} dans la team {TEAM_NAME}.
-Memoire projet : .claude/memory/MEMORY.md
-
-Attends les instructions de l'utilisateur avant de demarrer un workflow.
-Les agents specialises (planner, dev-*, qa, etc.) seront spawnes par toi
-uniquement quand un workflow demarre (/feature, /bugfix, etc.).
-  "
-})
-```
-
-> Les agents spécialisés ne sont **pas** spawnes au démarrage — ils le seront par le teamleader
-> au démarrage de chaque workflow, selon le type et le stack du projet.
+> Le Claude principal (`main`) est l'orchestrateur de la team — pas d'agent supplémentaire à spawner.
+> Les agents spécialisés (planner, dev-*, qa...) seront spawnes par `main` au démarrage de chaque workflow.
 
 ### Etape 5 — Etat du backlog GitHub
 
@@ -144,8 +123,7 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 
 ---
 
-**Agents actifs** :
-- teamleader (interlocuteur principal — les autres agents seront spawnes au démarrage d'un workflow)
+**Orchestrateur** : Claude principal (`main`) — les agents spécialisés seront spawnes au démarrage de chaque workflow
 
 **Commandes disponibles** :
 - `/feature <description>` — Nouvelle feature complete
@@ -163,6 +141,6 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 - La MEMORY projet est la **seule source de verite** au demarrage
 - La TEAM est **toujours creee** sans demander confirmation
 - Le nom de la TEAM est **toujours** `{TEAM_NAME}` (defini dans CLAUDE.md)
-- Le CDP est **toujours le premier agent spawne** (team leader)
-- Tous les autres agents demarrent en **mode IDLE strict** — ils attendent
-  un ordre explicite du CDP via SendMessage, sans verifier la TaskList
+- Le Claude principal (`main`) est l'orchestrateur — aucun agent n'est spawne au démarrage
+- Les agents spécialisés demarrent en **mode IDLE strict** — ils attendent
+  un ordre explicite de `main` via SendMessage, sans verifier la TaskList
