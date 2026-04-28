@@ -22,3 +22,6 @@ TEMPLATE_claude/
 # .claude/agents/dev-backend.md
 # .claude/agents/dev-frontend.md
 # .claude/agents/dev-firmware.md
+
+# Dossier de travail inter-agents (rapports et handoffs temporaires)
+_work/

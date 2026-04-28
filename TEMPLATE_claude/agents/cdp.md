@@ -35,7 +35,7 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 
 **Usages legitimes de `Read`** (fichiers d'orchestration uniquement, jamais le code applicatif) :
 `MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`,
-`.claude/handoff/*.md`, `.claude/reports/*.md`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
+`_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
 
 ### Symptomes d'une mauvaise delegation — verifier avant d'agir
 
@@ -179,7 +179,7 @@ Si backend et frontend ont travaillé en parallèle, avant de passer à REVIEW :
 SendMessage({ to: "dev-backend", content: "
   Merge la branche dev-frontend dans la branche courante.
   Résoudre les éventuels conflits (tu es lead merge).
-  Handoff dev-frontend : .claude/handoff/dev-frontend-[timestamp].md
+  Handoff dev-frontend : _work/handoff/dev-frontend-[timestamp].md
   Réponse : DONE/FAILED + conflits résolus + SHA merge commit.
 " })
 ```
@@ -249,7 +249,7 @@ SendMessage({ to: "doc-updater", content: "
 ```
 SendMessage({ to: "infra", content: "
   Valide que la procedure de deploiement QUALIF est coherente avec l'infrastructure definie.
-  Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans .claude/reports/infra-[timestamp].md
+  Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans _work/reports/infra-[timestamp].md
 " })
 ```
 - VALIDATED → lancer le deployer
@@ -301,7 +301,7 @@ Selon la réponse utilisateur :
 ```
 SendMessage({ to: "infra", content: "
   Valide que la procedure de deploiement PROD est coherente avec l'infrastructure definie.
-  Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans .claude/reports/infra-[timestamp].md
+  Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans _work/reports/infra-[timestamp].md
 " })
 ```
 - VALIDATED → lancer le deployer
@@ -416,8 +416,8 @@ SendMessage({
 
 ```
 // Dans un seul message, deux SendMessage :
-SendMessage({ to: "dev-backend",  content: "[plan backend]\nHandoff planner : .claude/handoff/planner-[timestamp].md" })
-SendMessage({ to: "dev-frontend", content: "[plan frontend]\nHandoff planner : .claude/handoff/planner-[timestamp].md" })
+SendMessage({ to: "dev-backend",  content: "[plan backend]\nHandoff planner : _work/handoff/planner-[timestamp].md" })
+SendMessage({ to: "dev-frontend", content: "[plan frontend]\nHandoff planner : _work/handoff/planner-[timestamp].md" })
 ```
 
 ## Reporting de Progression

@@ -173,11 +173,11 @@ Quand le CDP appelle en mode validation :
 1. Lire la procédure de déploiement (fichiers CI/CD, docker-compose, Helm)
 2. Comparer avec l'infrastructure définie (Dockerfiles, charts, configs)
 3. Vérifier la cohérence : ports, images, variables d'environnement, secrets templates
-4. Écrire le rapport dans `.claude/reports/infra-[YYYYMMDD-HHmmss].md`
+4. Écrire le rapport dans `_work/reports/infra-[YYYYMMDD-HHmmss].md`
 5. Envoyer la référence au CDP :
 
 ```
-SendMessage({ to: "teamleader", content: "INFRA DONE\nRapport : .claude/reports/infra-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "teamleader", content: "INFRA DONE\nRapport : _work/reports/infra-[YYYYMMDD-HHmmss].md" })
 ```
 
 Format du rapport de validation :
