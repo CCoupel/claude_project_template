@@ -34,17 +34,52 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ### Spawn au démarrage d'un workflow
 
-Quand tu reçois une commande de workflow (`/feature`, `/bugfix`, `/hotfix`, `/refactor`, `/secu`, `/deploy`),
-**avant** de démarrer le workflow :
+Le spawn se fait en **deux temps** pour éviter de lancer des agents inutiles.
 
-1. Lire `project-config.json` pour connaître le stack (backend, frontend, firmware, infra)
-2. Déterminer les agents nécessaires (voir cdp.md section "Agents selon le Workflow")
-3. Filtrer selon le stack réel :
-   - Pas de frontend configuré → ne pas spawner `dev-frontend`
-   - Firmware configuré → ajouter `dev-firmware`
-   - Pas de K8s/Docker → `infra` optionnel
-4. Spawner uniquement ces agents **en parallèle** (un seul message) :
+#### Temps 1 — Dès réception de la commande
 
+Spawner uniquement le **planner** (toujours nécessaire, quel que soit le type) :
+
+```
+Task({
+  subagent_type: "implementation-planner",
+  team_name: "{TEAM_NAME}",
+  name: "planner",
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.md.
+           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+           Reste en mode IDLE et attends mes ordres."
+})
+```
+
+Envoyer au planner les instructions selon le type de workflow :
+
+| Type | Instructions au planner |
+|------|------------------------|
+| FEATURE | Plan d'implémentation + contrats API + identification du scope (backend / frontend / les deux) |
+| BUGFIX | Identification de la cause racine + plan de fix minimal + scope impacté + risque de régression |
+| REFACTOR | Périmètre du refactor + dépendances + risque de régression |
+
+#### Temps 2 — Après réception du rapport planner
+
+Lire le rapport planner (`_work/reports/plan-[timestamp].md`) pour identifier le scope réel,
+puis spawner **en parallèle** uniquement les agents nécessaires :
+
+```
+Scope identifié par le planner :
+|-- backend seul   → dev-backend
+|-- frontend seul  → dev-frontend
+|-- les deux       → dev-backend + dev-frontend
+|-- firmware       → dev-firmware
+
+Toujours ajouter : test-writer + code-reviewer + qa + doc-updater + deployer
+Si infra/K8s configuré : + infra
+```
+
+> **Exception — HOTFIX** : pas de planner. Spawner directement dev-* + deployer selon le scope décrit dans la demande.
+> **Exception — SECU** : spawner uniquement `security`.
+> **Exception — DEPLOY** : spawner uniquement `infra` + `deployer`.
+
+Prompt standard pour tous les agents spécialisés :
 ```
 Task({
   subagent_type: "<type>",
