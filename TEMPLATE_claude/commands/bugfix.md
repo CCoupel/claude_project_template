@@ -34,6 +34,9 @@ Sinon -> workflow normal.
 /bugfix <description>
     |
     v
+[CLARIFICATION] --> Etude spec + issues GitHub + questions si besoin
+    |
+    v
 [ANALYSE] --> Identifier la cause racine
     |
     v
@@ -127,10 +130,11 @@ Orchestre le workflow BUGFIX pour {PROJECT_NAME}.
 **Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
 - Type : BUGFIX
 - Phases : section 3
-- Dispatch DEV : section 4
-- Validation : section 5
-- Erreurs : section 6
-- Regles : section 8
+- Clarification : section 4
+- Dispatch DEV : section 5
+- Validation : section 6
+- Erreurs : section 7
+- Regles : section 9
 
 **Contexte DEV :** Voir `context/DEVELOPMENT.md`
 **Contexte Qualite :** Voir `context/QUALITY.md`

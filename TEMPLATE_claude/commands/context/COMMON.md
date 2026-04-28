@@ -229,13 +229,13 @@ rm -f coverage.out coverage.html
 ### 9.1 Workflow Feature
 
 ```
-/plan -> PLAN -> DEV -> REVIEW -> QA -> DOC -> DEPLOY(QUALIF) -> DEPLOY(PROD)
+/feature -> CLARIFICATION -> PLAN -> DEV -> REVIEW -> QA -> DOC -> DEPLOY(QUALIF) -> DEPLOY(PROD)
 ```
 
 ### 9.2 Workflow Bugfix
 
 ```
-/bugfix -> CDP -> DEV -> REVIEW -> QA -> DEPLOY(QUALIF)
+/bugfix -> CLARIFICATION -> ANALYSE -> DEV -> REVIEW -> QA -> DEPLOY(QUALIF)
 ```
 
 ### 9.3 Workflow Hotfix (Urgence)
@@ -289,7 +289,7 @@ Les commandes CDP (`/feature`, `/bugfix`, `/hotfix`, `/refactor`) reconnaissent 
 ### 12.2 Phases Valides pour resume/skip
 
 ```
-init -> plan -> dev -> review -> qa -> doc -> deploy
+init -> clarification -> plan -> dev -> review -> qa -> doc -> deploy
 ```
 
 ### 12.3 Comportement par Mot-Cle
@@ -309,7 +309,7 @@ init -> plan -> dev -> review -> qa -> doc -> deploy
   /[commande] skip <phase>            Sauter une phase
   /[commande] jumpto <tache>          Aller a une tache precise
 
-**Phases** : init -> plan -> dev -> review -> qa -> doc -> deploy
+**Phases** : init -> clarification -> plan -> dev -> review -> qa -> doc -> deploy
 ```
 
 **`status`** :

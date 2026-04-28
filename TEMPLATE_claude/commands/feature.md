@@ -34,6 +34,9 @@ Sinon -> workflow normal.
 /feature <description>
     |
     v
+[CLARIFICATION] --> Etude spec + issues GitHub + questions si besoin
+    |
+    v
 [PLAN] --> Plan d'implementation + contrats API
     |
     v
@@ -60,10 +63,11 @@ Orchestre le workflow FEATURE pour {PROJECT_NAME}.
 **Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
 - Type : FEATURE
 - Phases : section 3
-- Dispatch DEV : section 4
-- Validation : section 5
-- Erreurs : section 6
-- Regles : section 8
+- Clarification : section 4
+- Dispatch DEV : section 5
+- Validation : section 6
+- Erreurs : section 7
+- Regles : section 9
 
 **Contexte DEV :** Voir `context/DEVELOPMENT.md`
 **Contexte Qualite :** Voir `context/QUALITY.md`

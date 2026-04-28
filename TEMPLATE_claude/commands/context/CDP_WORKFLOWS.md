@@ -27,14 +27,15 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 ## 3. Workflow Standard CDP
 
 ```
-[INIT] -> [ANALYSE] -> [DEV] -> [REVIEW] -> [QA] -> [DOC] -> [DEPLOY] -> [FIN]
+[INIT] -> [CLARIFICATION] -> [PLAN/ANALYSE] -> [DEV] -> [REVIEW] -> [QA] -> [DOC] -> [DEPLOY] -> [FIN]
 ```
 
 ### Variantes par type
 
 | Phase | FEATURE | BUGFIX | HOTFIX | REFACTOR |
 |-------|---------|--------|--------|----------|
-| Backlog (GitHub Issues) | Oui | Non | Non | Non |
+| Clarification | Oui | Oui | Non | Non |
+| Backlog (GitHub Issues) | Oui | Si lié | Non | Non |
 | Plan | Oui | Souvent | Non | Rarement |
 | Dev | Complet | Cible | Minimal | Structure |
 | Review | Oui | Oui | Rapide | Oui |
@@ -44,7 +45,80 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 
 ---
 
-## 4. Phases Communes
+## 4. Phase Clarification (FEATURE et BUGFIX uniquement)
+
+### Objectif
+
+Vérifier que la demande est suffisamment spécifiée **avant** de lancer le développement.
+Si la spec est claire → passer directement à la phase suivante, sans poser de question.
+Si des zones d'ombre existent → les lister et attendre la validation utilisateur.
+
+### Algorithme
+
+```
+1. Lire $ARGUMENTS (description utilisateur)
+
+2. Rechercher les issues GitHub liées :
+   gh issue list --search "<mots-clés>" --json number,title,body,labels,milestone
+   Si numéro d'issue dans $ARGUMENTS → gh issue view <N> --json body,comments
+
+3. Vérifier le milestone si mentionné :
+   gh api repos/{owner}/{repo}/milestones
+
+4. Évaluer la complétude de la spec (critères ci-dessous)
+
+5. Décision :
+   |-- Spec complète → continuer sans interruption
+   |-- Gaps détectés → afficher les questions, attendre réponse utilisateur
+                    → puis continuer avec la spec enrichie
+```
+
+### Critères de complétude
+
+#### Pour FEATURE
+| Critère | Complet si… |
+|---------|-------------|
+| Comportement attendu | Le résultat final est décrit sans ambiguïté |
+| Critères d'acceptance | Au moins un critère testable est identifiable |
+| Scope | Les limites (ce qui est dedans / dehors) sont claires |
+| Edge cases | Les cas limites évidents sont couverts ou explicitement exclus |
+| Dépendances | Les APIs, services ou composants tiers sont identifiés |
+
+#### Pour BUGFIX
+| Critère | Complet si… |
+|---------|-------------|
+| Comportement actuel | Le symptôme est décrit (message d'erreur, comportement observé) |
+| Comportement attendu | Ce qui devrait se passer est clair |
+| Reproductibilité | Les étapes ou conditions de déclenchement sont connues |
+| Scope | Le fix est délimité (pas de refactoring implicite attendu) |
+
+### Format de sortie si questions nécessaires
+
+```markdown
+## Clarification requise avant de démarrer
+
+J'ai analysé votre demande [+ issue #N si trouvée]. Avant de lancer le développement,
+j'ai besoin de précisions sur les points suivants :
+
+**1. [Titre du point ambigu]**
+[Question ciblée et concise]
+
+**2. [Titre du point ambigu]**
+[Question ciblée et concise]
+
+_Une fois ces points clarifiés, je lance immédiatement le workflow._
+```
+
+### Format de sortie si spec complète
+
+```markdown
+✓ Spec suffisamment claire — lancement du workflow.
+```
+(Puis enchaîner directement sur la phase suivante, sans autre commentaire.)
+
+---
+
+## 5. Phases Communes
 
 ### Phase Init (Git)
 
@@ -117,18 +191,18 @@ Si cycle > 3 -> ESCALADE utilisateur
 
 ---
 
-## 5. Points de Validation Utilisateur
+## 6. Points de Validation Utilisateur
 
 | Point | Conditions | Options |
 |-------|------------|---------|
-| Backlog (GitHub Issues) | FEATURE uniquement | Confirmer / Refuser / Autre |
+| Clarification | Gaps détectés dans la spec | Répondre aux questions / Continuer tel quel |
 | Plan | Si creation plan | Valider / Modifier / Refuser |
 | Escalade | 3 cycles atteints | Continuer / Abandonner |
 | Deploy PROD | Toujours | Commande explicite `/deploy prod` |
 
 ---
 
-## 6. Gestion des Erreurs CDP
+## 7. Gestion des Erreurs CDP
 
 | Situation | Action |
 |-----------|--------|
@@ -141,7 +215,7 @@ Si cycle > 3 -> ESCALADE utilisateur
 
 ---
 
-## 7. Rapport Final CDP
+## 8. Rapport Final CDP
 
 ```markdown
 ## Rapport de Workflow [TYPE]
@@ -165,7 +239,7 @@ Si cycle > 3 -> ESCALADE utilisateur
 
 ---
 
-## 8. Regles par Type
+## 9. Regles par Type
 
 ### FEATURE
 
@@ -201,7 +275,7 @@ Si cycle > 3 -> ESCALADE utilisateur
 
 ---
 
-## 9. Mots-Cles de Controle
+## 10. Mots-Cles de Controle
 
 Les commandes CDP reconnaissent des mots-cles speciaux pour interroger ou reprendre un workflow.
 
@@ -290,7 +364,7 @@ cdp_state:
 
 ---
 
-## 10. Commande /cdp
+## 11. Commande /cdp
 
 La commande `/cdp` permet le controle direct de l'orchestrateur :
 
@@ -312,7 +386,7 @@ La commande `/cdp` permet le controle direct de l'orchestrateur :
 
 ---
 
-## 11. État Persistant du Workflow
+## 12. État Persistant du Workflow
 
 Le CDP maintient `.claude/workflow-state.json` mis à jour à chaque transition de phase.
 Ce fichier est la source de vérité pour les commandes `status`, `resume`, `skip`, `jumpto`.
@@ -328,6 +402,7 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
   "started_at": "2026-04-26T14:30:00Z",
   "cycles": 1,
   "phases": {
+    "clarification":{ "status": "completed", "skipped": false },
     "plan":         { "status": "completed", "report": ".claude/reports/plan-xxx.md", "timestamp": "..." },
     "dev-backend":  { "status": "completed", "sha": "abc123", "handoff": ".claude/handoff/dev-backend-xxx.md" },
     "dev-frontend": { "status": "completed", "sha": "def456", "handoff": ".claude/handoff/dev-frontend-xxx.md" },
@@ -368,9 +443,11 @@ Dans les commandes CDP, referencer ce fichier :
 **Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
 - Type : FEATURE|BUGFIX|HOTFIX|REFACTOR
 - Phases : section 3
-- Validation : section 5
-- Erreurs : section 6
-- Mots-cles controle : section 9
-- Commande /cdp : section 10
-- Etat persistant : section 11
+- Clarification : section 4
+- Validation : section 6
+- Erreurs : section 7
+- Regles : section 9
+- Mots-cles controle : section 10
+- Commande /cdp : section 11
+- Etat persistant : section 12
 ```
