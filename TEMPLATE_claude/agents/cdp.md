@@ -154,13 +154,12 @@ ANALYSE → PLAN → DEV → [REVIEW ∥ TEST-WRITER] → QA → DOC → DEPLOY
 - Comprendre la demande (feature / bugfix / refactor / hotfix)
 - Identifier les composants impactes (backend / frontend / firmware)
 - Estimer la complexite
-- Extraire le numéro d'issue depuis la description si présent (pattern `#\d+`) → `ISSUE_NUM`
+- Construire `ISSUE_NUMS[]` et `MILESTONE_NUM` selon l'algorithme CLARIFICATION (section 4 de `context/CDP_WORKFLOWS.md`)
 - **Demander confirmation de demarrage a l'utilisateur** ← GATE 1
 
 ### Phase 1 — Planification
 
-> `ISSUE_NUM` détecté → label `PLANNING` via GitHub MCP :
-> `mcp__plugin_github_github__issue_write` — add label `PLANNING`, remove `EN COURS`, `EN REVIEW`, `EN QA`, `DONE`
+> `ISSUE_NUMS[]` non vide → label `PLANNING` sur toutes les issues (voir CDP_WORKFLOWS.md §5)
 
 ```
 SendMessage({ to: "planner", content: "
@@ -180,8 +179,7 @@ signaler explicitement à l'utilisateur lors du GATE 2 :
 
 ### Phase 2 — Developpement + Ecriture des Tests (parallele)
 
-> `ISSUE_NUM` détecté → label `EN COURS` via GitHub MCP :
-> `mcp__plugin_github_github__issue_write` — add label `EN COURS`, remove `PLANNING`, `EN REVIEW`, `EN QA`, `DONE`
+> `ISSUE_NUMS[]` non vide → label `EN COURS` sur toutes les issues (voir CDP_WORKFLOWS.md §5)
 
 Le test-writer démarre **en même temps que DEV** — il travaille depuis le plan et les contrats, pas depuis le code.
 
@@ -230,8 +228,7 @@ SendMessage({ to: "dev-backend", content: "
 
 ### Phase 3 — Revue
 
-> `ISSUE_NUM` détecté → label `EN REVIEW` via GitHub MCP :
-> `mcp__plugin_github_github__issue_write` — add label `EN REVIEW`, remove `EN COURS`, `PLANNING`, `EN QA`, `DONE`
+> `ISSUE_NUMS[]` non vide → label `EN REVIEW` sur toutes les issues (voir CDP_WORKFLOWS.md §5)
 
 ```
 SendMessage({ to: "code-reviewer", content: "
@@ -246,7 +243,7 @@ SendMessage({ to: "code-reviewer", content: "
 **Apres reception :**
 - APPROUVE (ou AVEC RESERVES) → Phase QA
 - REFUSE → cycle++
-  > `ISSUE_NUM` détecté → reset label `EN COURS` via GitHub MCP
+  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
   → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points du rapport]" })
   → Si la correction touche le scope fonctionnel (BREAKING/CHANGED dans contracts/CHANGELOG.md) :
     relancer TEST-WRITER + REVIEW en parallèle
@@ -255,8 +252,7 @@ SendMessage({ to: "code-reviewer", content: "
 
 ### Phase 4 — Tests QA
 
-> `ISSUE_NUM` détecté → label `EN QA` via GitHub MCP :
-> `mcp__plugin_github_github__issue_write` — add label `EN QA`, remove `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE`
+> `ISSUE_NUMS[]` non vide → label `EN QA` sur toutes les issues (voir CDP_WORKFLOWS.md §5)
 
 ```
 SendMessage({ to: "qa", content: "
@@ -269,12 +265,11 @@ SendMessage({ to: "qa", content: "
 ```
 
 - VALIDATED →
-  > `ISSUE_NUM` détecté → label `DONE` via GitHub MCP :
-  > `mcp__plugin_github_github__issue_write` — add label `DONE`, remove `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`
+  > `ISSUE_NUMS[]` non vide → label `DONE` sur toutes les issues (voir CDP_WORKFLOWS.md §5)
 
   Phase DOC (automatique, sans attendre l'utilisateur)
 - NOT VALIDATED → cycle++
-  > `ISSUE_NUM` détecté → reset label `EN COURS` via GitHub MCP
+  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
   → Retour Phase DEV, puis relance REVIEW + TEST-WRITER en parallele
 - Si cycle > 3 → **Escalade utilisateur** ← GATE 3
 
@@ -333,12 +328,10 @@ Validé ? répondre OUI (ou `/deploy prod`) — Pas conforme ? répondre NON + d
 
 Selon la réponse utilisateur :
 - **OUI / `/deploy prod`** →
-  > `ISSUE_NUM` détecté → fermer l'issue via GitHub MCP :
-  > `mcp__plugin_github_github__add_issue_comment` — "✅ Validé — QA OK — documentation mise à jour"
-  > `mcp__plugin_github_github__issue_write` — state: closed
+  > `ISSUE_NUMS[]` non vide → fermer toutes les issues + vérifier milestone (voir CDP_WORKFLOWS.md §5)
   Phase 7 (PROD)
 - **NON** →
-  > `ISSUE_NUM` détecté → reset label `EN COURS` via GitHub MCP
+  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
   Retour Phase 2 (DEV) ou Phase 1 (PLAN) selon l'écart décrit
 
 ### Phase 7 — Deploiement PROD (via confirmation GATE 4)

@@ -58,16 +58,34 @@ Si des zones d'ombre existent → les lister et attendre la validation utilisate
 ```
 1. Lire $ARGUMENTS (description utilisateur)
 
-2. Rechercher les issues GitHub liées :
-   gh issue list --search "<mots-clés>" --json number,title,body,labels,milestone
-   Si numéro d'issue dans $ARGUMENTS → gh issue view <N> --json body,comments
+2. Construire ISSUE_NUMS[] (issues à suivre tout au long du workflow) :
+   a. Extraire les numéros explicites dans $ARGUMENTS (pattern #\d+) :
+      pour chaque #N trouvé :
+        gh issue view <N> --json number,title,body,labels,milestone
+        → ajouter à ISSUE_NUMS[]
+        → si l'issue est liée à un milestone → MILESTONE_NUM = ce milestone
 
-3. Vérifier le milestone si mentionné :
-   gh api repos/{owner}/{repo}/milestones
+   b. Rechercher les issues liées par mots-clés (si ISSUE_NUMS[] toujours vide) :
+      gh issue list --search "<mots-clés>" --json number,title,body,labels,milestone
+      → si résultats pertinents → ajouter les numéros à ISSUE_NUMS[]
 
-4. Évaluer la complétude de la spec (critères ci-dessous)
+3. Détecter et résoudre le milestone :
+   a. Si "milestone:" ou un nom de milestone est mentionné dans $ARGUMENTS :
+      gh api repos/{owner}/{repo}/milestones
+      → identifier le milestone correspondant → MILESTONE_NUM
 
-5. Décision :
+   b. Si MILESTONE_NUM détecté (via étape 2 ou 3a) :
+      gh issue list --milestone "<title>" --state open \
+        --json number,title,labels
+      → ajouter toutes les issues ouvertes du milestone à ISSUE_NUMS[] (dédupliquer)
+
+4. Persister dans workflow-state.json :
+   issue_nums: ISSUE_NUMS[]
+   milestone_num: MILESTONE_NUM (ou null si aucun)
+
+5. Évaluer la complétude de la spec (critères ci-dessous)
+
+6. Décision :
    |-- Spec complète → continuer sans interruption
    |-- Gaps détectés → afficher les questions, attendre réponse utilisateur
                     → puis continuer avec la spec enrichie
@@ -137,8 +155,8 @@ Puis enchaîner directement sur la phase suivante sans autre attente.
 
 ### Labels GitHub — Suivi de Phase
 
-> **Condition** : s'applique uniquement si un `ISSUE_NUM` a été détecté dans la demande.
-> **Règle** : chaque transition de phase met à jour le label de l'issue. Un seul label actif à la fois.
+> **Condition** : s'applique si `ISSUE_NUMS[]` est non vide (construit en CLARIFICATION).
+> **Règle** : chaque transition de phase met à jour le label de **toutes** les issues suivies. Un seul label actif à la fois par issue.
 
 | Transition | Label à ajouter | Labels à retirer |
 |------------|----------------|-----------------|
@@ -148,28 +166,41 @@ Puis enchaîner directement sur la phase suivante sans autre attente.
 | Entrée Phase Review | `EN REVIEW` | `EN COURS`, `PLANNING`, `EN QA`, `DONE` |
 | Entrée Phase QA | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE` |
 | QA VALIDATED | `DONE` | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING` |
-| Deploy PROD confirmé (GATE 4) | — (issue fermée) | — |
+| Deploy PROD confirmé (GATE 4) | — (issues fermées) | — |
 
-Appel MCP pour chaque transition :
+Appel MCP pour chaque transition — boucler sur toutes les issues suivies :
 ```
-mcp__plugin_github_github__issue_write({
-  owner: <owner>, repo: <repo>, issue_number: ISSUE_NUM,
-  labels: { add: ["<label>"], remove: ["<labels à retirer>"] }
-})
+pour chaque issue_num dans ISSUE_NUMS[] :
+  mcp__plugin_github_github__issue_write({
+    owner: <owner>, repo: <repo>, issue_number: issue_num,
+    labels: { add: ["<label>"], remove: ["<labels à retirer>"] }
+  })
 ```
 
-> **BUGFIX** : pas de phase Plan → pas de label `PLANNING`. Le workflow démarre directement à `EN COURS` lors de la Phase Dev.
-> **HOTFIX / REFACTOR** : pas de gestion de labels (pas d'issue liée en règle générale).
+Deploy PROD confirmé — fermer toutes les issues suivies :
+```
+pour chaque issue_num dans ISSUE_NUMS[] :
+  mcp__plugin_github_github__add_issue_comment({
+    issue_number: issue_num,
+    body: "✅ Livré — QA OK — documentation mise à jour"
+  })
+  mcp__plugin_github_github__issue_write({
+    issue_number: issue_num, state: "closed"
+  })
+```
+
+> **BUGFIX** : pas de phase Plan → pas de label `PLANNING`. Démarre directement à `EN COURS` lors de la Phase Dev.
+> **HOTFIX / REFACTOR** : pas de gestion de labels (ISSUE_NUMS[] vide en règle générale).
 
 ### Milestone — Suivi de Complétion
 
-> **Condition** : s'applique si un milestone est associé à l'issue.
+> **Condition** : s'applique si `MILESTONE_NUM` est défini (construit en CLARIFICATION).
 
 | Moment | Action |
 |--------|--------|
-| Deploy PROD OK | Vérifier le milestone : `mcp__plugin_github_github__issue_read` — lister les issues ouvertes |
-| Milestone à 100% | Fermer le milestone : `mcp__plugin_github_github__issue_write` (milestone state: closed) + informer l'utilisateur |
-| Issues encore ouvertes | Alerter l'utilisateur avec la liste des issues restantes |
+| Deploy PROD OK | `gh issue list --milestone "<title>" --state open --json number,title` |
+| Milestone à 100% (liste vide) | Fermer : `mcp__plugin_github_github__issue_write` (milestone state: closed) + informer l'utilisateur |
+| Issues encore ouvertes | Alerter l'utilisateur avec la liste des issues restantes et leur label actuel |
 
 ---
 
@@ -460,6 +491,8 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
   "version": "X.Y.Z",
   "started_at": "2026-04-26T14:30:00Z",
   "cycles": 1,
+  "issue_nums": [123, 456],
+  "milestone_num": 5,
   "phases": {
     "clarification":{ "status": "completed", "skipped": false },
     "plan":         { "status": "completed", "report": ".claude/reports/plan-xxx.md", "timestamp": "..." },
