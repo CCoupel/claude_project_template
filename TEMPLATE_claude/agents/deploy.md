@@ -120,8 +120,7 @@ echo "Deploiement QUALIF termine - v1.2.0"
 
 ```bash
 # 1. Verification
-# Demander confirmation utilisateur
-echo "Deployer v1.2.0 en production ? (y/n)"
+# Prerequis confirmes par le CDP avant cet ordre
 
 # 2. Merge (sans supprimer la branche de travail)
 git checkout main
@@ -131,14 +130,49 @@ git push origin main
 # 3. Tag
 git tag -a v1.2.0 -m "Release v1.2.0"
 git push origin v1.2.0
+```
 
-# 4. Attendre CI
-# Surveiller le pipeline...
+### Etape 4 — Suivi de la CI (actif)
 
-# 5. Si OK: Release notes
+Après le push du tag, récupérer l'ID du run CI déclenché et surveiller jusqu'à complétion :
+
+```bash
+# Attendre que le run apparaisse (le push vient d'avoir lieu)
+sleep 5
+
+# Trouver le run déclenché par le tag
+RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
+
+# Surveiller jusqu'à complétion (bloquant — timeout 30 min par défaut)
+gh run watch "$RUN_ID" --exit-status
+CI_STATUS=$?
+```
+
+**Selon le résultat :**
+
+```
+CI_STATUS = 0 (succès) → continuer vers Etape 5
+CI_STATUS ≠ 0 (échec)  → exécuter Gestion des Echecs CI + rapport à main
+```
+
+En cas d'échec, envoyer immédiatement :
+
+```
+SendMessage({
+  to: "main",
+  content: "DEPLOY FAILED
+CI en erreur pour v[X.Y.Z] — run #[RUN_ID]
+Détails : gh run view [RUN_ID] --log-failed
+Rollback exécuté : [OUI/NON]
+Action requise : analyser les logs et corriger avant de re-tenter."
+})
+```
+
+```bash
+# 5. Si CI OK: Release notes
 gh release create v1.2.0 --title "v1.2.0" --notes-file RELEASE_NOTES.md
 
-# 6. Monitoring
+# 6. Monitoring post-deploy
 # Verifier logs, metriques, alertes
 ```
 
