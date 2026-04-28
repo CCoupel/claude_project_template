@@ -32,11 +32,18 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ## Rôle 1 — Gestion de la Team
 
-La team est normalement déjà spawnée par `/start-session`. Tu n'as pas à la recréer.
+### Spawn au démarrage d'un workflow
 
-### Si la team n'est pas encore active (fallback)
+Quand tu reçois une commande de workflow (`/feature`, `/bugfix`, `/hotfix`, `/refactor`, `/secu`, `/deploy`),
+**avant** de démarrer le workflow :
 
-Spawner uniquement les agents nécessaires selon le workflow (voir cdp.md section "Agents selon le Workflow") :
+1. Lire `project-config.json` pour connaître le stack (backend, frontend, firmware, infra)
+2. Déterminer les agents nécessaires (voir cdp.md section "Agents selon le Workflow")
+3. Filtrer selon le stack réel :
+   - Pas de frontend configuré → ne pas spawner `dev-frontend`
+   - Firmware configuré → ajouter `dev-firmware`
+   - Pas de K8s/Docker → `infra` optionnel
+4. Spawner uniquement ces agents **en parallèle** (un seul message) :
 
 ```
 Task({
@@ -44,13 +51,15 @@ Task({
   team_name: "{TEAM_NAME}",
   name: "<nom>",
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
-           Tu fais partie de {TEAM_NAME}. Reste en mode IDLE et attends mes ordres."
+           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+           Reste en mode IDLE et attends mes ordres."
 })
 ```
 
 ### Cycle de vie des agents
 
 - **Agent silencieux** : renvoyer un `SendMessage` de rappel. Si toujours sans réponse → le respawner.
+- **Fin de workflow** : les agents spécialisés restent actifs — ils seront réutilisés si un nouveau workflow démarre dans la même session.
 - **Shutdown** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
 
 ---

@@ -72,30 +72,14 @@ Extraire :
 
 1. **TeamCreate** avec le nom `{TEAM_NAME}` (defini dans CLAUDE.md)
 
-2. **Spawner TOUS les agents en parallele** (un seul message avec N appels Task) :
-
-| Nom agent | Type (subagent_type) | Role | Modele |
-|-----------|---------------------|------|--------|
-| `teamleader` | `teamleader` | Team Leader (CDP + gestion team) | sonnet |
-| `planner` | `implementation-planner` | Planification + contrats API | sonnet |
-| `dev-backend` | `dev-backend` | Backend (stack detectee) | sonnet |
-| `dev-frontend` | `dev-frontend` | Frontend (stack detectee) | sonnet |
-| `code-reviewer` | `code-reviewer` | Revue de code | sonnet |
-| `qa` | `qa` | Tests et validation | sonnet |
-| `security` | `security` | Audit securite | sonnet |
-| `doc-updater` | `doc-updater` | Documentation | sonnet |
-| `deployer` | `deploy` | Deploiement QUALIF/PROD | sonnet |
-| `infra` | `infra` | Infrastructure Docker/Helm/CI | sonnet |
-| `marketing` | `marketing-release` | Communication de release | sonnet |
-
-> **Adapter la liste** selon la stack du projet (definie dans `project-config.json`) :
-> - Pas de frontend → ne pas spawner `dev-frontend`
-> - Firmware → ajouter `dev-firmware` (subagent_type: `dev-firmware`)
-> - Pas de K8s/Docker → `infra` optionnel
-
-**Prompt pour `teamleader`** :
+2. **Spawner uniquement le teamleader** :
 
 ```
+Task({
+  subagent_type: "teamleader",
+  team_name: "{TEAM_NAME}",
+  name: "teamleader",
+  prompt: "
 Lis .claude/agents/teamleader.md puis .claude/agents/cdp.md
 et applique ces instructions pour toute la session.
 
@@ -103,17 +87,14 @@ Tu es le Team Leader de {PROJECT_NAME} dans la team {TEAM_NAME}.
 Memoire projet : .claude/memory/MEMORY.md
 
 Attends les instructions de l'utilisateur avant de demarrer un workflow.
+Les agents specialises (planner, dev-*, qa, etc.) seront spawnes par toi
+uniquement quand un workflow demarre (/feature, /bugfix, etc.).
+  "
+})
 ```
 
-**Prompt pour tous les autres agents** :
-
-```
-Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/[nom].md,
-et applique ces instructions pour toute la session.
-
-Tu fais partie de la team {TEAM_NAME} sur le projet {PROJECT_NAME}.
-Reste en mode IDLE et attends les ordres du teamleader avant de commencer tout travail.
-```
+> Les agents spécialisés ne sont **pas** spawnes au démarrage — ils le seront par le teamleader
+> au démarrage de chaque workflow, selon le type et le stack du projet.
 
 ### Etape 5 — Etat du backlog GitHub
 
@@ -163,11 +144,8 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 
 ---
 
-**Agents actifs (IDLE)** :
-- teamleader (Chef de Projet + gestion team — interlocuteur principal)
-- planner / dev-backend / dev-frontend
-- code-reviewer / qa / security
-- doc-updater / deployer / infra / marketing
+**Agents actifs** :
+- teamleader (interlocuteur principal — les autres agents seront spawnes au démarrage d'un workflow)
 
 **Commandes disponibles** :
 - `/feature <description>` — Nouvelle feature complete
