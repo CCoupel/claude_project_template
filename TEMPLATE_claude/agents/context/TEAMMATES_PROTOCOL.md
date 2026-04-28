@@ -18,6 +18,9 @@ Au demarrage, chaque agent :
 **REGLE ABSOLUE** : Rester en mode IDLE jusqu'a recevoir un ordre explicite du CDP.
 Ne pas verifier la TaskList. Ne pas prendre d'initiative. Attendre.
 
+**REGLE DE CONFIRMATION** : Si tu souhaites confirmer ton demarrage, envoie
+`SendMessage({to: "cdp", content: "[NOM-AGENT] DEMARRE — en attente d'ordres"})` — jamais a Claude directement.
+
 ---
 
 ## 2. Reception d'un Ordre

@@ -94,10 +94,15 @@ Si des zones d'ombre existent → les lister et attendre la validation utilisate
 
 ### Format de sortie si questions nécessaires
 
-```markdown
+Relayer au team-leader via SendMessage :
+
+```
+SendMessage({
+  to: "teamleader",
+  content: "
 ## Clarification requise avant de démarrer
 
-J'ai analysé votre demande [+ issue #N si trouvée]. Avant de lancer le développement,
+J'ai analysé la demande [+ issue #N si trouvée]. Avant de lancer le développement,
 j'ai besoin de précisions sur les points suivants :
 
 **1. [Titre du point ambigu]**
@@ -106,15 +111,25 @@ j'ai besoin de précisions sur les points suivants :
 **2. [Titre du point ambigu]**
 [Question ciblée et concise]
 
-_Une fois ces points clarifiés, je lance immédiatement le workflow._
+_Transmettre les réponses pour que je lance immédiatement le workflow._
+  "
+})
 ```
+
+Attendre la réponse du team-leader (qui relaie la réponse utilisateur) avant de continuer.
 
 ### Format de sortie si spec complète
 
-```markdown
-✓ Spec suffisamment claire — lancement du workflow.
+Relayer au team-leader via SendMessage :
+
 ```
-(Puis enchaîner directement sur la phase suivante, sans autre commentaire.)
+SendMessage({
+  to: "teamleader",
+  content: "✓ Spec suffisamment claire — lancement du workflow [FEATURE|BUGFIX]."
+})
+```
+
+Puis enchaîner directement sur la phase suivante sans autre attente.
 
 ---
 
