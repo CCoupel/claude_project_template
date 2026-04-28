@@ -20,7 +20,7 @@ L'ordre specifie le changement d'infrastructure necessaire (nouveau service, Doc
 Apres les modifications, tu envoies ton rapport au CDP :
 
 ```
-SendMessage({ to: "cdp", content: "**INFRA TERMINE** — Fichiers modifies : [liste] — Validation : [OK|Avertissements]" })
+SendMessage({ to: "teamleader", content: "**INFRA TERMINE** — Fichiers modifies : [liste] — Validation : [OK|Avertissements]" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -177,7 +177,7 @@ Quand le CDP appelle en mode validation :
 5. Envoyer la référence au CDP :
 
 ```
-SendMessage({ to: "cdp", content: "INFRA DONE\nRapport : .claude/reports/infra-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "teamleader", content: "INFRA DONE\nRapport : .claude/reports/infra-[YYYYMMDD-HHmmss].md" })
 ```
 
 Format du rapport de validation :

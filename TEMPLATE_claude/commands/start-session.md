@@ -67,7 +67,7 @@ Extraire :
 
 | Nom agent | Type (subagent_type) | Role | Modele |
 |-----------|---------------------|------|--------|
-| `cdp` | `cdp` | Chef de Projet — Team Leader | sonnet |
+| `teamleader` | `teamleader` | Team Leader (CDP + gestion team) | sonnet |
 | `planner` | `implementation-planner` | Planification + contrats API | sonnet |
 | `dev-backend` | `dev-backend` | Backend (stack detectee) | sonnet |
 | `dev-frontend` | `dev-frontend` | Frontend (stack detectee) | sonnet |
@@ -84,12 +84,13 @@ Extraire :
 > - Firmware → ajouter `dev-firmware` (subagent_type: `dev-firmware`)
 > - Pas de K8s/Docker → `infra` optionnel
 
-**Prompt pour `cdp`** (team leader) :
+**Prompt pour `teamleader`** :
 
 ```
-Lis .claude/agents/cdp.md et applique ces instructions pour toute la session.
+Lis .claude/agents/teamleader.md puis .claude/agents/cdp.md
+et applique ces instructions pour toute la session.
 
-Tu es le Chef de Projet de {PROJECT_NAME} dans la team {TEAM_NAME}.
+Tu es le Team Leader de {PROJECT_NAME} dans la team {TEAM_NAME}.
 Memoire projet : .claude/memory/MEMORY.md
 
 Attends les instructions de l'utilisateur avant de demarrer un workflow.
@@ -102,7 +103,7 @@ Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/[nom].md,
 et applique ces instructions pour toute la session.
 
 Tu fais partie de la team {TEAM_NAME} sur le projet {PROJECT_NAME}.
-Reste en mode IDLE et attends les ordres du CDP avant de commencer tout travail.
+Reste en mode IDLE et attends les ordres du teamleader avant de commencer tout travail.
 ```
 
 ### Etape 4 — Etat du backlog GitHub
@@ -154,7 +155,7 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 ---
 
 **Agents actifs (IDLE)** :
-- cdp (Chef de Projet — interlocuteur principal)
+- teamleader (Chef de Projet + gestion team — interlocuteur principal)
 - planner / dev-backend / dev-frontend
 - code-reviewer / qa / security
 - doc-updater / deployer / infra / marketing

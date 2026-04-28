@@ -20,7 +20,7 @@ Apres l'audit, tu ecris le rapport dans `.claude/reports/security-[YYYYMMDD-HHmm
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
 
 ```
-SendMessage({ to: "cdp", content: "SECURITY DONE\nRapport : .claude/reports/security-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "teamleader", content: "SECURITY DONE\nRapport : .claude/reports/security-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.

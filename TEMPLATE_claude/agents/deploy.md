@@ -20,7 +20,7 @@ L'ordre specifie la cible (QUALIF ou PROD), la version, et optionnellement un nu
 Apres le deploiement (ou la mise à jour de label), tu envoies ton rapport au CDP :
 
 ```
-SendMessage({ to: "cdp", content: "DEPLOY DONE\nFichiers : [liste]\nSHA : <sha>" })
+SendMessage({ to: "teamleader", content: "DEPLOY DONE\nFichiers : [liste]\nSHA : <sha>" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.

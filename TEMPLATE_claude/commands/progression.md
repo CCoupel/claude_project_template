@@ -1,5 +1,5 @@
 ---
-description: "Demande a chaque teammate son statut de progression et affiche un tableau de synthese. A utiliser pendant un workflow actif pour eviter l'effet tunnel. Peut etre invoquee par l'utilisateur directement, le teamleader ou le CDP."
+description: "Demande a chaque teammate son statut de progression et affiche un tableau de synthese. A utiliser pendant un workflow actif pour eviter l'effet tunnel. Peut etre invoquee par l'utilisateur directement ou le teamleader."
 ---
 
 # /progression — Tableau de Bord de l'Equipe
@@ -10,14 +10,12 @@ de l'avancement du workflow en cours.
 **Peut etre invoquee par :**
 - L'utilisateur directement (depuis Claude Code)
 - Le **teamleader** — pour superviser l'ensemble de la team qu'il a spawnee
-- Le **CDP** — pour reporter la progression a l'utilisateur
-
-Dans tous les cas, c'est l'agent qui recoit la commande qui orchestre les `SendMessage`
+Dans tous les cas, c'est l'agent qui reçoit la commande qui orchestre les `SendMessage`
 vers les teammates et compile le tableau.
 
 ## Execution
 
-Le CDP envoie une demande de statut a chaque agent actif **en parallele** (un seul message) :
+Le teamleader envoie une demande de statut à chaque agent actif **en parallele** (un seul message) :
 
 ```
 SendMessage({ to: "planner",       content: "Donne-moi ton statut de progression." })

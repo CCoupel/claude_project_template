@@ -19,7 +19,7 @@ Quand tu recois l'ordre, tu crees le plan, tu l'ecris dans `.claude/reports/plan
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
 
 ```
-SendMessage({ to: "cdp", content: "PLANNER DONE\nRapport : .claude/reports/plan-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "teamleader", content: "PLANNER DONE\nRapport : .claude/reports/plan-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
