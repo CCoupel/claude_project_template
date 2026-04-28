@@ -691,6 +691,21 @@ cp TEMPLATE_claude/CLAUDE_TEMPLATE.md .claude/CLAUDE.md
 cp TEMPLATE_claude/gitignore-for-projects .gitignore
 ```
 
+#### Labels GitHub de suivi de phase
+
+Créer les labels de phase sur le repo GitHub (idempotent — `--force` met à jour si déjà existant) :
+
+```bash
+gh label create "PLANNING"  --color "0075ca" --description "Issue en cours de planification" --force
+gh label create "EN COURS"  --color "e4e669" --description "Issue en cours de développement" --force
+gh label create "EN REVIEW" --color "d876e3" --description "Issue en cours de revue de code"  --force
+gh label create "EN QA"     --color "f9d0c4" --description "Issue en cours de tests QA"       --force
+gh label create "DONE"      --color "0e8a16" --description "Issue livrée et validée"           --force
+```
+
+> Si le repo n'a pas encore de remote GitHub configuré, sauter cette étape et noter dans
+> le Message de Fin : "Labels GitHub à créer manuellement ou relancer /init-project après `git remote add`."
+
 ---
 
 ## Message de Fin
@@ -900,7 +915,19 @@ for name in $DEPLOYED_AGENTS; do
 done
 ```
 
-#### Etape d6 — Rapport final
+#### Etape d6 — Vérifier et créer les labels GitHub de phase
+
+S'assurer que les labels de suivi existent sur le repo (même commande que l'init, idempotent) :
+
+```bash
+gh label create "PLANNING"  --color "0075ca" --description "Issue en cours de planification" --force
+gh label create "EN COURS"  --color "e4e669" --description "Issue en cours de développement" --force
+gh label create "EN REVIEW" --color "d876e3" --description "Issue en cours de revue de code"  --force
+gh label create "EN QA"     --color "f9d0c4" --description "Issue en cours de tests QA"       --force
+gh label create "DONE"      --color "0e8a16" --description "Issue livrée et validée"           --force
+```
+
+#### Etape d7 — Rapport final
 
 ```
 Synchronisation terminee.
@@ -908,6 +935,7 @@ Synchronisation terminee.
   Commandes mises a jour : N
   Agents mis a jour      : N
   Reliquats supprimes    : N
+  Labels GitHub          : vérifiés (PLANNING, EN COURS, EN REVIEW, EN QA, DONE)
 
   Fichiers PROJET preserves (non touches) :
     ✓ .claude/CLAUDE.md
