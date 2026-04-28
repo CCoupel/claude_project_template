@@ -47,7 +47,16 @@ Si mise a jour disponible, afficher **avant de continuer** :
 - Si **non** → stopper ici, l'utilisateur lance `/init-project`
 - Si **oui** → continuer avec les etapes suivantes
 
-### Etape 2 — Lecture de la memoire projet
+### Etape 2 — Purge du dossier de travail temporaire
+
+```bash
+rm -rf _work/
+```
+
+> Supprime les rapports et handoffs d'une session précédente éventuellement non clôturée.
+> Sans risque : `_work/` est gitignored et jamais lu avant le démarrage d'un workflow.
+
+### Etape 3 — Lecture de la memoire projet
 
 Lire `.claude/memory/MEMORY.md` (source de verite unique).
 
@@ -57,7 +66,7 @@ Extraire :
 - Regles critiques du projet
 - Corrections de comportement a appliquer
 
-### Etape 3 — Creation de la TEAM
+### Etape 4 — Creation de la TEAM
 
 **Sans demander confirmation**, creer immediatement la team :
 
@@ -106,7 +115,7 @@ Tu fais partie de la team {TEAM_NAME} sur le projet {PROJECT_NAME}.
 Reste en mode IDLE et attends les ordres du teamleader avant de commencer tout travail.
 ```
 
-### Etape 4 — Etat du backlog GitHub
+### Etape 5 — Etat du backlog GitHub
 
 Executer les deux requetes en parallele :
 
@@ -125,7 +134,7 @@ gh issue list --state open --limit 50 \
   --jq 'sort_by(.milestone.title, .number) | .[] | [.number, .title, ([.labels[].name] | join(",")), (.milestone.title // "—"), ([.assignees[].login] | join(",") | if . == "" then "-" else . end), .updatedAt[:10]] | @tsv'
 ```
 
-### Etape 5 — Confirmation a l'utilisateur
+### Etape 6 — Confirmation a l'utilisateur
 
 
 
