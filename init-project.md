@@ -734,13 +734,17 @@ Ne pas fetcher GitHub a ce stade — utiliser le template local tel qu'il est.
 Calculer le statut de chaque fichier (NOUVEAU / MODIFIE / INCHANGE / RELIQUAT) selon
 la meme logique que l'etape d3 ci-dessous, puis afficher la synthese :
 
+Pour chaque fichier MODIFIE, lire les deux versions et generer une explication courte
+(1 ligne max) decrivant ce qui a change.
+
 ```
 Ce projet est deja initialise (config du YYYY-MM-DD).
 Template local : CCoupel/claude_project_template — dernier sync : <date> (<commit>)
 
 Changements disponibles (template local) :
   [+] feature, hotfix                   ← 2 nouveaux
-  [~] cdp, bugfix                       ← 2 modifies
+  [~] cdp       — <explication courte du changement>
+  [~] bugfix    — <explication courte du changement>
   [!] old-command                       ← 1 reliquat
   (12 fichiers inchanges)
 
@@ -815,6 +819,9 @@ Pour chaque fichier compare, determiner le statut :
 
 #### Etape d4 — Presenter le rapport
 
+Pour chaque fichier MODIFIE, lire les deux versions et generer une explication courte
+(1 ligne max) decrivant ce qui a change (nouvelle regle, section ajoutee, comportement modifie...).
+
 ```
 Synchronisation depuis github.com/<repo>
 
@@ -822,15 +829,15 @@ Synchronisation depuis github.com/<repo>
   Dernier commit : def5678  (2026-04-16)
 
   Commandes :
-  [+] feature          ← nouveau
-  [~] bugfix           ← modifie
-  [=] backlog          ← inchange (x12...)
-  [!] old-command      ← RELIQUAT (absent du nouveau template)
+  [+] feature                            ← nouveau
+  [~] bugfix    — <explication courte>   ← modifie
+  [=] backlog                            ← inchange (x12...)
+  [!] old-command                        ← RELIQUAT (absent du nouveau template)
 
   Agents :
-  [~] cdp              ← modifie
-  [=] code-reviewer    ← inchange (x7...)
-  [!] old-agent        ← RELIQUAT (absent du nouveau template)
+  [~] cdp       — <explication courte>   ← modifie
+  [=] code-reviewer                      ← inchange (x7...)
+  [!] old-agent                          ← RELIQUAT (absent du nouveau template)
 
   Nouveaux   : N
   Modifies   : N
