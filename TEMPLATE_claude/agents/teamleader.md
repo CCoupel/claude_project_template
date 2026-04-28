@@ -53,11 +53,11 @@ Task({
 
 Envoyer au planner les instructions selon le type de workflow :
 
-| Type | Instructions au planner |
-|------|------------------------|
-| FEATURE | Plan d'implémentation + contrats API + identification du scope (backend / frontend / les deux) |
-| BUGFIX | Identification de la cause racine + plan de fix minimal + scope impacté + risque de régression |
-| REFACTOR | Périmètre du refactor + dépendances + risque de régression |
+| Type | Instructions au planner | Version |
+|------|------------------------|---------|
+| FEATURE | Plan d'implémentation + contrats API + identification du scope | Incrémente Y, reset Z (ex: 2.3.1 → 2.4.0) |
+| BUGFIX | Cause racine + fix minimal + scope impacté + risque de régression | Incrémente Z (ex: 2.3.1 → 2.3.2) |
+| REFACTOR | Périmètre du refactor + dépendances + risque de régression | Aucun changement |
 
 #### Temps 2 — Après réception du rapport planner
 
