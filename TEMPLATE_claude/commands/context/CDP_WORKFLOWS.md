@@ -135,6 +135,44 @@ Puis enchaîner directement sur la phase suivante sans autre attente.
 
 ## 5. Phases Communes
 
+### Labels GitHub — Suivi de Phase
+
+> **Condition** : s'applique uniquement si un `ISSUE_NUM` a été détecté dans la demande.
+> **Règle** : chaque transition de phase met à jour le label de l'issue. Un seul label actif à la fois.
+
+| Transition | Label à ajouter | Labels à retirer |
+|------------|----------------|-----------------|
+| Entrée Phase Plan (FEATURE) | `PLANNING` | `EN COURS`, `EN REVIEW`, `EN QA`, `DONE` |
+| Entrée Phase Dev | `EN COURS` | `PLANNING`, `EN REVIEW`, `EN QA`, `DONE` |
+| Retour Phase Dev (cycle REVIEW ou QA) | `EN COURS` | `EN REVIEW`, `EN QA` |
+| Entrée Phase Review | `EN REVIEW` | `EN COURS`, `PLANNING`, `EN QA`, `DONE` |
+| Entrée Phase QA | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE` |
+| QA VALIDATED | `DONE` | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING` |
+| Deploy PROD confirmé (GATE 4) | — (issue fermée) | — |
+
+Appel MCP pour chaque transition :
+```
+mcp__plugin_github_github__issue_write({
+  owner: <owner>, repo: <repo>, issue_number: ISSUE_NUM,
+  labels: { add: ["<label>"], remove: ["<labels à retirer>"] }
+})
+```
+
+> **BUGFIX** : pas de phase Plan → pas de label `PLANNING`. Le workflow démarre directement à `EN COURS` lors de la Phase Dev.
+> **HOTFIX / REFACTOR** : pas de gestion de labels (pas d'issue liée en règle générale).
+
+### Milestone — Suivi de Complétion
+
+> **Condition** : s'applique si un milestone est associé à l'issue.
+
+| Moment | Action |
+|--------|--------|
+| Deploy PROD OK | Vérifier le milestone : `mcp__plugin_github_github__issue_read` — lister les issues ouvertes |
+| Milestone à 100% | Fermer le milestone : `mcp__plugin_github_github__issue_write` (milestone state: closed) + informer l'utilisateur |
+| Issues encore ouvertes | Alerter l'utilisateur avec la liste des issues restantes |
+
+---
+
 ### Phase Init (Git)
 
 ```bash
@@ -166,6 +204,8 @@ git checkout -b refactor/<nom-court>
 
 ### Phase Dev (Dispatch)
 
+> Label → `EN COURS` (voir tableau Labels ci-dessus)
+
 ```
 Analyser le scope :
 |-- Backend seul -> dev-backend
@@ -176,6 +216,8 @@ Analyser le scope :
 
 ### Phase Review
 
+> Label → `EN REVIEW` (voir tableau Labels ci-dessus)
+
 ```
 Lancer code-reviewer (+ test-writer en parallele)
 |-- Recevoir DONE + ref fichier rapport
@@ -184,11 +226,13 @@ Lancer code-reviewer (+ test-writer en parallele)
     |-- Conforme :
         |-- APPROVED            -> Phase QA
         |-- APPROVED WITH RESERVATIONS -> Phase QA (noter reserves)
-        |-- REJECTED            -> Retour Phase Dev (cycle++)
+        |-- REJECTED            -> Label → EN COURS + Retour Phase Dev (cycle++)
                                    relancer code-reviewer + test-writer
 ```
 
 ### Phase QA
+
+> Label → `EN QA` (voir tableau Labels ci-dessus)
 
 ```
 Lancer QA (avec ref scripts SHA + procedures test-writer)
@@ -196,9 +240,9 @@ Lancer QA (avec ref scripts SHA + procedures test-writer)
 |-- CDP lit le rapport et valide la conformite
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
-        |-- VALIDATED                   -> Phase Doc (automatique)
-        |-- VALIDATED WITH RESERVATIONS -> Phase Doc (noter reserves, continuer)
-        |-- NOT VALIDATED               -> Retour Phase Dev (cycle++)
+        |-- VALIDATED                   -> Label → DONE + Phase Doc (automatique)
+        |-- VALIDATED WITH RESERVATIONS -> Label → DONE + Phase Doc (noter reserves, continuer)
+        |-- NOT VALIDATED               -> Label → EN COURS + Retour Phase Dev (cycle++)
                                            relancer code-reviewer + test-writer
 
 Si cycle > 3 -> ESCALADE utilisateur
@@ -459,6 +503,8 @@ Dans les commandes CDP, referencer ce fichier :
 - Type : FEATURE|BUGFIX|HOTFIX|REFACTOR
 - Phases : section 3
 - Clarification : section 4
+- Labels GitHub + Milestone : section 5 (Labels GitHub — Suivi de Phase)
+- Phases communes : section 5
 - Validation : section 6
 - Erreurs : section 7
 - Regles : section 9
