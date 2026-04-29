@@ -914,57 +914,69 @@ for name in $DEPLOYED_AGENTS; do
 done
 ```
 
-#### Etape d5b — Migration des fichiers mixtes (one-shot)
+#### Etape d5b — Détection de dérive template/projet
 
-Après déploiement des `*.template.md`, détecter les `*.md` compagnons qui contiennent
-du contenu template mélangé à des adaptations projet.
+Exécutée à **chaque sync** pour détecter les dérives dans les deux sens.
+Silencieuse si aucun `*.md` compagnon n'existe ou si tout est propre.
 
-**Détection :**
+**Détection des fichiers compagnons :**
 
 ```bash
-MIXED=()
+COMPANIONS=()
 for tmpl in .claude/commands/*.template.md .claude/agents/*.template.md; do
   base=$(basename "$tmpl" .template.md)
   dir=$(dirname "$tmpl")
   companion="$dir/$base.md"
-  [[ -f "$companion" ]] && MIXED+=("$companion")
+  [[ -f "$companion" ]] && COMPANIONS+=("$companion")
 done
 ```
 
-Si `MIXED` est vide → sauter cette étape silencieusement.
+Si `COMPANIONS` est vide → sauter cette étape silencieusement.
 
-**Analyse de chaque fichier détecté :**
+**Analyse de chaque fichier compagnon :**
 
-Pour chaque `xxx.md` dans `MIXED`, lire les deux fichiers (`xxx.md` et `xxx.template.md`)
-et classer selon la proportion de contenu partagé avec le template :
+Pour chaque `xxx.md`, lire les deux fichiers et détecter les dérives dans les **deux sens** :
 
-| Statut | Critère | Action proposée |
-|--------|---------|-----------------|
-| `IDENTIQUE` | Contenu quasiment identique au template | Supprimer `xxx.md` (inutile) |
-| `MIXTE` | Template + ajouts projet détectés | Extraire les ajouts → nouveau `xxx.md` épuré |
-| `PROJET` | Contenu majoritairement spécifique | Laisser tel quel (déjà propre) |
+| Statut | Critère | Signal |
+|--------|---------|--------|
+| `IDENTIQUE` | `xxx.md` quasiment identique au template | Duplication inutile — peut être supprimé |
+| `DERIVE-TEMPLATE` | Contenu de `xxx.md` couvert par le nouveau template | Template a rattrapé le projet — simplification possible |
+| `DERIVE-PROJET` | Contenu ajouté dans `xxx.md` non présent dans le template | Dérive projet — vérifier que c'est intentionnel |
+| `PROPRE` | `xxx.md` contient uniquement du contenu spécifique, sans overlap | Aucune action requise |
 
-**Rapport et choix :**
+> **`DERIVE-TEMPLATE`** : une mise à jour du template intègre nativement ce que le projet
+> avait customisé → la règle dans `xxx.md` est devenue redondante.
+>
+> **`DERIVE-PROJET`** : `xxx.md` a grossi depuis la dernière sync → vérifier que les ajouts
+> sont intentionnels et non des duplications accidentelles.
+
+**Rapport (affiché uniquement si au moins un fichier non-PROPRE) :**
 
 ```
-Migration vers le format template/projet :
+Analyse drift template/projet :
 
   Commandes :
-  [=] feature.md     — identique au template → peut être supprimé
-  [~] bugfix.md      — mixte : 2 sections projet détectées → extraction proposée
-  [*] deploy.md      — contenu projet uniquement → déjà propre, rien à faire
+  [=] feature.md      — identique au template → peut être supprimé
+  [↓] bugfix.md       — le template couvre maintenant "règle X" → simplification possible
+  [↑] deploy.md       — 2 sections ajoutées depuis la dernière sync → vérifier intentionnel
+  [*] backlog.md      — propre (contenu projet uniquement)
 
   Agents :
-  [~] cdp.md         — mixte : règles projet détectées → extraction proposée
-  [=] qa.md          — identique au template → peut être supprimé
+  [↓] cdp.md          — le template couvre maintenant "phase CLARIFICATION" → simplification possible
+  [↑] qa.md           — 1 section ajoutée → vérifier intentionnel
 
-Actions :
-  [M] Migrer automatiquement (extraire les ajouts projet, supprimer les identiques)
-  [I] Inspecter fichier par fichier
-  [S] Ignorer — je le ferai manuellement plus tard
+  [=] N identiques  [↓] N simplifiables  [↑] N à vérifier  [*] N propres
 ```
 
-**Option M — Migration automatique :**
+**Actions proposées :**
+
+```
+  [N] Nettoyer automatiquement (supprimer IDENTIQUES, extraire DERIVE-PROJET vers xxx.md épuré)
+  [I] Inspecter fichier par fichier
+  [S] Ignorer — continuer sans modification
+```
+
+**Option N — Nettoyage automatique :**
 
 Pour chaque fichier `IDENTIQUE` :
 ```bash
@@ -972,30 +984,31 @@ rm "$companion"
 echo "  ✗ $(basename $companion) supprimé (identique au template)"
 ```
 
-Pour chaque fichier `MIXTE` :
+Pour chaque fichier `DERIVE-PROJET` ou `MIXTE` :
 - Lire `xxx.md` et `xxx.template.md`
-- Identifier les blocs/lignes présents dans `xxx.md` mais absents de `xxx.template.md`
-  (diff sémantique — sections ajoutées, règles supplémentaires, surcharges de comportement)
-- Écrire uniquement ces ajouts dans un nouveau `xxx.md`
-- Confirmer : `"  ✓ $(basename $companion) — N lignes projet conservées"`
+- Identifier les blocs présents dans `xxx.md` mais absents du template
+  (diff sémantique : sections ajoutées, règles supplémentaires, surcharges)
+- Réécrire `xxx.md` avec uniquement ces blocs
+- Confirmer : `"  ✓ $(basename $companion) — N blocs projet conservés"`
+
+Pour chaque fichier `DERIVE-TEMPLATE` :
+- Afficher la règle/section devenue redondante
+- Proposer de la retirer de `xxx.md` avec confirmation
 
 **Option I — Fichier par fichier :**
 
-Pour chaque fichier `MIXTE` ou `IDENTIQUE`, afficher le diff et proposer :
+Pour chaque fichier non-PROPRE, afficher le diff annoté et proposer l'action :
 ```
-[xxx.md] — contenu mixte détecté
+[xxx.md] — dérive détectée
 
-Sections spécifiques au projet :
-  [Lignes 45-52] Règle custom : "..."
-  [Lignes 78-81] Ajout : "..."
+  [↓] Section "Règle X" — couverte par le template mis à jour → retirer ?
+  [↑] Section "Règle Y" — ajout projet non présent dans le template → conserver ?
 
-Conserver ces sections dans xxx.md ? [O/n]
-Si oui → écrire xxx.md avec uniquement ces sections
-Si non → supprimer xxx.md
+  [R] Retirer les redondances  [C] Conserver tel quel  [E] Editer manuellement
 ```
 
-> **Note** : En cas de doute, choisir `[S]` — le système fonctionne correctement même
-> avec du contenu template dupliqué dans `xxx.md`. La migration est optionnelle.
+> Le système fonctionne correctement quelle que soit l'action choisie.
+> La dérive est un signal de maintenance, pas une erreur bloquante.
 
 #### Etape d6 — Vérifier et créer les labels GitHub de phase
 
