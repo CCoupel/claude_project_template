@@ -209,7 +209,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) + vérification couverture des contrats |
 | `qa` | Exécution des tests et validation (unit/integration/E2E/perf) |
 | `infra` | Validation des procédures de déploiement + infra Docker/Helm/CI |
-| `deployer` | Déploiement QUALIF et PROD |
+| `deployer` | Déploiement QUALIF et PROD — surveille la CI activement, rollback automatique sur échec, remonte les faits à main |
 | `doc-updater` | Mise à jour CHANGELOG, README, documentation technique |
 | `security` | Audit de sécurité (SAST, dépendances, secrets) |
 | `pr-reviewer` | Validation des Pull Requests externes |
@@ -258,7 +258,8 @@ DEPLOY QUALIF
     ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD → milestone si 100%
     └─ NON → label EN COURS → retour DEV ou PLAN selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
-DEPLOY PROD ────────────────── CI/CD → si milestone 100% : fermeture automatique
+DEPLOY PROD ────────────────── merge → tag → surveille CI → succès : release + milestone
+                               échec  : rollback adapté → rapport à main → routing agent
 ```
 
 **Points de validation utilisateur (GATES) :**
@@ -352,6 +353,29 @@ Le CDP met à jour les labels de l'issue associée (via plugin GitHub MCP) à ch
 
 Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
 Si l'utilisateur rejette à GATE 4, l'issue repasse à `EN COURS` et repart en DEV ou PLAN.
+
+### Déploiement PROD et suivi CI
+
+Le deployer ne pousse pas et ne passe pas à autre chose — il surveille la CI jusqu'à complétion et gère les échecs de façon autonome.
+
+**En cas de succès CI :**
+- Création de la GitHub Release avec les notes
+- Vérification du milestone actif → clôture automatique si 100% des issues fermées
+
+**En cas d'échec CI :**
+
+Le deployer classe l'échec depuis les logs et applique le rollback adapté :
+
+| Catégorie | Rollback | Signification |
+|-----------|----------|---------------|
+| `CODE` | Revert merge + suppression du tag | Le code mergé est suspect |
+| `FLAKY` | Revert merge + suppression du tag | Échec non reproductible persistant |
+| `CONFIG` | Suppression du tag uniquement | La config CI est en cause, le code est sain |
+| `INFRA` | Suppression du tag uniquement | L'infrastructure CI est en cause, le code est sain |
+
+Le deployer remonte les faits bruts à `main` (catégorie, run CI, rollback effectué).
+**Il ne corrige rien lui-même** — `main` décide du routing vers l'agent responsable (dev, infra, qa).
+La branche de travail est toujours préservée pour la correction et la re-tentative.
 
 ### Clôture de milestone
 

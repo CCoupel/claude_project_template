@@ -457,6 +457,42 @@ Commandes disponibles :
 Confirmer et generer ? (o/n)
 ```
 
+## Comportements intrinsèques
+
+Ces comportements sont natifs au template — aucune configuration requise.
+
+### Déploiement PROD avec suivi CI actif
+
+`/deploy prod` ne se limite pas à pousser un tag. Le deployer surveille la CI jusqu'à
+complétion et gère les échecs de façon autonome :
+
+```
+merge → push tag → surveille CI (gh run watch)
+                        ↓
+              succès : release notes + milestone
+              échec  :
+                ├── lire logs → classifier (CODE / FLAKY / CONFIG / INFRA)
+                ├── rollback adapté :
+                │     CODE/FLAKY  → revert merge + suppression du tag
+                │     CONFIG/INFRA → suppression du tag uniquement
+                └── rapport à main → main route vers l'agent responsable
+```
+
+Le deployer ne corrige jamais lui-même — il remonte les faits, `main` décide du routing.
+
+### Séparation template / adaptations projet
+
+Chaque commande et agent est déployé en deux fichiers compagnons :
+
+```
+.claude/commands/feature.template.md   ← géré par sync, jamais édité
+.claude/commands/feature.md            ← adaptations projet, tracké git
+```
+
+Claude lit les deux automatiquement. À chaque sync, une analyse de dérive détecte :
+- Le template qui a rattrapé une customisation projet (`[↓]` simplification possible)
+- Un fichier projet qui a grossi (`[↑]` vérifier l'intentionnalité)
+
 ## Post-Initialisation
 
 Apres initialisation :
