@@ -132,12 +132,12 @@ git tag -a v1.2.0 -m "Release v1.2.0"
 git push origin v1.2.0
 ```
 
-### Etape 4 — Suivi de la CI (actif)
+### Etape 4 — Suivi de la CI et correction automatique
 
-Après le push du tag, récupérer l'ID du run CI déclenché et surveiller jusqu'à complétion :
+Après le push du tag, surveiller la CI jusqu'à complétion et corriger en cas d'échec.
 
 ```bash
-# Attendre que le run apparaisse (le push vient d'avoir lieu)
+# Attendre que le run apparaisse
 sleep 5
 
 # Trouver le run déclenché par le tag
@@ -148,25 +148,82 @@ gh run watch "$RUN_ID" --exit-status
 CI_STATUS=$?
 ```
 
-**Selon le résultat :**
+**CI_STATUS = 0 → continuer vers Etape 5.**
 
-```
-CI_STATUS = 0 (succès) → continuer vers Etape 5
-CI_STATUS ≠ 0 (échec)  → exécuter Gestion des Echecs CI + rapport à main
+**CI_STATUS ≠ 0 → exécuter le protocole de correction ci-dessous.**
+
+---
+
+#### Protocole de correction en cas d'échec CI
+
+**Etape 4a — Lire et analyser les logs d'échec :**
+
+```bash
+gh run view "$RUN_ID" --log-failed
 ```
 
-En cas d'échec, envoyer immédiatement :
+Classifier la cause selon les logs :
+
+| Catégorie | Indicateurs | Action |
+|-----------|-------------|--------|
+| **FLAKY** | Timeout réseau, service tiers indisponible, race condition connue | Relancer le run (une fois max) |
+| **CONFIG** | Secret manquant, variable d'env absente, mauvais path | Corriger la config CI + relancer |
+| **CODE** | Compilation échoue, tests régressent, linting | Rollback immédiat + retour DEV |
+| **INFRA** | Registry inaccessible, runner hors ligne, quota dépassé | Rollback + escalade infra |
+
+**Etape 4b — Correction selon la catégorie :**
+
+**Si FLAKY :**
+```bash
+# Relancer le run sans modifier le code
+gh run rerun "$RUN_ID" --failed
+NEW_RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run watch "$NEW_RUN_ID" --exit-status
+RETRY_STATUS=$?
+# Si RETRY_STATUS = 0 → continuer vers Etape 5
+# Si RETRY_STATUS ≠ 0 → reclassifier et appliquer la catégorie réelle
+```
+
+**Si CONFIG :**
+- Identifier la variable ou le secret manquant dans les logs
+- Si corrigeable sans toucher au code (ex : secret GitHub Actions à ajouter) :
+  - Appliquer la correction
+  - Relancer : `gh run rerun "$RUN_ID" --failed`
+  - Surveiller le nouveau run
+- Si la correction nécessite un commit → traiter comme CODE
+
+**Si CODE ou INFRA (ou retry épuisé) → Etape 4c.**
+
+**Etape 4c — Rollback automatique :**
+
+```bash
+# 1. Revert le merge sur main
+git checkout main
+git revert HEAD --no-edit
+git push origin main
+
+# 2. Supprimer le tag local et distant
+git tag -d v[X.Y.Z]
+git push origin --delete v[X.Y.Z]
+```
+
+Envoyer le rapport à main :
 
 ```
 SendMessage({
   to: "main",
-  content: "DEPLOY FAILED
-CI en erreur pour v[X.Y.Z] — run #[RUN_ID]
-Détails : gh run view [RUN_ID] --log-failed
-Rollback exécuté : [OUI/NON]
-Action requise : analyser les logs et corriger avant de re-tenter."
+  content: "DEPLOY FAILED — rollback exécuté
+Version : v[X.Y.Z]
+Cause : [FLAKY|CONFIG|CODE|INFRA]
+Run CI : #[RUN_ID]
+Logs : gh run view [RUN_ID] --log-failed
+Rollback : merge revert + tag supprimé ✓
+Action requise : [description précise selon la catégorie]"
 })
 ```
+
+> Le rollback est **toujours exécuté automatiquement** — pas de validation manuelle requise.
+> Main décidera de la suite (corriger + re-tenter, ou escalader à l'utilisateur).
 
 ```bash
 # 5. Si CI OK: Release notes
@@ -202,24 +259,19 @@ Si oui → executer la logique de cloture (identique a `/milestone close <versio
 
 ## Gestion des Echecs CI
 
-Si le pipeline CI echoue apres le tag :
+Le protocole complet est dans **Etape 4 — Suivi de la CI et correction automatique**.
 
-```bash
-# 1. Revert le merge sur main
-git checkout main
-git revert HEAD --no-edit
-git push origin main
+Résumé des actions selon la catégorie d'échec :
 
-# 2. Supprimer le tag local et distant
-git tag -d v1.2.0
-git push origin --delete v1.2.0
+| Catégorie | Correction automatique | Rollback | Action main |
+|-----------|----------------------|----------|-------------|
+| FLAKY | Relance du run (1 fois) | Si retry échoue | Investiguer la flakiness |
+| CONFIG | Corriger secret/var + relance | Si non corrigeable sans commit | Vérifier la config CI |
+| CODE | Non — rollback immédiat | Oui, automatique | Retour DEV pour correction |
+| INFRA | Non — rollback immédiat | Oui, automatique | Escalade infra/ops |
 
-# 3. Analyser l'echec sur la branche de travail
-git checkout feature/xyz
-# Corriger...
-
-# 4. Re-tenter le deploiement
-```
+> Le rollback (revert merge + suppression du tag) est toujours exécuté avant le rapport à main.
+> La branche de travail n'est jamais supprimée — elle reste disponible pour correction et re-tentative.
 
 ## Rollback
 
