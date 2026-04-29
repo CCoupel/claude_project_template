@@ -88,7 +88,7 @@
   "features.f8.title": "Auto-generated marketing site",
   "features.f8.desc":  "/marketing generates this site from closed milestone issues, CHANGELOG and README. Dynamic version and roadmap from GitHub.",
   "features.f9.title": "Adaptive templates, zero friction",
-  "features.f9.desc":  "Each command and agent exists as two companion files: xxx.template.md (template, auto-synced, never edited) and xxx.md (project adaptations, git-tracked, never overwritten). Every sync runs a drift analysis in both directions — template catching up to a customisation, or a project file that has grown.",
+  "features.f9.desc":  "Each command and agent exists as two companion files: xxx.template.md (auto-synced, never edited) and xxx.md (project adaptations, never overwritten). On every invocation, Claude reads both — the template provides base behavior, xxx.md overrides it with project-specific rules. Zero friction: no merge to manage, nothing to forget. Every sync runs a drift analysis in both directions — template catching up to a customisation, or a project file that has grown.",
 
   "install.title":       "Installation",
   "install.subtitle":    "The tmux launcher manages all your projects from a central hub.",

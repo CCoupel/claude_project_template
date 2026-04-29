@@ -88,7 +88,7 @@
   "features.f8.title": "Site marketing auto-généré",
   "features.f8.desc":  "/marketing génère ce site depuis les issues du milestone clos, le CHANGELOG et le README. Version et roadmap dynamiques depuis GitHub.",
   "features.f9.title": "Templates adaptatifs sans friction",
-  "features.f9.desc":  "Chaque commande et agent existe en deux fichiers : xxx.template.md (template, sync automatique, jamais édité) et xxx.md (adaptations projet, tracké git, jamais écrasé). À chaque sync, une analyse détecte la dérive dans les deux sens — template qui rattrape une customisation, ou fichier projet qui a grossi.",
+  "features.f9.desc":  "Chaque commande et agent existe en deux fichiers compagnons : xxx.template.md (sync automatique, jamais édité) et xxx.md (adaptations projet, jamais écrasé). À chaque invocation, Claude lit les deux — le template fournit le comportement de base, xxx.md le surcharge avec les règles du projet. Zéro friction : pas de merge à gérer, pas d'oubli possible. À chaque sync, une analyse de dérive détecte si le template a rattrapé une customisation ou si le fichier projet a grossi.",
 
   "install.title":       "Installation",
   "install.subtitle":    "Le launcher tmux gère tous vos projets depuis un hub central.",
