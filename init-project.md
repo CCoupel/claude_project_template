@@ -914,6 +914,89 @@ for name in $DEPLOYED_AGENTS; do
 done
 ```
 
+#### Etape d5b — Migration des fichiers mixtes (one-shot)
+
+Après déploiement des `*.template.md`, détecter les `*.md` compagnons qui contiennent
+du contenu template mélangé à des adaptations projet.
+
+**Détection :**
+
+```bash
+MIXED=()
+for tmpl in .claude/commands/*.template.md .claude/agents/*.template.md; do
+  base=$(basename "$tmpl" .template.md)
+  dir=$(dirname "$tmpl")
+  companion="$dir/$base.md"
+  [[ -f "$companion" ]] && MIXED+=("$companion")
+done
+```
+
+Si `MIXED` est vide → sauter cette étape silencieusement.
+
+**Analyse de chaque fichier détecté :**
+
+Pour chaque `xxx.md` dans `MIXED`, lire les deux fichiers (`xxx.md` et `xxx.template.md`)
+et classer selon la proportion de contenu partagé avec le template :
+
+| Statut | Critère | Action proposée |
+|--------|---------|-----------------|
+| `IDENTIQUE` | Contenu quasiment identique au template | Supprimer `xxx.md` (inutile) |
+| `MIXTE` | Template + ajouts projet détectés | Extraire les ajouts → nouveau `xxx.md` épuré |
+| `PROJET` | Contenu majoritairement spécifique | Laisser tel quel (déjà propre) |
+
+**Rapport et choix :**
+
+```
+Migration vers le format template/projet :
+
+  Commandes :
+  [=] feature.md     — identique au template → peut être supprimé
+  [~] bugfix.md      — mixte : 2 sections projet détectées → extraction proposée
+  [*] deploy.md      — contenu projet uniquement → déjà propre, rien à faire
+
+  Agents :
+  [~] cdp.md         — mixte : règles projet détectées → extraction proposée
+  [=] qa.md          — identique au template → peut être supprimé
+
+Actions :
+  [M] Migrer automatiquement (extraire les ajouts projet, supprimer les identiques)
+  [I] Inspecter fichier par fichier
+  [S] Ignorer — je le ferai manuellement plus tard
+```
+
+**Option M — Migration automatique :**
+
+Pour chaque fichier `IDENTIQUE` :
+```bash
+rm "$companion"
+echo "  ✗ $(basename $companion) supprimé (identique au template)"
+```
+
+Pour chaque fichier `MIXTE` :
+- Lire `xxx.md` et `xxx.template.md`
+- Identifier les blocs/lignes présents dans `xxx.md` mais absents de `xxx.template.md`
+  (diff sémantique — sections ajoutées, règles supplémentaires, surcharges de comportement)
+- Écrire uniquement ces ajouts dans un nouveau `xxx.md`
+- Confirmer : `"  ✓ $(basename $companion) — N lignes projet conservées"`
+
+**Option I — Fichier par fichier :**
+
+Pour chaque fichier `MIXTE` ou `IDENTIQUE`, afficher le diff et proposer :
+```
+[xxx.md] — contenu mixte détecté
+
+Sections spécifiques au projet :
+  [Lignes 45-52] Règle custom : "..."
+  [Lignes 78-81] Ajout : "..."
+
+Conserver ces sections dans xxx.md ? [O/n]
+Si oui → écrire xxx.md avec uniquement ces sections
+Si non → supprimer xxx.md
+```
+
+> **Note** : En cas de doute, choisir `[S]` — le système fonctionne correctement même
+> avec du contenu template dupliqué dans `xxx.md`. La migration est optionnelle.
+
 #### Etape d6 — Vérifier et créer les labels GitHub de phase
 
 S'assurer que les labels de suivi existent sur le repo (même commande que l'init, idempotent) :
