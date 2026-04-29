@@ -45,7 +45,7 @@
   "wf.gate4.ok":       "✓ YES → issue closed → deploy prod",
   "wf.gate4.ko":       "✗ NO → label EN COURS → back to DEV",
   "wf.prod":           "PROD deploy",
-  "wf.prod.desc":      "Squash merge · Tag · CI/CD · Milestone auto-close if 100%",
+  "wf.prod.desc":      "Merge · Tag · CI monitored · success: release + milestone · failure: adaptive rollback → responsible agent",
   "wf.cycles":         "Correction cycles max 3: REVIEW refuses → DEV fixes → REVIEW only. TEST-WRITER re-triggered only if scope changes (BREAKING/CHANGED in contracts/CHANGELOG.md).",
 
   "github.title":           "Native GitHub integration",
@@ -82,11 +82,13 @@
   "features.f5.title": "12 specialized agents",
   "features.f5.desc":  "CDP, Planner, Dev, Test-Writer, Reviewer, QA, Infra, Deployer, Doc, Security, PR-Reviewer, Marketing. File-based deliverables, lightweight communication.",
   "features.f6.title": "STAGING → PROD pipeline",
-  "features.f6.desc":  "Infra validation before each deploy. Smoke tests. Integrated rollback. GATE 4 with test scenarios presented by the CDP.",
+  "features.f6.desc":  "Infra validation before each deploy. Smoke tests. PROD deploy: CI actively monitored — CODE/FLAKY failure → merge revert + tag deletion, CONFIG/INFRA failure → tag deletion only. The deployer reports facts to main, never self-corrects.",
   "features.f7.title": "Session memory",
   "features.f7.desc":  "/start-session reads project state, current version, active milestone and in-progress work. No repetition between sessions.",
   "features.f8.title": "Auto-generated marketing site",
   "features.f8.desc":  "/marketing generates this site from closed milestone issues, CHANGELOG and README. Dynamic version and roadmap from GitHub.",
+  "features.f9.title": "Adaptive templates, zero friction",
+  "features.f9.desc":  "Each command and agent exists as two companion files: xxx.template.md (template, auto-synced, never edited) and xxx.md (project adaptations, git-tracked, never overwritten). Every sync runs a drift analysis in both directions — template catching up to a customisation, or a project file that has grown.",
 
   "install.title":       "Installation",
   "install.subtitle":    "The tmux launcher manages all your projects from a central hub.",

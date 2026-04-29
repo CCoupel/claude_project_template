@@ -45,7 +45,7 @@
   "wf.gate4.ok":       "✓ OUI → issue fermée → deploy prod",
   "wf.gate4.ko":       "✗ NON → label EN COURS → retour DEV",
   "wf.prod":           "Deploy PROD",
-  "wf.prod.desc":      "Squash merge · Tag · CI/CD · Milestone auto-close si 100%",
+  "wf.prod.desc":      "Merge · Tag · CI surveillée · succès : release + milestone · échec : rollback adapté → agent responsable",
   "wf.cycles":         "Cycles correctifs max 3 : REVIEW refuse → DEV corrige → REVIEW seul. TEST-WRITER relancé uniquement si changement de scope (BREAKING/CHANGED dans contracts/CHANGELOG.md).",
 
   "github.title":           "Intégration GitHub native",
@@ -82,11 +82,13 @@
   "features.f5.title": "12 agents spécialisés",
   "features.f5.desc":  "CDP, Planner, Dev, Test-Writer, Reviewer, QA, Infra, Deployer, Doc, Security, PR-Reviewer, Marketing. Livrables fichiers, communication légère.",
   "features.f6.title": "Pipeline QUALIF → PROD",
-  "features.f6.desc":  "Validation infra avant chaque deploy. Smoke tests. Rollback intégré. GATE 4 avec scénarios de test présentés par le CDP.",
+  "features.f6.desc":  "Validation infra avant chaque deploy. Smoke tests. Deploy PROD : la CI est surveillée activement — échec CODE/FLAKY → revert merge + suppression du tag, échec CONFIG/INFRA → suppression du tag uniquement. Le deployer remonte les faits à main, jamais de correction autonome.",
   "features.f7.title": "Mémoire de session",
   "features.f7.desc":  "/start-session lit l'état du projet, la version, le milestone actif et le travail en cours. Aucune répétition entre sessions.",
   "features.f8.title": "Site marketing auto-généré",
   "features.f8.desc":  "/marketing génère ce site depuis les issues du milestone clos, le CHANGELOG et le README. Version et roadmap dynamiques depuis GitHub.",
+  "features.f9.title": "Templates adaptatifs sans friction",
+  "features.f9.desc":  "Chaque commande et agent existe en deux fichiers : xxx.template.md (template, sync automatique, jamais édité) et xxx.md (adaptations projet, tracké git, jamais écrasé). À chaque sync, une analyse détecte la dérive dans les deux sens — template qui rattrape une customisation, ou fichier projet qui a grossi.",
 
   "install.title":       "Installation",
   "install.subtitle":    "Le launcher tmux gère tous vos projets depuis un hub central.",
