@@ -80,16 +80,20 @@ Repo template (ce repo)          Projet cible après /init-project
 README.md                        README.md  (projet)
 init-project.md          ──┐
 CLAUDE.md                  │     .claude/
-TEMPLATE_claude/           │     ├── commands/         ← copié depuis TEMPLATE_claude/
-├── commands/              │     ├── agents/
-│   └── context/           │     │   ├── *.md          ← copié depuis TEMPLATE_claude/
-├── agents/                │     │   ├── context/      ← copié depuis TEMPLATE_claude/
-│   └── context/           │     │   └── dev-*.md      ← généré (tracké git)
-├── templates/             └──►  ├── CLAUDE.md         ← généré (tracké git)
-│   └── workflows/               ├── project-config.json ← généré (tracké git)
-├── INITIALIZATION.md            └── memory/           ← tracké git
-├── CLAUDE_TEMPLATE.md
-└── .template-source.json        TEMPLATE_claude/      ← gitignore (fetché depuis GitHub)
+TEMPLATE_claude/           │     ├── commands/
+├── commands/              │     │   ├── *.template.md ← sync depuis TEMPLATE_claude/ (gitignore)
+│   └── context/           │     │   ├── *.md          ← adaptations projet (tracké git)
+├── agents/                │     │   └── init-project.md ← point d'entrée (tracké git)
+│   └── context/           │     ├── agents/
+├── templates/             └──►  │   ├── *.template.md ← sync depuis TEMPLATE_claude/ (gitignore)
+│   └── workflows/               │   ├── *.md          ← adaptations projet (tracké git)
+├── INITIALIZATION.md            │   ├── context/      ← sync depuis TEMPLATE_claude/ (gitignore)
+├── CLAUDE_TEMPLATE.md           │   └── dev-*.md      ← généré stack (tracké git)
+└── .template-source.json        ├── CLAUDE.md         ← généré (tracké git)
+                                 ├── project-config.json ← généré (tracké git)
+                                 └── memory/           ← tracké git
+
+                                 TEMPLATE_claude/      ← gitignore (fetché depuis GitHub)
                                  .gitignore            ← généré par /init-project
 ```
 
@@ -98,10 +102,24 @@ TEMPLATE_claude/           │     ├── commands/         ← copié depuis
 | Dossier | Dans le projet cible | Dans git |
 |---------|----------------------|----------|
 | `TEMPLATE_claude/` | Source template | Non (gitignore) |
-| `.claude/commands/` | Commandes slash | Non (gitignore, sauf `init-project.md`) |
-| `.claude/agents/*.md` | Agents génériques | Non (gitignore) |
-| `.claude/agents/dev-*.md` | Agents projet | Oui |
+| `.claude/commands/*.template.md` | Commandes template (jamais éditées) | Non (gitignore) |
+| `.claude/commands/*.md` | Adaptations projet par commande | Oui |
+| `.claude/agents/*.template.md` | Agents template (jamais édités) | Non (gitignore) |
+| `.claude/agents/*.md` | Adaptations projet par agent | Oui |
+| `.claude/agents/dev-*.md` | Agents projet (stack-spécifique) | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
+
+### Séparation template / projet
+
+Chaque commande et agent est déployé en **deux fichiers compagnons** :
+
+```
+.claude/commands/feature.template.md   ← template, jamais édité, mis à jour par sync
+.claude/commands/feature.md            ← adaptations projet, tracké git, jamais écrasé
+```
+
+Claude lit les deux automatiquement : le template d'abord, puis le fichier projet.
+Les projets qui n'ont aucune adaptation n'ont pas besoin de créer le fichier `.md`.
 
 ---
 
@@ -450,12 +468,49 @@ Pour récupérer les nouvelles fonctionnalités du template dans un projet exist
 /init-project → d) Synchroniser le template depuis GitHub
 ```
 
-Fetche la dernière version de `TEMPLATE_claude/` et redéploie dans `.claude/`
-sans toucher aux fichiers projet.
+Fetche la dernière version de `TEMPLATE_claude/` et met à jour les fichiers `*.template.md`
+sans jamais toucher aux fichiers `*.md` projet.
+
+### Détection de dérive (automatique à chaque sync)
+
+À chaque synchronisation, Claude analyse les fichiers `*.md` compagnons et détecte
+les dérives dans les deux sens :
+
+| Signal | Signification | Action proposée |
+|--------|---------------|-----------------|
+| `[↓]` DERIVE-TEMPLATE | Le template couvre maintenant ce que vous aviez customisé | Simplification possible |
+| `[↑]` DERIVE-PROJET | Le fichier `.md` a grossi depuis la dernière sync | Vérifier que c'est intentionnel |
+| `[=]` IDENTIQUE | Le `.md` duplique le template sans rien ajouter | Peut être supprimé |
+| `[*]` PROPRE | Contenu projet uniquement | Rien à faire |
+
+Cette analyse est silencieuse si tout est propre. Elle sert aussi de migration one-shot
+pour les projets qui avaient du contenu mixte avant l'introduction de la convention.
 
 ---
 
 ## Personnalisation
+
+### Adapter les commandes et agents au projet
+
+Pour surcharger le comportement d'une commande ou d'un agent, créer le fichier `.md` compagnon :
+
+```bash
+# Exemple : règles spécifiques pour /feature
+touch .claude/commands/feature.md
+```
+
+```markdown
+# Adaptations projet — feature
+
+## Conventions de nommage
+- Toutes les branches feature suivent le pattern `feat/<ticket>-<slug>`
+
+## Règles métier spécifiques
+- Ne jamais modifier le module `billing/` sans validation du lead
+```
+
+Claude lit `feature.template.md` (comportement standard) puis `feature.md` (règles projet).
+Le fichier `feature.template.md` n'est jamais à modifier — il se met à jour automatiquement.
 
 ### Forker ce template
 

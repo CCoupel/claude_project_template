@@ -358,17 +358,32 @@ Les placeholders `{{...}}` sont remplaces avec les vraies valeurs :
 | Deploiement | Docker |
 ```
 
-### 4. Commandes personnalisees
+### 4. Commandes et agents déployés
 
-Les fichiers sont copies directement depuis `TEMPLATE_claude/` vers `.claude/` :
+Les fichiers sont déployés depuis `TEMPLATE_claude/` vers `.claude/` en tant que `*.template.md` :
 
 ```
-commands/feature.md → .claude/commands/feature.md
-agents/cdp.md       → .claude/agents/cdp.md
+commands/feature.md → .claude/commands/feature.template.md
+agents/cdp.md       → .claude/agents/cdp.template.md
 ...
 ```
 
-## Reinitialisation
+#### Convention template / projet
+
+Chaque fichier `*.template.md` peut avoir un fichier compagnon `*.md` dans le même dossier :
+
+```
+.claude/commands/feature.template.md   ← template (sync automatique, ne jamais éditer)
+.claude/commands/feature.md            ← adaptations projet (tracké git, jamais écrasé)
+```
+
+Claude lit les deux à chaque invocation. Pour adapter le comportement d'une commande
+ou d'un agent au projet, créer le fichier `.md` correspondant avec uniquement les
+règles spécifiques — le template gère le reste.
+
+Les projets sans adaptation n'ont pas besoin de créer de fichier `.md`.
+
+## Reinitialisation et synchronisation
 
 Si `/init-project` est execute sur un projet deja initialise :
 
@@ -379,7 +394,8 @@ Voulez-vous :
 a) Reconfigurer completement (ecrase la config actuelle)
 b) Mettre a jour certains parametres
 c) Re-analyser le code (detecter les changements)
-d) Annuler
+d) Synchroniser le template depuis GitHub (fetch + appliquer)
+e) Annuler
 ```
 
 ### Option b : Mise a jour partielle
@@ -400,6 +416,22 @@ h) Retour
 
 Utile si le projet a evolue (nouveau framework ajoute, migration, etc.).
 Claude re-analyse et propose les mises a jour.
+
+### Option d : Synchronisation du template
+
+Fetche la derniere version de `TEMPLATE_claude/` depuis GitHub et met a jour
+tous les fichiers `*.template.md` sans jamais toucher aux fichiers `*.md` projet.
+
+Après le déploiement, une **analyse de dérive** est effectuée automatiquement :
+
+| Signal | Signification |
+|--------|---------------|
+| `[↓]` DERIVE-TEMPLATE | Le template couvre maintenant votre customisation → simplification possible |
+| `[↑]` DERIVE-PROJET | Votre `.md` a grossi depuis la derniere sync → verifier l'intentionnalite |
+| `[=]` IDENTIQUE | Le `.md` duplique le template sans rien ajouter → peut etre supprime |
+| `[*]` PROPRE | Contenu projet uniquement, rien a faire |
+
+Cette analyse est silencieuse si aucun fichier compagnon `*.md` n'existe ou si tout est propre.
 
 ## Validation Finale
 
