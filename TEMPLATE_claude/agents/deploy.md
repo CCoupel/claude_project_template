@@ -132,9 +132,9 @@ git tag -a v1.2.0 -m "Release v1.2.0"
 git push origin v1.2.0
 ```
 
-### Etape 4 — Suivi de la CI et correction automatique
+### Etape 4 — Suivi de la CI
 
-Après le push du tag, surveiller la CI jusqu'à complétion et corriger en cas d'échec.
+Après le push du tag, surveiller la CI jusqu'à complétion.
 
 ```bash
 # Attendre que le run apparaisse
@@ -150,80 +150,64 @@ CI_STATUS=$?
 
 **CI_STATUS = 0 → continuer vers Etape 5.**
 
-**CI_STATUS ≠ 0 → exécuter le protocole de correction ci-dessous.**
+**CI_STATUS ≠ 0 → exécuter le protocole d'échec ci-dessous.**
 
 ---
 
-#### Protocole de correction en cas d'échec CI
+#### Protocole d'échec CI
 
-**Etape 4a — Lire et analyser les logs d'échec :**
+Le deployer ne corrige rien lui-même. Il rollback, identifie l'agent responsable, et remonte à `main`.
+
+**Etape 4a — Lire les logs et classifier :**
 
 ```bash
 gh run view "$RUN_ID" --log-failed
 ```
 
-Classifier la cause selon les logs :
+| Catégorie | Indicateurs dans les logs | Code sur main fiable ? | Agent responsable |
+|-----------|--------------------------|------------------------|-------------------|
+| **CODE** | Compilation échoue, tests régressent, lint | Non | `dev` |
+| **FLAKY** | Timeout réseau, service tiers, race condition | Oui | `qa` |
+| **CONFIG** | Secret manquant, variable absente, mauvais path | Oui | `infra` |
+| **INFRA** | Registry inaccessible, runner hors ligne, quota | Oui | `infra` |
 
-| Catégorie | Indicateurs | Action |
-|-----------|-------------|--------|
-| **FLAKY** | Timeout réseau, service tiers indisponible, race condition connue | Relancer le run (une fois max) |
-| **CONFIG** | Secret manquant, variable d'env absente, mauvais path | Corriger la config CI + relancer |
-| **CODE** | Compilation échoue, tests régressent, linting | Rollback immédiat + retour DEV |
-| **INFRA** | Registry inaccessible, runner hors ligne, quota dépassé | Rollback + escalade infra |
+**Etape 4b — Rollback adapté :**
 
-**Etape 4b — Correction selon la catégorie :**
-
-**Si FLAKY :**
+**Si CODE ou FLAKY persistant** (code sur main suspect) :
 ```bash
-# Relancer le run sans modifier le code
-gh run rerun "$RUN_ID" --failed
-NEW_RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
-gh run watch "$NEW_RUN_ID" --exit-status
-RETRY_STATUS=$?
-# Si RETRY_STATUS = 0 → continuer vers Etape 5
-# Si RETRY_STATUS ≠ 0 → reclassifier et appliquer la catégorie réelle
-```
-
-**Si CONFIG :**
-- Identifier la variable ou le secret manquant dans les logs
-- Si corrigeable sans toucher au code (ex : secret GitHub Actions à ajouter) :
-  - Appliquer la correction
-  - Relancer : `gh run rerun "$RUN_ID" --failed`
-  - Surveiller le nouveau run
-- Si la correction nécessite un commit → traiter comme CODE
-
-**Si CODE ou INFRA (ou retry épuisé) → Etape 4c.**
-
-**Etape 4c — Rollback automatique :**
-
-```bash
-# 1. Revert le merge sur main
+# Revert du merge — crée un commit de revert, n'écrase pas l'historique
 git checkout main
 git revert HEAD --no-edit
 git push origin main
 
-# 2. Supprimer le tag local et distant
+# Suppression du tag
 git tag -d v[X.Y.Z]
 git push origin --delete v[X.Y.Z]
 ```
 
-Envoyer le rapport à main :
+**Si CONFIG ou INFRA** (code sur main fiable, seule la CI/infra a failli) :
+```bash
+# Suppression du tag uniquement — le merge reste sur main
+git tag -d v[X.Y.Z]
+git push origin --delete v[X.Y.Z]
+```
+
+> La branche de travail n'est jamais supprimée.
+
+**Etape 4c — Rapport à main :**
 
 ```
 SendMessage({
   to: "main",
-  content: "DEPLOY FAILED — rollback exécuté
-Version : v[X.Y.Z]
-Cause : [FLAKY|CONFIG|CODE|INFRA]
-Run CI : #[RUN_ID]
-Logs : gh run view [RUN_ID] --log-failed
-Rollback : merge revert + tag supprimé ✓
-Action requise : [description précise selon la catégorie]"
+  content: "DEPLOY FAILED
+Version  : v[X.Y.Z]
+Catégorie: [CODE|FLAKY|CONFIG|INFRA]
+Run CI   : #[RUN_ID] — gh run view [RUN_ID] --log-failed
+Rollback : [revert merge + tag supprimé | tag supprimé uniquement]"
 })
 ```
 
-> Le rollback est **toujours exécuté automatiquement** — pas de validation manuelle requise.
-> Main décidera de la suite (corriger + re-tenter, ou escalader à l'utilisateur).
+`main` analyse le rapport et décide du routing et de la suite.
 
 ```bash
 # 5. Si CI OK: Release notes
@@ -263,15 +247,15 @@ Le protocole complet est dans **Etape 4 — Suivi de la CI et correction automat
 
 Résumé des actions selon la catégorie d'échec :
 
-| Catégorie | Correction automatique | Rollback | Action main |
-|-----------|----------------------|----------|-------------|
-| FLAKY | Relance du run (1 fois) | Si retry échoue | Investiguer la flakiness |
-| CONFIG | Corriger secret/var + relance | Si non corrigeable sans commit | Vérifier la config CI |
-| CODE | Non — rollback immédiat | Oui, automatique | Retour DEV pour correction |
-| INFRA | Non — rollback immédiat | Oui, automatique | Escalade infra/ops |
+| Catégorie | Rollback |
+|-----------|----------|
+| CODE | Revert merge + suppression du tag |
+| FLAKY | Revert merge + suppression du tag |
+| CONFIG | Suppression du tag uniquement |
+| INFRA | Suppression du tag uniquement |
 
-> Le rollback (revert merge + suppression du tag) est toujours exécuté avant le rapport à main.
-> La branche de travail n'est jamais supprimée — elle reste disponible pour correction et re-tentative.
+Le deployer remonte toujours les faits bruts à `main` — catégorie, run ID, rollback effectué.
+`main` décide du routing et de la suite. La branche de travail n'est jamais supprimée.
 
 ## Rollback
 
