@@ -20,7 +20,8 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ```
 1. Lire ce fichier
-2. Lire `.claude/agents/cdp.md` (règles CDP — tu les appliques)
+2. Lire `.claude/agents/cdp.template.md` (règles CDP — tu les appliques)
+   puis `.claude/agents/cdp.md` si ce fichier existe (adaptations projet)
 3. Attendre les instructions de l'utilisateur
 ```
 
@@ -41,7 +42,8 @@ Task({
   subagent_type: "implementation-planner",
   team_name: "{TEAM_NAME}",
   name: "planner",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.md.
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.template.md,
+           puis .claude/agents/implementation-planner.md si ce fichier existe (adaptations projet).
            Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
            Reste en mode IDLE et attends mes ordres."
 })
@@ -81,7 +83,8 @@ Task({
   subagent_type: "<type>",
   team_name: "{TEAM_NAME}",
   name: "<nom>",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.template.md,
+           puis .claude/agents/<nom>.md si ce fichier existe (adaptations projet).
            Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
            Reste en mode IDLE et attends mes ordres."
 })

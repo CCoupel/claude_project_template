@@ -71,8 +71,8 @@ puis deploiera les commandes et agents dans `.claude/`.
 | Categorie | Emplacement | Comportement |
 |-----------|-------------|--------------|
 | **TEMPLATE** | `TEMPLATE_claude/` (racine projet) | Fetche depuis GitHub, gitignore, jamais edite manuellement |
-| **COMMANDES** | `.claude/commands/` | Depuis `TEMPLATE_claude/commands/*.md`, copie directe — gitignore (sauf `init-project.md`) |
-| **AGENTS TEMPLATE** | `.claude/agents/*.md` + `.claude/agents/context/` | Depuis `TEMPLATE_claude/agents/*.md`, copie directe — gitignore |
+| **COMMANDES** | `.claude/commands/*.template.md` | Depuis `TEMPLATE_claude/commands/*.md`, déployé en `*.template.md` — gitignore |
+| **AGENTS TEMPLATE** | `.claude/agents/*.template.md` + `.claude/agents/context/` | Depuis `TEMPLATE_claude/agents/*.md`, déployé en `*.template.md` — gitignore |
 | **PROJET** | `.claude/CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md` | Trackes dans git, jamais ecrases |
 
 ---
@@ -137,25 +137,27 @@ gh api repos/$TEMPLATE_REPO/git/trees/$TEMPLATE_BRANCH?recursive=1 \
 
 #### 4. Deployer dans .claude/
 
-Les fichiers source sont nommés directement `feature.md`, `cdp.md`, etc.
-La copie est directe — aucun renommage nécessaire.
+Les fichiers source sont déployés en `*.template.md` — jamais édités manuellement.
+Les adaptations projet vont dans des fichiers `*.md` compagnons (voir COMMON.md §13).
 
 ```bash
 mkdir -p .claude/commands .claude/agents
 
-# Commandes : copie directe
+# Commandes : déployé en *.template.md
 for src in TEMPLATE_claude/commands/*.md; do
-  cp "$src" ".claude/commands/$(basename $src)"
-  echo "  ✓ .claude/commands/$(basename $src)"
+  dest=".claude/commands/$(basename $src .md).template.md"
+  cp "$src" "$dest"
+  echo "  ✓ $dest"
 done
 
-# Agents : copie directe
+# Agents : déployé en *.template.md
 for src in TEMPLATE_claude/agents/*.md; do
-  cp "$src" ".claude/agents/$(basename $src)"
-  echo "  ✓ .claude/agents/$(basename $src)"
+  dest=".claude/agents/$(basename $src .md).template.md"
+  cp "$src" "$dest"
+  echo "  ✓ $dest"
 done
 
-# Contextes partagés
+# Contextes partagés (restent en *.md — lus directement, pas de convention template/projet)
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
 ```
 
@@ -219,8 +221,10 @@ Executer la procedure "Fetch du Template depuis GitHub" ci-dessus.
 ### Etape M2 — Nettoyer .claude/ des anciens fichiers template
 
 ```bash
-git rm --cached -r .claude/commands/ 2>/dev/null || true
+git rm --cached .claude/commands/*.template.md 2>/dev/null || true
+git rm --cached .claude/commands/*.md 2>/dev/null || true
 git rm --cached -r .claude/agents/context/ 2>/dev/null || true
+git rm --cached .claude/agents/*.template.md 2>/dev/null || true
 git rm --cached .claude/agents/*.md 2>/dev/null || true
 git rm --cached -r .claude/templates/ 2>/dev/null || true
 git rm --cached .claude/.template-source.json 2>/dev/null || true
@@ -660,11 +664,8 @@ TYPECHECK_CMD_ESC=$(escape_sed "$TYPECHECK_CMD")
 Appliquer la substitution sur les fichiers deployes (commandes + agents generiques) :
 
 ```bash
-for f in .claude/commands/*.md .claude/agents/*.md; do
+for f in .claude/commands/*.template.md .claude/agents/*.template.md; do
   name=$(basename "$f")
-  # Ne pas toucher aux fichiers projet
-  [[ "$name" == "init-project.md" ]] && continue
-  [[ "$name" =~ ^dev- ]]             && continue
   sed -i \
     -e "s|{PROJECT_NAME}|${PROJECT_NAME}|g" \
     -e "s|{TEAM_NAME}|${TEAM_NAME}|g"       \
@@ -812,15 +813,13 @@ done)
 #### Etape d3 — Comparer avec les fichiers deployes
 
 ```bash
-# Commandes actuellement deployees (hors init-project.md)
-DEPLOYED_COMMANDS=$(ls .claude/commands/*.md 2>/dev/null \
-  | xargs -I{} basename {} .md \
-  | grep -v "^init-project$")
+# Commandes template déployées (*.template.md uniquement — les *.md sont des fichiers projet)
+DEPLOYED_COMMANDS=$(ls .claude/commands/*.template.md 2>/dev/null \
+  | xargs -I{} basename {} .template.md)
 
-# Agents deployes (hors dev-* qui sont des fichiers projet)
-DEPLOYED_AGENTS=$(ls .claude/agents/*.md 2>/dev/null \
-  | xargs -I{} basename {} .md \
-  | grep -v "^dev-")
+# Agents template déployés (*.template.md uniquement — les *.md et dev-*.md sont des fichiers projet)
+DEPLOYED_AGENTS=$(ls .claude/agents/*.template.md 2>/dev/null \
+  | xargs -I{} basename {} .template.md)
 ```
 
 Pour chaque fichier compare, determiner le statut :
@@ -871,18 +870,18 @@ Actions :
 
 ```bash
 for src in TEMPLATE_claude/commands/*.md; do
-  dest=".claude/commands/$(basename $src)"
+  dest=".claude/commands/$(basename $src .md).template.md"
   if ! cmp -s "$src" "$dest" 2>/dev/null; then
     cp "$src" "$dest"
-    echo "  ✓ $(basename $src) mis a jour"
+    echo "  ✓ $(basename $src .md).template.md mis a jour"
   fi
 done
 
 for src in TEMPLATE_claude/agents/*.md; do
-  dest=".claude/agents/$(basename $src)"
+  dest=".claude/agents/$(basename $src .md).template.md"
   if ! cmp -s "$src" "$dest" 2>/dev/null; then
     cp "$src" "$dest"
-    echo "  ✓ agents/$(basename $src) mis a jour"
+    echo "  ✓ agents/$(basename $src .md).template.md mis a jour"
   fi
 done
 
@@ -891,7 +890,7 @@ cp -r TEMPLATE_claude/agents/context .claude/agents/context
 
 **Etape systematique — Appliquer les placeholders sur TOUS les fichiers deployes :**
 
-Scanner l'integralite de `.claude/commands/` et `.claude/agents/` et appliquer
+Scanner l'integralite de `.claude/commands/*.template.md` et `.claude/agents/*.template.md` et appliquer
 la procedure "Application des placeholders" (section 4 ci-dessus) sur tous les fichiers,
 en lisant les valeurs depuis `.claude/project-config.json` existant.
 
@@ -901,16 +900,16 @@ en lisant les valeurs depuis `.claude/project-config.json` existant.
 # Supprimer les commandes reliquats
 for name in $DEPLOYED_COMMANDS; do
   if ! echo "$EXPECTED_COMMANDS" | grep -q "^${name}$"; then
-    rm ".claude/commands/${name}.md"
-    echo "  ✗ .claude/commands/${name}.md supprime (reliquat)"
+    rm ".claude/commands/${name}.template.md"
+    echo "  ✗ .claude/commands/${name}.template.md supprime (reliquat)"
   fi
 done
 
 # Supprimer les agents reliquats
 for name in $DEPLOYED_AGENTS; do
   if ! echo "$EXPECTED_AGENTS" | grep -q "^${name}$"; then
-    rm ".claude/agents/${name}.md"
-    echo "  ✗ .claude/agents/${name}.md supprime (reliquat)"
+    rm ".claude/agents/${name}.template.md"
+    echo "  ✗ .claude/agents/${name}.template.md supprime (reliquat)"
   fi
 done
 ```

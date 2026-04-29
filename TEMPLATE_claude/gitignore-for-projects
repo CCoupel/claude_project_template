@@ -7,11 +7,12 @@
 # Repertoire source du template (fetch depuis GitHub)
 TEMPLATE_claude/
 
-# Commandes generees depuis TEMPLATE_claude/ (sauf init-project.md = point d'entree)
-.claude/commands/
-!.claude/commands/init-project.md
+# Commandes template générées depuis TEMPLATE_claude/ (*.template.md — jamais éditées manuellement)
+# Les *.md dans commands/ sont des adaptations projet — trackés dans git
+.claude/commands/*.template.md
 
-# Agents template generes depuis TEMPLATE_claude/
+# Agents template générés depuis TEMPLATE_claude/ (*.template.md — jamais édités manuellement)
+# Les *.md dans agents/ (hors dev-*) sont des adaptations projet — trackés dans git
 .claude/agents/*.template.md
 .claude/agents/context/
 
