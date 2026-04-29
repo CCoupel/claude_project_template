@@ -360,28 +360,31 @@ Les placeholders `{{...}}` sont remplaces avec les vraies valeurs :
 
 ### 4. Commandes et agents déployés
 
-Les fichiers sont déployés depuis `TEMPLATE_claude/` vers `.claude/` en tant que `*.template.md` :
+Les fichiers sont déployés depuis `TEMPLATE_claude/` vers `.claude/` :
 
 ```
-commands/feature.md → .claude/commands/feature.template.md
-agents/cdp.md       → .claude/agents/cdp.template.md
+commands/feature.md → .claude/commands/feature.md        (invocable /feature)
+agents/cdp.md       → .claude/agents/cdp.template.md     (immutable)
 ...
 ```
 
 #### Convention template / projet
 
-Chaque fichier `*.template.md` peut avoir un fichier compagnon `*.md` dans le même dossier :
+**Commandes** : déployées en `*.md`, directement invocables (`/feature`, `/bugfix`...).
+Ne pas les éditer — elles sont écrasées à chaque sync. Pour adapter une commande,
+écrire dans les fichiers `context/` qu'elle référence.
+
+**Agents** : déployés en `*.template.md`, avec un fichier compagnon `*.md` optionnel :
 
 ```
-.claude/commands/feature.template.md   ← template (sync automatique, ne jamais éditer)
-.claude/commands/feature.md            ← adaptations projet (tracké git, jamais écrasé)
+.claude/agents/cdp.template.md   ← template (sync automatique, ne jamais éditer)
+.claude/agents/cdp.md            ← adaptations projet (tracké git, jamais écrasé)
 ```
 
-Claude lit les deux à chaque invocation. Pour adapter le comportement d'une commande
-ou d'un agent au projet, créer le fichier `.md` correspondant avec uniquement les
-règles spécifiques — le template gère le reste.
+Claude lit les deux à chaque invocation. Pour adapter un agent, créer le fichier
+`*.md` correspondant avec uniquement les règles spécifiques.
 
-Les projets sans adaptation n'ont pas besoin de créer de fichier `.md`.
+Les projets sans adaptation n'ont pas besoin de créer de fichier `*.md`.
 
 ## Reinitialisation et synchronisation
 
@@ -482,11 +485,14 @@ Le deployer ne corrige jamais lui-même — il remonte les faits, `main` décide
 
 ### Séparation template / adaptations projet
 
-Chaque commande et agent est déployé en deux fichiers compagnons :
+**Commandes** (`*.md`) : directement invocables, gérées par sync, ne pas éditer.
+Personnalisation via les fichiers `context/` (ex: `context/COMMON.md`).
+
+**Agents** : pattern template + compagnon projet optionnel :
 
 ```
-.claude/commands/feature.template.md   ← géré par sync, jamais édité
-.claude/commands/feature.md            ← adaptations projet, tracké git
+.claude/agents/cdp.template.md   ← géré par sync, jamais édité
+.claude/agents/cdp.md            ← adaptations projet, tracké git
 ```
 
 Claude lit les deux automatiquement. À chaque sync, une analyse de dérive détecte :

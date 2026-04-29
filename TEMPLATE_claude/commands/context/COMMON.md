@@ -369,9 +369,9 @@ $ARGUMENTS = "Ajouter mode X"  -> Action: workflow normal (pas de mot-cle)
 
 ## 13. Adaptations Projet
 
-Chaque commande `xxx.template.md` peut avoir un fichier compagnon `xxx.md` dans le même dossier.
-**Si ce fichier existe, le lire après le fichier `.template.md`** — il contient les règles et adaptations spécifiques au projet.
-Pour toute modification du comportement d'une commande, écrire dans `xxx.md` (jamais dans `xxx.template.md`).
+Chaque commande `xxx.md` est gérée par le template — ne pas l'éditer directement (elle sera écrasée à la prochaine sync).
+Pour personnaliser le comportement d'une commande, écrire dans les fichiers `context/` qu'elle référence (ex: `context/COMMON.md`).
+Pour les agents, `xxx.template.md` (template) peut avoir un fichier compagnon `xxx.md` pour les adaptations projet.
 
 ---
 

@@ -81,16 +81,15 @@ README.md                        README.md  (projet)
 init-project.md          ──┐
 CLAUDE.md                  │     .claude/
 TEMPLATE_claude/           │     ├── commands/
-├── commands/              │     │   ├── *.template.md ← sync depuis TEMPLATE_claude/ (gitignore)
-│   └── context/           │     │   ├── *.md          ← adaptations projet (tracké git)
-├── agents/                │     │   └── init-project.md ← point d'entrée (tracké git)
-│   └── context/           │     ├── agents/
-├── templates/             └──►  │   ├── *.template.md ← sync depuis TEMPLATE_claude/ (gitignore)
-│   └── workflows/               │   ├── *.md          ← adaptations projet (tracké git)
-├── INITIALIZATION.md            │   ├── context/      ← sync depuis TEMPLATE_claude/ (gitignore)
-├── CLAUDE_TEMPLATE.md           │   └── dev-*.md      ← généré stack (tracké git)
-└── .template-source.json        ├── CLAUDE.md         ← généré (tracké git)
-                                 ├── project-config.json ← généré (tracké git)
+├── commands/              │     │   ├── *.md          ← sync depuis TEMPLATE_claude/ (gitignore, /xxx)
+│   └── context/           │     │   └── init-project.md ← point d'entrée (tracké git)
+├── agents/                │     ├── agents/
+│   └── context/           └──►  │   ├── *.template.md ← sync depuis TEMPLATE_claude/ (gitignore)
+├── templates/                   │   ├── *.md          ← adaptations projet par agent (tracké git)
+│   └── workflows/               │   ├── context/      ← sync depuis TEMPLATE_claude/ (gitignore)
+├── INITIALIZATION.md            │   └── dev-*.md      ← généré stack (tracké git)
+├── CLAUDE_TEMPLATE.md           ├── CLAUDE.md         ← généré (tracké git)
+└── .template-source.json        ├── project-config.json ← généré (tracké git)
                                  └── memory/           ← tracké git
 
                                  TEMPLATE_claude/      ← gitignore (fetché depuis GitHub)
@@ -102,8 +101,7 @@ TEMPLATE_claude/           │     ├── commands/
 | Dossier | Dans le projet cible | Dans git |
 |---------|----------------------|----------|
 | `TEMPLATE_claude/` | Source template | Non (gitignore) |
-| `.claude/commands/*.template.md` | Commandes template (jamais éditées) | Non (gitignore) |
-| `.claude/commands/*.md` | Adaptations projet par commande | Oui |
+| `.claude/commands/*.md` | Commandes template (jamais éditées, invocables `/xxx`) | Non (gitignore) |
 | `.claude/agents/*.template.md` | Agents template (jamais édités) | Non (gitignore) |
 | `.claude/agents/*.md` | Adaptations projet par agent | Oui |
 | `.claude/agents/dev-*.md` | Agents projet (stack-spécifique) | Oui |
@@ -111,15 +109,18 @@ TEMPLATE_claude/           │     ├── commands/
 
 ### Séparation template / projet
 
-Chaque commande et agent est déployé en **deux fichiers compagnons** :
+**Commandes** : déployées en `*.md`, directement invocables (`/feature`, `/bugfix`...).
+Ne pas les éditer — elles sont écrasées à la prochaine sync.
+Toute personnalisation se fait via les fichiers `context/` qu'elles référencent.
+
+**Agents** : déployés en deux fichiers compagnons :
 
 ```
-.claude/commands/feature.template.md   ← template, jamais édité, mis à jour par sync
-.claude/commands/feature.md            ← adaptations projet, tracké git, jamais écrasé
+.claude/agents/cdp.template.md   ← template, jamais édité, mis à jour par sync
+.claude/agents/cdp.md            ← adaptations projet, tracké git, jamais écrasé
 ```
 
-Claude lit les deux automatiquement : le template d'abord, puis le fichier projet.
-Les projets qui n'ont aucune adaptation n'ont pas besoin de créer le fichier `.md`.
+Claude lit les deux automatiquement. Les projets sans adaptation n'ont pas besoin de créer de fichier `*.md`.
 
 ---
 
