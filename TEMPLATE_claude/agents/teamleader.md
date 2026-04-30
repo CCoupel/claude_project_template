@@ -29,34 +29,44 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ## Rôle 1 — Gestion de la Team
 
-### Règle fondamentale — Dispatcher avant de spawner
+### Règle fondamentale — SendMessage d'abord, Task en dernier recours
 
-Avant de créer un agent via `Task`, vérifier si un agent du même rôle est **déjà actif** dans la session :
+> **`Task` ne sert qu'à la première activation d'un rôle dans la session.
+> Dès qu'un rôle a été activé une fois, tout contact ultérieur passe UNIQUEMENT par `SendMessage`.**
 
-- **Agent déjà actif** → utiliser `SendMessage` directement — **ne pas re-spawner**
-- **Agent absent** → spawner via `Task` normalement
+Pour tout agent nécessaire, appliquer l'algorithme suivant **sans exception** :
 
-Cette règle s'applique à tous les agents sans exception.
+```
+Est-ce que cet agent a déjà été activé dans cette session ?
+  OUI → SendMessage({to: "<nom>", content: "..."})   ← toujours
+  NON → Task({subagent_type: "...", name: "<nom>", ...})  ← une seule fois
+```
+
+**Comment savoir si un agent est déjà actif :** maintenir mentalement la liste des agents activés depuis le démarrage de la session. Tout agent qui a répondu au moins une fois est actif — ne jamais le re-spawner.
+
 Un rôle ne peut exister qu'en un seul exemplaire à la fois dans la team.
 
-### Spawn au démarrage d'un workflow
+### Activation au démarrage d'un workflow
 
-Le spawn se fait en **deux temps** pour éviter de lancer des agents inutiles.
+L'activation se fait en **deux temps** pour éviter de lancer des agents inutiles.
 
 #### Temps 1 — Dès réception de la commande
 
-Spawner uniquement le **planner** (toujours nécessaire, quel que soit le type) :
+Activer le **planner** (toujours nécessaire, quel que soit le type).
+Appliquer la règle fondamentale :
 
 ```
-Task({
-  subagent_type: "implementation-planner",
-  team_name: "{TEAM_NAME}",
-  name: "planner",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.template.md,
-           puis .claude/agents/implementation-planner.md si ce fichier existe (adaptations projet).
-           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-           Reste en mode IDLE et attends mes ordres."
-})
+planner déjà actif ?
+  OUI → SendMessage({to: "planner", content: "Nouveau workflow : [description]. Attends mes instructions."})
+  NON → Task({
+    subagent_type: "implementation-planner",
+    team_name: "{TEAM_NAME}",
+    name: "planner",
+    prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.template.md,
+             puis .claude/agents/implementation-planner.md si ce fichier existe (adaptations projet).
+             Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+             Reste en mode IDLE et attends mes ordres."
+  })
 ```
 
 Envoyer au planner les instructions selon le type de workflow :
@@ -70,7 +80,7 @@ Envoyer au planner les instructions selon le type de workflow :
 #### Temps 2 — Après réception du rapport planner
 
 Lire le rapport planner (`_work/reports/plan-[timestamp].md`) pour identifier le scope réel,
-puis spawner **en parallèle** uniquement les agents nécessaires :
+puis **activer en parallèle** uniquement les agents nécessaires — en appliquant la règle fondamentale pour chacun :
 
 ```
 Scope identifié par le planner :
@@ -79,15 +89,19 @@ Scope identifié par le planner :
 |-- les deux       → dev-backend + dev-frontend
 |-- firmware       → dev-firmware
 
-Toujours ajouter : test-writer + code-reviewer + qa + doc-updater + deployer
+Toujours activer : test-writer + code-reviewer + qa + doc-updater + deployer
 Si infra/K8s configuré : + infra
+
+Pour CHAQUE agent de cette liste :
+  → Déjà actif ? SendMessage({to: "<nom>", content: "Nouveau workflow : prêt pour tes instructions."})
+  → Jamais activé ? Task({subagent_type: "...", name: "<nom>", prompt: [prompt standard ci-dessous]})
 ```
 
-> **Exception — HOTFIX** : pas de planner. Spawner directement dev-* + deployer selon le scope décrit dans la demande.
-> **Exception — SECU** : spawner uniquement `security`.
-> **Exception — DEPLOY** : spawner uniquement `infra` + `deployer`.
+> **Exception — HOTFIX** : pas de planner. Activer directement dev-* + deployer selon le scope décrit dans la demande.
+> **Exception — SECU** : activer uniquement `security`.
+> **Exception — DEPLOY** : activer uniquement `infra` + `deployer`.
 
-Prompt standard pour tous les agents spécialisés :
+Prompt standard pour la **première activation** d'un agent spécialisé (Task uniquement) :
 ```
 Task({
   subagent_type: "<type>",

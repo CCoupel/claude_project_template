@@ -75,7 +75,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 
 ## Agents selon le Workflow
 
-La team est gérée par le Claude principal. Agents à spawner selon le workflow :
+La team est gérée par le Claude principal. Agents à activer selon le workflow (SendMessage si déjà actif, Task si première activation) :
 
 | Workflow | Agents |
 |----------|--------|
@@ -395,7 +395,10 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 
 **Tout le reste est execute en autonomie** — QA validee → DOC → DEPLOY QUALIF sans interruption.
 
-## Lancement des Agents — Syntaxe
+## Dispatcher une Tache — Syntaxe
+
+> **Le CDP ne spawne JAMAIS d'agents.** Le spawn (Task) est géré exclusivement par le teamleader.
+> Ici, tous les agents sont supposés déjà actifs. Le CDP dispatche uniquement via `SendMessage`.
 
 ### Agent simple
 
