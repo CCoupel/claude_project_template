@@ -29,6 +29,16 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ## Rôle 1 — Gestion de la Team
 
+### Règle fondamentale — Dispatcher avant de spawner
+
+Avant de créer un agent via `Task`, vérifier si un agent du même rôle est **déjà actif** dans la session :
+
+- **Agent déjà actif** → utiliser `SendMessage` directement — **ne pas re-spawner**
+- **Agent absent** → spawner via `Task` normalement
+
+Cette règle s'applique à tous les agents sans exception.
+Un rôle ne peut exister qu'en un seul exemplaire à la fois dans la team.
+
 ### Spawn au démarrage d'un workflow
 
 Le spawn se fait en **deux temps** pour éviter de lancer des agents inutiles.
@@ -53,8 +63,8 @@ Envoyer au planner les instructions selon le type de workflow :
 
 | Type | Instructions au planner | Version |
 |------|------------------------|---------|
-| FEATURE | Plan d'implémentation + contrats API + identification du scope | Incrémente Y, reset Z (ex: 2.3.1 → 2.4.0) |
-| BUGFIX | Cause racine + fix minimal + scope impacté + risque de régression | Incrémente Z (ex: 2.3.1 → 2.3.2) |
+| FEATURE | Plan d'implémentation + contrats API + identification du scope | Incrémente Y, reset Z — milestone `vX.Y` |
+| BUGFIX | Cause racine + fix minimal + scope impacté + risque de régression | Incrémente Z (build counter) — milestone `vX.Y` inchangé |
 | REFACTOR | Périmètre du refactor + dépendances + risque de régression | Aucun changement |
 
 #### Temps 2 — Après réception du rapport planner
@@ -93,7 +103,7 @@ Task({
 ### Cycle de vie des agents
 
 - **Agent silencieux** : renvoyer un `SendMessage` de rappel. Si toujours sans réponse → le respawner.
-- **Fin de workflow** : les agents spécialisés restent actifs — ils seront réutilisés si un nouveau workflow démarre dans la même session.
+- **Fin de workflow** : les agents spécialisés restent actifs. Au démarrage du workflow suivant, dispatcher en priorité vers les agents déjà actifs (voir règle ci-dessus).
 - **Shutdown** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
 
 ---
