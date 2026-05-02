@@ -229,16 +229,24 @@ SendMessage({
 
 ## 7. Timeout d'inactivité — Auto-terminaison
 
-**IDLE_TTL = 30 minutes** après la fin du dernier travail.
+**IDLE_TTL** : lire `.agents.idle_ttl_minutes` dans `.claude/project-config.json`. Défaut : **30 minutes**.
+**IDLE_WARNING** : lire `.agents.idle_warning_minutes` dans `.claude/project-config.json`. Défaut : **5 minutes**.
 
 Après avoir envoyé le rapport `DONE` et être retourné en IDLE :
 
 ```
 Démarrer le compteur d'inactivité.
+Afficher dans le terminal : "💤 [NOM-AGENT] IDLE — fermeture automatique dans [IDLE_TTL]min si aucun ordre"
 
 Si un ordre arrive avant IDLE_TTL → réinitialiser le compteur, traiter l'ordre.
+
+Si (IDLE_TTL - IDLE_WARNING) expire sans ordre :
+  → Afficher : "⏳ [NOM-AGENT] IDLE — fermeture dans [IDLE_WARNING]min"
+  → SendMessage({to: "main", content: "<NOM-AGENT> IDLE — fermeture dans [IDLE_WARNING]min si aucun ordre"})
+  → Continuer à attendre.
+
 Si IDLE_TTL expire sans ordre :
-  → SendMessage({to: "main", content: "<NOM-AGENT> AUTO-TERMINÉ — inactivité > 30min"})
+  → SendMessage({to: "main", content: "<NOM-AGENT> AUTO-TERMINÉ — inactivité > [IDLE_TTL]min"})
   → Terminer la Task.
 ```
 
@@ -282,6 +290,11 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 → SendMessage(main, "DEV-BACKEND EN COURS — étape 6/6 — commit atomique — 100%")
 → SendMessage(main, "DEV-BACKEND DONE\nHandoff : _work/handoff/dev-backend-20240101-120000.md\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
 → MODE IDLE — réinitialise le compteur d'inactivité
+→ Affiche : "💤 DEV-BACKEND IDLE — fermeture automatique dans 30min si aucun ordre"
+
+[IDLE_WARNING atteint (TTL - 5min) sans nouvel ordre]
+→ Affiche : "⏳ DEV-BACKEND IDLE — fermeture dans 5min"
+→ SendMessage(main, "DEV-BACKEND IDLE — fermeture dans 5min si aucun ordre")
 
 [IDLE_TTL expire sans nouvel ordre]
 → SendMessage(main, "DEV-BACKEND AUTO-TERMINÉ — inactivité > 30min")
