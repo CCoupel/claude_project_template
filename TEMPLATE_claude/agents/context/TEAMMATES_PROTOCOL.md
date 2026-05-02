@@ -142,14 +142,27 @@ SendMessage({
 
 | Jalon | Quand |
 |-------|-------|
-| DEMARRE | Des le debut de l'execution de la tache |
-| BLOQUE | Des qu'un blocage survient |
-| TERMINE | Quand la tache est completement terminee |
+| DEMARRE | Avant la première étape — annoncer le nombre total d'étapes |
+| EN COURS | À chaque transition d'étape (fin d'une étape, début de la suivante) |
+| BLOQUE | Dès qu'un blocage survient |
+| TERMINE | Quand la tâche est complètement terminée |
 
-Format de mise a jour de progression (une seule ligne) :
+Format de mise à jour de progression (une seule ligne) :
 
 ```
-[NOM-AGENT] EN COURS — X% — [etape courante en < 10 mots]
+[NOM-AGENT] EN COURS — étape N/M — [label étape en < 8 mots] — X%
+```
+
+- **N** : numéro de l'étape qui vient de démarrer (commence à 1)
+- **M** : nombre total d'étapes de la tâche (connu dès le démarrage)
+- **X%** : `round(N / M × 100)`
+- **label** : nom court de l'étape en cours
+
+Exemples :
+```
+DEV-BACKEND EN COURS — étape 1/6 — analyse du codebase existant — 17%
+DEV-BACKEND EN COURS — étape 3/6 — implémentation handler auth — 50%
+QA EN COURS — étape 2/7 — exécution tests unitaires — 29%
 ```
 
 ### Reponse a une demande de progression (/progression)
@@ -157,7 +170,14 @@ Format de mise a jour de progression (une seule ligne) :
 Quand le CDP demande un statut de progression, repondre avec ce format exact :
 
 ```
-[NOM-AGENT] | [TERMINE | EN COURS X% | ATTENTE | BLOQUE] | [une ligne]
+[NOM-AGENT] | [TERMINE | EN COURS étape N/M X% | ATTENTE | BLOQUE] | [une ligne]
+```
+
+Exemple :
+```
+DEV-BACKEND | EN COURS étape 3/6 50% | implémentation handler auth
+QA | EN COURS étape 2/7 29% | exécution tests unitaires
+CODE-REVIEWER | TERMINE | rapport dans _work/reports/code-review-xxx.md
 ```
 
 ### Format du rapport de fin de tache
@@ -232,7 +252,7 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 1. **IDLE par defaut** — l'etat de repos est l'attente, pas le polling
 2. **Un travail a la fois** — terminer une tache avant d'en accepter une autre
 3. **Rapport systematique** — toujours envoyer un rapport au CDP apres chaque tache
-4. **Push proactif** — signaler demarrage, jalons importants, blocages sans attendre d'etre sollicite
+4. **Push proactif** — signaler démarrage (avec M total), EN COURS à chaque étape (N/M + X%), blocages, fin — sans attendre d'être sollicité
 5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du Claude principal
 6. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
 7. **Texte naturel** — les messages sont lisibles, pas en JSON
@@ -254,9 +274,13 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 
 [CDP envoie un ordre via SendMessage]
 → "Implemente l'endpoint POST /api/auth avec JWT. Voir contracts/http-endpoints.md."
-→ SendMessage(main, "DEV-BACKEND EN COURS — 0% — demarrage implementation /api/auth")
-→ [Travail effectue...]
-→ SendMessage(main, "DEV-BACKEND DONE\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
+→ SendMessage(main, "DEV-BACKEND DEMARRE — 6 étapes")
+→ SendMessage(main, "DEV-BACKEND EN COURS — étape 1/6 — lecture contrats et codebase — 17%")
+→ [étape 1 terminée, étape 2 démarre]
+→ SendMessage(main, "DEV-BACKEND EN COURS — étape 2/6 — création modèles et interfaces — 33%")
+→ [...]
+→ SendMessage(main, "DEV-BACKEND EN COURS — étape 6/6 — commit atomique — 100%")
+→ SendMessage(main, "DEV-BACKEND DONE\nHandoff : _work/handoff/dev-backend-20240101-120000.md\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
 → MODE IDLE — réinitialise le compteur d'inactivité
 
 [IDLE_TTL expire sans nouvel ordre]
