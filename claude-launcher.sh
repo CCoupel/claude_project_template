@@ -88,6 +88,12 @@ CLAUDE_DISABLE_MOUSE=1
 CLAUDE_EXPERIMENTAL_TEAMS=1
 CLAUDE_OPTIONS=""
 
+# ── Couleurs de fond par projet ──────────────────────────────────────────────
+# Palette sombre, couleurs distinctes (indices tmux 256)
+COLOR_PALETTE=(17 52 22 53 58 23 88 94 18 64)
+# Override optionnel : declare -A PROJECT_COLORS=(["mon-projet"]="53")
+declare -A PROJECT_COLORS=()
+
 load_config() {
   [[ -f "$CONFIG_FILE" ]] || return
   # shellcheck source=/dev/null
@@ -119,6 +125,13 @@ CLAUDE_OPTIONS="--allow-dangerously-skip-permissions"
 #     "MY_API_URL=https://api.example.com"
 #   )
 EXTRA_ENVS=()
+
+# Couleurs de fond par projet (optionnel — sinon assigné automatiquement)
+# Valeurs : indices tmux 256 couleurs (ex: 17=bleu nuit, 52=bordeaux, 22=vert, 53=prune)
+# declare -A PROJECT_COLORS=(
+#   ["mon-projet"]="53"
+#   ["autre-projet"]="17"
+# )
 EOF
 }
 
@@ -134,6 +147,24 @@ build_claude_exports() {
     [[ -n "$env_var" ]] && e+=$'\n'"export ${env_var}"
   done
   printf '%s' "$e"
+}
+
+# Hash déterministe du nom de projet → index dans COLOR_PALETTE
+# Même nom = même couleur, sans fichier de persistance
+get_project_color() {
+  local project="$1"
+  [[ -n "${PROJECT_COLORS[$project]+_}" ]] && { echo "${PROJECT_COLORS[$project]}"; return; }
+  local hash=0 i c
+  for (( i=0; i<${#project}; i++ )); do
+    c=$(printf '%d' "'${project:$i:1}")
+    hash=$(( (hash * 31 + c) % ${#COLOR_PALETTE[@]} ))
+  done
+  echo "${COLOR_PALETTE[$hash]}"
+}
+
+apply_pane_color() {
+  local pane_id="$1" color="$2"
+  tmux select-pane -t "$pane_id" -P "bg=colour${color}" 2>/dev/null
 }
 
 auto_update() {
@@ -368,6 +399,15 @@ do_layout() {
 
   # ── Application atomique ──────────────────────────────────────────────────
   tmux select-layout -t "$win" "$final_layout" 2>/dev/null
+
+  # ── Couleur de fond du projet ─────────────────────────────────────────────
+  local project_name
+  project_name=$(tmux display-message -t "$win" -p '#{window_name}' 2>/dev/null)
+  local project_color
+  project_color=$(get_project_color "$project_name")
+  for p in "${top_panes[@]}" "${bot_panes[@]}"; do
+    apply_pane_color "$p" "$project_color"
+  done
 }
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -679,10 +719,12 @@ if [[ "$1" == "--menu" ]]; then
     entries+="__new__"$'\t'"  \033[1;36m✦ Créer nouveau projet\033[0m\n"
     while IFS= read -r entry; do
       [[ -d "$GITHUB_DIR/$entry" ]] || continue
+      local_color=$(get_project_color "$entry")
+      dot="\033[38;5;${local_color}m●\033[0m"
       if echo "$existing_windows" | grep -qxF "$entry"; then
-        entries+="$entry"$'\t'$'\033[1;32m'"● $entry"$'\033[0;32m'" [ouvert]"$'\033[0m\n'
+        entries+="$entry"$'\t'"${dot} \033[1;32m${entry}\033[0;32m [ouvert]\033[0m\n"
       else
-        entries+="$entry"$'\t'"  $entry\n"
+        entries+="$entry"$'\t'"${dot} ${entry}\n"
       fi
     done < <(ls -1A "$GITHUB_DIR" 2>/dev/null)
 
@@ -758,6 +800,8 @@ if [[ "$1" == "--menu" ]]; then
         | awk -v p="$project" '$1==p{print $2}')
       leader_pane=$(tmux list-panes -t "$SESSION:$project" -F '#{pane_id}' 2>/dev/null \
         | head -1)
+
+      apply_pane_color "$leader_pane" "$(get_project_color "$project")"
 
       CLAUDE_EXPORTS=$(build_claude_exports)
       tmux send-keys -t "$SESSION:$project" \
