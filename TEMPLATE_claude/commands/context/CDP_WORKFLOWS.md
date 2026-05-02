@@ -185,10 +185,11 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 ### Milestone — Suivi de Complétion
 
 > **Condition** : s'applique si `MILESTONE_NUM` est défini (construit en CLARIFICATION).
+> **Nommage** : le titre du milestone est `vX.Y` (sans Z). Voir "Convention Milestone" ci-dessus.
 
 | Moment | Action |
 |--------|--------|
-| Deploy PROD OK | `gh issue list --milestone "<title>" --state open --json number,title` |
+| Deploy PROD OK (tag `vX.Y.0`) | `gh issue list --milestone "<title>" --state open --json number,title` |
 | Milestone à 100% (liste vide) | Fermer : `mcp__plugin_github_github__issue_write` (milestone state: closed) + informer l'utilisateur |
 | Issues encore ouvertes | Alerter l'utilisateur avec la liste des issues restantes et leur label actuel |
 
@@ -219,9 +220,21 @@ git checkout -b refactor/<nom-court>
 | Type | Action | Exemple |
 |------|--------|---------|
 | FEATURE | Incremente Y, reset Z | 2.40.3 -> 2.41.0 |
-| BUGFIX | Incremente Z | 2.40.0 -> 2.40.1 |
-| HOTFIX | Incremente Z + suffix | 2.40.1 -> 2.40.2-hotfix |
-| REFACTOR | Aucun | 2.40.1 (inchange) |
+| BUGFIX | Incremente Z (build counter) | 2.41.0 -> 2.41.1 |
+| HOTFIX | Incremente Z + suffix | 2.41.1 -> 2.41.2-hotfix |
+| REFACTOR | Aucun | 2.41.1 (inchange) |
+
+#### Convention Z — compteur de build / reset PROD
+
+- **Z** est le compteur de build : incrémenté à chaque BUGFIX ou build intermédiaire durant le cycle.
+- **Deploy PROD** : Z est **toujours remis à 0**. Le tag de release est `vX.Y.0`.
+  - Exemple : si le cycle a produit `v2.41.1`, `v2.41.2`… le tag PROD est `v2.41.0`.
+
+#### Convention Milestone — nommage `vX.Y`
+
+Le titre du milestone correspond à la version cible **sans Z** : `vX.Y`.
+- Exemple : milestone `v2.41` regroupe toutes les issues de la release Y=41, quel que soit Z.
+- Le milestone se clôture lors du deploy PROD → tag `vX.Y.0`.
 
 ### Phase Dev (Dispatch)
 
