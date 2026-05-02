@@ -24,7 +24,25 @@ Ne pas verifier la TaskList. Ne pas prendre d'initiative. Attendre.
 
 ---
 
-## 2. Reception d'un Ordre
+## 2. Réponse au Ping de Réveil
+
+Le teamleader peut envoyer un `PING` à tout moment pour vérifier si un agent est actif.
+
+Quand un agent reçoit `"PING"` :
+
+```
+SendMessage({
+  to: "main",
+  content: "<NOM-AGENT> ACTIF — prêt à recevoir des ordres"
+})
+```
+
+Répondre **immédiatement**, sans délai, sans exécuter aucun travail.
+Si l'agent ne répond pas, le teamleader spawne un nouvel agent à sa place.
+
+---
+
+## 4. Reception d'un Ordre
 
 Le CDP active un agent en lui envoyant un message via `SendMessage`.
 Quand un agent recoit un message du Claude principal :
@@ -51,7 +69,7 @@ Retourner en mode IDLE
 
 ---
 
-## 3. Communication
+## 5. Communication
 
 ### Regles absolues
 
@@ -176,7 +194,7 @@ Action requise : [ce dont j'ai besoin]
 
 ---
 
-## 4. Reponse au Shutdown
+## 6. Reponse au Shutdown
 
 Quand le CDP envoie un `shutdown_request` :
 
@@ -189,7 +207,27 @@ SendMessage({
 
 ---
 
-## 5. Regles Generales
+## 7. Timeout d'inactivité — Auto-terminaison
+
+**IDLE_TTL = 30 minutes** après la fin du dernier travail.
+
+Après avoir envoyé le rapport `DONE` et être retourné en IDLE :
+
+```
+Démarrer le compteur d'inactivité.
+
+Si un ordre arrive avant IDLE_TTL → réinitialiser le compteur, traiter l'ordre.
+Si IDLE_TTL expire sans ordre :
+  → SendMessage({to: "main", content: "<NOM-AGENT> AUTO-TERMINÉ — inactivité > 30min"})
+  → Terminer la Task.
+```
+
+**Côté teamleader** : à réception d'un message `AUTO-TERMINÉ`, noter l'agent comme inactif.
+Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'agent est nécessaire à nouveau.
+
+---
+
+## 8. Regles Generales
 
 1. **IDLE par defaut** — l'etat de repos est l'attente, pas le polling
 2. **Un travail a la fois** — terminer une tache avant d'en accepter une autre
@@ -198,24 +236,33 @@ SendMessage({
 5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du Claude principal
 6. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
 7. **Texte naturel** — les messages sont lisibles, pas en JSON
+8. **Auto-terminaison** — se terminer après 30 min d'inactivité (voir §7)
 
 ---
 
-## 6. Exemple de Session Typique
+## 9. Exemple de Session Typique
 
 ```
 [AGENT DEMARRE]
 → Lit TEAMMATES_PROTOCOL.md ✓
 → Lit .claude/agents/[nom].template.md ✓ (puis [nom].md si présent)
-→ MODE IDLE — en attente d'un ordre du Claude principal
+→ MODE IDLE — démarre le compteur d'inactivité (IDLE_TTL = 30 min)
+
+[Teamleader envoie PING]
+→ SendMessage(main, "DEV-BACKEND ACTIF — prêt à recevoir des ordres")
+→ Réinitialise le compteur
 
 [CDP envoie un ordre via SendMessage]
 → "Implemente l'endpoint POST /api/auth avec JWT. Voir contracts/http-endpoints.md."
 → SendMessage(main, "DEV-BACKEND EN COURS — 0% — demarrage implementation /api/auth")
 → [Travail effectue...]
 → SendMessage(main, "DEV-BACKEND DONE\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
-→ MODE IDLE — en attente du prochain ordre
+→ MODE IDLE — réinitialise le compteur d'inactivité
 
-[CDP envoie shutdown_request]
+[IDLE_TTL expire sans nouvel ordre]
+→ SendMessage(main, "DEV-BACKEND AUTO-TERMINÉ — inactivité > 30min")
+→ Termine la Task
+
+[CDP envoie shutdown_request (si agent encore actif)]
 → SendMessage(main, "shutdown_response approve: true")
 ```

@@ -29,20 +29,40 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ## Rôle 1 — Gestion de la Team
 
-### Règle fondamentale — SendMessage d'abord, Task en dernier recours
+### Règle fondamentale — Protocole de réveil avant tout spawn
 
-> **`Task` ne sert qu'à la première activation d'un rôle dans la session.
-> Dès qu'un rôle a été activé une fois, tout contact ultérieur passe UNIQUEMENT par `SendMessage`.**
+> **`Task` ne sert qu'en dernier recours, si et seulement si l'agent ne répond pas au ping de réveil.**
 
-Pour tout agent nécessaire, appliquer l'algorithme suivant **sans exception** :
+Pour tout agent nécessaire, appliquer ce protocole **sans exception** :
 
 ```
-Est-ce que cet agent a déjà été activé dans cette session ?
-  OUI → SendMessage({to: "<nom>", content: "..."})   ← toujours
-  NON → Task({subagent_type: "...", name: "<nom>", ...})  ← une seule fois
+Etape 1 — Envoyer un ping de réveil :
+  SendMessage({to: "<nom>", content: "PING"})
+
+Etape 2 — Attendre la réponse :
+  → Agent répond "<NOM> ACTIF"  →  utiliser directement via SendMessage
+  → Pas de réponse               →  spawner via Task (première et unique fois)
 ```
 
-**Comment savoir si un agent est déjà actif :** maintenir mentalement la liste des agents activés depuis le démarrage de la session. Tout agent qui a répondu au moins une fois est actif — ne jamais le re-spawner.
+**Format du ping :**
+```
+SendMessage({to: "<nom>", content: "PING"})
+```
+
+**Réponse attendue de l'agent :**
+```
+<NOM-AGENT> ACTIF — prêt à recevoir des ordres
+```
+
+**Si pas de réponse → spawn :**
+```
+Task({
+  subagent_type: "<type>",
+  team_name: "{TEAM_NAME}",
+  name: "<nom>",
+  prompt: "..."
+})
+```
 
 Un rôle ne peut exister qu'en un seul exemplaire à la fois dans la team.
 
@@ -53,20 +73,24 @@ L'activation se fait en **deux temps** pour éviter de lancer des agents inutile
 #### Temps 1 — Dès réception de la commande
 
 Activer le **planner** (toujours nécessaire, quel que soit le type).
-Appliquer la règle fondamentale :
+Appliquer le protocole de réveil :
 
 ```
-planner déjà actif ?
-  OUI → SendMessage({to: "planner", content: "Nouveau workflow : [description]. Attends mes instructions."})
-  NON → Task({
-    subagent_type: "implementation-planner",
-    team_name: "{TEAM_NAME}",
-    name: "planner",
-    prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.template.md,
-             puis .claude/agents/implementation-planner.md si ce fichier existe (adaptations projet).
-             Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-             Reste en mode IDLE et attends mes ordres."
-  })
+SendMessage({to: "planner", content: "PING"})
+
+→ Répond "PLANNER ACTIF" →
+    SendMessage({to: "planner", content: "Nouveau workflow : [description]. Attends mes instructions."})
+
+→ Pas de réponse →
+    Task({
+      subagent_type: "implementation-planner",
+      team_name: "{TEAM_NAME}",
+      name: "planner",
+      prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.template.md,
+               puis .claude/agents/implementation-planner.md si ce fichier existe (adaptations projet).
+               Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+               Reste en mode IDLE et attends mes ordres."
+    })
 ```
 
 Envoyer au planner les instructions selon le type de workflow :
@@ -92,9 +116,10 @@ Scope identifié par le planner :
 Toujours activer : test-writer + code-reviewer + qa + doc-updater + deployer
 Si infra/K8s configuré : + infra
 
-Pour CHAQUE agent de cette liste :
-  → Déjà actif ? SendMessage({to: "<nom>", content: "Nouveau workflow : prêt pour tes instructions."})
-  → Jamais activé ? Task({subagent_type: "...", name: "<nom>", prompt: [prompt standard ci-dessous]})
+Pour CHAQUE agent de cette liste — appliquer le protocole de réveil :
+  SendMessage({to: "<nom>", content: "PING"})
+  → Répond "<NOM> ACTIF" → SendMessage({to: "<nom>", content: "Nouveau workflow : prêt pour tes instructions."})
+  → Pas de réponse        → Task({subagent_type: "...", name: "<nom>", prompt: [prompt standard ci-dessous]})
 ```
 
 > **Exception — HOTFIX** : pas de planner. Activer directement dev-* + deployer selon le scope décrit dans la demande.
@@ -116,8 +141,9 @@ Task({
 
 ### Cycle de vie des agents
 
-- **Agent silencieux** : renvoyer un `SendMessage` de rappel. Si toujours sans réponse → le respawner.
-- **Fin de workflow** : les agents spécialisés restent actifs. Au démarrage du workflow suivant, dispatcher en priorité vers les agents déjà actifs (voir règle ci-dessus).
+- **Agent silencieux** : envoyer `SendMessage({to: "<nom>", content: "PING"})`. Si toujours sans réponse → spawner un nouvel agent via `Task` (même protocole que l'activation initiale).
+- **Message `AUTO-TERMINÉ`** : un agent s'est terminé après 30 min d'inactivité. Le noter comme absent — le protocole de réveil (PING → pas de réponse → spawn) prend le relais si on en a besoin.
+- **Fin de workflow** : les agents spécialisés restent actifs (jusqu'à leur IDLE_TTL). Au démarrage du workflow suivant, appliquer le protocole de réveil pour chacun.
 - **Shutdown** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
 
 ---
