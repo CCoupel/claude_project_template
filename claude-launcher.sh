@@ -800,10 +800,16 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   load_config
 fi
 
-# Si on arrive ici sans argument reconnu et que la session existe → attach
+# Si on arrive ici sans argument reconnu et que la session existe
 if tmux has-session -t "$SESSION" 2>/dev/null; then
   setup_tmux_style "$SESSION"
-  exec tmux attach-session -t "$SESSION"
+  # Client(s) déjà attaché(s) → session groupée (navigation indépendante par terminal)
+  # Session orpheline          → attach normal
+  if tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
+    exec tmux new-session -t "$SESSION"
+  else
+    exec tmux attach-session -t "$SESSION"
+  fi
 fi
 
 tmux new-session -d -s "$SESSION" -n "[menu]"
