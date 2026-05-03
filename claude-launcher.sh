@@ -90,7 +90,7 @@ CLAUDE_OPTIONS=""
 
 # ── Couleurs de fond par projet ──────────────────────────────────────────────
 # Palette sombre, couleurs distinctes (indices tmux 256)
-COLOR_PALETTE=(17 52 22 53 58 23 88 94 18 64)
+COLOR_PALETTE=(17 52 22 53 58 23 54 238 18 59)
 # Override optionnel : declare -A PROJECT_COLORS=(["mon-projet"]="53")
 declare -A PROJECT_COLORS=()
 
