@@ -131,6 +131,7 @@ Orchestre le workflow BUGFIX pour {PROJECT_NAME}.
 - Type : BUGFIX
 - Phases : section 3
 - Clarification : section 4
+- Labels GitHub : section 5 (Labels GitHub — Suivi de Phase) — appliquer les MCP calls à chaque transition de phase
 - Dispatch PLAN : section 5 (Phase Plan) — si bugfix complexe, déléguer au planner via SendMessage
 - Dispatch DEV : section 5 (Phase Dev)
 - Validation : section 6
