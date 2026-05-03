@@ -220,14 +220,35 @@ Executer la procedure "Fetch du Template depuis GitHub" ci-dessus.
 
 ### Etape M1b — Migration : renommer les commandes legacy *.template.md → *.md
 
+> ⚠ **SCOPE STRICT** : uniquement `.claude/commands/` — ne jamais appliquer aux `.claude/agents/`.
+> Les `*.template.md` agents sont des templates gitignorés ; les `*.md` agents sont des customisations trackées.
+> Appliquer cette logique aux agents écraserait les fichiers projet.
+
 Les commandes etaient deployees en `*.template.md` avant la v2.9.7. Les renommer avant de nettoyer le cache git.
+Avant chaque renommage, détecter si le fichier contient des customisations (contenu différent du template).
 
 ```bash
+CUSTOMIZED_COMMANDS=()
 for f in .claude/commands/*.template.md; do
   [[ -f "$f" ]] || continue
-  mv "$f" "${f/.template.md/.md}"
-  echo "  ✓ migration commande : $(basename $f) → $(basename ${f/.template.md/.md})"
+  name=$(basename "$f" .template.md)
+  dest="${f/.template.md/.md}"
+  template="TEMPLATE_claude/commands/${name}.md"
+  # Détecter si customisé — différent du template source
+  if [[ -f "$template" ]] && ! cmp -s "$f" "$template"; then
+    CUSTOMIZED_COMMANDS+=("$name")
+    echo "  ⚠ commande customisée détectée : ${name} (sera préservée, non écrasée par le template)"
+  fi
+  mv "$f" "$dest"
+  echo "  ✓ migration commande : $(basename $f) → $(basename $dest)"
 done
+```
+
+Si `CUSTOMIZED_COMMANDS[]` non vide → informer l'utilisateur :
+```
+⚠ Commandes modifiées localement (non écrasées par le template) :
+  - [nom] : diff détecté avec le template source
+Pour rétablir le template, supprimer le fichier .claude/commands/[nom].md et relancer /init-project.
 ```
 
 ### Etape M2 — Nettoyer .claude/ des anciens fichiers template
@@ -255,13 +276,24 @@ cp TEMPLATE_claude/gitignore-for-projects .gitignore
 
 ### Etape M4 — Commiter la migration
 
+M2 a désindexé les `*.md` agents via `git rm --cached`. Re-tracker les fichiers compagnons agents
+qui existent sur disque (customisations projet à préserver) avant de commiter.
+
 ```bash
 git add .gitignore TEMPLATE_claude/.template-source.json
+# Re-tracker les companions agents désindexés par M2 (hors dev-* et *.template.md)
+for f in .claude/agents/*.md; do
+  [[ -f "$f" ]] || continue
+  name=$(basename "$f")
+  [[ "$name" == dev-*.md ]] && continue  # dev-* gérés séparément
+  git add "$f" 2>/dev/null && echo "  ✓ re-tracking companion agent : $name"
+done
 git commit -m "chore(claude): Migrate to v3 template architecture (TEMPLATE_claude/)
 
 - TEMPLATE_claude/ fetched from GitHub, gitignored at root
 - .claude/ now contains only project-specific files
-- Untracked legacy template files from .claude/"
+- Untracked legacy template files from .claude/
+- Agent companion files re-tracked after cache cleanup"
 ```
 
 ### Etape M5 — Rapport
@@ -802,16 +834,37 @@ Executer la procedure "Fetch du Template depuis GitHub" pour mettre a jour `TEMP
 
 #### Etape d1b — Migration : renommer les commandes legacy *.template.md → *.md
 
+> ⚠ **SCOPE STRICT** : uniquement `.claude/commands/` — ne jamais appliquer aux `.claude/agents/`.
+> Les `*.template.md` agents sont des templates gitignorés ; les `*.md` agents sont des customisations trackées.
+> Appliquer cette logique aux agents écraserait les fichiers projet.
+
 Avant tout calcul, renommer les commandes `*.template.md` residuelles dans `.claude/commands/`
 (déployées avant la v2.9.7 où les commandes étaient encore en `*.template.md`).
-Les agents gardent leur extension `*.template.md` — ne pas les toucher.
+Avant chaque renommage, détecter si le fichier contient des customisations pour éviter
+que d5 ne les écrase silencieusement.
 
 ```bash
+CUSTOMIZED_COMMANDS=()
 for f in .claude/commands/*.template.md; do
   [[ -f "$f" ]] || continue
-  mv "$f" "${f/.template.md/.md}"
-  echo "  ✓ migration commande : $(basename $f) → $(basename ${f/.template.md/.md})"
+  name=$(basename "$f" .template.md)
+  dest="${f/.template.md/.md}"
+  template="TEMPLATE_claude/commands/${name}.md"
+  # Détecter si customisé — différent du template source
+  if [[ -f "$template" ]] && ! cmp -s "$f" "$template"; then
+    CUSTOMIZED_COMMANDS+=("$name")
+    echo "  ⚠ commande customisée détectée : ${name} (sera préservée, non écrasée par d5)"
+  fi
+  mv "$f" "$dest"
+  echo "  ✓ migration commande : $(basename $f) → $(basename $dest)"
 done
+```
+
+Si `CUSTOMIZED_COMMANDS[]` non vide → informer l'utilisateur avant de continuer vers d5 :
+```
+⚠ Commandes modifiées localement (non écrasées par le template) :
+  - [nom] : diff détecté avec le template source
+Pour rétablir le template, supprimer le fichier .claude/commands/[nom].md et relancer l'option d.
 ```
 
 #### Etape d2 — Calculer les noms deployes attendus
@@ -894,6 +947,12 @@ Actions :
 ```bash
 for src in TEMPLATE_claude/commands/*.md; do
   dest=".claude/commands/$(basename $src)"
+  name=$(basename "$src" .md)
+  # Préserver les commandes customisées détectées en d1b
+  if printf '%s\n' "${CUSTOMIZED_COMMANDS[@]}" | grep -q "^${name}$"; then
+    echo "  [C] $(basename $src) — customisé localement, préservé (supprimer pour réinitialiser)"
+    continue
+  fi
   if ! cmp -s "$src" "$dest" 2>/dev/null; then
     cp "$src" "$dest"
     echo "  ✓ $(basename $src) mis a jour"
