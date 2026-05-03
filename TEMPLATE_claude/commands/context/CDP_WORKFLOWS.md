@@ -236,6 +236,30 @@ Le titre du milestone correspond à la version cible **sans Z** : `vX.Y`.
 - Exemple : milestone `v2.41` regroupe toutes les issues de la release Y=41, quel que soit Z.
 - Le milestone se clôture lors du deploy PROD → tag `vX.Y.0`.
 
+### Phase Plan
+
+> Applicable : **FEATURE** (obligatoire) — **BUGFIX** (si complexe : plusieurs fichiers, risque de régression, changement d'architecture)
+> FEATURE → label `PLANNING` sur les issues (voir tableau Labels ci-dessus)
+
+> **Le CDP ne rédige jamais le plan lui-même.** C'est le rôle exclusif du planner.
+
+```
+SendMessage({ to: "planner", content: "
+  Crée un plan d'implémentation pour : [description]
+  Type : [FEATURE|BUGFIX]
+  [FEATURE] Contrats API à créer dans contracts/ si nouveaux endpoints.
+  [BUGFIX] Identifier la cause racine, le fix minimal, le scope impacté et le risque de régression.
+  Retourne le plan structuré avec : tâches ordonnées, dépendances, risques.
+" })
+```
+
+Recevoir le plan → lire intégralement, vérifier cohérence et complétude.
+Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING lors du GATE 2.
+
+**Présenter le plan validé à l'utilisateur et demander validation** ← GATE 2
+
+---
+
 ### Phase Dev (Dispatch)
 
 > Label → `EN COURS` (voir tableau Labels ci-dessus)
