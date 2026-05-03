@@ -236,9 +236,46 @@ Le titre du milestone correspond à la version cible **sans Z** : `vX.Y`.
 - Exemple : milestone `v2.41` regroupe toutes les issues de la release Y=41, quel que soit Z.
 - Le milestone se clôture lors du deploy PROD → tag `vX.Y.0`.
 
+### Phase Plan
+
+> Applicable : **FEATURE** (obligatoire) — **BUGFIX** (si complexe : plusieurs fichiers, risque de régression, changement d'architecture)
+
+**→ Appliquer label `PLANNING`** sur toutes les issues de `ISSUE_NUMS[]` si non vide (FEATURE uniquement) :
+
+```
+pour chaque issue_num dans ISSUE_NUMS[] :
+  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
+    labels: { add: ["PLANNING"], remove: ["EN COURS", "EN REVIEW", "EN QA", "DONE"] } })
+```
+
+> **Le CDP ne rédige jamais le plan lui-même.** C'est le rôle exclusif du planner.
+
+```
+SendMessage({ to: "planner", content: "
+  Crée un plan d'implémentation pour : [description]
+  Type : [FEATURE|BUGFIX]
+  [FEATURE] Contrats API à créer dans contracts/ si nouveaux endpoints.
+  [BUGFIX] Identifier la cause racine, le fix minimal, le scope impacté et le risque de régression.
+  Retourne le plan structuré avec : tâches ordonnées, dépendances, risques.
+" })
+```
+
+Recevoir le plan → lire intégralement, vérifier cohérence et complétude.
+Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING lors du GATE 2.
+
+**Présenter le plan validé à l'utilisateur et demander validation** ← GATE 2
+
+---
+
 ### Phase Dev (Dispatch)
 
-> Label → `EN COURS` (voir tableau Labels ci-dessus)
+**→ Appliquer label `EN COURS`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
+
+```
+pour chaque issue_num dans ISSUE_NUMS[] :
+  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
+    labels: { add: ["EN COURS"], remove: ["PLANNING", "EN REVIEW", "EN QA", "DONE"] } })
+```
 
 ```
 Analyser le scope :
@@ -250,7 +287,13 @@ Analyser le scope :
 
 ### Phase Review
 
-> Label → `EN REVIEW` (voir tableau Labels ci-dessus)
+**→ Appliquer label `EN REVIEW`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
+
+```
+pour chaque issue_num dans ISSUE_NUMS[] :
+  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
+    labels: { add: ["EN REVIEW"], remove: ["EN COURS", "PLANNING", "EN QA", "DONE"] } })
+```
 
 ```
 Lancer code-reviewer (+ test-writer en parallele)
@@ -260,13 +303,20 @@ Lancer code-reviewer (+ test-writer en parallele)
     |-- Conforme :
         |-- APPROVED            -> Phase QA
         |-- APPROVED WITH RESERVATIONS -> Phase QA (noter reserves)
-        |-- REJECTED            -> Label → EN COURS + Retour Phase Dev (cycle++)
+        |-- REJECTED            -> Retour Phase Dev (cycle++) :
+                                   mcp__plugin_github_github__issue_write( labels: add ["EN COURS"], remove ["EN REVIEW", "EN QA"] )
                                    relancer code-reviewer + test-writer
 ```
 
 ### Phase QA
 
-> Label → `EN QA` (voir tableau Labels ci-dessus)
+**→ Appliquer label `EN QA`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
+
+```
+pour chaque issue_num dans ISSUE_NUMS[] :
+  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
+    labels: { add: ["EN QA"], remove: ["EN REVIEW", "EN COURS", "PLANNING", "DONE"] } })
+```
 
 ```
 Lancer QA (avec ref scripts SHA + procedures test-writer)
@@ -274,9 +324,12 @@ Lancer QA (avec ref scripts SHA + procedures test-writer)
 |-- CDP lit le rapport et valide la conformite
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
-        |-- VALIDATED                   -> Label → DONE + Phase Doc (automatique)
-        |-- VALIDATED WITH RESERVATIONS -> Label → DONE + Phase Doc (noter reserves, continuer)
-        |-- NOT VALIDATED               -> Label → EN COURS + Retour Phase Dev (cycle++)
+        |-- VALIDATED                   -> Phase Doc (automatique) :
+                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING"] )
+        |-- VALIDATED WITH RESERVATIONS -> Phase Doc (noter reserves, continuer) :
+                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING"] )
+        |-- NOT VALIDATED               -> Retour Phase Dev (cycle++) :
+                                           mcp__plugin_github_github__issue_write( labels: add ["EN COURS"], remove ["EN QA", "EN REVIEW"] )
                                            relancer code-reviewer + test-writer
 
 Si cycle > 3 -> ESCALADE utilisateur
