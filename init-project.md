@@ -71,7 +71,7 @@ puis deploiera les commandes et agents dans `.claude/`.
 | Categorie | Emplacement | Comportement |
 |-----------|-------------|--------------|
 | **TEMPLATE** | `TEMPLATE_claude/` (racine projet) | Fetche depuis GitHub, gitignore, jamais edite manuellement |
-| **COMMANDES** | `.claude/commands/*.md` | Depuis `TEMPLATE_claude/commands/*.md`, déployé en `*.md` — gitignore |
+| **COMMANDES** | `.claude/commands/*.md` + `.claude/commands/context/` | Depuis `TEMPLATE_claude/commands/*.md` et `commands/context/`, déployé en `*.md` — gitignore |
 | **AGENTS TEMPLATE** | `.claude/agents/*.template.md` + `.claude/agents/context/` | Depuis `TEMPLATE_claude/agents/*.md`, déployé en `*.template.md` — gitignore |
 | **PROJET** | `.claude/CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md` | Trackes dans git, jamais ecrases |
 
@@ -159,6 +159,7 @@ done
 
 # Contextes partagés (restent en *.md — lus directement, pas de convention template/projet)
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
+cp -r TEMPLATE_claude/commands/context .claude/commands/context
 ```
 
 #### 5. Mettre a jour TEMPLATE_claude/.template-source.json
@@ -258,6 +259,7 @@ git rm --cached .claude/commands/*.template.md 2>/dev/null || true
 git rm --cached .claude/commands/*.md 2>/dev/null || true
 # Note : après migration v3, les commandes sont en *.md (gitignored)
 git rm --cached -r .claude/agents/context/ 2>/dev/null || true
+git rm --cached -r .claude/commands/context/ 2>/dev/null || true
 git rm --cached .claude/agents/*.template.md 2>/dev/null || true
 git rm --cached .claude/agents/*.md 2>/dev/null || true
 git rm --cached -r .claude/templates/ 2>/dev/null || true
@@ -968,11 +970,12 @@ for src in TEMPLATE_claude/agents/*.md; do
 done
 
 cp -r TEMPLATE_claude/agents/context .claude/agents/context
+cp -r TEMPLATE_claude/commands/context .claude/commands/context
 ```
 
 **Etape systematique — Appliquer les placeholders sur TOUS les fichiers deployes :**
 
-Scanner l'integralite de `.claude/commands/*.md` (hors `context/`) et `.claude/agents/*.template.md` et appliquer
+Scanner l'integralite de `.claude/commands/*.md`, `.claude/commands/context/*.md`, `.claude/agents/*.template.md` et `.claude/agents/context/*.md` et appliquer
 la procedure "Application des placeholders" (section 4 ci-dessus) sur tous les fichiers,
 en lisant les valeurs depuis `.claude/project-config.json` existant.
 
