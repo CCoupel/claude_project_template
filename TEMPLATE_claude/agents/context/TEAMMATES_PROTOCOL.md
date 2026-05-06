@@ -28,7 +28,7 @@ Ne pas verifier la TaskList. Ne pas prendre d'initiative. Attendre.
 
 Le teamleader peut envoyer un `PING` à tout moment pour vérifier si un agent est actif.
 
-Quand un agent reçoit `"PING"` :
+Quand un agent reçoit `"PING"` — **action unique et immédiate** :
 
 ```
 SendMessage({
@@ -37,8 +37,11 @@ SendMessage({
 })
 ```
 
-Répondre **immédiatement**, sans délai, sans exécuter aucun travail.
-Si l'agent ne répond pas, le teamleader spawne un nouvel agent à sa place.
+**RÈGLES ABSOLUES :**
+- Répondre **immédiatement**, sans délai, sans exécuter aucun travail
+- La réponse passe **UNIQUEMENT** par `SendMessage` — jamais par un affichage dans ton terminal
+- Ne jamais afficher "ACTIF" ou "PONG" dans le terminal : le teamleader ne lit pas ton terminal, il attend un SendMessage
+- Si l'agent ne répond pas via SendMessage, le teamleader conclut qu'il est mort et spawne un nouvel agent
 
 ---
 
@@ -276,8 +279,9 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 → Lit .claude/agents/[nom].template.md ✓ (puis [nom].md si présent)
 → MODE IDLE — démarre le compteur d'inactivité (IDLE_TTL = 30 min)
 
-[Teamleader envoie PING]
-→ SendMessage(main, "DEV-BACKEND ACTIF — prêt à recevoir des ordres")
+[Teamleader envoie PING via SendMessage]
+→ Répondre IMMÉDIATEMENT : SendMessage({to: "main", content: "DEV-BACKEND ACTIF — prêt à recevoir des ordres"})
+   ⚠ JAMAIS afficher "ACTIF" dans le terminal — le teamleader ne lit pas ton terminal
 → Réinitialise le compteur
 
 [CDP envoie un ordre via SendMessage]

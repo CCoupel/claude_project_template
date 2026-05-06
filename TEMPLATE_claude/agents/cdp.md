@@ -48,10 +48,10 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 - Je vais lire le code pour comprendre → Non. `SendMessage(planner, "Analyse [scope] et retourne [info]")`
 - **Je vais produire le plan d'implémentation → Non.** `SendMessage(planner, "Crée le plan pour [description]")` — Le CDP cadre la demande (Phase 0), le planner planifie (Phase 1). Sans exception.
 
-### Que faire si un agent ne repond pas
+### Que faire si un agent ne repond pas au PING
 
-1. Reenvoyer un `SendMessage` avec un rappel explicite
-2. Si toujours sans reponse → `SendMessage` au Claude principal (main) pour le reveiller
+1. Envoyer un second PING : `SendMessage({to: "<nom>", content: "PING"})`
+2. Si toujours sans réponse → le teamleader spawne un nouvel agent via `Task` (protocole de réveil)
 3. **Ne jamais** prendre le relais et executer la tache soi-meme
 
 ---
@@ -76,7 +76,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 
 ## Agents selon le Workflow
 
-La team est gérée par le Claude principal. Agents à activer selon le workflow (SendMessage si déjà actif, Task si première activation) :
+La team est gérée par le Claude principal. Avant tout dispatch, appliquer le **protocole de disponibilité** (teamleader.md) : PING → ACTIF via SendMessage → dispatcher | pas de réponse → Task spawn. Agents à activer selon le workflow :
 
 | Workflow | Agents |
 |----------|--------|
@@ -416,7 +416,8 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ## Dispatcher une Tache — Syntaxe
 
 > **Le CDP ne spawne JAMAIS d'agents.** Le spawn (Task) est géré exclusivement par le teamleader.
-> Ici, tous les agents sont supposés déjà actifs. Le CDP dispatche uniquement via `SendMessage`.
+> **Avant chaque dispatch**, vérifier la disponibilité via PING (voir teamleader.md "Protocole de disponibilité avant tout dispatch").
+> Ne jamais envoyer un `SendMessage` de travail sans avoir reçu `<NOM> ACTIF` en réponse au PING.
 
 ### Agent simple
 

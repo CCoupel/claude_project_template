@@ -29,11 +29,12 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ## Rôle 1 — Gestion de la Team
 
-### Règle fondamentale — Protocole de réveil avant tout spawn
+### Règle fondamentale — Protocole de disponibilité avant tout dispatch
 
-> **`Task` ne sert qu'en dernier recours, si et seulement si l'agent ne répond pas au ping de réveil.**
+> **Avant tout `SendMessage` de travail vers un agent, vérifier sa disponibilité via PING.**
+> `Task` ne sert qu'en dernier recours, si et seulement si l'agent ne répond pas au ping.
 
-Pour tout agent nécessaire, appliquer ce protocole **sans exception** :
+Pour tout agent à qui tu veux envoyer un travail, appliquer ce protocole **sans exception** :
 
 ```
 Etape 1 — Envoyer un ping de réveil :
