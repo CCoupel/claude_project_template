@@ -898,6 +898,22 @@ DEPLOYED_COMMANDS=$(
 # Agents template déployés (*.template.md uniquement — les *.md et dev-*.md sont des fichiers projet)
 DEPLOYED_AGENTS=$(ls .claude/agents/*.template.md 2>/dev/null \
   | xargs -I{} basename {} .template.md)
+
+# Contextes partagés (agents/context/ et commands/context/)
+# Comparer chaque fichier source avec le fichier déployé
+for src in TEMPLATE_claude/agents/context/*.md TEMPLATE_claude/commands/context/*.md; do
+  [ -f "$src" ] || continue
+  subdir=$(echo "$src" | grep -o 'agents/context\|commands/context')
+  dest=".claude/${subdir}/$(basename $src)"
+  if [ ! -f "$dest" ]; then
+    statut="NOUVEAU"
+  elif ! cmp -s "$src" "$dest"; then
+    statut="MODIFIE"
+  else
+    statut="INCHANGE"
+  fi
+  # stocker dans CONTEXT_STATUS associatif : clé = "subdir/basename", valeur = statut
+done
 ```
 
 Pour chaque fichier compare, determiner le statut :
@@ -930,6 +946,10 @@ Synchronisation depuis github.com/<repo>
   [~] cdp       — <explication courte>   ← modifie
   [=] code-reviewer                      ← inchange (x7...)
   [!] old-agent                          ← RELIQUAT (absent du nouveau template)
+
+  Contextes (agents/context/ et commands/context/) :
+  [~] TEAMMATES_PROTOCOL — <explication courte>   ← modifie
+  [=] COMMON, DEV_COMMON, GITHUB, VALIDATION_COMMON, CDP_WORKFLOWS, DEVELOPMENT, QUALITY (7 inchangés)
 
   Nouveaux   : N
   Modifies   : N
@@ -969,8 +989,17 @@ for src in TEMPLATE_claude/agents/*.md; do
   fi
 done
 
-cp -r TEMPLATE_claude/agents/context .claude/agents/context
-cp -r TEMPLATE_claude/commands/context .claude/commands/context
+# Contextes partagés — copier fichier par fichier pour reporter les changements
+for src in TEMPLATE_claude/agents/context/*.md TEMPLATE_claude/commands/context/*.md; do
+  [ -f "$src" ] || continue
+  subdir=$(echo "$src" | grep -o 'agents/context\|commands/context')
+  dest=".claude/${subdir}/$(basename $src)"
+  mkdir -p ".claude/${subdir}"
+  if ! cmp -s "$src" "$dest" 2>/dev/null; then
+    cp "$src" "$dest"
+    echo "  ✓ ${subdir}/$(basename $src) mis a jour"
+  fi
+done
 ```
 
 **Etape systematique — Appliquer les placeholders sur TOUS les fichiers deployes :**
