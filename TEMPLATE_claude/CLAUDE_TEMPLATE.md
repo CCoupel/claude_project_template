@@ -137,6 +137,7 @@ Ce projet semble vide. Lancement du questionnaire d'initialisation.
 |----------|-------------|-------|
 | `/init-project` | Initialiser/reconfigurer le projet | `/init-project` |
 | `/doc` | Mettre a jour la documentation | `/doc` |
+| `/context-audit` | Audit doc projet : doublons, incohérences, refs cassées, optimisation contexte agents | `/context-audit [scope]` |
 | `/feature` | Lancer un workflow feature complet | `/feature <description>` |
 | `/end-session` | Cloturer la session (memoire + git) | `/end-session` |
 

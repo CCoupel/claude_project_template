@@ -708,39 +708,90 @@ if [[ "$1" == "--menu" ]]; then
 
   cleanup_orphan_teams
 
+  # ── Script de génération d'entrées fzf ─────────────────────────────────────
+  # Créé une fois, réexécuté à chaque ctrl-r pour rafraîchir le statut des windows
+  tmp_gen=$(mktemp /tmp/claude_menu_gen.XXXXXX.sh)
+  trap 'rm -f "$tmp_gen"' EXIT INT TERM
+
+  palette_decl="COLOR_PALETTE=(${COLOR_PALETTE[*]})"
+  colors_decl="declare -A PROJECT_COLORS=()"
+  for _k in "${!PROJECT_COLORS[@]}"; do
+    colors_decl+=$'\n'"PROJECT_COLORS[$(printf '%q' "$_k")]=$(printf '%q' "${PROJECT_COLORS[$_k]}")"
+  done
+
+  cat > "$tmp_gen" <<GENSCRIPT
+#!/usr/bin/env bash
+GITHUB_DIR=$(printf '%q' "$GITHUB_DIR")
+SESSION=$(printf '%q' "$SESSION")
+${palette_decl}
+${colors_decl}
+
+get_project_color() {
+  local project="\$1"
+  [[ -n "\${PROJECT_COLORS[\$project]+_}" ]] && { echo "\${PROJECT_COLORS[\$project]}"; return; }
+  local hash=0 i c
+  for (( i=0; i<\${#project}; i++ )); do
+    c=\$(printf '%d' "'\${project:\$i:1}")
+    hash=\$(( (hash * 31 + c) % \${#COLOR_PALETTE[@]} ))
+  done
+  echo "\${COLOR_PALETTE[\$hash]}"
+}
+
+existing_windows=\$(tmux list-windows -t "\$SESSION" -F '#{window_name}' 2>/dev/null)
+
+printf '__quit__\t  \033[0;90m✕ Quitter le launcher\033[0m\n'
+printf '__new__\t  \033[1;36m✦ Créer nouveau projet\033[0m\n'
+
+while IFS= read -r entry; do
+  [[ -d "\$GITHUB_DIR/\$entry" ]] || continue
+  local_color=\$(get_project_color "\$entry")
+  dot=\$(printf '\033[38;5;%sm●\033[0m' "\$local_color")
+  if echo "\$existing_windows" | grep -qxF "\$entry"; then
+    printf '%s\t%s \033[1;32m%s\033[0;32m [ouvert]\033[0m\n' "\$entry" "\$dot" "\$entry"
+  else
+    printf '%s\t%s %s\n' "\$entry" "\$dot" "\$entry"
+  fi
+done < <(ls -1A "\$GITHUB_DIR" 2>/dev/null)
+GENSCRIPT
+  chmod +x "$tmp_gen"
+
+  preview_script='
+    entry=$(printf "%s" "$1" | cut -f1)
+    full="'"$GITHUB_DIR"'/$entry"
+    wins=$(tmux list-windows -t "'"$SESSION"'" -F "#{window_name}" 2>/dev/null)
+    if echo "$wins" | grep -qxF "$entry"; then
+      printf "\033[1;32m  ● window ouvert : %s\033[0m\n\n" "$entry"
+    fi
+    if [ -d "$full" ]; then
+      ls -lhp --color=always "$full" 2>/dev/null | head -20
+    fi
+  '
+
   while true; do
     clear
     printf "\033[1;36m  Claude Code Launcher\033[0m  —  session : %s\n" "$SESSION"
     printf "\033[0;90m  [Entrée] ouvrir  ·  [Esc] annuler  ·  Ctrl+b R relayout\033[0m\n\n"
 
-    existing_windows=$(tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null)
+    fzf_port=$(( 20000 + RANDOM % 10000 ))
 
-    entries="__quit__"$'\t'"  \033[0;90m✕ Quitter le launcher\033[0m\n"
-    entries+="__new__"$'\t'"  \033[1;36m✦ Créer nouveau projet\033[0m\n"
-    while IFS= read -r entry; do
-      [[ -d "$GITHUB_DIR/$entry" ]] || continue
-      local_color=$(get_project_color "$entry")
-      dot="\033[38;5;${local_color}m●\033[0m"
-      if echo "$existing_windows" | grep -qxF "$entry"; then
-        entries+="$entry"$'\t'"${dot} \033[1;32m${entry}\033[0;32m [ouvert]\033[0m\n"
-      else
-        entries+="$entry"$'\t'"${dot} ${entry}\n"
-      fi
-    done < <(ls -1A "$GITHUB_DIR" 2>/dev/null)
+    # Watcher : rafraîchit la liste toutes les 2s via fzf --listen (fzf >= 0.36)
+    (
+      # Attend que fzf commence à écouter (max 4s)
+      for _i in 1 2 3 4 5 6 7 8; do
+        sleep 0.5
+        curl -s --max-time 0.5 "http://localhost:$fzf_port" -d "" >/dev/null 2>&1 \
+          && break
+      done
+      # Boucle de reload toutes les 2s ; s'arrête quand fzf ferme le port
+      while curl -s --max-time 1 "http://localhost:$fzf_port" \
+          -d "reload(bash '$tmp_gen')" >/dev/null 2>&1; do
+        sleep 2
+      done
+    ) &
+    watcher_pid=$!
 
-    preview_script='
-      entry=$(printf "%s" "$1" | cut -f1)
-      full="'"$GITHUB_DIR"'/$entry"
-      wins=$(tmux list-windows -t "'"$SESSION"'" -F "#{window_name}" 2>/dev/null)
-      if echo "$wins" | grep -qxF "$entry"; then
-        printf "\033[1;32m  ● window ouvert : %s\033[0m\n\n" "$entry"
-      fi
-      if [ -d "$full" ]; then
-        ls -lhp --color=always "$full" 2>/dev/null | head -20
-      fi
-    '
-
-    selected=$(printf "%b" "$entries" | fzf \
+    selected=$(bash "$tmp_gen" | fzf \
+      --listen "$fzf_port" \
       --ansi \
       --delimiter=$'\t' \
       --with-nth=2 \
@@ -751,7 +802,11 @@ if [[ "$1" == "--menu" ]]; then
       --preview "bash -c '$preview_script' -- {}" \
       --color 'hl:#5DCAA5,hl+:#1D9E75' \
       --bind 'esc:abort' \
-      --bind 'left-click:accept')
+      --bind 'left-click:accept' \
+      --bind "ctrl-r:reload(bash '$tmp_gen')")
+
+    kill "$watcher_pid" 2>/dev/null
+    wait "$watcher_pid" 2>/dev/null
 
     [[ -z "$selected" ]] && { sleep 0.2; continue; }
 
