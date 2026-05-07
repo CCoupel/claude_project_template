@@ -711,7 +711,8 @@ if [[ "$1" == "--menu" ]]; then
   # ── Script de génération d'entrées fzf ─────────────────────────────────────
   # Créé une fois, réexécuté à chaque ctrl-r pour rafraîchir le statut des windows
   tmp_gen=$(mktemp /tmp/claude_menu_gen.XXXXXX.sh)
-  trap 'rm -f "$tmp_gen"' EXIT INT TERM
+  tmp_update_flag=$(mktemp /tmp/claude_update_flag.XXXXXX)
+  trap 'rm -f "$tmp_gen" "$tmp_update_flag"' EXIT INT TERM
 
   palette_decl="COLOR_PALETTE=(${COLOR_PALETTE[*]})"
   colors_decl="declare -A PROJECT_COLORS=()"
@@ -723,6 +724,7 @@ if [[ "$1" == "--menu" ]]; then
 #!/usr/bin/env bash
 GITHUB_DIR=$(printf '%q' "$GITHUB_DIR")
 SESSION=$(printf '%q' "$SESSION")
+UPDATE_FLAG=$(printf '%q' "$tmp_update_flag")
 ${palette_decl}
 ${colors_decl}
 
@@ -755,6 +757,11 @@ while IFS= read -r _sess; do
     "\$_sess" "\$_sess" "\$_badge" "\$_pcount"
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
 
+if [[ -s "\$UPDATE_FLAG" ]]; then
+  _latest=\$(cat "\$UPDATE_FLAG")
+  printf '__update__\t  \033[1;32m↑ %s disponible\033[0m  \033[0;90m[Entrée] mettre à jour\033[0m\n' "\$_latest"
+fi
+
 printf '__quit__\t  \033[0;90m✕ Quitter le launcher\033[0m\n'
 printf '__new__\t  \033[1;36m✦ Créer nouveau projet\033[0m\n'
 
@@ -773,6 +780,11 @@ GENSCRIPT
 
   preview_script='
     entry=$(printf "%s" "$1" | cut -f1)
+    if [[ "$entry" == "__update__" ]]; then
+      printf "\033[1;32m  Nouvelle version disponible\033[0m\n\n"
+      printf "  Appuyer sur Entrée pour télécharger et relancer le launcher.\n"
+      exit 0
+    fi
     full="'"$GITHUB_DIR"'/$entry"
     wins=$(tmux list-windows -t "'"$SESSION"'" -F "#{window_name}" 2>/dev/null)
     if echo "$wins" | grep -qxF "$entry"; then
@@ -799,9 +811,20 @@ GENSCRIPT
           && break
       done
       # Boucle de reload toutes les 2s ; s'arrête quand fzf ferme le port
+      _upd_tick=0
       while curl -s --max-time 1 "http://localhost:$fzf_port" \
           -d "reload(bash '$tmp_gen')" >/dev/null 2>&1; do
         sleep 2
+        # Vérifie les MàJ GitHub : au 1er tick (~6s après lancement), puis toutes les 5 min
+        if (( _upd_tick++ % 150 == 0 )); then
+          _latest=$(curl -fsSL --ipv4 --max-time 5 \
+            "https://api.github.com/repos/${TEMPLATE_REPO}/tags" 2>/dev/null \
+            | jq -r '.[0].name // empty')
+          if [[ -n "$_latest" && "$_latest" != "$SCRIPT_VERSION" ]]; then
+            _newer=$(printf '%s\n%s\n' "$SCRIPT_VERSION" "$_latest" | sort -V | tail -1)
+            [[ "$_newer" != "$SCRIPT_VERSION" ]] && printf '%s' "$_latest" > "$tmp_update_flag"
+          fi
+        fi
       done
     ) &
     watcher_pid=$!
@@ -828,6 +851,12 @@ GENSCRIPT
     [[ -z "$selected" ]] && { sleep 0.2; continue; }
 
     project="${selected%%$'\t'*}"
+
+    if [[ "$project" == "__update__" ]]; then
+      auto_update
+      rm -f "$tmp_update_flag"
+      continue
+    fi
 
     if [[ "$project" == "__quit__" ]]; then
       clear
