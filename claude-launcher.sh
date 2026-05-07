@@ -829,6 +829,9 @@ GENSCRIPT
     ) &
     watcher_pid=$!
 
+    _n_clients=$(tmux list-clients -t "$SESSION" 2>/dev/null | wc -l | tr -d ' ')
+    _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$SESSION" "$_n_clients")
+
     selected=$(bash "$tmp_gen" | fzf \
       --listen "$fzf_port" \
       --ansi \
@@ -837,6 +840,8 @@ GENSCRIPT
       --nth=1 \
       --prompt "  $GITHUB_DIR/ > " \
       --height=70% --border \
+      --header "$_fzf_header" \
+      --header-first \
       --preview-window=right:45%:wrap \
       --preview "bash -c '$preview_script' -- {}" \
       --color 'hl:#5DCAA5,hl+:#1D9E75' \
@@ -965,22 +970,28 @@ if tmux has-session -t "$SESSION" 2>/dev/null \
   exec tmux new-session -t "$SESSION"
 fi
 
-# Si claude-hub existe sans [menu] (ex: après "Fermer le menu") → recréer avant
-# la détection orpheline pour qu'il soit inclus dans le flux normal
+# Si claude-hub existe sans clients actifs → session orpheline, rattachement direct
 if tmux has-session -t "$SESSION" 2>/dev/null \
-    && ! tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
-        | grep -qxF '[menu]'; then
-  tmux new-window -t "$SESSION" -n "[menu]"
-  tmux send-keys -t "$SESSION:[menu]" \
-    "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
+    && ! tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
+  # Recréer [menu] si absent (ex: après [m] Fermer le menu)
+  if ! tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
+      | grep -qxF '[menu]'; then
+    tmux new-window -t "$SESSION" -n "[menu]"
+    tmux send-keys -t "$SESSION:[menu]" \
+      "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
+    setup_tmux_style "$SESSION"
+  fi
+  printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" "$SESSION"
+  sleep 0.6
   setup_tmux_style "$SESSION"
-  tmux select-window -t "$SESSION:[menu]"
+  tmux select-window -t "$SESSION:[menu]" 2>/dev/null
+  exec tmux attach-session -t "$SESSION"
 fi
 
-# ── Recherche de sessions launcher orphelines (window [menu] + aucun client) ─
-# Inclut claude-hub s'il est sans client (après [m] ou [d])
+# ── Recherche d'autres sessions launcher orphelines (window [menu] + aucun client) ─
 _orphans=()
 while IFS= read -r _sess; do
+  [[ "$_sess" == "$SESSION" ]] && continue
   tmux list-windows -t "$_sess" -F '#{window_name}' 2>/dev/null \
     | grep -qxF '[menu]' || continue
   tmux list-clients -t "$_sess" 2>/dev/null | grep -q . && continue
@@ -988,11 +999,7 @@ while IFS= read -r _sess; do
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
 
 if [[ ${#_orphans[@]} -ge 1 ]]; then
-  # Préférer claude-hub s'il est parmi les orphelins
   _target="${_orphans[0]}"
-  for _o in "${_orphans[@]}"; do
-    [[ "$_o" == "$SESSION" ]] && { _target="$SESSION"; break; }
-  done
   printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" \
     "$_target"
   sleep 0.6
