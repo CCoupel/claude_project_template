@@ -928,28 +928,27 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   load_config
 fi
 
-# Si on arrive ici sans argument reconnu et que la session existe
-if tmux has-session -t "$SESSION" 2>/dev/null; then
+# Si claude-hub a des clients actifs → session groupée (navigation indépendante)
+if tmux has-session -t "$SESSION" 2>/dev/null \
+    && tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
   setup_tmux_style "$SESSION"
-  # Recréer la fenêtre [menu] si elle a été fermée (ex: après "Fermer le menu")
-  if ! tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
-      | grep -qxF '[menu]'; then
-    tmux new-window -t "$SESSION" -n "[menu]"
-    tmux send-keys -t "$SESSION:[menu]" \
-      "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
-    setup_tmux_style "$SESSION"
-    tmux select-window -t "$SESSION:[menu]"
-  fi
-  # Client(s) déjà attaché(s) → session groupée (navigation indépendante par terminal)
-  # Session orpheline          → attach normal
-  if tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
-    exec tmux new-session -t "$SESSION"
-  else
-    exec tmux attach-session -t "$SESSION"
-  fi
+  exec tmux new-session -t "$SESSION"
+fi
+
+# Si claude-hub existe sans [menu] (ex: après "Fermer le menu") → recréer avant
+# la détection orpheline pour qu'il soit inclus dans le flux normal
+if tmux has-session -t "$SESSION" 2>/dev/null \
+    && ! tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
+        | grep -qxF '[menu]'; then
+  tmux new-window -t "$SESSION" -n "[menu]"
+  tmux send-keys -t "$SESSION:[menu]" \
+    "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
+  setup_tmux_style "$SESSION"
+  tmux select-window -t "$SESSION:[menu]"
 fi
 
 # ── Recherche de sessions launcher orphelines (window [menu] + aucun client) ─
+# Inclut claude-hub s'il est sans client (après [m] ou [d])
 _orphans=()
 while IFS= read -r _sess; do
   tmux list-windows -t "$_sess" -F '#{window_name}' 2>/dev/null \
@@ -958,18 +957,17 @@ while IFS= read -r _sess; do
   _orphans+=("$_sess")
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
 
-if [[ ${#_orphans[@]} -eq 1 ]]; then
+if [[ ${#_orphans[@]} -ge 1 ]]; then
+  # Préférer claude-hub s'il est parmi les orphelins
+  _target="${_orphans[0]}"
+  for _o in "${_orphans[@]}"; do
+    [[ "$_o" == "$SESSION" ]] && { _target="$SESSION"; break; }
+  done
   printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" \
-    "${_orphans[0]}"
+    "$_target"
   sleep 0.6
-  setup_tmux_style "${_orphans[0]}"
-  exec tmux attach-session -t "${_orphans[0]}"
-elif [[ ${#_orphans[@]} -gt 1 ]]; then
-  printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" \
-    "${_orphans[0]}"
-  sleep 0.6
-  setup_tmux_style "${_orphans[0]}"
-  exec tmux attach-session -t "${_orphans[0]}"
+  setup_tmux_style "$_target"
+  exec tmux attach-session -t "$_target"
 fi
 
 tmux new-session -d -s "$SESSION" -n "[menu]"
