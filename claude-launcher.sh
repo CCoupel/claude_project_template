@@ -786,7 +786,7 @@ GENSCRIPT
   while true; do
     clear
     printf "\033[1;36m  Claude Code Launcher\033[0m  \033[0;90m%s\033[0m  —  session : %s\n" "$SCRIPT_VERSION" "$SESSION"
-    printf "\033[0;90m  [Entrée] ouvrir  ·  [Esc] annuler  ·  Ctrl+b R relayout\033[0m\n\n"
+    printf "\033[0;90m  [Entrée] ouvrir  ·  [Ctrl+D] supprimer orpheline  ·  [Esc] annuler  ·  Ctrl+b R relayout\033[0m\n\n"
 
     fzf_port=$(( 20000 + RANDOM % 10000 ))
 
@@ -819,7 +819,8 @@ GENSCRIPT
       --color 'hl:#5DCAA5,hl+:#1D9E75' \
       --bind 'esc:abort' \
       --bind 'left-click:accept' \
-      --bind "ctrl-r:reload(bash '$tmp_gen')")
+      --bind "ctrl-r:reload(bash '$tmp_gen')" \
+      --bind "ctrl-d:execute-silent(entry={1}; [[ \"\$entry\" == __session__* ]] || exit 0; sess=\"\${entry#__session__}\"; tmux list-clients -t \"\$sess\" 2>/dev/null | grep -q . || tmux kill-session -t \"\$sess\")+reload(bash '$tmp_gen')")
 
     kill "$watcher_pid" 2>/dev/null
     wait "$watcher_pid" 2>/dev/null
@@ -829,24 +830,19 @@ GENSCRIPT
     project="${selected%%$'\t'*}"
 
     if [[ "$project" == "__quit__" ]]; then
-      other_sessions=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
-        | grep -v "^${SESSION}\$" | wc -l | tr -d ' ')
-      if [[ "$other_sessions" -gt 0 ]]; then
-        tmux kill-session -t "$SESSION"
-      else
-        clear
-        printf "\033[1;36m  Quitter\033[0m\n\n"
-        printf "  [f] Fermer la session\n"
-        printf "  [d] Détacher (session conservée en arrière-plan)\n\n"
-        read -rn1 -p "  Choix : " _quit_choice
-        printf "\n"
-        case "${_quit_choice,,}" in
-          f) tmux kill-session -t "$SESSION" ;;
-          d) tmux detach-client ;;
-          *) continue ;;
-        esac
-      fi
-      exit 0
+      clear
+      printf "\033[1;36m  Quitter\033[0m\n\n"
+      printf "  [m] Fermer le menu (projets conservés)\n"
+      printf "  [f] Fermer la session complète\n"
+      printf "  [d] Détacher (session conservée en arrière-plan)\n\n"
+      read -rn1 -p "  Choix : " _quit_choice
+      printf "\n"
+      case "${_quit_choice,,}" in
+        m) exit 0 ;;
+        f) tmux kill-session -t "$SESSION" ; exit 0 ;;
+        d) tmux detach-client ; continue ;;
+        *) continue ;;
+      esac
     fi
 
     if [[ "$project" == __session__* ]]; then
@@ -933,19 +929,27 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   load_config
 fi
 
-# Si on arrive ici sans argument reconnu et que la session existe
-if tmux has-session -t "$SESSION" 2>/dev/null; then
+# Si claude-hub a des clients actifs → session groupée (navigation indépendante)
+if tmux has-session -t "$SESSION" 2>/dev/null \
+    && tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
   setup_tmux_style "$SESSION"
-  # Client(s) déjà attaché(s) → session groupée (navigation indépendante par terminal)
-  # Session orpheline          → attach normal
-  if tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
-    exec tmux new-session -t "$SESSION"
-  else
-    exec tmux attach-session -t "$SESSION"
-  fi
+  exec tmux new-session -t "$SESSION"
+fi
+
+# Si claude-hub existe sans [menu] (ex: après "Fermer le menu") → recréer avant
+# la détection orpheline pour qu'il soit inclus dans le flux normal
+if tmux has-session -t "$SESSION" 2>/dev/null \
+    && ! tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
+        | grep -qxF '[menu]'; then
+  tmux new-window -t "$SESSION" -n "[menu]"
+  tmux send-keys -t "$SESSION:[menu]" \
+    "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
+  setup_tmux_style "$SESSION"
+  tmux select-window -t "$SESSION:[menu]"
 fi
 
 # ── Recherche de sessions launcher orphelines (window [menu] + aucun client) ─
+# Inclut claude-hub s'il est sans client (après [m] ou [d])
 _orphans=()
 while IFS= read -r _sess; do
   tmux list-windows -t "$_sess" -F '#{window_name}' 2>/dev/null \
@@ -954,18 +958,17 @@ while IFS= read -r _sess; do
   _orphans+=("$_sess")
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
 
-if [[ ${#_orphans[@]} -eq 1 ]]; then
+if [[ ${#_orphans[@]} -ge 1 ]]; then
+  # Préférer claude-hub s'il est parmi les orphelins
+  _target="${_orphans[0]}"
+  for _o in "${_orphans[@]}"; do
+    [[ "$_o" == "$SESSION" ]] && { _target="$SESSION"; break; }
+  done
   printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" \
-    "${_orphans[0]}"
+    "$_target"
   sleep 0.6
-  setup_tmux_style "${_orphans[0]}"
-  exec tmux attach-session -t "${_orphans[0]}"
-elif [[ ${#_orphans[@]} -gt 1 ]]; then
-  printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" \
-    "${_orphans[0]}"
-  sleep 0.6
-  setup_tmux_style "${_orphans[0]}"
-  exec tmux attach-session -t "${_orphans[0]}"
+  setup_tmux_style "$_target"
+  exec tmux attach-session -t "$_target"
 fi
 
 tmux new-session -d -s "$SESSION" -n "[menu]"
