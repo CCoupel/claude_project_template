@@ -60,6 +60,8 @@ Avant tout `SendMessage`, le teammate doit exister dans la team. Un `Agent` one-
 | Dev — Les deux | `dev-backend` + `dev-frontend` (parallèle si indépendants) |
 | Review | `code-reviewer` + `test-writer` (parallèle) |
 | QA | `qa` |
+| Doc | `doc-updater` |
+| Deploy QUALIF / PROD | `deploy` |
 
 > **Règle** : ne jamais supposer qu'un agent est actif sans avoir reçu son PING-ACTIF. Le PING est systématique en début de phase, même si l'agent était actif à la phase précédente (il peut s'être auto-terminé).
 
@@ -430,6 +432,57 @@ SendMessage({to:"qa", content:"[tâche + ref scripts SHA + handoffs review]"})
                                            relancer code-reviewer + test-writer
 
 Si cycle > 3 -> ESCALADE utilisateur
+```
+
+### Phase Doc
+
+> Applicable : **FEATURE** (obligatoire) — **BUGFIX** (si majeur) — **HOTFIX** (post-mortem) — **REFACTOR** (non)
+
+```
+// PING doc-updater (pattern §2.bis)
+SendMessage({to:"doc-updater", content:"PING"})
+→ Réponse "DOC-UPDATER ACTIF" → passer à l'envoi de tâche
+→ Pas de réponse →
+    Agent({team_name, name:"doc-updater", subagent_type:"general-purpose",
+           prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/doc-updater.md. Mode IDLE."})
+
+// Envoyer la tâche
+SendMessage({to:"doc-updater", content:"
+  Mets à jour la documentation pour : [description]
+  Type : [FEATURE|BUGFIX|HOTFIX]
+  SHA dev : [sha]
+  Handoff dev : _work/handoff/dev-[timestamp].md
+  Handoff QA  : _work/handoff/qa-[timestamp].md
+  Fichiers modifiés : [liste]
+"})
+
+|-- Recevoir DONE + ref handoff
+|-- CDP valide la conformité
+    |-- Non conforme -> renvoyer pour correction
+    |-- Conforme     -> Phase Deploy QUALIF
+```
+
+### Phase Deploy QUALIF
+
+```
+// PING deploy (pattern §2.bis)
+SendMessage({to:"deploy", content:"PING"})
+→ Réponse "DEPLOY ACTIF" → passer à l'envoi de tâche
+→ Pas de réponse →
+    Agent({team_name, name:"deploy", subagent_type:"general-purpose",
+           prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/deploy.md. Mode IDLE."})
+
+// Envoyer la tâche
+SendMessage({to:"deploy", content:"
+  Déployer en QUALIF.
+  Branche : [branche]
+  Version : [X.Y.Z]
+  Handoff doc : _work/handoff/doc-updater-[timestamp].md
+"})
+
+|-- Recevoir DONE + rapport de déploiement
+|-- CDP informe l'utilisateur : QUALIF déployée, scénarios de validation fournis
+|-- Deploy PROD : déclenché uniquement par commande explicite `/deploy prod`
 ```
 
 ---
