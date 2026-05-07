@@ -829,12 +829,22 @@ GENSCRIPT
     project="${selected%%$'\t'*}"
 
     if [[ "$project" == "__quit__" ]]; then
-      other_wins=$(tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
-        | grep -v '^\[menu\]$' | wc -l | tr -d ' ')
-      if [[ "$other_wins" -gt 0 ]]; then
-        tmux detach-client
-      else
+      other_sessions=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
+        | grep -v "^${SESSION}\$" | wc -l | tr -d ' ')
+      if [[ "$other_sessions" -gt 0 ]]; then
         tmux kill-session -t "$SESSION"
+      else
+        clear
+        printf "\033[1;36m  Quitter\033[0m\n\n"
+        printf "  [f] Fermer la session\n"
+        printf "  [d] Détacher (session conservée en arrière-plan)\n\n"
+        read -rn1 -p "  Choix : " _quit_choice
+        printf "\n"
+        case "${_quit_choice,,}" in
+          f) tmux kill-session -t "$SESSION" ;;
+          d) tmux detach-client ;;
+          *) continue ;;
+        esac
       fi
       exit 0
     fi
@@ -951,15 +961,11 @@ if [[ ${#_orphans[@]} -eq 1 ]]; then
   setup_tmux_style "${_orphans[0]}"
   exec tmux attach-session -t "${_orphans[0]}"
 elif [[ ${#_orphans[@]} -gt 1 ]]; then
-  printf "\033[1;33m  ↩  %d sessions orphelines trouvées\033[0m\n" "${#_orphans[@]}"
-  _chosen=$(printf '%s\n' "${_orphans[@]}" | fzf \
-    --prompt "  Session à rejoindre > " \
-    --height=30% --border \
-    --bind 'esc:abort')
-  if [[ -n "$_chosen" ]]; then
-    setup_tmux_style "$_chosen"
-    exec tmux attach-session -t "$_chosen"
-  fi
+  printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" \
+    "${_orphans[0]}"
+  sleep 0.6
+  setup_tmux_style "${_orphans[0]}"
+  exec tmux attach-session -t "${_orphans[0]}"
 fi
 
 tmux new-session -d -s "$SESSION" -n "[menu]"
