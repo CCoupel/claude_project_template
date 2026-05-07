@@ -785,7 +785,7 @@ GENSCRIPT
 
   while true; do
     clear
-    printf "\033[1;36m  Claude Code Launcher\033[0m  —  session : %s\n" "$SESSION"
+    printf "\033[1;36m  Claude Code Launcher\033[0m  \033[0;90m%s\033[0m  —  session : %s\n" "$SCRIPT_VERSION" "$SESSION"
     printf "\033[0;90m  [Entrée] ouvrir  ·  [Esc] annuler  ·  Ctrl+b R relayout\033[0m\n\n"
 
     fzf_port=$(( 20000 + RANDOM % 10000 ))
