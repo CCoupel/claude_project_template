@@ -292,7 +292,12 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 > **Le CDP ne rédige jamais le plan lui-même.** C'est le rôle exclusif du planner.
 
 ```
-// Étape 1 — Spawn (pattern §2.bis)
+// Étape 1 — PING (vérifier si planner est déjà actif)
+SendMessage({ to: "planner", content: "PING" })
+→ Réponse "PLANNER ACTIF" → passer à l'étape 3
+→ Pas de réponse → étape 2
+
+// Étape 2 — Spawn
 Agent({
   team_name: <team_name>,
   name: "planner",
@@ -300,7 +305,7 @@ Agent({
   prompt: "Lis TEAMMATES_PROTOCOL.md puis .claude/agents/planner.md. Mode IDLE — attends les ordres du Claude principal."
 })
 
-// Étape 2 — Envoyer la tâche
+// Étape 3 — Envoyer la tâche
 SendMessage({ to: "planner", content: "
   Crée un plan d'implémentation pour : [description]
   Type : [FEATURE|BUGFIX]
@@ -328,25 +333,31 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 ```
 
 ```
-Analyser le scope, puis spawner selon §2.bis (PING → Spawn → Ordre) :
+Analyser le scope, puis pour chaque agent (pattern §2.bis : PING → Spawn → Ordre) :
 
 |-- Backend seul ->
-|     Agent({team_name, name:"dev-backend", subagent_type:"general-purpose",
-|            prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/dev-backend.md. Mode IDLE."})
-|     SendMessage({to:"dev-backend", content:"[tâche + handoff planner si dispo]"})
+|     SendMessage({to:"dev-backend", content:"PING"})
+|     → ACTIF → SendMessage({to:"dev-backend", content:"[tâche + handoff planner si dispo]"})
+|     → Pas de réponse →
+|         Agent({team_name, name:"dev-backend", subagent_type:"general-purpose",
+|                prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/dev-backend.md. Mode IDLE."})
+|         SendMessage({to:"dev-backend", content:"[tâche + handoff planner si dispo]"})
 |
 |-- Frontend seul ->
-|     Agent({team_name, name:"dev-frontend", subagent_type:"general-purpose",
-|            prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/dev-frontend.md. Mode IDLE."})
-|     SendMessage({to:"dev-frontend", content:"[tâche + handoff planner si dispo]"})
+|     SendMessage({to:"dev-frontend", content:"PING"})
+|     → ACTIF → SendMessage({to:"dev-frontend", content:"[tâche + handoff planner si dispo]"})
+|     → Pas de réponse →
+|         Agent({team_name, name:"dev-frontend", subagent_type:"general-purpose",
+|                prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/dev-frontend.md. Mode IDLE."})
+|         SendMessage({to:"dev-frontend", content:"[tâche + handoff planner si dispo]"})
 |
 |-- Les deux (dépendants) ->
-|     Spawner dev-backend, envoyer tâche, attendre DONE
-|     Spawner dev-frontend, envoyer tâche avec handoff dev-backend
+|     PING + Spawn si nécessaire dev-backend → SendMessage tâche → attendre DONE
+|     PING + Spawn si nécessaire dev-frontend → SendMessage tâche avec handoff dev-backend
 |
 |-- Les deux (indépendants) ->
-|     Spawner dev-backend + dev-frontend en parallèle
-|     Envoyer les tâches respectives via SendMessage
+|     PING + Spawn si nécessaire dev-backend et dev-frontend (en parallèle)
+|     SendMessage les tâches respectives
 |     Attendre les deux DONE
 ```
 
@@ -361,12 +372,16 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 ```
 
 ```
-// Spawn code-reviewer + test-writer en parallèle (pattern §2.bis)
-Agent({team_name, name:"code-reviewer", subagent_type:"general-purpose",
-       prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/code-reviewer.md. Mode IDLE."})
-Agent({team_name, name:"test-writer", subagent_type:"general-purpose",
-       prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/test-writer.md. Mode IDLE."})
+// PING code-reviewer + test-writer en parallèle (pattern §2.bis)
+SendMessage({to:"code-reviewer", content:"PING"})
+SendMessage({to:"test-writer",   content:"PING"})
+→ Pour chaque agent sans réponse → spawn :
+    Agent({team_name, name:"code-reviewer", subagent_type:"general-purpose",
+           prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/code-reviewer.md. Mode IDLE."})
+    Agent({team_name, name:"test-writer", subagent_type:"general-purpose",
+           prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/test-writer.md. Mode IDLE."})
 
+// Envoyer les tâches
 SendMessage({to:"code-reviewer", content:"[tâche + handoffs dev]"})
 SendMessage({to:"test-writer",   content:"[tâche + handoffs dev]"})
 
@@ -392,10 +407,14 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 ```
 
 ```
-// Spawn qa (pattern §2.bis)
-Agent({team_name, name:"qa", subagent_type:"general-purpose",
-       prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/qa.md. Mode IDLE."})
+// PING qa (pattern §2.bis)
+SendMessage({to:"qa", content:"PING"})
+→ Réponse "QA ACTIF" → passer à l'envoi de tâche
+→ Pas de réponse →
+    Agent({team_name, name:"qa", subagent_type:"general-purpose",
+           prompt:"Lis TEAMMATES_PROTOCOL.md puis .claude/agents/qa.md. Mode IDLE."})
 
+// Envoyer la tâche
 SendMessage({to:"qa", content:"[tâche + ref scripts SHA + handoffs review]"})
 
 |-- Recevoir DONE + ref fichier rapport
