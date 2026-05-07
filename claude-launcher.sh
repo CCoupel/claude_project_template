@@ -829,6 +829,9 @@ GENSCRIPT
     ) &
     watcher_pid=$!
 
+    _n_clients=$(tmux list-clients -t "$SESSION" 2>/dev/null | wc -l | tr -d ' ')
+    _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$SESSION" "$_n_clients")
+
     selected=$(bash "$tmp_gen" | fzf \
       --listen "$fzf_port" \
       --ansi \
@@ -837,6 +840,8 @@ GENSCRIPT
       --nth=1 \
       --prompt "  $GITHUB_DIR/ > " \
       --height=70% --border \
+      --header "$_fzf_header" \
+      --header-first \
       --preview-window=right:45%:wrap \
       --preview "bash -c '$preview_script' -- {}" \
       --color 'hl:#5DCAA5,hl+:#1D9E75' \
