@@ -739,6 +739,22 @@ get_project_color() {
 
 existing_windows=\$(tmux list-windows -t "\$SESSION" -F '#{window_name}' 2>/dev/null)
 
+# Autres sessions launcher (window [menu] présente, session ≠ courante)
+while IFS= read -r _sess; do
+  [[ "\$_sess" == "\$SESSION" ]] && continue
+  tmux list-windows -t "\$_sess" -F '#{window_name}' 2>/dev/null \
+    | grep -qxF '[menu]' || continue
+  _pcount=\$(tmux list-windows -t "\$_sess" -F '#{window_name}' 2>/dev/null \
+    | grep -cv '^\[menu\]\$')
+  if tmux list-clients -t "\$_sess" 2>/dev/null | grep -q .; then
+    _badge="\$(printf '\033[0;32m[active]\033[0m')"
+  else
+    _badge="\$(printf '\033[0;33m[orpheline]\033[0m')"
+  fi
+  printf '__session__%s\t  \033[0;35m⬡ %s\033[0m  %b  \033[0;90m%s projet(s)\033[0m\n' \
+    "\$_sess" "\$_sess" "\$_badge" "\$_pcount"
+done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
+
 printf '__quit__\t  \033[0;90m✕ Quitter le launcher\033[0m\n'
 printf '__new__\t  \033[1;36m✦ Créer nouveau projet\033[0m\n'
 
@@ -821,6 +837,14 @@ GENSCRIPT
         tmux kill-session -t "$SESSION"
       fi
       exit 0
+    fi
+
+    if [[ "$project" == __session__* ]]; then
+      target_session="${project#__session__}"
+      tmux switch-client -t "$target_session" 2>/dev/null \
+        || tmux attach-session -t "$target_session"
+      sleep 0.2
+      continue
     fi
 
     if [[ "$project" == "__new__" ]]; then
@@ -908,6 +932,33 @@ if tmux has-session -t "$SESSION" 2>/dev/null; then
     exec tmux new-session -t "$SESSION"
   else
     exec tmux attach-session -t "$SESSION"
+  fi
+fi
+
+# ── Recherche de sessions launcher orphelines (window [menu] + aucun client) ─
+_orphans=()
+while IFS= read -r _sess; do
+  tmux list-windows -t "$_sess" -F '#{window_name}' 2>/dev/null \
+    | grep -qxF '[menu]' || continue
+  tmux list-clients -t "$_sess" 2>/dev/null | grep -q . && continue
+  _orphans+=("$_sess")
+done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
+
+if [[ ${#_orphans[@]} -eq 1 ]]; then
+  printf "\033[1;33m  ↩  Session orpheline trouvée : %s — rattachement...\033[0m\n" \
+    "${_orphans[0]}"
+  sleep 0.6
+  setup_tmux_style "${_orphans[0]}"
+  exec tmux attach-session -t "${_orphans[0]}"
+elif [[ ${#_orphans[@]} -gt 1 ]]; then
+  printf "\033[1;33m  ↩  %d sessions orphelines trouvées\033[0m\n" "${#_orphans[@]}"
+  _chosen=$(printf '%s\n' "${_orphans[@]}" | fzf \
+    --prompt "  Session à rejoindre > " \
+    --height=30% --border \
+    --bind 'esc:abort')
+  if [[ -n "$_chosen" ]]; then
+    setup_tmux_style "$_chosen"
+    exec tmux attach-session -t "$_chosen"
   fi
 fi
 
