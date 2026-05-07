@@ -829,24 +829,19 @@ GENSCRIPT
     project="${selected%%$'\t'*}"
 
     if [[ "$project" == "__quit__" ]]; then
-      other_sessions=$(tmux list-sessions -F '#{session_name}' 2>/dev/null \
-        | grep -v "^${SESSION}\$" | wc -l | tr -d ' ')
-      if [[ "$other_sessions" -gt 0 ]]; then
-        tmux kill-session -t "$SESSION"
-      else
-        clear
-        printf "\033[1;36m  Quitter\033[0m\n\n"
-        printf "  [f] Fermer la session\n"
-        printf "  [d] Détacher (session conservée en arrière-plan)\n\n"
-        read -rn1 -p "  Choix : " _quit_choice
-        printf "\n"
-        case "${_quit_choice,,}" in
-          f) tmux kill-session -t "$SESSION" ;;
-          d) tmux detach-client ;;
-          *) continue ;;
-        esac
-      fi
-      exit 0
+      clear
+      printf "\033[1;36m  Quitter\033[0m\n\n"
+      printf "  [m] Fermer le menu (projets conservés)\n"
+      printf "  [f] Fermer la session complète\n"
+      printf "  [d] Détacher (session conservée en arrière-plan)\n\n"
+      read -rn1 -p "  Choix : " _quit_choice
+      printf "\n"
+      case "${_quit_choice,,}" in
+        m) exit 0 ;;
+        f) tmux kill-session -t "$SESSION" ; exit 0 ;;
+        d) tmux detach-client ; continue ;;
+        *) continue ;;
+      esac
     fi
 
     if [[ "$project" == __session__* ]]; then
@@ -936,6 +931,15 @@ fi
 # Si on arrive ici sans argument reconnu et que la session existe
 if tmux has-session -t "$SESSION" 2>/dev/null; then
   setup_tmux_style "$SESSION"
+  # Recréer la fenêtre [menu] si elle a été fermée (ex: après "Fermer le menu")
+  if ! tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
+      | grep -qxF '[menu]'; then
+    tmux new-window -t "$SESSION" -n "[menu]"
+    tmux send-keys -t "$SESSION:[menu]" \
+      "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
+    setup_tmux_style "$SESSION"
+    tmux select-window -t "$SESSION:[menu]"
+  fi
   # Client(s) déjà attaché(s) → session groupée (navigation indépendante par terminal)
   # Session orpheline          → attach normal
   if tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
