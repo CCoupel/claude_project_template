@@ -786,7 +786,7 @@ GENSCRIPT
   while true; do
     clear
     printf "\033[1;36m  Claude Code Launcher\033[0m  \033[0;90m%s\033[0m  —  session : %s\n" "$SCRIPT_VERSION" "$SESSION"
-    printf "\033[0;90m  [Entrée] ouvrir  ·  [Esc] annuler  ·  Ctrl+b R relayout\033[0m\n\n"
+    printf "\033[0;90m  [Entrée] ouvrir  ·  [Ctrl+D] supprimer orpheline  ·  [Esc] annuler  ·  Ctrl+b R relayout\033[0m\n\n"
 
     fzf_port=$(( 20000 + RANDOM % 10000 ))
 
@@ -819,7 +819,8 @@ GENSCRIPT
       --color 'hl:#5DCAA5,hl+:#1D9E75' \
       --bind 'esc:abort' \
       --bind 'left-click:accept' \
-      --bind "ctrl-r:reload(bash '$tmp_gen')")
+      --bind "ctrl-r:reload(bash '$tmp_gen')" \
+      --bind "ctrl-d:execute-silent(entry={1}; [[ \"\$entry\" == __session__* ]] || exit 0; sess=\"\${entry#__session__}\"; tmux list-clients -t \"\$sess\" 2>/dev/null | grep -q . || tmux kill-session -t \"\$sess\")+reload(bash '$tmp_gen')")
 
     kill "$watcher_pid" 2>/dev/null
     wait "$watcher_pid" 2>/dev/null
