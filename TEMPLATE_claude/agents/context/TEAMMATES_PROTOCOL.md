@@ -78,8 +78,34 @@ Retourner en mode IDLE
 
 - **Jamais d'initiative** — attendre l'ordre du Claude principal
 - **Jamais de communication directe** avec l'utilisateur — tout passe par le CDP
-- **Jamais de contact entre agents** — chaque agent ne parle qu'au CDP
 - **Texte naturel uniquement** — pas de JSON structure dans les messages
+
+### Communication entre agents — Handoff direct autorisé
+
+Le CDP est le seul à décider **qui travaille quand** (routing, spawn, ordre des phases).
+Mais un agent peut transmettre son handoff **directement** à l'agent suivant sans passer par le CDP, à condition de l'indiquer dans son rapport `DONE`.
+
+```
+// Pattern handoff direct (optionnel, sur indication du CDP dans l'ordre)
+SendMessage({
+  to: "<agent-suivant>",
+  content: "Handoff de [NOM-AGENT] : _work/handoff/[agent]-[timestamp].md"
+})
+```
+
+**Règle** : le CDP mentionne explicitement l'agent suivant dans l'ordre s'il autorise le handoff direct. Sans cette mention, l'agent envoie uniquement son `DONE` au CDP et attend.
+
+Exemple d'ordre CDP autorisant le handoff direct :
+```
+"Implémente l'endpoint POST /auth. Quand terminé, passe ton handoff directement à code-reviewer."
+```
+
+Dans ce cas le rapport DONE indique :
+```
+[NOM-AGENT] DONE
+Handoff : _work/handoff/[agent]-[timestamp].md  ← transmis directement à code-reviewer
+SHA : <commit-sha>
+```
 
 ### Livrables — Regle Fondamentale
 
@@ -120,12 +146,22 @@ Avant d'envoyer le DONE, chaque agent écrit son handoff dans `_work/handoff/[ag
 [liste]
 ```
 
-Le CDP passe la référence du handoff dans le SendMessage au prochain agent :
+Le handoff peut être transmis de deux façons :
+
+**A. Via le CDP** (par défaut) — le CDP passe la référence dans l'ordre au prochain agent :
 ```
 Handoff [agent précédent] : _work/handoff/[agent]-[timestamp].md
 ```
 
-**Règle** : un agent qui reçoit une référence handoff doit la lire avant de commencer son travail.
+**B. Direct entre agents** — si le CDP l'a explicitement demandé dans son ordre :
+```
+SendMessage({
+  to: "<agent-suivant>",
+  content: "Handoff de [NOM-AGENT] : _work/handoff/[agent]-[timestamp].md"
+})
+```
+
+**Règle** : un agent qui reçoit une référence handoff (quelle que soit la voie) doit la lire avant de commencer son travail.
 
 ### Envoyer un rapport au CDP
 
@@ -262,7 +298,7 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 
 1. **IDLE par defaut** — l'etat de repos est l'attente, pas le polling
 2. **Un travail a la fois** — terminer une tache avant d'en accepter une autre
-3. **Rapport systematique** — toujours envoyer un rapport au CDP apres chaque tache
+3. **Rapport systematique** — toujours envoyer un rapport DONE au CDP après chaque tâche, même si le handoff a été transmis directement à l'agent suivant
 4. **Push proactif** — signaler démarrage (avec M total), EN COURS à chaque étape (N/M + X%), blocages, fin — sans attendre d'être sollicité
 5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du Claude principal
 6. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
@@ -292,7 +328,10 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 → SendMessage(main, "DEV-BACKEND EN COURS — étape 2/6 — création modèles et interfaces — 33%")
 → [...]
 → SendMessage(main, "DEV-BACKEND EN COURS — étape 6/6 — commit atomique — 100%")
-→ SendMessage(main, "DEV-BACKEND DONE\nHandoff : _work/handoff/dev-backend-20240101-120000.md\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
+// Si le CDP a demandé un handoff direct vers code-reviewer :
+→ SendMessage(code-reviewer, "Handoff de DEV-BACKEND : _work/handoff/dev-backend-20240101-120000.md")
+// Puis toujours informer le CDP :
+→ SendMessage(main, "DEV-BACKEND DONE\nHandoff : _work/handoff/dev-backend-20240101-120000.md  ← transmis directement à code-reviewer\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
 → MODE IDLE — réinitialise le compteur d'inactivité
 → Affiche : "💤 DEV-BACKEND IDLE — fermeture automatique dans 30min si aucun ordre"
 
