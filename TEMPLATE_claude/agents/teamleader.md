@@ -40,9 +40,9 @@ Pour tout agent à qui tu veux envoyer un travail, appliquer ce protocole **sans
 Etape 1 — Envoyer un ping de réveil :
   SendMessage({to: "<nom>", content: "PING"})
 
-Etape 2 — Attendre la réponse :
+Etape 2 — Attendre la réponse (timeout : 30 secondes) :
   → Agent répond "<NOM> ACTIF"  →  utiliser directement via SendMessage
-  → Pas de réponse               →  spawner via Task (première et unique fois)
+  → Pas de réponse après 30s    →  spawner via Task (première et unique fois)
 ```
 
 **Format du ping :**
@@ -164,33 +164,21 @@ Task({
 
 C'est le teamleader qui gère l'inactivité — les teammates n'ont pas à se fermer eux-mêmes.
 
-**Tracking** : à chaque `SendMessage` de travail vers un agent, écrire **immédiatement** dans `workflow-state.json` :
-```json
-{ "agents": { "<nom>": { "last_order_sent_at": "<ISO>", "status": "active" } } }
+**Tracking dans `workflow-state.json`** — écrire **immédiatement** sur disque à chaque événement :
+
+| Événement | Champs mis à jour |
+|-----------|-------------------|
+| Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>`, `idle_since: null` |
+| Réception `DONE` d'un agent | `status: "idle"`, `idle_since: <ISO>` |
+| Envoi `shutdown_request` | `status: "terminating"` |
+
+> Ne jamais garder ces états en mémoire — le fichier est la source de vérité, y compris après compactage de contexte.
+
+**Watchdog singleton** — avant tout `ScheduleWakeup`, vérifier `workflow-state.json` :
 ```
-> Écrire sur disque immédiatement — ne jamais garder en mémoire. Ce fichier est la source de vérité, y compris après un compactage de contexte.
-
-**Lancer le watchdog** après tout dispatch (dès qu'on attend des réponses ou l'utilisateur) :
-```
-ScheduleWakeup({
-  delaySeconds: IDLE_WARNING_INTERVAL × 60,
-  reason: "Watchdog IDLE agents",
-  prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
-})
-```
-
-**Quand le watchdog se déclenche** — lire `workflow-state.json`, puis pour chaque agent `status: active` :
-```
-elapsed = maintenant - last_order_sent_at
-
-SI elapsed ≥ IDLE_TTL :
-  → SendMessage({to: "<agent>", content: "shutdown_request"})
-  → Mettre status: "inactive" dans workflow-state.json — écrire immédiatement
-
-SI IDLE_TTL - elapsed ≤ IDLE_WARNING_INTERVAL :
-  → Loguer : "⏳ [agent] IDLE depuis [elapsed]min — shutdown dans [IDLE_TTL - elapsed]min"
-
-Si des agents actifs restent → reschedule :
+SI watchdog_active == true → un watchdog tourne déjà, ne pas en lancer un second.
+SINON :
+  Mettre watchdog_active: true dans workflow-state.json — écrire immédiatement.
   ScheduleWakeup({
     delaySeconds: IDLE_WARNING_INTERVAL × 60,
     reason: "Watchdog IDLE agents",
@@ -198,7 +186,28 @@ Si des agents actifs restent → reschedule :
   })
 ```
 
-> Ne pas lancer le watchdog si aucun agent n'est actif.
+**Quand le watchdog se déclenche** — lire `workflow-state.json`, pour chaque agent `status: "idle"` :
+```
+elapsed = maintenant - idle_since
+
+SI elapsed ≥ IDLE_TTL :
+  → SendMessage({to: "<agent>", content: "shutdown_request"})
+  → Mettre status: "terminating" dans workflow-state.json — écrire immédiatement
+
+SI IDLE_TTL - elapsed ≤ IDLE_WARNING_INTERVAL :
+  → Loguer : "⏳ [agent] IDLE depuis [elapsed]min — shutdown dans [IDLE_TTL - elapsed]min"
+
+SI des agents status "idle" ou "working" existent encore → reschedule :
+  ScheduleWakeup({
+    delaySeconds: IDLE_WARNING_INTERVAL × 60,
+    reason: "Watchdog IDLE agents",
+    prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
+  })
+SINON (tous "terminating" ou "terminated") :
+  Mettre watchdog_active: false dans workflow-state.json — écrire immédiatement.
+```
+
+> Ne pas lancer le watchdog si aucun agent n'est actif. Ne jamais lancer deux watchdogs simultanément.
 
 ---
 

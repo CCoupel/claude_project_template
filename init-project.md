@@ -768,8 +768,13 @@ if [ ! -f .claude/settings.json ]; then
   cp TEMPLATE_claude/settings.json .claude/settings.json
   echo "✓ .claude/settings.json créé (hook PreCompact)"
 else
-  jq -s '.[0] * {"hooks": .[1].hooks}' \
-    .claude/settings.json TEMPLATE_claude/settings.json \
+  jq -s '
+    .[0] as $base | .[1] as $tmpl |
+    reduce ($tmpl.hooks // {} | to_entries[]) as $e (
+      $base;
+      .hooks[$e.key] = ((.hooks[$e.key] // []) + $e.value)
+    )
+  ' .claude/settings.json TEMPLATE_claude/settings.json \
     > .claude/settings.json.tmp \
     && mv .claude/settings.json.tmp .claude/settings.json
   echo "✓ .claude/settings.json — hook PreCompact ajouté"
@@ -1154,8 +1159,13 @@ if [ ! -f .claude/settings.json ]; then
   cp TEMPLATE_claude/settings.json .claude/settings.json
   echo "✓ .claude/settings.json créé (hook PreCompact)"
 else
-  jq -s '.[0] * {"hooks": .[1].hooks}' \
-    .claude/settings.json TEMPLATE_claude/settings.json \
+  jq -s '
+    .[0] as $base | .[1] as $tmpl |
+    reduce ($tmpl.hooks // {} | to_entries[]) as $e (
+      $base;
+      .hooks[$e.key] = ((.hooks[$e.key] // []) + $e.value)
+    )
+  ' .claude/settings.json TEMPLATE_claude/settings.json \
     > .claude/settings.json.tmp \
     && mv .claude/settings.json.tmp .claude/settings.json
   echo "✓ .claude/settings.json — hooks mis à jour"
