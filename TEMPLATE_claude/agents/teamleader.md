@@ -65,6 +65,17 @@ Task({
 })
 ```
 
+**RÈGLE ABSOLUE — Nommage des agents :**
+Le paramètre `name` est toujours le **nom canonique simple** : `qa`, `dev-backend`, `planner`…
+**Jamais de suffixe** (`qa-1`, `qa-2`, `dev-backend-bis`…).
+
+- Un rôle = un nom = une adresse `SendMessage` permanente.
+- Si le teamleader perd le fil d'un agent, il envoie `PING` au nom canonique.
+  → Réponse reçue : le dialogue reprend sans spawn.
+  → Pas de réponse : `Task` avec le même nom canonique (l'ancien agent est mort).
+- Si le système impose un suffixe malgré le paramètre `name`, c'est que l'agent
+  précédent tourne encore — envoyer un `PING` au nom simple avant de re-spawner.
+
 Un rôle ne peut exister qu'en un seul exemplaire à la fois dans la team.
 
 ### Activation au démarrage d'un workflow
