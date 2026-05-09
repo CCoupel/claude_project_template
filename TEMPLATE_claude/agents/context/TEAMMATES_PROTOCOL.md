@@ -266,51 +266,21 @@ SendMessage({
 
 ---
 
-## 7. Timeout d'inactivité — Auto-terminaison via ScheduleWakeup
+## 7. Mode IDLE — Attente d'ordres
 
-**IDLE_TTL** : lire `.agents.idle_ttl_minutes` dans `.claude/project-config.json`. Défaut : **15 minutes**.
-**IDLE_WARNING_INTERVAL** : lire `.agents.idle_warning_interval_minutes` dans `.claude/project-config.json`. Défaut : **5 minutes**.
-
-> ⚠ Un agent en attente passive **ne peut pas mesurer le temps écoulé**. Utiliser `ScheduleWakeup` pour implémenter le timer IDLE — c'est la seule méthode fiable.
-
-### À chaque entrée en IDLE (démarrage ou retour après DONE)
+Après avoir envoyé le rapport `DONE` et être retourné en IDLE :
 
 ```
-1. Afficher : "💤 [NOM-AGENT] IDLE — fermeture automatique dans [IDLE_TTL]min si aucun ordre"
-2. Appeler ScheduleWakeup({
-     delaySeconds: IDLE_WARNING_INTERVAL × 60,
-     reason: "IDLE watchdog — [NOM-AGENT]",
-     prompt: "IDLE_WATCHDOG"
-   })
-3. Attendre un ordre via SendMessage.
+1. Afficher : "💤 [NOM-AGENT] IDLE — en attente d'ordres"
+2. Attendre un SendMessage du teamleader.
+
+→ Ordre de travail reçu    → exécuter, puis retourner en IDLE
+→ PING reçu                → répondre ACTIF (voir §2)
+→ shutdown_request reçu    → répondre shutdown_response, terminer (voir §6)
 ```
 
-### Quand ScheduleWakeup se déclenche (prompt = "IDLE_WATCHDOG")
-
-```
-SI un ordre a été reçu depuis la dernière entrée en IDLE :
-  → L'ordre est déjà traité (ou en cours). Ne rien faire —
-    le ScheduleWakeup sera réinitialisé au prochain retour en IDLE.
-
-SI aucun ordre depuis la dernière entrée en IDLE :
-  → Calculer remaining = IDLE_TTL - temps_écoulé_depuis_entrée_IDLE
-
-  SI remaining ≤ 0 :
-    → SendMessage({to: "main", content: "<NOM-AGENT> AUTO-TERMINÉ — inactivité > [IDLE_TTL]min"})
-    → Terminer la Task  (ne PAS rappeler ScheduleWakeup)
-
-  SINON :
-    → Afficher : "⏳ [NOM-AGENT] IDLE — fermeture dans [remaining]min"
-    → SendMessage({to: "main", content: "<NOM-AGENT> IDLE — fermeture dans [remaining]min si aucun ordre"})
-    → ScheduleWakeup({
-        delaySeconds: min(IDLE_WARNING_INTERVAL, remaining) × 60,
-        reason: "IDLE watchdog — [NOM-AGENT]",
-        prompt: "IDLE_WATCHDOG"
-      })
-```
-
-**Côté teamleader** : à réception d'un message `AUTO-TERMINÉ`, noter l'agent comme inactif.
-Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'agent est nécessaire à nouveau.
+Le teammate ne gère pas de timer. C'est le **teamleader** qui surveille l'inactivité
+et envoie un `shutdown_request` quand l'IDLE_TTL est dépassé.
 
 ---
 
@@ -323,7 +293,7 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du Claude principal
 6. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
 7. **Texte naturel** — les messages sont lisibles, pas en JSON
-8. **Auto-terminaison** — se terminer après [IDLE_TTL] min d'inactivité via `ScheduleWakeup` (voir §7)
+8. **Auto-terminaison** — répondre au `shutdown_request` du teamleader et terminer la Task (voir §6 et §7)
 
 ---
 
@@ -333,12 +303,11 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 [AGENT DEMARRE]
 → Lit TEAMMATES_PROTOCOL.md ✓
 → Lit .claude/agents/[nom].template.md ✓ (puis [nom].md si présent)
-→ MODE IDLE — appelle ScheduleWakeup(5min) pour watchdog IDLE
+→ MODE IDLE — affiche "💤 DEV-BACKEND IDLE — en attente d'ordres"
 
 [Teamleader envoie PING via SendMessage]
 → Répondre IMMÉDIATEMENT : SendMessage({to: "main", content: "DEV-BACKEND ACTIF — prêt à recevoir des ordres"})
    ⚠ JAMAIS afficher "ACTIF" dans le terminal — le teamleader ne lit pas ton terminal
-→ Réinitialise le ScheduleWakeup watchdog
 
 [CDP envoie un ordre via SendMessage]
 → "Implemente l'endpoint POST /api/auth avec JWT. Voir contracts/http-endpoints.md."
@@ -352,25 +321,9 @@ Le protocole de réveil (PING → pas de réponse → spawn) gère le cas où l'
 → SendMessage(code-reviewer, "Handoff de DEV-BACKEND : _work/handoff/dev-backend-20240101-120000.md")
 // Puis toujours informer le CDP :
 → SendMessage(main, "DEV-BACKEND DONE\nHandoff : _work/handoff/dev-backend-20240101-120000.md  ← transmis directement à code-reviewer\nFichiers : internal/auth/handler.go, internal/auth/handler_test.go\nSHA : a3f1c2d")
-→ MODE IDLE — appelle ScheduleWakeup(5min) — watchdog IDLE
-→ Affiche : "💤 DEV-BACKEND IDLE — fermeture automatique dans 15min si aucun ordre"
+→ MODE IDLE — affiche "💤 DEV-BACKEND IDLE — en attente d'ordres"
 
-[ScheduleWakeup se déclenche — 5min sans ordre]
-→ remaining = 15 - 5 = 10min
-→ Affiche : "⏳ DEV-BACKEND IDLE — fermeture dans 10min"
-→ SendMessage(main, "DEV-BACKEND IDLE — fermeture dans 10min si aucun ordre")
-→ Appelle ScheduleWakeup(5min) — prochain check
-
-[ScheduleWakeup se déclenche — 10min sans ordre]
-→ remaining = 15 - 10 = 5min
-→ Affiche : "⏳ DEV-BACKEND IDLE — fermeture dans 5min"
-→ SendMessage(main, "DEV-BACKEND IDLE — fermeture dans 5min si aucun ordre")
-→ Appelle ScheduleWakeup(5min) — check final
-
-[ScheduleWakeup se déclenche — IDLE_TTL (15min) atteint, aucun ordre]
-→ SendMessage(main, "DEV-BACKEND AUTO-TERMINÉ — inactivité > 15min")
-→ Termine la Task  (pas de nouveau ScheduleWakeup)
-
-[CDP envoie shutdown_request (si agent encore actif)]
+[Teamleader envoie shutdown_request — IDLE_TTL atteint côté teamleader]
 → SendMessage(main, "shutdown_response approve: true")
+→ Termine la Task
 ```

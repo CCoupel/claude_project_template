@@ -143,9 +143,46 @@ Task({
 ### Cycle de vie des agents
 
 - **Agent silencieux** : envoyer `SendMessage({to: "<nom>", content: "PING"})`. Si toujours sans réponse → spawner un nouvel agent via `Task` (même protocole que l'activation initiale).
-- **Message `AUTO-TERMINÉ`** : un agent s'est terminé après 30 min d'inactivité. Le noter comme absent — le protocole de réveil (PING → pas de réponse → spawn) prend le relais si on en a besoin.
-- **Fin de workflow** : les agents spécialisés restent actifs (jusqu'à leur IDLE_TTL). Au démarrage du workflow suivant, appliquer le protocole de réveil pour chacun.
-- **Shutdown** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
+- **Fin de workflow** : les agents spécialisés restent actifs en IDLE. Au démarrage du workflow suivant, appliquer le protocole de réveil pour chacun.
+- **Shutdown explicite** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
+
+### Watchdog IDLE — Fermeture automatique des agents inactifs
+
+**IDLE_TTL** : `.agents.idle_ttl_minutes` dans `project-config.json`. Défaut : **15 min**.
+**IDLE_WARNING_INTERVAL** : `.agents.idle_warning_interval_minutes`. Défaut : **5 min**.
+
+C'est le teamleader qui gère l'inactivité — les teammates n'ont pas à se fermer eux-mêmes.
+
+**Tracking** : à chaque `SendMessage` de travail vers un agent, noter l'heure dans `workflow-state.json` :
+```json
+{ "agents": { "<nom>": { "last_order_sent_at": "<ISO>" } } }
+```
+
+**Lancer le watchdog** après tout dispatch (dès qu'on attend des réponses ou l'utilisateur) :
+```
+ScheduleWakeup({
+  delaySeconds: IDLE_WARNING_INTERVAL × 60,
+  reason: "Watchdog IDLE agents",
+  prompt: "IDLE_WATCHDOG"
+})
+```
+
+**Quand IDLE_WATCHDOG se déclenche** — pour chaque agent actif dans `workflow-state.json` :
+```
+elapsed = maintenant - last_order_sent_at
+
+SI elapsed ≥ IDLE_TTL :
+  → SendMessage({to: "<agent>", content: "shutdown_request"})
+  → Supprimer l'agent de la liste active
+
+SI IDLE_TTL - elapsed ≤ IDLE_WARNING_INTERVAL :
+  → Loguer : "⏳ [agent] IDLE depuis [elapsed]min — shutdown dans [IDLE_TTL - elapsed]min"
+
+Si des agents actifs restent → reschedule :
+  ScheduleWakeup({ delaySeconds: IDLE_WARNING_INTERVAL × 60, reason: "Watchdog IDLE agents", prompt: "IDLE_WATCHDOG" })
+```
+
+> Ne pas lancer le watchdog si aucun agent n'est actif.
 
 ---
 
