@@ -153,33 +153,38 @@ Task({
 
 C'est le teamleader qui gère l'inactivité — les teammates n'ont pas à se fermer eux-mêmes.
 
-**Tracking** : à chaque `SendMessage` de travail vers un agent, noter l'heure dans `workflow-state.json` :
+**Tracking** : à chaque `SendMessage` de travail vers un agent, écrire **immédiatement** dans `workflow-state.json` :
 ```json
-{ "agents": { "<nom>": { "last_order_sent_at": "<ISO>" } } }
+{ "agents": { "<nom>": { "last_order_sent_at": "<ISO>", "status": "active" } } }
 ```
+> Écrire sur disque immédiatement — ne jamais garder en mémoire. Ce fichier est la source de vérité, y compris après un compactage de contexte.
 
 **Lancer le watchdog** après tout dispatch (dès qu'on attend des réponses ou l'utilisateur) :
 ```
 ScheduleWakeup({
   delaySeconds: IDLE_WARNING_INTERVAL × 60,
   reason: "Watchdog IDLE agents",
-  prompt: "IDLE_WATCHDOG"
+  prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
 })
 ```
 
-**Quand IDLE_WATCHDOG se déclenche** — pour chaque agent actif dans `workflow-state.json` :
+**Quand le watchdog se déclenche** — lire `workflow-state.json`, puis pour chaque agent `status: active` :
 ```
 elapsed = maintenant - last_order_sent_at
 
 SI elapsed ≥ IDLE_TTL :
   → SendMessage({to: "<agent>", content: "shutdown_request"})
-  → Supprimer l'agent de la liste active
+  → Mettre status: "inactive" dans workflow-state.json — écrire immédiatement
 
 SI IDLE_TTL - elapsed ≤ IDLE_WARNING_INTERVAL :
   → Loguer : "⏳ [agent] IDLE depuis [elapsed]min — shutdown dans [IDLE_TTL - elapsed]min"
 
 Si des agents actifs restent → reschedule :
-  ScheduleWakeup({ delaySeconds: IDLE_WARNING_INTERVAL × 60, reason: "Watchdog IDLE agents", prompt: "IDLE_WATCHDOG" })
+  ScheduleWakeup({
+    delaySeconds: IDLE_WARNING_INTERVAL × 60,
+    reason: "Watchdog IDLE agents",
+    prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
+  })
 ```
 
 > Ne pas lancer le watchdog si aucun agent n'est actif.

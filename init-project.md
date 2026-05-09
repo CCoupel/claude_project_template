@@ -629,8 +629,8 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
     "typecheck": "<TYPECHECK_CMD>"
   },
   "agents": {
-    "idle_ttl_minutes": 30,
-    "idle_warning_minutes": 5
+    "idle_ttl_minutes": 15,
+    "idle_warning_interval_minutes": 5
   }
 }
 ```
@@ -757,6 +757,27 @@ gh label create "DONE"      --color "0e8a16" --description "Issue livrée et val
 
 > Si le repo n'a pas encore de remote GitHub configuré, sauter cette étape et noter dans
 > le Message de Fin : "Labels GitHub à créer manuellement ou relancer /init-project après `git remote add`."
+
+#### Hooks Claude Code (PreCompact — survie au compactage de contexte)
+
+Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json`.
+Si `.claude/settings.json` existe déjà, merger uniquement la clé `hooks` pour préserver les permissions projet :
+
+```bash
+if [ ! -f .claude/settings.json ]; then
+  cp TEMPLATE_claude/settings.json .claude/settings.json
+  echo "✓ .claude/settings.json créé (hook PreCompact)"
+else
+  jq -s '.[0] * {"hooks": .[1].hooks}' \
+    .claude/settings.json TEMPLATE_claude/settings.json \
+    > .claude/settings.json.tmp \
+    && mv .claude/settings.json.tmp .claude/settings.json
+  echo "✓ .claude/settings.json — hook PreCompact ajouté"
+fi
+```
+
+> Le hook PreCompact inclut `workflow-state.json` dans le résumé de compactage, ce qui garantit
+> que le teamleader connaît l'état des agents actifs après un compactage de contexte.
 
 ---
 
@@ -1124,7 +1145,24 @@ Pour chaque fichier non-PROPRE, afficher le diff annoté et proposer l'action :
 > Le système fonctionne correctement quelle que soit l'action choisie.
 > La dérive est un signal de maintenance, pas une erreur bloquante.
 
-#### Etape d6 — Vérifier et créer les labels GitHub de phase
+#### Etape d6 — Synchroniser les hooks Claude Code
+
+Merger `TEMPLATE_claude/settings.json` dans `.claude/settings.json` (même logique qu'à l'init) :
+
+```bash
+if [ ! -f .claude/settings.json ]; then
+  cp TEMPLATE_claude/settings.json .claude/settings.json
+  echo "✓ .claude/settings.json créé (hook PreCompact)"
+else
+  jq -s '.[0] * {"hooks": .[1].hooks}' \
+    .claude/settings.json TEMPLATE_claude/settings.json \
+    > .claude/settings.json.tmp \
+    && mv .claude/settings.json.tmp .claude/settings.json
+  echo "✓ .claude/settings.json — hooks mis à jour"
+fi
+```
+
+#### Etape d7 — Vérifier et créer les labels GitHub de phase
 
 S'assurer que les labels de suivi existent sur le repo (même commande que l'init, idempotent) :
 
@@ -1136,7 +1174,7 @@ gh label create "EN QA"     --color "f9d0c4" --description "Issue en cours de te
 gh label create "DONE"      --color "0e8a16" --description "Issue livrée et validée"           --force
 ```
 
-#### Etape d7 — Rapport final
+#### Etape d8 — Rapport final
 
 ```
 Synchronisation terminee.
