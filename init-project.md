@@ -758,38 +758,43 @@ gh label create "DONE"      --color "0e8a16" --description "Issue livrée et val
 > Si le repo n'a pas encore de remote GitHub configuré, sauter cette étape et noter dans
 > le Message de Fin : "Labels GitHub à créer manuellement ou relancer /init-project après `git remote add`."
 
-#### Hooks Claude Code (PreCompact + UserPromptSubmit — survie au compactage de contexte)
+#### Hooks Claude Code (SessionStart + PreCompact + UserPromptSubmit — survie au compactage de contexte)
 
 Déployer `TEMPLATE_claude/protocol-rules.md` dans `.claude/protocol-rules.md` :
 
 ```bash
 cp TEMPLATE_claude/protocol-rules.md .claude/protocol-rules.md
+rm -f .claude/.protocol-loaded
 echo "✓ .claude/protocol-rules.md déployé (règles critiques teamleader)"
 ```
 
 Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json`.
-Si `.claude/settings.json` existe déjà, merger uniquement la clé `hooks` pour préserver les permissions projet :
+Si `.claude/settings.json` existe déjà, merger uniquement la clé `hooks` sans dupliquer les entrées existantes :
 
 ```bash
 if [ ! -f .claude/settings.json ]; then
   cp TEMPLATE_claude/settings.json .claude/settings.json
-  echo "✓ .claude/settings.json créé (hook PreCompact)"
+  echo "✓ .claude/settings.json créé"
 else
   jq -s '
     .[0] as $base | .[1] as $tmpl |
     reduce ($tmpl.hooks // {} | to_entries[]) as $e (
       $base;
-      .hooks[$e.key] = ((.hooks[$e.key] // []) + $e.value)
+      .hooks[$e.key] = (
+        ((.hooks[$e.key] // []) | map(.hooks[0].command)) as $existing_cmds |
+        (.hooks[$e.key] // []) +
+        ($e.value | map(select(.hooks[0].command as $c | $existing_cmds | index($c) == null)))
+      )
     )
   ' .claude/settings.json TEMPLATE_claude/settings.json \
     > .claude/settings.json.tmp \
     && mv .claude/settings.json.tmp .claude/settings.json
-  echo "✓ .claude/settings.json — hook PreCompact ajouté"
+  echo "✓ .claude/settings.json — hooks mis à jour (sans duplication)"
 fi
 ```
 
-> Le hook PreCompact inclut `workflow-state.json` dans le résumé de compactage, ce qui garantit
-> que le teamleader connaît l'état des agents actifs après un compactage de contexte.
+> Les hooks `SessionStart`, `PreCompact` et `UserPromptSubmit` garantissent que les règles critiques
+> du teamleader (nommage, PING, watchdog) survivent aux compactages de contexte et aux nouvelles sessions.
 
 ---
 
@@ -1167,23 +1172,27 @@ rm -f .claude/.protocol-loaded
 echo "✓ .claude/protocol-rules.md mis à jour"
 ```
 
-Merger `TEMPLATE_claude/settings.json` dans `.claude/settings.json` (même logique qu'à l'init) :
+Merger `TEMPLATE_claude/settings.json` dans `.claude/settings.json` (même logique qu'à l'init, sans duplication) :
 
 ```bash
 if [ ! -f .claude/settings.json ]; then
   cp TEMPLATE_claude/settings.json .claude/settings.json
-  echo "✓ .claude/settings.json créé (hook PreCompact)"
+  echo "✓ .claude/settings.json créé"
 else
   jq -s '
     .[0] as $base | .[1] as $tmpl |
     reduce ($tmpl.hooks // {} | to_entries[]) as $e (
       $base;
-      .hooks[$e.key] = ((.hooks[$e.key] // []) + $e.value)
+      .hooks[$e.key] = (
+        ((.hooks[$e.key] // []) | map(.hooks[0].command)) as $existing_cmds |
+        (.hooks[$e.key] // []) +
+        ($e.value | map(select(.hooks[0].command as $c | $existing_cmds | index($c) == null)))
+      )
     )
   ' .claude/settings.json TEMPLATE_claude/settings.json \
     > .claude/settings.json.tmp \
     && mv .claude/settings.json.tmp .claude/settings.json
-  echo "✓ .claude/settings.json — hooks mis à jour"
+  echo "✓ .claude/settings.json — hooks mis à jour (sans duplication)"
 fi
 ```
 

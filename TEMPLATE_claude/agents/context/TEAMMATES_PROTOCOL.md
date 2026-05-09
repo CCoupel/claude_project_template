@@ -45,7 +45,7 @@ SendMessage({
 
 ---
 
-## 4. Reception d'un Ordre
+## 3. Reception d'un Ordre
 
 Le CDP active un agent en lui envoyant un message via `SendMessage`.
 Quand un agent recoit un message du Claude principal :
@@ -72,7 +72,7 @@ Retourner en mode IDLE
 
 ---
 
-## 5. Communication
+## 4. Communication
 
 ### Regles absolues
 
@@ -253,7 +253,7 @@ Action requise : [ce dont j'ai besoin]
 
 ---
 
-## 6. Reponse au Shutdown
+## 5. Reponse au Shutdown
 
 Quand le CDP envoie un `shutdown_request` :
 
@@ -266,7 +266,7 @@ SendMessage({
 
 ---
 
-## 7. Mode IDLE — Attente d'ordres
+## 6. Mode IDLE — Attente d'ordres
 
 Après avoir envoyé le rapport `DONE` et être retourné en IDLE :
 
@@ -276,7 +276,7 @@ Après avoir envoyé le rapport `DONE` et être retourné en IDLE :
 
 → Ordre de travail reçu    → exécuter, puis retourner en IDLE
 → PING reçu                → répondre ACTIF (voir §2)
-→ shutdown_request reçu    → répondre shutdown_response, terminer (voir §6)
+→ shutdown_request reçu    → répondre shutdown_response, terminer (voir §5)
 ```
 
 Le teammate ne gère pas de timer. C'est le **teamleader** qui surveille l'inactivité
@@ -284,7 +284,7 @@ et envoie un `shutdown_request` quand l'IDLE_TTL est dépassé.
 
 ---
 
-## 8. Regles Generales
+## 7. Regles Generales
 
 1. **IDLE par defaut** — l'etat de repos est l'attente, pas le polling
 2. **Un travail a la fois** — terminer une tache avant d'en accepter une autre
@@ -293,11 +293,11 @@ et envoie un `shutdown_request` quand l'IDLE_TTL est dépassé.
 5. **Pas d'initiative** — ne jamais commencer un travail sans ordre du Claude principal
 6. **Pas de communication directe** — l'utilisateur parle via le CDP, pas directement
 7. **Texte naturel** — les messages sont lisibles, pas en JSON
-8. **Auto-terminaison** — répondre au `shutdown_request` du teamleader et terminer la Task (voir §6 et §7)
+8. **Shutdown sur demande** — répondre au `shutdown_request` du teamleader et terminer la Task (voir §5 et §6)
 
 ---
 
-## 9. Exemple de Session Typique
+## 8. Exemple de Session Typique
 
 ```
 [AGENT DEMARRE]

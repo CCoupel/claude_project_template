@@ -159,6 +159,8 @@ Task({
 
 ### Watchdog IDLE — Fermeture automatique des agents inactifs
 
+**Prérequis** : vérifier que `.claude/project-config.json` existe. Si absent → pas de team configurée → skip le watchdog sans erreur.
+
 **IDLE_TTL** : `.agents.idle_ttl_minutes` dans `project-config.json`. Défaut : **15 min**.
 **IDLE_WARNING_INTERVAL** : `.agents.idle_warning_interval_minutes`. Défaut : **5 min**.
 
@@ -170,12 +172,15 @@ C'est le teamleader qui gère l'inactivité — les teammates n'ont pas à se fe
 |-----------|-------------------|
 | Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>`, `idle_since: null` |
 | Réception `DONE` d'un agent | `status: "idle"`, `idle_since: <ISO>` |
-| Envoi `shutdown_request` | `status: "terminating"` |
+| Envoi `shutdown_request` | `status: "pending_delete"` |
+| Réception `shutdown_response` | supprimer l'entrée agent du JSON |
+| `TaskStop` (cycle suivant sans réponse) | supprimer l'entrée agent du JSON |
 
 > Ne jamais garder ces états en mémoire — le fichier est la source de vérité, y compris après compactage de contexte.
 
 **Watchdog singleton** — avant tout `ScheduleWakeup`, vérifier `workflow-state.json` :
 ```
+SI project-config.json absent → skip (pas de team)
 SI watchdog_active == true → un watchdog tourne déjà, ne pas en lancer un second.
 SINON :
   Mettre watchdog_active: true dans workflow-state.json — écrire immédiatement.
@@ -186,25 +191,36 @@ SINON :
   })
 ```
 
-**Quand le watchdog se déclenche** — lire `workflow-state.json`, pour chaque agent `status: "idle"` :
+**Quand le watchdog se déclenche** — lire `workflow-state.json`, dans cet ordre :
+
 ```
-elapsed = maintenant - idle_since
+1. Pour chaque agent status "pending_delete" (shutdown_request envoyé au cycle précédent, pas de réponse) :
+   → TaskStop(<agent>)
+   → Supprimer l'entrée de workflow-state.json — écrire immédiatement
 
-SI elapsed ≥ IDLE_TTL :
-  → SendMessage({to: "<agent>", content: "shutdown_request"})
-  → Mettre status: "terminating" dans workflow-state.json — écrire immédiatement
+2. Pour chaque agent status "idle" :
+   elapsed = maintenant - idle_since
 
-SI IDLE_TTL - elapsed ≤ IDLE_WARNING_INTERVAL :
-  → Loguer : "⏳ [agent] IDLE depuis [elapsed]min — shutdown dans [IDLE_TTL - elapsed]min"
+   SI elapsed ≥ IDLE_TTL :
+     → SendMessage({to: "<agent>", content: "shutdown_request"})
+     → Mettre status: "pending_delete" dans workflow-state.json — écrire immédiatement
 
-SI des agents status "idle" ou "working" existent encore → reschedule :
-  ScheduleWakeup({
-    delaySeconds: IDLE_WARNING_INTERVAL × 60,
-    reason: "Watchdog IDLE agents",
-    prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
-  })
-SINON (tous "terminating" ou "terminated") :
-  Mettre watchdog_active: false dans workflow-state.json — écrire immédiatement.
+   SI IDLE_TTL - elapsed ≤ IDLE_WARNING_INTERVAL :
+     → Loguer : "⏳ [agent] IDLE depuis [elapsed]min — shutdown dans [IDLE_TTL - elapsed]min"
+
+3. SI des agents status "idle", "working" ou "pending_delete" existent encore → reschedule :
+   ScheduleWakeup({
+     delaySeconds: IDLE_WARNING_INTERVAL × 60,
+     reason: "Watchdog IDLE agents",
+     prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
+   })
+   SINON (aucun agent actif) :
+     Mettre watchdog_active: false dans workflow-state.json — écrire immédiatement.
+```
+
+**Sur réception de `shutdown_response` d'un agent** :
+```
+→ Supprimer l'entrée <agent> de workflow-state.json — écrire immédiatement
 ```
 
 > Ne pas lancer le watchdog si aucun agent n'est actif. Ne jamais lancer deux watchdogs simultanément.
