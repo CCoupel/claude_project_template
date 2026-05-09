@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .claude/workflow-state.json ] && echo '=== État agents actifs (survie compactage) ===' && cat .claude/workflow-state.json || echo '{\"agents\":{},\"note\":\"aucun workflow actif\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}
