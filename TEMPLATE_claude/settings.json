@@ -1,5 +1,15 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rm -f .claude/.protocol-loaded"
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "hooks": [
