@@ -5,7 +5,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f .claude/workflow-state.json ] && echo '=== État agents actifs (survie compactage) ===' && cat .claude/workflow-state.json || echo '{\"agents\":{},\"note\":\"aucun workflow actif\"}'"
+            "command": "echo '=== État agents (NE PAS PERDRE) ===' && cat .claude/workflow-state.json 2>/dev/null || echo '{\"agents\":{}}' ; echo '' ; echo '=== Règles critiques teamleader (NE PAS PERDRE) ===' && cat .claude/protocol-rules.md 2>/dev/null ; rm -f .claude/.protocol-loaded"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f .claude/.protocol-loaded ] || (cat .claude/protocol-rules.md 2>/dev/null && touch .claude/.protocol-loaded)"
           }
         ]
       }
