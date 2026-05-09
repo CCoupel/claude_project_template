@@ -758,7 +758,14 @@ gh label create "DONE"      --color "0e8a16" --description "Issue livrée et val
 > Si le repo n'a pas encore de remote GitHub configuré, sauter cette étape et noter dans
 > le Message de Fin : "Labels GitHub à créer manuellement ou relancer /init-project après `git remote add`."
 
-#### Hooks Claude Code (PreCompact — survie au compactage de contexte)
+#### Hooks Claude Code (PreCompact + UserPromptSubmit — survie au compactage de contexte)
+
+Déployer `TEMPLATE_claude/protocol-rules.md` dans `.claude/protocol-rules.md` :
+
+```bash
+cp TEMPLATE_claude/protocol-rules.md .claude/protocol-rules.md
+echo "✓ .claude/protocol-rules.md déployé (règles critiques teamleader)"
+```
 
 Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json`.
 Si `.claude/settings.json` existe déjà, merger uniquement la clé `hooks` pour préserver les permissions projet :
@@ -1151,6 +1158,14 @@ Pour chaque fichier non-PROPRE, afficher le diff annoté et proposer l'action :
 > La dérive est un signal de maintenance, pas une erreur bloquante.
 
 #### Etape d6 — Synchroniser les hooks Claude Code
+
+Mettre à jour `protocol-rules.md` (toujours écraser — pas de customisation projet) :
+
+```bash
+cp TEMPLATE_claude/protocol-rules.md .claude/protocol-rules.md
+rm -f .claude/.protocol-loaded
+echo "✓ .claude/protocol-rules.md mis à jour"
+```
 
 Merger `TEMPLATE_claude/settings.json` dans `.claude/settings.json` (même logique qu'à l'init) :
 
