@@ -32,9 +32,10 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 | `Read` (pour analyser du code applicatif) | Revue technique | `code-reviewer`, `planner` |
 | `Glob`, `Grep` (recherche de code) | Investigation technique | `planner`, `dev-*` |
 
-**Usages legitimes de `Read`** (fichiers d'orchestration uniquement, jamais le code applicatif) :
-`MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`,
-`_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
+**Usages legitimes de `Read`** — fichiers d'orchestration et rapports teammates uniquement :
+- Orchestration : `MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
+- Livrables teammates : `_work/handoff/*.md`, `_work/reports/*.md` ← **lecture autorisée pour valider les livrables**
+- Jamais : code applicatif (`src/`, `internal/`, `app/`…) — déléguer à `code-reviewer` ou `planner`
 
 ### Symptomes d'une mauvaise delegation — verifier avant d'agir
 
@@ -94,7 +95,7 @@ La team est gérée par le Claude principal. Avant tout dispatch, appliquer le *
 
 Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`) :
 
-1. **Lire intégralement le fichier référencé** (`Rapport :` ou `SHA :` ou handoff)
+1. **Lire le rapport ou le handoff référencé** (`Rapport :` ou `Handoff :`) — jamais le code lui-même (SHA = validation déléguée au code-reviewer)
 2. **Analyser la conformité** :
    - Contenu complet par rapport à la demande initiale ?
    - Points critiques manquants ou incorrects ?

@@ -27,6 +27,34 @@
 |-----------|--------------------------------|
 | Dispatch (SendMessage de travail) | `status: "working"`, `last_order_sent_at: <ISO>`, `idle_since: null` |
 | Réception DONE | `status: "idle"`, `idle_since: <ISO>` |
-| Envoi shutdown_request | `status: "terminating"` |
+| Envoi shutdown_request | `status: "pending_delete"` |
+| Réception shutdown_response | supprimer l'entrée agent |
+| TaskStop (pas de réponse au cycle suivant) | supprimer l'entrée agent |
 
 > Écrire sur disque **immédiatement** — jamais en mémoire. Ce fichier est la source de vérité.
+
+## Format de workflow-state.json
+
+```json
+{
+  "workflow": {
+    "type": "FEATURE|BUGFIX|REFACTOR|HOTFIX|DEPLOY|SECU",
+    "description": "description courte",
+    "phase": "PLAN|DEV|REVIEW|QA|DOC|DEPLOY",
+    "cycle": 1,
+    "issue_nums": [42, 43],
+    "milestone_num": 7,
+    "started_at": "2026-01-01T10:00:00Z"
+  },
+  "watchdog_active": false,
+  "agents": {
+    "<nom>": {
+      "status": "working|idle|pending_delete",
+      "last_order_sent_at": "2026-01-01T10:05:00Z",
+      "idle_since": null
+    }
+  }
+}
+```
+
+> Si aucun workflow actif : `{ "watchdog_active": false, "agents": {} }`
