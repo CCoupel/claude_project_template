@@ -125,7 +125,7 @@ Si le système impose un suffixe → l'agent précédent tourne encore → envoy
 
 Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json`. **À réception de ce bloc, lancer immédiatement un PING broadcast** :
 
-**Étape 1** — Envoyer PING à **tous les agents listés simultanément** (un seul bloc de réponse) :
+**Étape 1** — Envoyer un PING individuel à chaque agent listé, dans un seul bloc de réponse (SendMessage est point-à-point — pas de broadcast natif) :
 ```
 SendMessage({to: "planner", content: "PING"})
 SendMessage({to: "dev-backend", content: "PING"})

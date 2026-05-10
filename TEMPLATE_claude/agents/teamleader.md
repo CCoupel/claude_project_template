@@ -203,9 +203,12 @@ SINON :
     → Supprimer l'entrée de workflow-state.json — écrire immédiatement
     → Afficher : "✓ <agent> stoppé (pas de shutdown_response)"
 
-Étape 2 — PING-STATUS broadcast
-  Pour chaque agent restant (working ou idle), envoyer simultanément :
-    SendMessage({to: "<agent>", content: "PING-STATUS"})
+Étape 2 — PING-STATUS individuel à chaque agent (dans le même bloc de réponse)
+  Il n'existe pas de broadcast natif dans Claude Code — SendMessage est point-à-point.
+  Émettre un SendMessage par agent dans une seule réponse (pas d'attente entre eux) :
+    SendMessage({to: "<agent1>", content: "PING-STATUS"})
+    SendMessage({to: "<agent2>", content: "PING-STATUS"})
+    … (un par agent dans workflow-state.json)
 
 Étape 3 — Attendre 30 secondes les réponses PONG(...)
   Pour chaque réponse reçue :
