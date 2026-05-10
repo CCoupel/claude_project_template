@@ -47,10 +47,11 @@ Légende des statuts :
 
 ### Etape 3 — Proposer les actions
 
-Afficher uniquement si des agents IDLE ou WORKING existent :
+Afficher uniquement si des agents existent :
 
 ```
 Actions disponibles :
+  [P] Vérifier connectivité — PING broadcast (confirme les agents réellement actifs)
   [A] Fermer tous les IDLE
   [N] Fermer agents spécifiques (saisir les numéros séparés par virgule : 1,3)
   [Q] Quitter sans action
@@ -58,7 +59,27 @@ Actions disponibles :
 
 Attendre la saisie de l'utilisateur.
 
-### Etape 4 — Appliquer la fermeture
+### Etape 4a — PING broadcast [P]
+
+Utile après un compactage de contexte ou si le statut semble incohérent.
+
+Envoyer PING à **tous les agents listés simultanément** (un seul bloc) :
+
+```
+SendMessage({to: "<agent1>", content: "PING"})
+SendMessage({to: "<agent2>", content: "PING"})
+… (tous les agents de workflow-state.json)
+```
+
+Afficher : `⏳ PING envoyé à N agents — attente des réponses (30s)…`
+
+Attendre **30 secondes** les réponses `<NOM> ACTIF` :
+- Réponse reçue → agent confirmé vivant, conserver dans `workflow-state.json`
+- Pas de réponse → agent disparu : supprimer l'entrée de `workflow-state.json` + afficher `✗ <agent> non joignable — retiré`
+
+Après traitement, ré-afficher le tableau mis à jour (Etape 2) et reproposer le menu.
+
+### Etape 4b — Appliquer la fermeture [A] ou [N]
 
 Pour chaque agent sélectionné (ou tous les IDLE si [A]) :
 
@@ -79,6 +100,8 @@ Attendre **30 secondes** les `shutdown_response` :
 
 ### Etape 5 — Résumé
 
+Après fermeture [A] ou [N] :
+
 ```
 Fermeture terminée.
 
@@ -92,3 +115,4 @@ Fermeture terminée.
 - Ne jamais arrêter un agent `WORKING` sans confirmation explicite de l'utilisateur
 - Toujours écrire `workflow-state.json` sur disque après chaque modification
 - Si `watchdog_active == true` après la fermeture → le watchdog se chargera des éventuels restants au prochain cycle
+- Le PING broadcast [P] ne ferme aucun agent — il retire uniquement les entrées d'agents disparus

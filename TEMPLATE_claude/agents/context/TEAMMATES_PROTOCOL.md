@@ -38,10 +38,12 @@ SendMessage({
 ```
 
 **RÈGLES ABSOLUES :**
-- Répondre **immédiatement**, sans délai, sans exécuter aucun travail
+- Répondre **immédiatement**, sans délai — même en cours de travail (le PING interrompt, la réponse est envoyée, puis le travail reprend)
 - La réponse passe **UNIQUEMENT** par `SendMessage` — jamais par un affichage dans ton terminal
 - Ne jamais afficher "ACTIF" ou "PONG" dans le terminal : le teamleader ne lit pas ton terminal, il attend un SendMessage
 - Si l'agent ne répond pas via SendMessage, le teamleader conclut qu'il est mort et spawne un nouvel agent
+
+**Cas PING broadcast (post-compactage)** : si plusieurs PING arrivent en rafale, répondre à chacun avec `<NOM> ACTIF`. Le teamleader reconstruit sa liste d'agents actifs depuis ces réponses.
 
 ---
 

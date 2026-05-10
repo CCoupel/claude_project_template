@@ -121,6 +121,26 @@ Le paramètre `name` dans `Task` est **toujours le nom canonique simple** : `qa`
 
 Si le système impose un suffixe → l'agent précédent tourne encore → envoyer PING au nom simple d'abord.
 
+### Restauration après compactage de contexte
+
+Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json`. **À réception de ce bloc, lancer immédiatement un PING broadcast** :
+
+**Étape 1** — Envoyer PING à **tous les agents listés simultanément** (un seul bloc de réponse) :
+```
+SendMessage({to: "planner", content: "PING"})
+SendMessage({to: "dev-backend", content: "PING"})
+SendMessage({to: "qa", content: "PING"})
+… (tous les agents présents dans workflow-state.json)
+```
+
+**Étape 2** — Attendre 30 secondes les réponses `<NOM> ACTIF`
+
+**Étape 3** — Mettre à jour `workflow-state.json` :
+- Réponse reçue → agent confirmé, conserver l'entrée
+- Pas de réponse → agent disparu, supprimer l'entrée
+
+**Étape 4** — Reprendre le travail avec les agents confirmés. Pour un agent disparu en cours de tâche → spawner via `Task` et lui retransmettre son ordre.
+
 ### Workflow-state.json — Source de Vérité
 
 Écrire **immédiatement sur disque** à chaque événement (jamais en mémoire) :
