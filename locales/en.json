@@ -90,7 +90,7 @@
   "features.f9.title": "CLAUDE.md maintained by the template",
   "features.f9.desc":  "CLAUDE.md is split into two zones: Zone 1 (project config, agents, project-specific rules — never overwritten) and Zone 2 between BEGIN/END TEAMLEADER_PROTOCOL markers (multi-agent coordination protocol, replaced at each sync via awk). Loaded natively by Claude Code, coordination rules survive context compaction without any hook. A drift analysis detects gaps between template and deployed files at each sync.",
   "features.f10.title": "Agent lifecycle",
-  "features.f10.desc":  "workflow-state.json tracks each agent's state in real time (working, idle, pending_delete). /team-status shows the dashboard and lets you cleanly shut down idle agents. Dev agents send a DIAGNOSTIC (root cause + planned fix) to the teamleader before every bugfix — the user is informed without waiting for the final report. Available templates: backend (Go/Node/Python), frontend (React/Vue), firmware (ESP32), plugin.",
+  "features.f10.desc":  "workflow-state.json tracks each agent's state in real time (working, idle, pending_delete). The teamleader runs a periodic PING-STATUS loop: it sends each known agent — and all 12 canonical names absent from the state (orphan discovery) — a self-contained PING-STATUS message. Agents reply PONG(WORKING), PONG(IDLE), or PONG(IDLE-2) (already idle last cycle → immediate shutdown). /team-status includes a [P] option to trigger the same PING-STATUS manually. Dev agents send a DIAGNOSTIC before every bugfix. Templates: backend (Go/Node/Python), frontend (React/Vue), firmware (ESP32), plugin.",
 
   "install.title":       "Installation",
   "install.subtitle":    "The tmux launcher manages all your projects from a central hub.",
