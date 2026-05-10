@@ -76,6 +76,14 @@ Projet cible
 
 ## Conventions de développement
 
+### README — Maintenir la cohérence
+
+Toute modification de la mécanique de templating doit être répercutée dans `README.md` dans la même PR.
+
+Sont concernées : tout changement dans `TEMPLATE_claude/` (nouveaux fichiers, renommages, suppression), les étapes `init-project.md` (nouvelles étapes, changement de comportement), les hooks `settings.json`, les marqueurs `CLAUDE_TEMPLATE.md`, les chemins (`_work/`, `.claude/`), les commandes disponibles.
+
+Le README est la documentation utilisateur — il doit refléter l'état réel du template à tout moment.
+
 ### Modifier une commande ou un agent
 
 Les fichiers dans `TEMPLATE_claude/commands/` et `TEMPLATE_claude/agents/` sont des templates.
