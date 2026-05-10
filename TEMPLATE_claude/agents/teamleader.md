@@ -170,11 +170,11 @@ C'est le teamleader qui gère l'inactivité — les teammates ne se ferment pas 
 
 | Événement | Champs mis à jour |
 |-----------|-------------------|
-| Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>` |
+| Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>`, `last_pong: "WORKING"` |
 | Réception `DONE` d'un agent | `status: "idle"` |
-| Réception `PONG(IDLE)` | `status: "idle"` |
-| Réception `PONG(WORKING)` | `status: "working"` |
-| Réception `PONG(IDLE-2)` | `status: "pending_delete"` (shutdown_request envoyé) |
+| Réception `PONG(IDLE)` | `status: "idle"`, `last_pong: "IDLE"` |
+| Réception `PONG(WORKING)` | `status: "working"`, `last_pong: "WORKING"` |
+| Réception `PONG(IDLE-2)` | `status: "pending_delete"`, `last_pong: "IDLE-2"` (shutdown_request envoyé) |
 | Pas de réponse au PING-STATUS | supprimer l'entrée agent du JSON |
 | Réception `shutdown_response` | supprimer l'entrée agent du JSON |
 | `TaskStop` forcé | supprimer l'entrée agent du JSON |
@@ -220,9 +220,10 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 
 Étape 3 — PING-STATUS aux agents connus (un SendMessage par agent, même bloc)
   Il n'existe pas de broadcast natif dans Claude Code — SendMessage est point-à-point.
-  Émettre un message par agent sans attente entre eux :
-    SendMessage({to: "<agent1>", content: "PING-STATUS"})
-    SendMessage({to: "<agent2>", content: "PING-STATUS"})
+  Inclure le dernier PONG connu dans chaque message (compact-proof : l'agent n'a pas à
+  mémoriser son état entre cycles, le teamleader le lui fournit) :
+    SendMessage({to: "<agent1>", content: "PING-STATUS — dernier PONG connu : <last_pong|inconnu>"})
+    SendMessage({to: "<agent2>", content: "PING-STATUS — dernier PONG connu : <last_pong|inconnu>"})
     … (tous les agents présents dans workflow-state.json)
 
 Étape 4 — Attendre 30 secondes les réponses PONG(...)
