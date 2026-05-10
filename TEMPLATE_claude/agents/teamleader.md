@@ -194,6 +194,12 @@ SINON :
   })
 ```
 
+**Noms canoniques** — liste fixe des agents documentés du template :
+```
+planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
+test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
+```
+
 **Déroulement d'un cycle** — lire `workflow-state.json`, puis :
 
 ```
@@ -203,14 +209,23 @@ SINON :
     → Supprimer l'entrée de workflow-state.json — écrire immédiatement
     → Afficher : "✓ <agent> stoppé (pas de shutdown_response)"
 
-Étape 2 — PING-STATUS individuel à chaque agent (dans le même bloc de réponse)
+Étape 2 — Passe de découverte (orphelins potentiels)
+  Calculer : canoniques − agents déjà dans workflow-state.json
+  Pour chaque nom absent, envoyer PING-STATUS dans le même bloc :
+    SendMessage({to: "<canonique-absent>", content: "PING-STATUS"})
+  Attendre 30s — ceux qui répondent PONG(...) :
+    → Ajouter dans workflow-state.json avec le statut correspondant
+    → Afficher : "↩ <agent> redécouvert — ajouté à l'état"
+  Ceux qui ne répondent pas : ignorés (jamais spawnés dans cette session)
+
+Étape 3 — PING-STATUS aux agents connus (un SendMessage par agent, même bloc)
   Il n'existe pas de broadcast natif dans Claude Code — SendMessage est point-à-point.
-  Émettre un SendMessage par agent dans une seule réponse (pas d'attente entre eux) :
+  Émettre un message par agent sans attente entre eux :
     SendMessage({to: "<agent1>", content: "PING-STATUS"})
     SendMessage({to: "<agent2>", content: "PING-STATUS"})
-    … (un par agent dans workflow-state.json)
+    … (tous les agents présents dans workflow-state.json)
 
-Étape 3 — Attendre 30 secondes les réponses PONG(...)
+Étape 4 — Attendre 30 secondes les réponses PONG(...)
   Pour chaque réponse reçue :
     PONG(WORKING)  → status: "working" dans workflow-state.json
     PONG(IDLE)     → status: "idle" dans workflow-state.json
@@ -220,7 +235,7 @@ SINON :
     → Supprimer l'entrée de workflow-state.json — écrire immédiatement
     → Afficher : "✗ <agent> non joignable — retiré"
 
-Étape 4 — Reschedule ou arrêt
+Étape 5 — Reschedule ou arrêt
   SI des agents existent encore dans workflow-state.json :
     ScheduleWakeup({
       delaySeconds: CYCLE_INTERVAL × 60,

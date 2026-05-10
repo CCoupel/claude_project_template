@@ -61,20 +61,35 @@ Attendre la saisie de l'utilisateur.
 
 ### Etape 4a — PING-STATUS broadcast [P]
 
-Utile après un compactage de contexte ou si le statut semble incohérent.
+Utile après un compactage de contexte ou si le statut semble incohérent.  
+Effectue **deux passes** : découverte des orphelins + vérification des connus.
 
-Envoyer un `PING-STATUS` individuel à chaque agent dans un seul bloc de réponse
-(SendMessage est point-à-point — pas de broadcast natif, mais émis sans attente entre eux) :
+**Passe 1 — Découverte des orphelins**
 
+Noms canoniques documentés :
+```
+planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
+test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
+```
+
+Envoyer PING-STATUS aux canoniques **absents de `workflow-state.json`** (un seul bloc) :
+```
+SendMessage({to: "<canonique-absent1>", content: "PING-STATUS"})
+SendMessage({to: "<canonique-absent2>", content: "PING-STATUS"})
+…
+```
+Attendre 30s — ceux qui répondent → ajouter dans `workflow-state.json` + afficher `↩ <agent> redécouvert`.  
+Ceux qui ne répondent pas → ignorés (jamais spawnés dans cette session).
+
+**Passe 2 — Vérification des agents connus**
+
+Envoyer PING-STATUS à tous les agents maintenant présents dans `workflow-state.json` (un SendMessage par agent, point-à-point, émis sans attente entre eux) :
 ```
 SendMessage({to: "<agent1>", content: "PING-STATUS"})
 SendMessage({to: "<agent2>", content: "PING-STATUS"})
-… (un par agent dans workflow-state.json)
+…
 ```
-
-Afficher : `⏳ PING-STATUS envoyé à N agents — attente des réponses (30s)…`
-
-Attendre **30 secondes** les réponses `PONG(...)` :
+Attendre 30s — traiter les réponses :
 
 | Réponse | Action |
 |---------|--------|
