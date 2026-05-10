@@ -37,6 +37,7 @@
 | `planner` | Plan d'implémentation + contrats API | `.claude/agents/implementation-planner.md` |
 | `dev-backend` | Backend ({BACKEND_TECH}) | `.claude/agents/dev-backend.md` |
 | `dev-frontend` | Frontend ({FRONTEND_TECH}) | `.claude/agents/dev-frontend.md` |
+| `dev-plugin` | Plugin ({PLUGIN_PLATFORM}) | `.claude/agents/dev-plugin.md` |
 | `test-writer` | Scripts de tests + procédures QA | `.claude/agents/test-writer.md` |
 | `code-reviewer` | Revue de code | `.claude/agents/code-reviewer.md` |
 | `qa` | Exécution des tests et validation | `.claude/agents/qa.md` |

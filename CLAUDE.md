@@ -11,6 +11,7 @@ Il se développe lui-même avec les mêmes pratiques qu'il préconise.
 |-----------|--------|
 | Repo | `CCoupel/claude_project_template` |
 | Branche principale | `main` |
+| Page web (GitHub Pages) | branche `gh-pages` |
 | Pas de backend / frontend / base de données | — |
 | Versionnement | SemVer, tags `vX.Y.Z` |
 

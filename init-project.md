@@ -517,6 +517,20 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 
 ---
 
+## Etape 5b : Plugin (optionnel)
+
+```
+6b. Ton projet inclut-il un plugin pour une plateforme existante ?
+    a) VS Code Extension
+    b) Obsidian Plugin
+    c) WordPress Plugin
+    d) Browser Extension (Chrome/Firefox)
+    e) Plugin applicatif maison (preciser la plateforme)
+    f) Pas de plugin
+```
+
+---
+
 ## Etape 6 : Base de Donnees
 
 ```
@@ -607,6 +621,7 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
     "frontend": { "language": "typescript", "framework": "react" },
     "mobile": null,
     "firmware": null,
+    "plugin": { "platform": "VS Code Extension" },
     "database": { "primary": "postgresql", "orm": "prisma" }
   },
   "infrastructure": {
@@ -658,6 +673,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | React | `TEMPLATE_claude/templates/dev-frontend-react.md` | `.claude/agents/dev-frontend.md` |
 | Vue.js | `TEMPLATE_claude/templates/dev-frontend-vue.md` | `.claude/agents/dev-frontend.md` |
 | ESP32 | `TEMPLATE_claude/templates/dev-firmware-esp32.md` | `.claude/agents/dev-firmware.md` |
+| Plugin (toute plateforme) | `TEMPLATE_claude/templates/dev-plugin.md` | `.claude/agents/dev-plugin.md` |
 
 ### 3. Workflow CI/CD
 
@@ -698,6 +714,7 @@ TEST_CMD=$(jq -r '.commands.test      // ""'         .claude/project-config.json
 LINT_CMD=$(jq -r '.commands.lint      // ""'         .claude/project-config.json)
 AUDIT_CMD=$(jq -r '.commands.audit    // ""'         .claude/project-config.json)
 TYPECHECK_CMD=$(jq -r '.commands.typecheck // ""'    .claude/project-config.json)
+PLUGIN_PLATFORM=$(jq -r '.stack.plugin.platform // ""' .claude/project-config.json)
 ```
 
 Echapper les caracteres speciaux sed (`&`, `\`, `|`) dans les valeurs de commandes
@@ -727,6 +744,7 @@ for f in .claude/commands/*.md .claude/agents/*.template.md; do
     -e "s|{LINT_CMD}|${LINT_CMD_ESC}|g"          \
     -e "s|{AUDIT_CMD}|${AUDIT_CMD_ESC}|g"        \
     -e "s|{TYPECHECK_CMD}|${TYPECHECK_CMD_ESC}|g" \
+    -e "s|{PLUGIN_PLATFORM}|${PLUGIN_PLATFORM}|g" \
     "$f"
   echo "  ✓ placeholders appliques dans $name"
 done
