@@ -121,6 +121,14 @@ Le paramètre `name` dans `Task` est **toujours le nom canonique simple** : `qa`
 
 Si le système impose un suffixe → l'agent précédent tourne encore → envoyer PING au nom simple d'abord.
 
+### Restauration après compactage de contexte
+
+Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json` dans le contexte. **À réception de ce bloc** :
+
+1. Lire la liste des agents dans `agents` — ce sont tes teammates actifs
+2. Reprendre le dispatch normalement (PING → ACTIF → SendMessage | pas de réponse → Task)
+3. Ne pas repartir de zéro : l'état persisté est la source de vérité
+
 ### Workflow-state.json — Source de Vérité
 
 Écrire **immédiatement sur disque** à chaque événement (jamais en mémoire) :

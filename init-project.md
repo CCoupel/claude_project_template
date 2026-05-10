@@ -786,10 +786,15 @@ gh label create "DONE"      --color "0e8a16" --description "Issue livrée et val
 > Si le repo n'a pas encore de remote GitHub configuré, sauter cette étape et noter dans
 > le Message de Fin : "Labels GitHub à créer manuellement ou relancer /init-project après `git remote add`."
 
-#### Hook Claude Code (PreCompact — persistance workflow-state.json)
+#### Hooks Claude Code (PreCompact + UserPromptSubmit — restauration post-compactage)
 
 Les règles critiques du teamleader sont dans `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL`) — elles survivent aux compactages nativement.  
-Le hook PreCompact sert uniquement à préserver `workflow-state.json` (état des agents — ephémère, non tracké dans git) :
+Les hooks gèrent la restauration de `workflow-state.json` (état des agents actifs — éphémère, non tracké dans git) :
+
+- **PreCompact** : affiche `workflow-state.json` dans le résumé + pose le marqueur `.post-compact`
+- **UserPromptSubmit** : si `.post-compact` existe → ré-injecte `workflow-state.json` au premier prompt post-compactage → supprime le marqueur
+
+Ce mécanisme garantit que le teamleader retrouve la liste de ses teammates après un compactage de contexte.
 
 Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json`.
 Si `.claude/settings.json` existe déjà, merger uniquement la clé `hooks` sans dupliquer les entrées existantes :
@@ -812,7 +817,7 @@ else
   ' .claude/settings.json TEMPLATE_claude/settings.json \
     > .claude/settings.json.tmp \
     && mv .claude/settings.json.tmp .claude/settings.json
-  echo "✓ .claude/settings.json — hook PreCompact ajouté"
+  echo "✓ .claude/settings.json — hooks PreCompact + UserPromptSubmit ajoutés"
 fi
 ```
 
@@ -1206,7 +1211,7 @@ echo "✓ CLAUDE.md — bloc TEAMLEADER_PROTOCOL mis à jour"
 > Si `CLAUDE.md` ne contient pas encore les marqueurs (projet initialisé avant cette version du template) :
 > ajouter manuellement la section entre marqueurs ou relancer `/init-project` option a (réinitialisation).
 
-#### Etape d6b — Synchroniser le hook PreCompact
+#### Etape d6b — Synchroniser les hooks PreCompact + UserPromptSubmit
 
 Merger `TEMPLATE_claude/settings.json` dans `.claude/settings.json` (même logique qu'à l'init, sans duplication) :
 
