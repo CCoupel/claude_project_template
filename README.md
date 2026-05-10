@@ -133,13 +133,16 @@ CLAUDE.md                        # Guide de contribution au template lui-même
 
 TEMPLATE_claude/                 # Tous les composants livrés aux projets cibles
 ├── INITIALIZATION.md            # Documentation détaillée du processus d'init
-├── CLAUDE_TEMPLATE.md           # Modèle de CLAUDE.md pour les projets cibles
+├── CLAUDE_TEMPLATE.md           # Modèle de CLAUDE.md (Zone 1 projet + Zone 2 teamleader)
+├── protocol-rules.md            # Règles critiques teamleader (cheat sheet compacte)
+├── settings.json                # Hook PreCompact (persistance workflow-state.json)
 ├── .template-source.json        # Référence GitHub (repo + commit du dernier fetch)
 ├── gitignore-for-projects       # Copié en .gitignore par /init-project
 │
 ├── commands/                    # Commandes slash
 │   ├── start-session.md
 │   ├── end-session.md
+│   ├── team-status.md
 │   ├── feature.md
 │   ├── bugfix.md
 │   ├── hotfix.md
@@ -151,6 +154,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │   ├── backlog.md
 │   ├── milestone.md
 │   ├── progression.md
+│   ├── context-audit.md
 │   ├── marketing.md
 │   └── context/
 │       ├── COMMON.md
@@ -160,7 +164,8 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │       └── GITHUB.md
 │
 ├── agents/                      # Agents spécialisés
-│   ├── cdp.md                   # Chef De Projet — orchestrateur
+│   ├── teamleader.md            # Teamleader — gestion team + rôle CDP
+│   ├── cdp.md                   # Règles CDP — orchestration, délégation, gates
 │   ├── implementation-planner.md
 │   ├── test-writer.md
 │   ├── code-reviewer.md
@@ -219,11 +224,11 @@ spécialisés, valide leurs livrables et reporte la progression.
 ### Principes de communication
 
 - **Livrable = fichier** : chaque agent écrit son résultat dans un fichier, le message ne contient que la référence
-  - Agents d'analyse → `.claude/reports/[agent]-[timestamp].md`
+  - Agents d'analyse → `_work/reports/[agent]-[timestamp].md`
   - Agents de code → SHA du commit
-- **Handoff** : chaque agent écrit `.claude/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant
-- **Validation CDP** : à réception de chaque DONE, le CDP lit le fichier livrable et vérifie la conformité avant de continuer
-- **État persistant** : `.claude/workflow-state.json` mis à jour à chaque transition de phase — source de vérité pour `status`/`resume`/`skip`
+- **Handoff** : chaque agent écrit `_work/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant ou l'agent le transmet directement si le CDP l'autorise
+- **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
+- **État persistant** : `.claude/workflow-state.json` mis à jour immédiatement à chaque événement (dispatch, DONE, shutdown) — source de vérité pour l'état de chaque agent
 
 ---
 
@@ -401,7 +406,9 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 | Commande | Description |
 |----------|-------------|
 | `/start-session` | Démarre la session, lit la mémoire projet, affiche le milestone actif |
-| `/end-session` | Clôture la session, met à jour la mémoire |
+| `/end-session` | Clôture la session, shutdown propre des agents, met à jour la mémoire |
+| `/team-status` | État de la team — fermeture sélective des agents inactifs |
+| `/context-audit [scope]` | Audit des fichiers de configuration : doublons, refs cassées, dérive template |
 | `/init-project` | Bootstrap, réinitialisation ou synchronisation du template |
 
 ### Développement
@@ -428,6 +435,7 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 | Commande | Description |
 |----------|-------------|
 | `/progression` | Tableau de bord temps réel — statut de chaque agent actif |
+| `/team-status` | État de la team (tableau agents + durée idle/working) — fermeture sélective des agents inactifs |
 
 ### Validation
 
@@ -493,8 +501,27 @@ Pour récupérer les nouvelles fonctionnalités du template dans un projet exist
 /init-project → d) Synchroniser le template depuis GitHub
 ```
 
-Fetche la dernière version de `TEMPLATE_claude/` et met à jour les fichiers `*.template.md`
-sans jamais toucher aux fichiers `*.md` projet.
+Fetche la dernière version de `TEMPLATE_claude/` et :
+- Écrase les commandes (`*.md`) et agents template (`*.template.md`)
+- Met à jour le bloc `<!-- BEGIN/END TEAMLEADER_PROTOCOL -->` dans `CLAUDE.md` sans toucher au reste
+- Merge le hook `PreCompact` dans `.claude/settings.json` sans dupliquer les entrées existantes
+
+### Structure de CLAUDE.md — Zone projet / Zone template
+
+`CLAUDE.md` est divisé en deux zones maintenues séparément :
+
+```
+Zone 1 — Contenu projet           Zone 2 — Règles template
+─────────────────────────         ───────────────────────────────────────
+Config, stack, agents,            <!-- BEGIN TEAMLEADER_PROTOCOL -->
+commandes, mémoire.               Rôle CDP, PING protocol, nommage
+Jamais écrasé par le template.    canonique, délégation stricte,
+                                  workflow-state.json, watchdog.
+                                  <!-- END TEAMLEADER_PROTOCOL -->
+                                  Remplacé à chaque sync (step d6).
+```
+
+`CLAUDE.md` étant chargé nativement par Claude Code à chaque session, les règles de la Zone 2 survivent aux compactages de contexte sans mécanisme de hook supplémentaire.
 
 ### Détection de dérive (automatique à chaque sync)
 
