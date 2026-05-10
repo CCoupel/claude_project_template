@@ -87,8 +87,10 @@
   "features.f7.desc":  "/start-session lit l'état du projet, la version, le milestone actif et le travail en cours. Aucune répétition entre sessions.",
   "features.f8.title": "Site marketing auto-généré",
   "features.f8.desc":  "/marketing génère ce site depuis les issues du milestone clos, le CHANGELOG et le README. Version et roadmap dynamiques depuis GitHub.",
-  "features.f9.title": "Templates adaptatifs sans friction",
-  "features.f9.desc":  "Chaque commande et agent existe en deux fichiers compagnons : xxx.template.md (sync automatique, jamais édité) et xxx.md (adaptations projet, jamais écrasé). À chaque invocation, Claude lit les deux — le template fournit le comportement de base, xxx.md le surcharge avec les règles du projet. Zéro friction : pas de merge à gérer, pas d'oubli possible. À chaque sync, une analyse de dérive détecte si le template a rattrapé une customisation ou si le fichier projet a grossi.",
+  "features.f9.title": "CLAUDE.md maintenu par le template",
+  "features.f9.desc":  "CLAUDE.md est divisé en deux zones : Zone 1 (config projet, agents, règles spécifiques — jamais écrasée) et Zone 2 entre marqueurs BEGIN/END TEAMLEADER_PROTOCOL (protocole multi-agents, remplacée à chaque sync via awk). Chargé nativement par Claude Code, les règles de coordination survivent aux compactages de contexte sans aucun hook. Une analyse de dérive détecte les écarts entre template et fichiers déployés à chaque synchronisation.",
+  "features.f10.title": "Cycle de vie des agents",
+  "features.f10.desc":  "workflow-state.json trace en temps réel l'état de chaque agent (working, idle, pending_delete). /team-status affiche le tableau de bord et permet de fermer les inactifs proprement. Les agents dev envoient un DIAGNOSTIC (cause racine + fix prévu) au teamleader avant chaque bugfix — l'utilisateur est informé sans attendre le rapport final. Templates disponibles : backend (Go/Node/Python), frontend (React/Vue), firmware (ESP32), plugin.",
 
   "install.title":       "Installation",
   "install.subtitle":    "Le launcher tmux gère tous vos projets depuis un hub central.",
