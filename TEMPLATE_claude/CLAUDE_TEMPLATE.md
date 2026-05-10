@@ -163,12 +163,13 @@ Format minimal :
 }
 ```
 
-### Watchdog IDLE — Singleton
+### Boucle PING-STATUS — Singleton
 
 - Prérequis : `project-config.json` absent → skip (pas de team)
-- Vérifier `watchdog_active` avant tout `ScheduleWakeup` — **un seul watchdog à la fois**
-- Cibler uniquement `status: "idle"`, mesurer depuis `idle_since` (pas `last_order_sent_at`)
-- `shutdown_request` → `pending_delete` ; cycle suivant si toujours présent → `TaskStop` + supprime entrée
+- Vérifier `watchdog_active` avant tout `ScheduleWakeup` — **une seule boucle à la fois**
+- Chaque cycle : `PING-STATUS` broadcast → `PONG(WORKING|IDLE|IDLE-2)` ou pas de réponse
+- `PONG(IDLE-2)` → `shutdown_request` → `pending_delete` ; cycle suivant si toujours présent → `TaskStop`
+- Pas de réponse au `PING-STATUS` → supprimer l'entrée immédiatement (agent mort)
 - Réception `shutdown_response` → supprimer l'entrée immédiatement
 
 ### Activation des Agents (démarrage de workflow)

@@ -59,23 +59,30 @@ Actions disponibles :
 
 Attendre la saisie de l'utilisateur.
 
-### Etape 4a — PING broadcast [P]
+### Etape 4a — PING-STATUS broadcast [P]
 
 Utile après un compactage de contexte ou si le statut semble incohérent.
 
-Envoyer PING à **tous les agents listés simultanément** (un seul bloc) :
+Envoyer `PING-STATUS` à **tous les agents listés simultanément** (un seul bloc) :
 
 ```
-SendMessage({to: "<agent1>", content: "PING"})
-SendMessage({to: "<agent2>", content: "PING"})
+SendMessage({to: "<agent1>", content: "PING-STATUS"})
+SendMessage({to: "<agent2>", content: "PING-STATUS"})
 … (tous les agents de workflow-state.json)
 ```
 
-Afficher : `⏳ PING envoyé à N agents — attente des réponses (30s)…`
+Afficher : `⏳ PING-STATUS envoyé à N agents — attente des réponses (30s)…`
 
-Attendre **30 secondes** les réponses `<NOM> ACTIF` :
-- Réponse reçue → agent confirmé vivant, conserver dans `workflow-state.json`
-- Pas de réponse → agent disparu : supprimer l'entrée de `workflow-state.json` + afficher `✗ <agent> non joignable — retiré`
+Attendre **30 secondes** les réponses `PONG(...)` :
+
+| Réponse | Action |
+|---------|--------|
+| `PONG(WORKING)` | `status: "working"` dans workflow-state.json |
+| `PONG(IDLE)` | `status: "idle"` dans workflow-state.json |
+| `PONG(IDLE-2)` | afficher `⚠ <agent> IDLE depuis 2 cycles` — proposer fermeture |
+| Pas de réponse | supprimer l'entrée + afficher `✗ <agent> non joignable — retiré` |
+
+Écrire `workflow-state.json` immédiatement après chaque modification.
 
 Après traitement, ré-afficher le tableau mis à jour (Etape 2) et reproposer le menu.
 

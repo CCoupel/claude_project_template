@@ -157,73 +157,83 @@ Task({
 - **Fin de workflow** : les agents spécialisés restent actifs en IDLE. Au démarrage du workflow suivant, appliquer le protocole de réveil pour chacun.
 - **Shutdown explicite** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
 
-### Watchdog IDLE — Fermeture automatique des agents inactifs
+### Boucle PING-STATUS — Connectivité et fermeture des agents inactifs
 
-**Prérequis** : vérifier que `.claude/project-config.json` existe. Si absent → pas de team configurée → skip le watchdog sans erreur.
+**Prérequis** : vérifier que `.claude/project-config.json` existe. Si absent → pas de team → skip sans erreur.
 
-**IDLE_TTL** : `.agents.idle_ttl_minutes` dans `project-config.json`. Défaut : **15 min**.
-**IDLE_WARNING_INTERVAL** : `.agents.idle_warning_interval_minutes`. Défaut : **5 min**.
+**CYCLE_INTERVAL** : `.agents.idle_ttl_minutes` dans `project-config.json`. Défaut : **15 min**.  
+Un agent est terminé après **2 cycles consécutifs** sans travail (≈ 2 × CYCLE_INTERVAL).
 
-C'est le teamleader qui gère l'inactivité — les teammates n'ont pas à se fermer eux-mêmes.
+C'est le teamleader qui gère l'inactivité — les teammates ne se ferment pas eux-mêmes.
 
 **Tracking dans `workflow-state.json`** — écrire **immédiatement** sur disque à chaque événement :
 
 | Événement | Champs mis à jour |
 |-----------|-------------------|
-| Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>`, `idle_since: null` |
-| Réception `DONE` d'un agent | `status: "idle"`, `idle_since: <ISO>` |
-| Envoi `shutdown_request` | `status: "pending_delete"` |
+| Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>` |
+| Réception `DONE` d'un agent | `status: "idle"` |
+| Réception `PONG(IDLE)` | `status: "idle"` |
+| Réception `PONG(WORKING)` | `status: "working"` |
+| Réception `PONG(IDLE-2)` | `status: "pending_delete"` (shutdown_request envoyé) |
+| Pas de réponse au PING-STATUS | supprimer l'entrée agent du JSON |
 | Réception `shutdown_response` | supprimer l'entrée agent du JSON |
-| `TaskStop` (cycle suivant sans réponse) | supprimer l'entrée agent du JSON |
+| `TaskStop` forcé | supprimer l'entrée agent du JSON |
 
-> Ne jamais garder ces états en mémoire — le fichier est la source de vérité, y compris après compactage de contexte.
+> Ne jamais garder ces états en mémoire — le fichier est la source de vérité, y compris après compactage.
 
-**Watchdog singleton** — avant tout `ScheduleWakeup`, vérifier `workflow-state.json` :
+**Singleton** — avant tout `ScheduleWakeup`, vérifier `workflow-state.json` :
 ```
 SI project-config.json absent → skip (pas de team)
-SI watchdog_active == true → un watchdog tourne déjà, ne pas en lancer un second.
+SI watchdog_active == true → une boucle tourne déjà, ne pas en lancer une seconde.
 SINON :
   Mettre watchdog_active: true dans workflow-state.json — écrire immédiatement.
   ScheduleWakeup({
-    delaySeconds: IDLE_WARNING_INTERVAL × 60,
-    reason: "Watchdog IDLE agents",
-    prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
+    delaySeconds: CYCLE_INTERVAL × 60,
+    reason: "PING-STATUS broadcast — cycle connectivité agents",
+    prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Boucle PING-STATUS' défini dans .claude/agents/teamleader.template.md"
   })
 ```
 
-**Quand le watchdog se déclenche** — lire `workflow-state.json`, dans cet ordre :
+**Déroulement d'un cycle** — lire `workflow-state.json`, puis :
 
 ```
-1. Pour chaque agent status "pending_delete" (shutdown_request envoyé au cycle précédent, pas de réponse) :
-   → TaskStop(<agent>)
-   → Supprimer l'entrée de workflow-state.json — écrire immédiatement
+Étape 1 — Terminer les pending_delete du cycle précédent
+  Pour chaque agent status "pending_delete" :
+    → TaskStop(<agent>)
+    → Supprimer l'entrée de workflow-state.json — écrire immédiatement
+    → Afficher : "✓ <agent> stoppé (pas de shutdown_response)"
 
-2. Pour chaque agent status "idle" :
-   elapsed = maintenant - idle_since
+Étape 2 — PING-STATUS broadcast
+  Pour chaque agent restant (working ou idle), envoyer simultanément :
+    SendMessage({to: "<agent>", content: "PING-STATUS"})
 
-   SI elapsed ≥ IDLE_TTL :
-     → SendMessage({to: "<agent>", content: "shutdown_request"})
-     → Mettre status: "pending_delete" dans workflow-state.json — écrire immédiatement
+Étape 3 — Attendre 30 secondes les réponses PONG(...)
+  Pour chaque réponse reçue :
+    PONG(WORKING)  → status: "working" dans workflow-state.json
+    PONG(IDLE)     → status: "idle" dans workflow-state.json
+    PONG(IDLE-2)   → SendMessage({to: "<agent>", content: "shutdown_request"})
+                     status: "pending_delete" dans workflow-state.json
+  Pour chaque agent sans réponse après 30s :
+    → Supprimer l'entrée de workflow-state.json — écrire immédiatement
+    → Afficher : "✗ <agent> non joignable — retiré"
 
-   SI IDLE_TTL - elapsed ≤ IDLE_WARNING_INTERVAL :
-     → Loguer : "⏳ [agent] IDLE depuis [elapsed]min — shutdown dans [IDLE_TTL - elapsed]min"
-
-3. SI des agents status "idle", "working" ou "pending_delete" existent encore → reschedule :
-   ScheduleWakeup({
-     delaySeconds: IDLE_WARNING_INTERVAL × 60,
-     reason: "Watchdog IDLE agents",
-     prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Watchdog IDLE' défini dans .claude/agents/teamleader.template.md"
-   })
-   SINON (aucun agent actif) :
-     Mettre watchdog_active: false dans workflow-state.json — écrire immédiatement.
+Étape 4 — Reschedule ou arrêt
+  SI des agents existent encore dans workflow-state.json :
+    ScheduleWakeup({
+      delaySeconds: CYCLE_INTERVAL × 60,
+      reason: "PING-STATUS broadcast — cycle connectivité agents",
+      prompt: "Lire .claude/workflow-state.json puis appliquer le protocole 'Boucle PING-STATUS' défini dans .claude/agents/teamleader.template.md"
+    })
+  SINON :
+    Mettre watchdog_active: false dans workflow-state.json — écrire immédiatement.
 ```
 
-**Sur réception de `shutdown_response` d'un agent** :
+**Sur réception de `shutdown_response` entre deux cycles** :
 ```
 → Supprimer l'entrée <agent> de workflow-state.json — écrire immédiatement
 ```
 
-> Ne pas lancer le watchdog si aucun agent n'est actif. Ne jamais lancer deux watchdogs simultanément.
+> Ne jamais lancer deux boucles simultanément (`watchdog_active` = garde). La boucle combine connectivité et gestion IDLE en un seul mécanisme.
 
 ---
 
