@@ -83,12 +83,11 @@ Ceux qui ne répondent pas → ignorés (jamais spawnés dans cette session).
 
 **Passe 2 — Vérification des agents connus**
 
-Envoyer PING-STATUS à tous les agents présents dans `workflow-state.json`, en incluant leur dernier état connu (compact-proof — l'agent n'a pas à mémoriser son cycle) :
+Envoyer PING-STATUS à tous les agents présents dans `workflow-state.json` :
 ```
-SendMessage({to: "<agent1>", content: "PING-STATUS — dernier PONG connu : <last_pong|inconnu>"})
-SendMessage({to: "<agent2>", content: "PING-STATUS — dernier PONG connu : <last_pong|inconnu>"})
-…
+SendMessage({to: "<agent>", content: "PING-STATUS — répond PONG(IDLE) si tu es IDLE, PONG(WORKING) si tu as une tâche assignée, ou PONG(IDLE-2) si je t'ai déjà envoyé un PING-STATUS et que ton état n'a pas changé"})
 ```
+(répéter pour chaque agent)
 Attendre 30s — traiter les réponses :
 
 | Réponse | Action |

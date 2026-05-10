@@ -41,28 +41,19 @@ Si plusieurs PING arrivent en rafale (post-compactage), répondre à chacun.
 
 ### 2b. PING-STATUS — Rapport d'état pour la boucle de connectivité
 
-Le teamleader envoie périodiquement un message de la forme :
+Le teamleader envoie périodiquement :
 ```
-PING-STATUS — dernier PONG connu : <WORKING|IDLE|IDLE-2|inconnu>
-```
-
-Le teamleader inclut ton dernier état connu dans le message — tu n'as pas besoin de mémoriser ton cycle entre deux PING-STATUS (compact-proof).
-
-Répondre selon la combinaison **dernier PONG connu + état actuel** :
-
-| Dernier PONG connu | État actuel | Réponse |
-|--------------------|-------------|---------|
-| `inconnu` ou `WORKING` | inactif | `PONG(IDLE)` |
-| `IDLE` | inactif | `PONG(IDLE-2)` |
-| n'importe lequel | en cours de travail | `PONG(WORKING)` |
-
-```
-SendMessage({ to: "main", content: "PONG(WORKING)" })
-SendMessage({ to: "main", content: "PONG(IDLE)" })
-SendMessage({ to: "main", content: "PONG(IDLE-2)" })
+PING-STATUS — répond PONG(IDLE) si tu es IDLE, PONG(WORKING) si tu as une tâche assignée,
+ou PONG(IDLE-2) si je t'ai déjà envoyé un PING-STATUS et que ton état n'a pas changé
 ```
 
-**Règle prioritaire** : si tu travailles → toujours `PONG(WORKING)`, quel que soit le dernier PONG connu.
+**Suivre l'instruction littéralement** :
+
+```
+SendMessage({ to: "main", content: "PONG(WORKING)" })  ← tu travailles
+SendMessage({ to: "main", content: "PONG(IDLE)" })     ← tu es IDLE (première fois ou état changé)
+SendMessage({ to: "main", content: "PONG(IDLE-2)" })   ← déjà IDLE au PING-STATUS précédent
+```
 
 **RÈGLES communes aux deux types :**
 - Répondre **uniquement** par `SendMessage` — jamais par affichage terminal
