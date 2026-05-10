@@ -123,11 +123,23 @@ Si le système impose un suffixe → l'agent précédent tourne encore → envoy
 
 ### Restauration après compactage de contexte
 
-Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json` dans le contexte. **À réception de ce bloc** :
+Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json`. **À réception de ce bloc, lancer immédiatement un PING broadcast** :
 
-1. Lire la liste des agents dans `agents` — ce sont tes teammates actifs
-2. Reprendre le dispatch normalement (PING → ACTIF → SendMessage | pas de réponse → Task)
-3. Ne pas repartir de zéro : l'état persisté est la source de vérité
+**Étape 1** — Envoyer PING à **tous les agents listés simultanément** (un seul bloc de réponse) :
+```
+SendMessage({to: "planner", content: "PING"})
+SendMessage({to: "dev-backend", content: "PING"})
+SendMessage({to: "qa", content: "PING"})
+… (tous les agents présents dans workflow-state.json)
+```
+
+**Étape 2** — Attendre 30 secondes les réponses `<NOM> ACTIF`
+
+**Étape 3** — Mettre à jour `workflow-state.json` :
+- Réponse reçue → agent confirmé, conserver l'entrée
+- Pas de réponse → agent disparu, supprimer l'entrée
+
+**Étape 4** — Reprendre le travail avec les agents confirmés. Pour un agent disparu en cours de tâche → spawner via `Task` et lui retransmettre son ordre.
 
 ### Workflow-state.json — Source de Vérité
 
