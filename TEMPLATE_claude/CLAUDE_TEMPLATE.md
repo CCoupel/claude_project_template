@@ -125,7 +125,7 @@ Si le système impose un suffixe → l'agent précédent tourne encore → envoy
 
 Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json`. **À réception de ce bloc, lancer immédiatement un PING broadcast** :
 
-**Étape 1** — Envoyer PING à **tous les agents listés simultanément** (un seul bloc de réponse) :
+**Étape 1** — Envoyer un PING individuel à chaque agent listé, dans un seul bloc de réponse (SendMessage est point-à-point — pas de broadcast natif) :
 ```
 SendMessage({to: "planner", content: "PING"})
 SendMessage({to: "dev-backend", content: "PING"})
@@ -163,12 +163,13 @@ Format minimal :
 }
 ```
 
-### Watchdog IDLE — Singleton
+### Boucle PING-STATUS — Singleton
 
 - Prérequis : `project-config.json` absent → skip (pas de team)
-- Vérifier `watchdog_active` avant tout `ScheduleWakeup` — **un seul watchdog à la fois**
-- Cibler uniquement `status: "idle"`, mesurer depuis `idle_since` (pas `last_order_sent_at`)
-- `shutdown_request` → `pending_delete` ; cycle suivant si toujours présent → `TaskStop` + supprime entrée
+- Vérifier `watchdog_active` avant tout `ScheduleWakeup` — **une seule boucle à la fois**
+- Chaque cycle : `PING-STATUS` broadcast → `PONG(WORKING|IDLE|IDLE-2)` ou pas de réponse
+- `PONG(IDLE-2)` → `shutdown_request` → `pending_delete` ; cycle suivant si toujours présent → `TaskStop`
+- Pas de réponse au `PING-STATUS` → supprimer l'entrée immédiatement (agent mort)
 - Réception `shutdown_response` → supprimer l'entrée immédiatement
 
 ### Activation des Agents (démarrage de workflow)

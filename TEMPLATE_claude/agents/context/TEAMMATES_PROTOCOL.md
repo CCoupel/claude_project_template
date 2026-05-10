@@ -24,26 +24,44 @@ Ne pas verifier la TaskList. Ne pas prendre d'initiative. Attendre.
 
 ---
 
-## 2. Réponse au Ping de Réveil
+## 2. Réponse aux messages de contrôle du teamleader
 
-Le teamleader peut envoyer un `PING` à tout moment pour vérifier si un agent est actif.
+Le teamleader envoie deux types de messages de contrôle distincts.
 
-Quand un agent reçoit `"PING"` — **action unique et immédiate** :
+### 2a. PING — Vérification de présence (pre-dispatch et post-compactage)
+
+Répondre **immédiatement** :
 
 ```
-SendMessage({
-  to: "main",
-  content: "<NOM-AGENT> ACTIF — prêt à recevoir des ordres"
-})
+SendMessage({ to: "main", content: "<NOM-AGENT> ACTIF — prêt à recevoir des ordres" })
 ```
 
-**RÈGLES ABSOLUES :**
-- Répondre **immédiatement**, sans délai — même en cours de travail (le PING interrompt, la réponse est envoyée, puis le travail reprend)
-- La réponse passe **UNIQUEMENT** par `SendMessage` — jamais par un affichage dans ton terminal
-- Ne jamais afficher "ACTIF" ou "PONG" dans le terminal : le teamleader ne lit pas ton terminal, il attend un SendMessage
-- Si l'agent ne répond pas via SendMessage, le teamleader conclut qu'il est mort et spawne un nouvel agent
+Même en cours de travail : interrompre une seconde, envoyer, reprendre.  
+Si plusieurs PING arrivent en rafale (post-compactage), répondre à chacun.
 
-**Cas PING broadcast (post-compactage)** : si plusieurs PING arrivent en rafale, répondre à chacun avec `<NOM> ACTIF`. Le teamleader reconstruit sa liste d'agents actifs depuis ces réponses.
+### 2b. PING-STATUS — Rapport d'état pour la boucle de connectivité
+
+Le teamleader envoie `PING-STATUS` périodiquement pour connaître l'état réel de chaque agent.
+
+Répondre selon ta situation **au moment exact de la réception** :
+
+| Situation | Réponse |
+|-----------|---------|
+| En cours de traitement d'un ordre | `PONG(WORKING)` |
+| Inactif — premier cycle sans ordre | `PONG(IDLE)` |
+| Inactif — déjà `PONG(IDLE)` au cycle précédent | `PONG(IDLE-2)` |
+
+```
+SendMessage({ to: "main", content: "PONG(WORKING)" })
+SendMessage({ to: "main", content: "PONG(IDLE)" })
+SendMessage({ to: "main", content: "PONG(IDLE-2)" })
+```
+
+**Règle de cycle** : mémoriser si le dernier `PING-STATUS` a reçu une réponse `PONG(IDLE)`. Si oui et si tu es toujours inactif → répondre `PONG(IDLE-2)`. Recevoir un ordre entre deux cycles remet le compteur à zéro.
+
+**RÈGLES communes aux deux types :**
+- Répondre **uniquement** par `SendMessage` — jamais par affichage terminal
+- Ne jamais ignorer un `PING` ou `PING-STATUS` — pas de réponse = l'agent est considéré mort
 
 ---
 

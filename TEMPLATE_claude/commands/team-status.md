@@ -51,7 +51,7 @@ Afficher uniquement si des agents existent :
 
 ```
 Actions disponibles :
-  [P] Vérifier connectivité — PING broadcast (confirme les agents réellement actifs)
+  [P] Vérifier connectivité — PING-STATUS individuel à chaque agent (confirme présence et état)
   [A] Fermer tous les IDLE
   [N] Fermer agents spécifiques (saisir les numéros séparés par virgule : 1,3)
   [Q] Quitter sans action
@@ -59,23 +59,46 @@ Actions disponibles :
 
 Attendre la saisie de l'utilisateur.
 
-### Etape 4a — PING broadcast [P]
+### Etape 4a — PING-STATUS broadcast [P]
 
-Utile après un compactage de contexte ou si le statut semble incohérent.
+Utile après un compactage de contexte ou si le statut semble incohérent.  
+Effectue **deux passes** : découverte des orphelins + vérification des connus.
 
-Envoyer PING à **tous les agents listés simultanément** (un seul bloc) :
+**Passe 1 — Découverte des orphelins**
 
+Noms canoniques documentés :
 ```
-SendMessage({to: "<agent1>", content: "PING"})
-SendMessage({to: "<agent2>", content: "PING"})
-… (tous les agents de workflow-state.json)
+planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
+test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 ```
 
-Afficher : `⏳ PING envoyé à N agents — attente des réponses (30s)…`
+Envoyer PING-STATUS aux canoniques **absents de `workflow-state.json`** (un seul bloc) :
+```
+SendMessage({to: "<canonique-absent1>", content: "PING-STATUS"})
+SendMessage({to: "<canonique-absent2>", content: "PING-STATUS"})
+…
+```
+Attendre 30s — ceux qui répondent → ajouter dans `workflow-state.json` + afficher `↩ <agent> redécouvert`.  
+Ceux qui ne répondent pas → ignorés (jamais spawnés dans cette session).
 
-Attendre **30 secondes** les réponses `<NOM> ACTIF` :
-- Réponse reçue → agent confirmé vivant, conserver dans `workflow-state.json`
-- Pas de réponse → agent disparu : supprimer l'entrée de `workflow-state.json` + afficher `✗ <agent> non joignable — retiré`
+**Passe 2 — Vérification des agents connus**
+
+Envoyer PING-STATUS à tous les agents maintenant présents dans `workflow-state.json` (un SendMessage par agent, point-à-point, émis sans attente entre eux) :
+```
+SendMessage({to: "<agent1>", content: "PING-STATUS"})
+SendMessage({to: "<agent2>", content: "PING-STATUS"})
+…
+```
+Attendre 30s — traiter les réponses :
+
+| Réponse | Action |
+|---------|--------|
+| `PONG(WORKING)` | `status: "working"` dans workflow-state.json |
+| `PONG(IDLE)` | `status: "idle"` dans workflow-state.json |
+| `PONG(IDLE-2)` | afficher `⚠ <agent> IDLE depuis 2 cycles` — proposer fermeture |
+| Pas de réponse | supprimer l'entrée + afficher `✗ <agent> non joignable — retiré` |
+
+Écrire `workflow-state.json` immédiatement après chaque modification.
 
 Après traitement, ré-afficher le tableau mis à jour (Etape 2) et reproposer le menu.
 
@@ -115,4 +138,4 @@ Fermeture terminée.
 - Ne jamais arrêter un agent `WORKING` sans confirmation explicite de l'utilisateur
 - Toujours écrire `workflow-state.json` sur disque après chaque modification
 - Si `watchdog_active == true` après la fermeture → le watchdog se chargera des éventuels restants au prochain cycle
-- Le PING broadcast [P] ne ferme aucun agent — il retire uniquement les entrées d'agents disparus
+- Le [P] envoie un PING-STATUS individuel à chaque agent (point-à-point, pas un broadcast natif) — ne ferme aucun agent, retire uniquement les entrées d'agents disparus
