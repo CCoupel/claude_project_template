@@ -135,7 +135,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 ├── INITIALIZATION.md            # Documentation détaillée du processus d'init
 ├── CLAUDE_TEMPLATE.md           # Modèle de CLAUDE.md (Zone 1 projet + Zone 2 teamleader)
 ├── protocol-rules.md            # Règles critiques teamleader (cheat sheet compacte)
-├── settings.json                # Hook PreCompact (persistance workflow-state.json)
+├── settings.json                # Hooks PreCompact + UserPromptSubmit (persistance workflow-state.json)
 ├── .template-source.json        # Référence GitHub (repo + commit du dernier fetch)
 ├── gitignore-for-projects       # Copié en .gitignore par /init-project
 │
@@ -229,6 +229,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 - **Handoff** : chaque agent écrit `_work/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant ou l'agent le transmet directement si le CDP l'autorise
 - **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
 - **État persistant** : `.claude/workflow-state.json` mis à jour immédiatement à chaque événement (dispatch, DONE, shutdown) — source de vérité pour l'état de chaque agent
+- **Boucle PING-STATUS** : cycle périodique `ScheduleWakeup` — le teamleader envoie `PING-STATUS` à chaque agent connu + passe de découverte sur les 12 noms canoniques absents du state ; les agents répondent `PONG(WORKING)`, `PONG(IDLE)` ou `PONG(IDLE-2)` (déjà IDLE au cycle précédent → shutdown immédiat)
 
 ---
 
@@ -435,7 +436,7 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 | Commande | Description |
 |----------|-------------|
 | `/progression` | Tableau de bord temps réel — statut de chaque agent actif |
-| `/team-status` | État de la team (tableau agents + durée idle/working) — fermeture sélective des agents inactifs |
+| `/team-status` | État de la team (tableau agents + durée idle/working) — fermeture sélective ; `[P]` lance un PING-STATUS individuel à chaque agent pour confirmer présence et état |
 
 ### Validation
 
@@ -504,7 +505,7 @@ Pour récupérer les nouvelles fonctionnalités du template dans un projet exist
 Fetche la dernière version de `TEMPLATE_claude/` et :
 - Écrase les commandes (`*.md`) et agents template (`*.template.md`)
 - Met à jour le bloc `<!-- BEGIN/END TEAMLEADER_PROTOCOL -->` dans `CLAUDE.md` sans toucher au reste
-- Merge le hook `PreCompact` dans `.claude/settings.json` sans dupliquer les entrées existantes
+- Merge les hooks `PreCompact` + `UserPromptSubmit` dans `.claude/settings.json` sans dupliquer les entrées existantes
 
 ### Structure de CLAUDE.md — Zone projet / Zone template
 
@@ -516,7 +517,7 @@ Zone 1 — Contenu projet           Zone 2 — Règles template
 Config, stack, agents,            <!-- BEGIN TEAMLEADER_PROTOCOL -->
 commandes, mémoire.               Rôle CDP, PING protocol, nommage
 Jamais écrasé par le template.    canonique, délégation stricte,
-                                  workflow-state.json, watchdog.
+                                  workflow-state.json, boucle PING-STATUS.
                                   <!-- END TEAMLEADER_PROTOCOL -->
                                   Remplacé à chaque sync (step d6).
 ```
