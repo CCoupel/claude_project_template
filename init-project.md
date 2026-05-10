@@ -735,9 +735,19 @@ done
 ### 5. Finalisation
 
 ```bash
-# CLAUDE.md depuis le template
-cp TEMPLATE_claude/CLAUDE_TEMPLATE.md .claude/CLAUDE.md
-# (remplacer les placeholders {{...}} avec les valeurs reelles)
+# CLAUDE.md depuis le template (remplacer les placeholders)
+sed \
+  -e "s|{PROJECT_NAME}|$PROJECT_NAME|g" \
+  -e "s|{TEAM_NAME}|$TEAM_NAME|g" \
+  -e "s|{ORG}|$ORG|g" \
+  -e "s|{PROJECT}|$PROJECT|g" \
+  -e "s|{BACKEND_TECH}|$BACKEND_TECH|g" \
+  -e "s|{FRONTEND_TECH}|$FRONTEND_TECH|g" \
+  -e "s|{DATABASE}|$DATABASE|g" \
+  -e "s|{BUILD_CMD}|$BUILD_CMD|g" \
+  -e "s|{TEST_CMD}|$TEST_CMD|g" \
+  TEMPLATE_claude/CLAUDE_TEMPLATE.md > CLAUDE.md
+echo "✓ CLAUDE.md généré"
 
 # .gitignore projet
 cp TEMPLATE_claude/gitignore-for-projects .gitignore
@@ -758,15 +768,10 @@ gh label create "DONE"      --color "0e8a16" --description "Issue livrée et val
 > Si le repo n'a pas encore de remote GitHub configuré, sauter cette étape et noter dans
 > le Message de Fin : "Labels GitHub à créer manuellement ou relancer /init-project après `git remote add`."
 
-#### Hooks Claude Code (SessionStart + PreCompact + UserPromptSubmit — survie au compactage de contexte)
+#### Hook Claude Code (PreCompact — persistance workflow-state.json)
 
-Déployer `TEMPLATE_claude/protocol-rules.md` dans `.claude/protocol-rules.md` :
-
-```bash
-cp TEMPLATE_claude/protocol-rules.md .claude/protocol-rules.md
-rm -f .claude/.protocol-loaded
-echo "✓ .claude/protocol-rules.md déployé (règles critiques teamleader)"
-```
+Les règles critiques du teamleader sont dans `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL`) — elles survivent aux compactages nativement.  
+Le hook PreCompact sert uniquement à préserver `workflow-state.json` (état des agents — ephémère, non tracké dans git) :
 
 Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json`.
 Si `.claude/settings.json` existe déjà, merger uniquement la clé `hooks` sans dupliquer les entrées existantes :
@@ -789,12 +794,9 @@ else
   ' .claude/settings.json TEMPLATE_claude/settings.json \
     > .claude/settings.json.tmp \
     && mv .claude/settings.json.tmp .claude/settings.json
-  echo "✓ .claude/settings.json — hooks mis à jour (sans duplication)"
+  echo "✓ .claude/settings.json — hook PreCompact ajouté"
 fi
 ```
-
-> Les hooks `SessionStart`, `PreCompact` et `UserPromptSubmit` garantissent que les règles critiques
-> du teamleader (nommage, PING, watchdog) survivent aux compactages de contexte et aux nouvelles sessions.
 
 ---
 
@@ -1162,15 +1164,31 @@ Pour chaque fichier non-PROPRE, afficher le diff annoté et proposer l'action :
 > Le système fonctionne correctement quelle que soit l'action choisie.
 > La dérive est un signal de maintenance, pas une erreur bloquante.
 
-#### Etape d6 — Synchroniser les hooks Claude Code
+#### Etape d6 — Mettre à jour le bloc TEAMLEADER_PROTOCOL dans CLAUDE.md
 
-Mettre à jour `protocol-rules.md` (toujours écraser — pas de customisation projet) :
+Le bloc entre `<!-- BEGIN TEAMLEADER_PROTOCOL -->` et `<!-- END TEAMLEADER_PROTOCOL -->` est maintenu par le template.  
+Le remplacer par le contenu actuel de `TEMPLATE_claude/CLAUDE_TEMPLATE.md` (sans toucher au reste du `CLAUDE.md` projet) :
 
 ```bash
-cp TEMPLATE_claude/protocol-rules.md .claude/protocol-rules.md
-rm -f .claude/.protocol-loaded
-echo "✓ .claude/protocol-rules.md mis à jour"
+# Extraire le bloc du template vers un fichier temporaire
+awk '/<!-- BEGIN TEAMLEADER_PROTOCOL/,/<!-- END TEAMLEADER_PROTOCOL -->/' \
+  TEMPLATE_claude/CLAUDE_TEMPLATE.md > .claude/.protocol-block.tmp
+
+# Remplacer le bloc dans CLAUDE.md
+awk '
+  /<!-- BEGIN TEAMLEADER_PROTOCOL/ { in_block=1; while((getline line < ".claude/.protocol-block.tmp") > 0) print line; next }
+  /<!-- END TEAMLEADER_PROTOCOL -->/ { in_block=0; next }
+  !in_block { print }
+' CLAUDE.md > CLAUDE.md.tmp && mv CLAUDE.md.tmp CLAUDE.md
+
+rm -f .claude/.protocol-block.tmp
+echo "✓ CLAUDE.md — bloc TEAMLEADER_PROTOCOL mis à jour"
 ```
+
+> Si `CLAUDE.md` ne contient pas encore les marqueurs (projet initialisé avant cette version du template) :
+> ajouter manuellement la section entre marqueurs ou relancer `/init-project` option a (réinitialisation).
+
+#### Etape d6b — Synchroniser le hook PreCompact
 
 Merger `TEMPLATE_claude/settings.json` dans `.claude/settings.json` (même logique qu'à l'init, sans duplication) :
 
@@ -1213,13 +1231,14 @@ gh label create "DONE"      --color "0e8a16" --description "Issue livrée et val
 ```
 Synchronisation terminee.
 
-  Commandes mises a jour : N
-  Agents mis a jour      : N
-  Reliquats supprimes    : N
-  Labels GitHub          : vérifiés (PLANNING, EN COURS, EN REVIEW, EN QA, DONE)
+  Commandes mises a jour            : N
+  Agents mis a jour                 : N
+  Reliquats supprimes               : N
+  CLAUDE.md bloc TEAMLEADER_PROTOCOL : mis à jour
+  Labels GitHub                     : vérifiés (PLANNING, EN COURS, EN REVIEW, EN QA, DONE)
 
   Fichiers PROJET preserves (non touches) :
-    ✓ .claude/CLAUDE.md
+    ✓ CLAUDE.md (hors bloc TEAMLEADER_PROTOCOL)
     ✓ .claude/project-config.json
     ✓ .claude/memory/
     ✓ .claude/agents/dev-*.md
