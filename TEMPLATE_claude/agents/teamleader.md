@@ -220,10 +220,9 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 
 Étape 3 — PING-STATUS aux agents connus (un SendMessage par agent, même bloc)
   Il n'existe pas de broadcast natif dans Claude Code — SendMessage est point-à-point.
-  Émettre un message par agent sans attente entre eux :
-    SendMessage({to: "<agent1>", content: "PING-STATUS"})
-    SendMessage({to: "<agent2>", content: "PING-STATUS"})
-    … (tous les agents présents dans workflow-state.json)
+  Le message inclut l'instruction complète — l'agent sait exactement quoi répondre :
+    SendMessage({to: "<agent>", content: "PING-STATUS — répond PONG(IDLE) si tu es IDLE, PONG(WORKING) si tu as une tâche assignée, ou PONG(IDLE-2) si je t'ai déjà envoyé un PING-STATUS et que ton état n'a pas changé"})
+  (répéter pour chaque agent présent dans workflow-state.json)
 
 Étape 4 — Attendre 30 secondes les réponses PONG(...)
   Pour chaque réponse reçue :

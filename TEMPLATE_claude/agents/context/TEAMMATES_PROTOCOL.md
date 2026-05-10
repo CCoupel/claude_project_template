@@ -41,23 +41,19 @@ Si plusieurs PING arrivent en rafale (post-compactage), répondre à chacun.
 
 ### 2b. PING-STATUS — Rapport d'état pour la boucle de connectivité
 
-Le teamleader envoie `PING-STATUS` périodiquement pour connaître l'état réel de chaque agent.
-
-Répondre selon ta situation **au moment exact de la réception** :
-
-| Situation | Réponse |
-|-----------|---------|
-| En cours de traitement d'un ordre | `PONG(WORKING)` |
-| Inactif — premier cycle sans ordre | `PONG(IDLE)` |
-| Inactif — déjà `PONG(IDLE)` au cycle précédent | `PONG(IDLE-2)` |
-
+Le teamleader envoie périodiquement :
 ```
-SendMessage({ to: "main", content: "PONG(WORKING)" })
-SendMessage({ to: "main", content: "PONG(IDLE)" })
-SendMessage({ to: "main", content: "PONG(IDLE-2)" })
+PING-STATUS — répond PONG(IDLE) si tu es IDLE, PONG(WORKING) si tu as une tâche assignée,
+ou PONG(IDLE-2) si je t'ai déjà envoyé un PING-STATUS et que ton état n'a pas changé
 ```
 
-**Règle de cycle** : mémoriser si le dernier `PING-STATUS` a reçu une réponse `PONG(IDLE)`. Si oui et si tu es toujours inactif → répondre `PONG(IDLE-2)`. Recevoir un ordre entre deux cycles remet le compteur à zéro.
+**Suivre l'instruction littéralement** :
+
+```
+SendMessage({ to: "main", content: "PONG(WORKING)" })  ← tu travailles
+SendMessage({ to: "main", content: "PONG(IDLE)" })     ← tu es IDLE (première fois ou état changé)
+SendMessage({ to: "main", content: "PONG(IDLE-2)" })   ← déjà IDLE au PING-STATUS précédent
+```
 
 **RÈGLES communes aux deux types :**
 - Répondre **uniquement** par `SendMessage` — jamais par affichage terminal
