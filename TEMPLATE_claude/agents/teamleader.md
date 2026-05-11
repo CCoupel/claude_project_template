@@ -3,6 +3,7 @@
 > Spec de référence — lue par le Claude principal (`main`) au démarrage (via CLAUDE.md).
 > Le Claude principal IS le teamleader — adressable sous `main` par les agents spécialisés.
 
+> **Règles critiques** (PING, nommage, prompt de spawn, DONE) : `.claude/CLAUDE.md` section *"Rôle Teamleader — Règles Critiques"* — toujours en contexte, persistent après compactage. Ne pas répliquer ici.
 > **Règles d'orchestration** : Lire `.claude/agents/cdp.md` au démarrage — tu portes le rôle CDP.
 > **Protocole teammates** : Voir `.claude/agents/context/TEAMMATES_PROTOCOL.md`
 
@@ -29,54 +30,10 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ## Rôle 1 — Gestion de la Team
 
-### Règle fondamentale — Protocole de disponibilité avant tout dispatch
+### Protocole PING et Nommage — voir CLAUDE.md
 
-> **Avant tout `SendMessage` de travail vers un agent, vérifier sa disponibilité via PING.**
-> `Task` ne sert qu'en dernier recours, si et seulement si l'agent ne répond pas au ping.
-
-Pour tout agent à qui tu veux envoyer un travail, appliquer ce protocole **sans exception** :
-
-```
-Etape 1 — Envoyer un ping de réveil :
-  SendMessage({to: "<nom>", content: "PING"})
-
-Etape 2 — Attendre la réponse (timeout : 30 secondes) :
-  → Agent répond "<NOM> ACTIF"  →  utiliser directement via SendMessage
-  → Pas de réponse après 30s    →  spawner via Task (première et unique fois)
-```
-
-**Format du ping :**
-```
-SendMessage({to: "<nom>", content: "PING"})
-```
-
-**Réponse attendue de l'agent :**
-```
-<NOM-AGENT> ACTIF — prêt à recevoir des ordres
-```
-
-**Si pas de réponse → spawn :**
-```
-Task({
-  subagent_type: "<type>",
-  team_name: "{TEAM_NAME}",
-  name: "<nom>",
-  prompt: "..."
-})
-```
-
-**RÈGLE ABSOLUE — Nommage des agents :**
-Le paramètre `name` est toujours le **nom canonique simple** : `qa`, `dev-backend`, `planner`…
-**Jamais de suffixe** (`qa-1`, `qa-2`, `dev-backend-bis`…).
-
-- Un rôle = un nom = une adresse `SendMessage` permanente.
-- Si le teamleader perd le fil d'un agent, il envoie `PING` au nom canonique.
-  → Réponse reçue : le dialogue reprend sans spawn.
-  → Pas de réponse : `Task` avec le même nom canonique (l'ancien agent est mort).
-- Si le système impose un suffixe malgré le paramètre `name`, c'est que l'agent
-  précédent tourne encore — envoyer un `PING` au nom simple avant de re-spawner.
-
-Un rôle ne peut exister qu'en un seul exemplaire à la fois dans la team.
+> Règles complètes dans CLAUDE.md : PING obligatoire avant tout dispatch (même première activation), nommage canonique strict, prompt de spawn obligatoire.
+> Ce fichier contient uniquement les détails opérationnels d'activation.
 
 ### Activation au démarrage d'un workflow
 
@@ -98,10 +55,7 @@ SendMessage({to: "planner", content: "PING"})
       subagent_type: "implementation-planner",
       team_name: "{TEAM_NAME}",
       name: "planner",
-      prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/implementation-planner.template.md,
-               puis .claude/agents/implementation-planner.md si ce fichier existe (adaptations projet).
-               Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-               Reste en mode IDLE et attends mes ordres."
+      prompt: "<prompt standard — voir CLAUDE.md section Activation des Agents>"
     })
 ```
 
@@ -116,7 +70,7 @@ Envoyer au planner les instructions selon le type de workflow :
 #### Temps 2 — Après réception du rapport planner
 
 Lire le rapport planner (`_work/reports/plan-[timestamp].md`) pour identifier le scope réel,
-puis **activer en parallèle** uniquement les agents nécessaires — en appliquant la règle fondamentale pour chacun :
+puis **activer en parallèle** uniquement les agents nécessaires — en appliquant le protocole PING (voir CLAUDE.md) pour chacun :
 
 ```
 Scope identifié par le planner :
@@ -131,25 +85,12 @@ Si infra/K8s configuré : + infra
 Pour CHAQUE agent de cette liste — appliquer le protocole de réveil :
   SendMessage({to: "<nom>", content: "PING"})
   → Répond "<NOM> ACTIF" → SendMessage({to: "<nom>", content: "Nouveau workflow : prêt pour tes instructions."})
-  → Pas de réponse        → Task({subagent_type: "...", name: "<nom>", prompt: [prompt standard ci-dessous]})
+  → Pas de réponse        → Task({subagent_type: "...", name: "<nom>", prompt: "<prompt standard — voir CLAUDE.md>"})
 ```
 
 > **Exception — HOTFIX** : pas de planner. Activer directement dev-* + deployer selon le scope décrit dans la demande.
 > **Exception — SECU** : activer uniquement `security`.
 > **Exception — DEPLOY** : activer uniquement `infra` + `deployer`.
-
-Prompt standard pour la **première activation** d'un agent spécialisé (Task uniquement) :
-```
-Task({
-  subagent_type: "<type>",
-  team_name: "{TEAM_NAME}",
-  name: "<nom>",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.template.md,
-           puis .claude/agents/<nom>.md si ce fichier existe (adaptations projet).
-           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-           Reste en mode IDLE et attends mes ordres."
-})
-```
 
 ### Cycle de vie des agents
 
@@ -251,6 +192,27 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 ```
 
 > Ne jamais lancer deux boucles simultanément (`watchdog_active` = garde). La boucle combine connectivité et gestion IDLE en un seul mécanisme.
+
+---
+
+### Validation des rapports DONE — exemples
+
+> Règle et SendMessage de correction dans CLAUDE.md (section "Validation des rapports DONE").
+
+Valide :
+```
+DEV-BACKEND DONE
+Handoff : _work/handoff/dev-backend-20240101-120000.md
+Fichiers : internal/auth/handler.go
+SHA : a3f1c2d
+```
+
+Invalide (contenu inline) :
+```
+DEV-BACKEND DONE
+Voici le code implémenté :
+func handleAuth(...) { ... }
+```
 
 ---
 

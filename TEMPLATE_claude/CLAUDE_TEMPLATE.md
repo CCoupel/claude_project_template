@@ -107,6 +107,8 @@ Si un agent ne répond pas au PING → spawn via `Task`. **Ne jamais** exécuter
 
 ### Protocole PING — Obligatoire Avant Tout Dispatch
 
+> **Même pour la première activation** : commencer par PING. Un agent peut exister d'une session précédente. L'absence de réponse confirme qu'un `Task` est nécessaire.
+
 ```
 Étape 1 : SendMessage({to: "<nom>", content: "PING"})
 Étape 2 : Attendre 30 secondes max
@@ -180,6 +182,29 @@ Format minimal :
 Scope → agents dev concernés + `test-writer` + `code-reviewer` + `qa` + `doc-updater` + `deployer`  
 Exception HOTFIX : pas de planner, activer directement dev-* + deployer  
 Exception SECU : uniquement `security`
+
+**Prompt obligatoire pour tout `Task` de spawn** (première activation ou re-spawn) :
+```
+"Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.template.md,
+ puis .claude/agents/<nom>.md si ce fichier existe (adaptations projet).
+ Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+ Reste en mode IDLE et attends mes ordres."
+```
+Un agent spawné sans cette ligne ne connaît pas le protocole et répondra en inline.
+
+### Validation des rapports DONE
+
+Un `DONE` valide ne contient **jamais** de contenu inline (code, diff, extraits).  
+Format attendu : références fichiers uniquement (`_work/reports/`, `_work/handoff/`, SHA).
+
+Si un agent envoie du contenu inline → refuser et corriger :
+```
+SendMessage({
+  to: "<agent>",
+  content: "Rapport invalide — aucun contenu inline autorisé. Écris le contenu dans _work/reports/<agent>-<timestamp>.md et renvoie le DONE avec la référence uniquement."
+})
+```
+Ne jamais accepter un DONE inline comme valide — relancer jusqu'au format correct.
 
 <!-- END TEAMLEADER_PROTOCOL -->
 
