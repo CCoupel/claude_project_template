@@ -32,7 +32,7 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ### Protocole PING et Nommage — voir CLAUDE.md
 
-> Règles complètes dans CLAUDE.md : PING + ScheduleWakeup(15s) comme timeout borné (jamais d'attente synchrone), nommage canonique strict, prompt de spawn obligatoire.
+> Règles complètes dans CLAUDE.md : PING + ScheduleWakeup(60s) comme timeout borné (jamais d'attente synchrone), nommage canonique strict, prompt de spawn obligatoire.
 > Ce fichier contient uniquement les détails opérationnels d'activation.
 
 ### Activation au démarrage d'un workflow
@@ -48,16 +48,16 @@ Appliquer le protocole PING avec timeout borné (voir CLAUDE.md) :
 SendMessage({to: "planner", content: "PING"})
 Écrire dans workflow-state.json : planner.status = "ping_pending", ping_sent_at = <ISO>
 ScheduleWakeup({
-  delaySeconds: 15,
+  delaySeconds: 60,
   reason: "PING planner timeout — spawn si sans réponse",
   prompt: "Lire .claude/workflow-state.json. Si planner.status = 'ping_pending' → Task spawn + envoyer 'Nouveau workflow : [description]'. Effacer ping_sent_at."
 })
 
-→ "PLANNER ACTIF" reçu avant 15s →
+→ "PLANNER ACTIF" reçu avant 60s →
     workflow-state.json : status = "idle", ping_sent_at = null
     SendMessage({to: "planner", content: "Nouveau workflow : [description]. Attends mes instructions."})
 
-→ Timeout 15s (ScheduleWakeup) →
+→ Timeout 60s (ScheduleWakeup) →
     Task({
       subagent_type: "implementation-planner",
       team_name: "{TEAM_NAME}",
@@ -78,7 +78,7 @@ Envoyer au planner les instructions selon le type de workflow :
 #### Temps 2 — Après réception du rapport planner
 
 Lire le rapport planner (`_work/reports/plan-[timestamp].md`) pour identifier le scope réel,
-puis **activer en parallèle** uniquement les agents nécessaires — protocole PING + ScheduleWakeup(15s) (voir CLAUDE.md) pour chacun :
+puis **activer en parallèle** uniquement les agents nécessaires — protocole PING + ScheduleWakeup(60s) (voir CLAUDE.md) pour chacun :
 
 ```
 Scope identifié par le planner :
@@ -90,17 +90,17 @@ Scope identifié par le planner :
 Toujours activer : test-writer + code-reviewer + qa + doc-updater + deployer
 Si infra/K8s configuré : + infra
 
-Pour CHAQUE agent de cette liste — envoyer tous les PINGs en un seul bloc, puis un ScheduleWakeup(15s) pour le lot :
+Pour CHAQUE agent de cette liste — envoyer tous les PINGs en un seul bloc, puis un ScheduleWakeup(60s) pour le lot :
   SendMessage({to: "<nom>", content: "PING"})  ← répéter pour chaque agent
   Écrire dans workflow-state.json : <nom>.status = "ping_pending", ping_sent_at = <ISO>
   ScheduleWakeup({
-    delaySeconds: 15,
+    delaySeconds: 60,
     reason: "PING timeout Temps 2 — spawn agents non-répondants",
     prompt: "Lire .claude/workflow-state.json et _work/reports/plan-[latest].md. Pour chaque agent status='ping_pending' → Task spawn + dispatcher son ordre selon le plan. Effacer ping_sent_at."
   })
 
-  → "<NOM> ACTIF" reçu avant 15s → status = "idle", ping_sent_at = null ; dispatcher l'ordre immédiatement
-  → Timeout 15s → spawner les ping_pending via Task + dispatcher leurs ordres
+  → "<NOM> ACTIF" reçu avant 60s → status = "idle", ping_sent_at = null ; dispatcher l'ordre immédiatement
+  → Timeout 60s → spawner les ping_pending via Task + dispatcher leurs ordres
 ```
 
 > **Exception — HOTFIX** : pas de planner. Activer directement dev-* + deployer selon le scope décrit dans la demande.
@@ -109,7 +109,7 @@ Pour CHAQUE agent de cette liste — envoyer tous les PINGs en un seul bloc, pui
 
 ### Cycle de vie des agents
 
-- **Agent silencieux** : envoyer PING + ScheduleWakeup(15s) comme timeout (voir CLAUDE.md). Si toujours `ping_pending` au réveil → spawner un nouvel agent via `Task`.
+- **Agent silencieux** : envoyer PING + ScheduleWakeup(60s) comme timeout (voir CLAUDE.md). Si toujours `ping_pending` au réveil → spawner un nouvel agent via `Task`.
 - **Fin de workflow** : les agents restent en IDLE dans `workflow-state.json`. Au workflow suivant, le lookup JSON décide : dispatch via SendMessage si présent, spawn via Task si absent.
 - **Shutdown explicite** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
 
@@ -128,13 +128,13 @@ C'est le teamleader qui gère l'inactivité — les teammates ne se ferment pas 
 |-----------|-------------------|
 | Envoi PING | `status: "ping_pending"`, `ping_sent_at: <ISO>` |
 | Réception ACTIF (réponse PING) | `status: "idle"`, `ping_sent_at: null` |
-| Timeout PING (15s sans réponse) | spawn via Task, `status: "working"`, `ping_sent_at: null` |
+| Timeout PING (60s sans réponse) | spawn via Task, `status: "working"`, `ping_sent_at: null` |
 | Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>`, `idle_since: null` |
 | Réception `DONE` d'un agent | `status: "idle"`, `idle_since: <ISO>` **+ vérifier TTL de tous les agents idle** |
 | Réception `PONG(WORKING)` | `status: "working"`, `last_pong_at: <ISO>` |
 | Réception `PONG(IDLE)` | `status: "idle"`, `last_pong_at: <ISO>` **+ vérifier TTL** |
 | Réception `PONG(IDLE-2)` | `status: "pending_delete"` (shutdown_request envoyé) |
-| Pas de réponse (timeout 15s post PING-STATUS) | supprimer l'entrée agent du JSON |
+| Pas de réponse (timeout 60s post PING-STATUS) | supprimer l'entrée agent du JSON |
 | Réception `shutdown_response` | supprimer l'entrée agent du JSON |
 | `TaskStop` forcé | supprimer l'entrée agent du JSON |
 
@@ -190,7 +190,7 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
   Écrire immédiatement dans workflow-state.json : ping_status_sent_at: <ISO>
   Programmer le timeout de réponse :
     ScheduleWakeup({
-      delaySeconds: 15,
+      delaySeconds: 60,
       reason: "PING-STATUS timeout — cleanup agents non-répondants",
       prompt: "Lire .claude/workflow-state.json puis exécuter l'Étape Cleanup de la boucle PING-STATUS définie dans .claude/agents/teamleader.template.md"
     })
@@ -204,7 +204,7 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
                      status: "pending_delete"
   (pour les orphelins découverts à l'étape 2 : ajouter dans workflow-state.json avec le statut correspondant)
 
-Étape Cleanup (au réveil du ScheduleWakeup 15s — timeout réponses)
+Étape Cleanup (au réveil du ScheduleWakeup 60s — timeout réponses)
   Pour chaque agent dans workflow-state.json dont last_pong_at < ping_status_sent_at (ou null) :
     → Supprimer l'entrée de workflow-state.json — écrire immédiatement
     → Afficher : "✗ <agent> non joignable — retiré"
