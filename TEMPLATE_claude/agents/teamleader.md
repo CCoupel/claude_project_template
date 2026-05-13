@@ -32,7 +32,7 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ### Protocole PING et Nommage — voir CLAUDE.md
 
-> Règles complètes dans CLAUDE.md : activation via workflow-state.json (présent → SendMessage, absent → Task), nommage canonique strict, prompt de spawn obligatoire.
+> Règles complètes dans CLAUDE.md : PING + ScheduleWakeup(30s) comme timeout borné (jamais d'attente synchrone), nommage canonique strict, prompt de spawn obligatoire.
 > Ce fichier contient uniquement les détails opérationnels d'activation.
 
 ### Activation au démarrage d'un workflow
@@ -42,20 +42,29 @@ L'activation se fait en **deux temps** pour éviter de lancer des agents inutile
 #### Temps 1 — Dès réception de la commande
 
 Activer le **planner** (toujours nécessaire, quel que soit le type).
-Décision via `workflow-state.json` (sans attente de réponse) :
+Appliquer le protocole PING avec timeout borné (voir CLAUDE.md) :
 
 ```
-Lire workflow-state.json :
-  → planner présent (status ∈ {working, idle}) →
-      SendMessage({to: "planner", content: "Nouveau workflow : [description]. Attends mes instructions."})
+SendMessage({to: "planner", content: "PING"})
+Écrire dans workflow-state.json : planner.status = "ping_pending", ping_sent_at = <ISO>
+ScheduleWakeup({
+  delaySeconds: 30,
+  reason: "PING planner timeout — spawn si sans réponse",
+  prompt: "Lire .claude/workflow-state.json. Si planner.status = 'ping_pending' → Task spawn + envoyer 'Nouveau workflow : [description]'. Effacer ping_sent_at."
+})
 
-  → planner absent (ou pending_delete) →
-      Task({
-        subagent_type: "implementation-planner",
-        team_name: "{TEAM_NAME}",
-        name: "planner",
-        prompt: "<prompt standard — voir CLAUDE.md section Activation des Agents>"
-      })
+→ "PLANNER ACTIF" reçu avant 30s →
+    workflow-state.json : status = "idle", ping_sent_at = null
+    SendMessage({to: "planner", content: "Nouveau workflow : [description]. Attends mes instructions."})
+
+→ Timeout 30s (ScheduleWakeup) →
+    Task({
+      subagent_type: "implementation-planner",
+      team_name: "{TEAM_NAME}",
+      name: "planner",
+      prompt: "<prompt standard — voir CLAUDE.md section Activation des Agents>"
+    })
+    Dispatcher l'ordre au planner via SendMessage
 ```
 
 Envoyer au planner les instructions selon le type de workflow :
@@ -69,7 +78,7 @@ Envoyer au planner les instructions selon le type de workflow :
 #### Temps 2 — Après réception du rapport planner
 
 Lire le rapport planner (`_work/reports/plan-[timestamp].md`) pour identifier le scope réel,
-puis **activer en parallèle** uniquement les agents nécessaires — décision via workflow-state.json (voir CLAUDE.md) pour chacun :
+puis **activer en parallèle** uniquement les agents nécessaires — protocole PING + ScheduleWakeup(30s) (voir CLAUDE.md) pour chacun :
 
 ```
 Scope identifié par le planner :
@@ -81,9 +90,17 @@ Scope identifié par le planner :
 Toujours activer : test-writer + code-reviewer + qa + doc-updater + deployer
 Si infra/K8s configuré : + infra
 
-Pour CHAQUE agent de cette liste — décision via workflow-state.json (sans attente de réponse) :
-  → Présent (status ∈ {working, idle}) → SendMessage({to: "<nom>", content: "Nouveau workflow : prêt pour tes instructions."})
-  → Absent (ou pending_delete)         → Task({subagent_type: "...", name: "<nom>", prompt: "<prompt standard — voir CLAUDE.md>"})
+Pour CHAQUE agent de cette liste — envoyer tous les PINGs en un seul bloc, puis un ScheduleWakeup(30s) pour le lot :
+  SendMessage({to: "<nom>", content: "PING"})  ← répéter pour chaque agent
+  Écrire dans workflow-state.json : <nom>.status = "ping_pending", ping_sent_at = <ISO>
+  ScheduleWakeup({
+    delaySeconds: 30,
+    reason: "PING timeout Temps 2 — spawn agents non-répondants",
+    prompt: "Lire .claude/workflow-state.json et _work/reports/plan-[latest].md. Pour chaque agent status='ping_pending' → Task spawn + dispatcher son ordre selon le plan. Effacer ping_sent_at."
+  })
+
+  → "<NOM> ACTIF" reçu avant 30s → status = "idle", ping_sent_at = null ; dispatcher l'ordre immédiatement
+  → Timeout 30s → spawner les ping_pending via Task + dispatcher leurs ordres
 ```
 
 > **Exception — HOTFIX** : pas de planner. Activer directement dev-* + deployer selon le scope décrit dans la demande.
@@ -92,7 +109,7 @@ Pour CHAQUE agent de cette liste — décision via workflow-state.json (sans att
 
 ### Cycle de vie des agents
 
-- **Agent silencieux** : détecté par la boucle PING-STATUS (absence de réponse PONG → supprimé de `workflow-state.json`). Au dispatch suivant, l'absence dans le JSON déclenche un `Task` re-spawn automatique.
+- **Agent silencieux** : envoyer PING + ScheduleWakeup(30s) comme timeout (voir CLAUDE.md). Si toujours `ping_pending` au réveil → spawner un nouvel agent via `Task`.
 - **Fin de workflow** : les agents restent en IDLE dans `workflow-state.json`. Au workflow suivant, le lookup JSON décide : dispatch via SendMessage si présent, spawn via Task si absent.
 - **Shutdown explicite** : envoyer `shutdown_request` à tous les agents actifs, attendre `shutdown_response approve: true`.
 
@@ -109,6 +126,9 @@ C'est le teamleader qui gère l'inactivité — les teammates ne se ferment pas 
 
 | Événement | Champs mis à jour |
 |-----------|-------------------|
+| Envoi PING | `status: "ping_pending"`, `ping_sent_at: <ISO>` |
+| Réception ACTIF (réponse PING) | `status: "idle"`, `ping_sent_at: null` |
+| Timeout PING (30s sans réponse) | spawn via Task, `status: "working"`, `ping_sent_at: null` |
 | Dispatch (`SendMessage` de travail) | `status: "working"`, `last_order_sent_at: <ISO>`, `idle_since: null` |
 | Réception `DONE` d'un agent | `status: "idle"`, `idle_since: <ISO>` **+ vérifier TTL de tous les agents idle** |
 | Réception `PONG(WORKING)` | `status: "working"`, `last_pong_at: <ISO>` |
