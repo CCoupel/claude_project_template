@@ -883,6 +883,10 @@ Changements disponibles (template local) :
 
   → Aucun changement detecte            ← afficher si tout est INCHANGE
 
+  ⚠ Analyse basee sur le template local (sync du <date>).
+    Des commandes ajoutees apres ce sync ne sont pas visibles ici.
+    L'option d) fetchera GitHub et les detectera (ex: context-audit, team-status...).
+
 Voulez-vous :
 a) Reconfigurer completement (ecrase la config)
 b) Modifier certains parametres
@@ -891,8 +895,8 @@ d) Synchroniser le template depuis GitHub (fetch + appliquer)
 e) Annuler
 ```
 
-> Si aucun changement local n'est detecte, indiquer clairement que l'option d)
-> fetchera quand meme GitHub pour verifier s'il existe une version plus recente.
+> Afficher le bloc ⚠ systematiquement — meme si des changements locaux sont detectes,
+> de nouvelles commandes absentes du template local peuvent exister sur GitHub.
 
 ### Option d : Synchronisation avec diff et nettoyage
 
