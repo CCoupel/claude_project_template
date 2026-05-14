@@ -956,10 +956,12 @@ done)
 #### Etape d3 — Comparer avec les fichiers deployes
 
 ```bash
-# Commandes template déployées (*.md ou *.template.md legacy — hors context/)
+# Commandes template déployées (*.md ou *.template.md legacy — hors context/ et hors init-project)
+# init-project est le bootstrapper lui-même : jamais traité comme reliquat ni supprimé
 DEPLOYED_COMMANDS=$(
   { ls .claude/commands/*.md 2>/dev/null; ls .claude/commands/*.template.md 2>/dev/null; } \
   | grep -v '/context/' \
+  | grep -v 'init-project' \
   | xargs -I{} basename {} \
   | sed 's/\.template\.md$//' | sed 's/\.md$//' \
   | sort -u
@@ -1083,6 +1085,7 @@ en lisant les valeurs depuis `.claude/project-config.json` existant.
 ```bash
 # Supprimer les commandes reliquats
 for name in $DEPLOYED_COMMANDS; do
+  [[ "$name" == "init-project" ]] && continue  # bootstrapper — jamais supprimé
   if ! echo "$EXPECTED_COMMANDS" | grep -q "^${name}$"; then
     rm ".claude/commands/${name}.md"
     echo "  ✗ .claude/commands/${name}.md supprime (reliquat)"
