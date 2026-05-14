@@ -734,6 +734,7 @@ Appliquer la substitution sur les fichiers deployes (commandes + agents generiqu
 ```bash
 for f in .claude/commands/*.md .claude/agents/*.template.md; do
   name=$(basename "$f")
+  [[ "$name" == "init-project.md" ]] && continue  # contient des {VAR} d'exemple — ne pas substituer
   sed -i \
     -e "s|{PROJECT_NAME}|${PROJECT_NAME}|g" \
     -e "s|{TEAM_NAME}|${TEAM_NAME}|g"       \
@@ -1079,6 +1080,21 @@ done
 Scanner l'integralite de `.claude/commands/*.md`, `.claude/commands/context/*.md`, `.claude/agents/*.template.md` et `.claude/agents/context/*.md` et appliquer
 la procedure "Application des placeholders" (section 4 ci-dessus) sur tous les fichiers,
 en lisant les valeurs depuis `.claude/project-config.json` existant.
+
+> **Exclure `init-project.md`** de cette substitution (contient des `{VAR}` d'exemple
+> dans ses blocs de code — les remplacer le corromprait).
+
+**Etape additionnelle — Synchroniser init-project.md lui-même :**
+
+`init-project.md` n'est pas dans `TEMPLATE_claude/commands/` (c'est le bootstrapper).
+Le fetcher depuis la racine du repo GitHub pour que les projets existants reçoivent
+les mises à jour (Message de Fin, corrections de bugs, etc.) :
+
+```bash
+gh api repos/$TEMPLATE_REPO/contents/init-project.md \
+  --jq '.content' | base64 -d > .claude/commands/init-project.md
+echo "  ✓ .claude/commands/init-project.md mis à jour (depuis racine repo)"
+```
 
 **Option A uniquement — Supprimer les reliquats :**
 

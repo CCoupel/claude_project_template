@@ -134,7 +134,6 @@ CLAUDE.md                        # Guide de contribution au template lui-même
 TEMPLATE_claude/                 # Tous les composants livrés aux projets cibles
 ├── INITIALIZATION.md            # Documentation détaillée du processus d'init
 ├── CLAUDE_TEMPLATE.md           # Modèle de CLAUDE.md (Zone 1 projet + Zone 2 teamleader)
-├── protocol-rules.md            # Règles critiques teamleader (cheat sheet compacte)
 ├── settings.json                # Hooks PreCompact + UserPromptSubmit (persistance workflow-state.json)
 ├── .template-source.json        # Référence GitHub (repo + commit du dernier fetch)
 ├── gitignore-for-projects       # Copié en .gitignore par /init-project
