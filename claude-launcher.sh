@@ -78,7 +78,7 @@ fi
 SESSION="claude-hub"
 TEMPLATE_REPO="CCoupel/claude_project_template"
 TEMPLATE_BRANCH="main"
-SCRIPT_VERSION="v2.4.1"
+SCRIPT_VERSION="v2.15.4"
 CONFIG_FILE="${HOME}/.config/claude-launcher.conf"
 
 # ── Valeurs par défaut (écrasées par le fichier de config) ───────────────────
@@ -966,6 +966,14 @@ fi
 # Si claude-hub a des clients actifs → session groupée (navigation indépendante)
 if tmux has-session -t "$SESSION" 2>/dev/null \
     && tmux list-clients -t "$SESSION" 2>/dev/null | grep -q .; then
+  # Recréer [menu] si absent (fermé manuellement pendant la session)
+  if ! tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
+      | grep -qxF '[menu]'; then
+    tmux new-window -t "$SESSION" -n "[menu]"
+    tmux send-keys -t "$SESSION:[menu]" \
+      "bash '$SCRIPT_PATH' --menu '$SCRIPT_PATH'" Enter
+    tmux select-window -t "$SESSION:[menu]"
+  fi
   setup_tmux_style "$SESSION"
   exec tmux new-session -t "$SESSION"
 fi
