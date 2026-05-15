@@ -700,6 +700,9 @@ if [[ "$1" == "--menu" ]]; then
   SCRIPT_PATH="${2:-$(realpath "$0")}"
   INIT_PROJECT_CACHE="$(dirname "$SCRIPT_PATH")/init-project.md"
 
+  # Nom réel de la session courante (sessions groupées ont un nom auto-généré ≠ $SESSION)
+  CURRENT_SESSION=$(tmux display-message -p '#{session_name}' 2>/dev/null || echo "$SESSION")
+
   if [[ -n "$GITHUB_TOKEN" ]] && command -v gh &>/dev/null; then
     export GH_TOKEN="$GITHUB_TOKEN"
     printf '%s' "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null \
@@ -797,7 +800,7 @@ GENSCRIPT
 
   while true; do
     clear
-    printf "\033[1;36m  Claude Code Launcher\033[0m  \033[0;90m%s\033[0m  —  session : %s\n" "$SCRIPT_VERSION" "$SESSION"
+    printf "\033[1;36m  Claude Code Launcher\033[0m  \033[0;90m%s\033[0m  —  session : %s\n" "$SCRIPT_VERSION" "$CURRENT_SESSION"
     printf "\033[0;90m  [Entrée] ouvrir  ·  [Ctrl+D] supprimer orpheline  ·  [Esc] annuler  ·  Ctrl+b R relayout\033[0m\n\n"
 
     fzf_port=$(( 20000 + RANDOM % 10000 ))
@@ -830,7 +833,7 @@ GENSCRIPT
     watcher_pid=$!
 
     _n_clients=$(tmux list-clients -t "$SESSION" 2>/dev/null | wc -l | tr -d ' ')
-    _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$SESSION" "$_n_clients")
+    _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$CURRENT_SESSION" "$_n_clients")
 
     selected=$(bash "$tmp_gen" | fzf \
       --listen "$fzf_port" \
