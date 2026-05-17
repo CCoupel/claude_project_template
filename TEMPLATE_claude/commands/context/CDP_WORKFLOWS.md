@@ -59,7 +59,14 @@ Tour N+1 — PONG reçu :
   SendMessage({ to: "<agent>", content: "<tâche>" })
 
 Tour N+1 — wakeup, pas de PONG :
-  Agent mort → supprimer l'entrée → Pattern A (spawn direct)
+  SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
+  .claude/workflow-state.json : status: "shutdown_pending"
+  ScheduleWakeup(60, "respawn <agent> — pane libéré après shutdown_request")
+  → Fin du tour
+
+Tour N+2 — wakeup respawn :
+  Task({ name: "<agent>", prompt: "<même tâche>" })
+  .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>
 ```
 
 ### Agents par phase

@@ -66,10 +66,19 @@ Réponds : SendMessage({ to: "main", content: "[NOM-AGENT] PONG" })
 
 Ne rien faire d'autre. Le teamleader enverra la tâche si nécessaire.
 
+### shutdown_request → fermer immédiatement
+
+```
+Reçois : { type: "shutdown_request" }
+→ Fermer ce pane immédiatement — libérer le nom pour permettre le respawn
+```
+
+Ne pas répondre, ne pas envoyer DONE. Fermeture immédiate uniquement.
+
 ### Nouvelle tâche → reprendre le cycle normal
 
 ```
-Reçois : un message de tâche (pas un PING)
+Reçois : un message de tâche (ni PING, ni shutdown_request)
 → SendMessage({ to: "main", content: "[NOM-AGENT] ACTIF" })
 → Exécuter la tâche
 → DONE → IDLE à nouveau

@@ -45,6 +45,7 @@ Légende des statuts :
 - `IDLE` — DONE envoyé, en attente de la prochaine tâche
 - `SPAWN_PENDING` — spawné, en attente de l'ACK ACTIF (< 60s normal)
 - `PING_PENDING` — PING envoyé, en attente du PONG (< 60s normal)
+- `SHUTDOWN_PENDING` — shutdown_request envoyé, wakeup respawn en cours (60s)
 - `FAILED` — a envoyé FAILED, action requise
 
 ### Etape 3 — Proposer les actions
@@ -63,13 +64,27 @@ Attendre la saisie de l'utilisateur.
 
 ### Etape 4a — Respawn [R]
 
-Pour chaque agent `spawn_pending` depuis > 60s **ou** `ping_pending` depuis > 60s :
-
+Pour chaque agent `spawn_pending` depuis > 60s :
 ```
 1. TaskStop(<agent>) si le pane existe encore
-2. Task({ name: "<agent>", prompt: "<prompt de spawn original avec tâche incluse>" })
-3. Mettre à jour .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO maintenant>
+2. Task({ name: "<agent>", prompt: "<prompt original>" })
+3. .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>
 4. Afficher : "↑ <agent> respawné"
+```
+
+Pour chaque agent `ping_pending` depuis > 60s :
+```
+1. SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
+2. .claude/workflow-state.json : status: "shutdown_pending"
+3. ScheduleWakeup(60, "respawn <agent> depuis /team-status — pane libéré")
+4. Afficher : "→ <agent> shutdown_request envoyé — respawn dans 60s"
+```
+
+Pour chaque agent `shutdown_pending` (wakeup manqué ou relancé manuellement) :
+```
+1. Task({ name: "<agent>", prompt: "<prompt original>" })
+2. .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>
+3. Afficher : "↑ <agent> respawné (après shutdown)"
 ```
 
 ### Etape 4b — PING individuel [P]

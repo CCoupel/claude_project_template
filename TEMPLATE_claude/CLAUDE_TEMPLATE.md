@@ -138,7 +138,13 @@ Tour N+1 — PONG reçu :
   status: "working" → SendMessage({ to: "<agent>", content: "<tâche>" })
 
 Tour N+1 — wakeup, pas de PONG :
-  status: "ping_pending" → agent mort → supprimer l'entrée → spawn direct
+  SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
+  status: "shutdown_pending" → ScheduleWakeup(60, "respawn <agent>")
+  → Fin du tour
+
+Tour N+2 — wakeup respawn :
+  Task({ name: "<agent>", prompt: "<même tâche — lue dans workflow-state.json>" })
+  status: "spawn_pending", spawned_at: <ISO>
 ```
 
 > Si le PONG arrive avant le wakeup : le wakeup fire mais voit `working` → no-op. Pas de race condition.
@@ -174,7 +180,8 @@ Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `.c
 - Agents `working` : toujours en cours, enverront DONE quand terminés. Rien à faire.
 - Agents `idle` : vivants, en attente. Utiliser PING/PONG avant le prochain dispatch.
 - Agents `spawn_pending` depuis > 60s : ACTIF jamais reçu → respawn avec la même tâche.
-- Agents `ping_pending` depuis > 60s : PONG jamais reçu → agent mort → supprimer → spawn.
+- Agents `ping_pending` depuis > 60s : PONG jamais reçu → SendMessage(shutdown_request) → `shutdown_pending` → ScheduleWakeup(60s) → [Tour suivant] spawn.
+- Agents `shutdown_pending` : shutdown envoyé, wakeup en cours → Task() maintenant (pane libéré).
 - Agents `failed` : décider de respawner ou d'informer l'utilisateur.
 
 ### Workflow-state.json — Source de Vérité
@@ -188,7 +195,8 @@ Fichier : `.claude/workflow-state.json` — écrire **immédiatement sur disque*
 | Réception DONE | `status: "idle"` |
 | PING envoyé | `status: "ping_pending"`, `pinged_at: <ISO>` |
 | Réception PONG | `status: "working"` |
-| Wakeup sans PONG | supprimer l'entrée agent |
+| Wakeup sans PONG | SendMessage(shutdown_request) → `status: "shutdown_pending"` + ScheduleWakeup(60s) |
+| Wakeup respawn | supprimer l'entrée → Task() spawn |
 | Réception FAILED | `status: "failed"` |
 
 Format minimal :
@@ -196,7 +204,7 @@ Format minimal :
 {
   "agents": {
     "<nom>": {
-      "status": "spawn_pending|working|idle|ping_pending|failed",
+      "status": "spawn_pending|working|idle|ping_pending|shutdown_pending|failed",
       "spawned_at": "<ISO>",
       "task_summary": "<résumé court de la tâche>"
     }
