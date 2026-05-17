@@ -56,8 +56,8 @@ Afficher uniquement si des agents existent :
 
 ```
 Actions disponibles :
-  [R] Respawner les agents expirés (SPAWN_PENDING > 60s ou PING_PENDING > 60s)
-  [P] Envoyer un PING à un agent IDLE pour vérifier sa présence
+  [R] Nettoyer les entrées bloquées (SPAWN_PENDING > 60s ou PING_PENDING > 60s)
+  [P] PINGer un agent IDLE pour vérifier s'il est toujours vivant (resync JSON)
   [F] Fermer agents spécifiques (saisir les numéros séparés par virgule : 1,3)
   [Q] Quitter sans action
 ```
@@ -95,20 +95,24 @@ Utiliser `actual_name` si défini, sinon la clé canonique, pour l'adresse du `S
 ```
 1. SendMessage({ to: "<actual_name ou clé>", content: "PING" })
 2. .claude/workflow-state.json : status: "ping_pending", pinged_at: <ISO>
-3. ScheduleWakeup(60, "PING-check <clé> depuis /team-status — PONG reçu → idle, absent → failed")
+3. ScheduleWakeup(60, "PING-check <clé> depuis /team-status — resync JSON")
 4. Afficher : "→ PING envoyé à <agent> — réponse attendue sous 60s"
 ```
 
-> Ce PING est un **check de liveness**, pas un dispatch. Si le wakeup fire sans PONG :
-> ```
-> status: "failed"
-> Afficher : "⚠ <agent> ne répond plus (PING sans réponse).
->             Voulez-vous le respawner ? [O/N]"
-> O → shutdown_request + Bash("sleep 10") + Task() → status: "spawn_pending"
-> N → supprimer l'entrée du JSON
-> ```
-> Contrairement au dispatch PING, il n'y a pas de tâche en attente — le teamleader ne peut pas
-> respawner automatiquement sans savoir ce qu'il doit confier à l'agent.
+Sur réception du PONG (avant le wakeup) :
+```
+→ .claude/workflow-state.json : status: "idle"   ← JSON confirmé exact
+→ Afficher : "✓ <agent> vivant"
+```
+
+Sur wakeup sans PONG :
+```
+→ Supprimer l'entrée de .claude/workflow-state.json   ← JSON resynchronisé
+→ Afficher : "⚠ <agent> ne répond plus — supprimé du JSON"
+```
+
+> `/team-status` **resynchronise le JSON**, il ne respawne pas. Si l'agent est mort et qu'une
+> tâche doit lui être confiée, c'est le teamleader qui spawne lors du prochain dispatch.
 
 ### Etape 4c — Fermeture [F]
 
@@ -131,8 +135,8 @@ Terminé.
 
 ## Règles
 
+- `/team-status` **resynchronise le JSON** — il ne prend pas de décision métier, ne respawne pas
 - Toujours utiliser `actual_name` (si présent dans le JSON) pour `SendMessage` et `TaskStop`
 - Toujours écrire `.claude/workflow-state.json` sur disque après chaque modification
 - Ne pas fermer un agent `WORKING` sans confirmation utilisateur explicite
 - Un agent `IDLE` dans le JSON est vivant et réutilisable via PING/PONG
-- [P] est un check de liveness — pas de respawn automatique sur wakeup, juste `failed`
