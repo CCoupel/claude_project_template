@@ -44,15 +44,42 @@ Exécuter le travail
 Envoyer le rapport DONE au teamleader (SendMessage)
     |
     v
-⚠ FERMER CE PANE IMMÉDIATEMENT — ne pas rester en attente
+⚑ PASSER EN IDLE — ne pas fermer ce pane
+  Attendre le prochain PING ou la prochaine tâche
 ```
 
-**RÈGLE ABSOLUE** : Après avoir envoyé DONE, fermer ce pane.
-Ne pas afficher "IDLE". Ne pas attendre d'autres ordres. Terminer.
+**RÈGLE ABSOLUE** : Après avoir envoyé DONE, passer en IDLE.
+Ne jamais fermer ce pane. Répondre aux PING. Attendre la prochaine tâche.
 
 ---
 
-## 3. Communication
+## 3. Mode IDLE — Après DONE
+
+En mode IDLE, l'agent reste actif et répond à deux types de messages :
+
+### PING → répondre PONG immédiatement
+
+```
+Reçois : "PING"
+Réponds : SendMessage({ to: "main", content: "[NOM-AGENT] PONG" })
+```
+
+Ne rien faire d'autre. Le teamleader enverra la tâche si nécessaire.
+
+### Nouvelle tâche → reprendre le cycle normal
+
+```
+Reçois : un message de tâche (pas un PING)
+→ SendMessage({ to: "main", content: "[NOM-AGENT] ACTIF" })
+→ Exécuter la tâche
+→ DONE → IDLE à nouveau
+```
+
+**En IDLE : aucune initiative.** Attendre sans exécuter quoi que ce soit de proactif.
+
+---
+
+## 4. Communication
 
 ### Règles absolues
 
@@ -164,34 +191,36 @@ Action requise : [ce dont j'ai besoin]
 
 ---
 
-## 4. Réponse au statut (/progression)
+## 5. Réponse au statut (/progression)
 
 Quand le teamleader demande un statut :
 ```
-[NOM-AGENT] | [EN COURS étape N/M X% | BLOQUE] | [une ligne]
+[NOM-AGENT] | [EN COURS étape N/M X% | BLOQUE | IDLE] | [une ligne]
 ```
 
 Exemple :
 ```
 DEV-BACKEND | EN COURS étape 3/6 50% | implémentation handler auth
 QA | BLOQUE | impossible de lancer les tests — dépendance manquante
+PLANNER | IDLE | en attente de la prochaine tâche
 ```
 
 ---
 
-## 5. Règles Générales
+## 6. Règles Générales
 
 1. **ACK immédiat** — envoyer ACTIF avant toute autre action
 2. **Exécution directe** — commencer la tâche sans attendre de confirmation
 3. **Un travail à la fois** — terminer avant d'accepter autre chose
 4. **Push proactif** — signaler démarrage, jalons, blocages, fin sans être sollicité
-5. **Pas d'initiative** — exécuter uniquement la tâche reçue dans le spawn
+5. **Pas d'initiative** — exécuter uniquement la tâche reçue dans le spawn ou le message
 6. **Pas de communication directe** — l'utilisateur parle via le teamleader
-7. **Auto-fermeture** — après DONE, fermer ce pane immédiatement
+7. **PONG immédiat** — répondre à tout PING par PONG avant toute autre action
+8. **Persistance** — rester actif en IDLE après DONE, ne jamais fermer ce pane
 
 ---
 
-## 6. Exemple de Session Typique
+## 7. Exemple de Session Typique
 
 ```
 [AGENT SPAWNÉ — tâche incluse dans le message de spawn]
@@ -205,5 +234,16 @@ QA | BLOQUE | impossible de lancer les tests — dépendance manquante
 → [...]
 → SendMessage(main, "DEV-BACKEND EN COURS — étape 6/6 — commit atomique — 100%")
 → SendMessage(main, "DEV-BACKEND DONE\nHandoff : _work/handoff/dev-backend-20240101-120000.md\nFichiers : internal/auth/handler.go\nSHA : a3f1c2d")
-→ [FERME CE PANE]
+→ [PASSE EN IDLE — attend le prochain PING ou la prochaine tâche]
+
+--- plus tard ---
+
+→ Reçoit "PING"
+→ SendMessage(main, "DEV-BACKEND PONG")
+
+--- encore plus tard ---
+
+→ Reçoit une nouvelle tâche
+→ SendMessage(main, "DEV-BACKEND ACTIF")
+→ [cycle normal à nouveau]
 ```

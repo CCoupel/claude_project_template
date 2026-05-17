@@ -35,12 +35,16 @@ Team : {TEAM_NAME}
 | # | Agent        | Statut         | Durée  | Tâche                    |
 |---|--------------|----------------|--------|--------------------------|
 | 1 | dev-backend  | WORKING        | 12min  | implémentation endpoint  |
-| 2 | planner      | SPAWN_PENDING  | 0min   | plan feature X           |
+| 2 | planner      | IDLE           | 3min   | en attente               |
+| 3 | qa           | SPAWN_PENDING  | 0min   | validation feature X     |
+| 4 | doc-updater  | PING_PENDING   | 0min   | mise à jour docs         |
 ```
 
 Légende des statuts :
 - `WORKING` — ACTIF reçu, en cours de traitement
+- `IDLE` — DONE envoyé, en attente de la prochaine tâche
 - `SPAWN_PENDING` — spawné, en attente de l'ACK ACTIF (< 60s normal)
+- `PING_PENDING` — PING envoyé, en attente du PONG (< 60s normal)
 - `FAILED` — a envoyé FAILED, action requise
 
 ### Etape 3 — Proposer les actions
@@ -49,7 +53,8 @@ Afficher uniquement si des agents existent :
 
 ```
 Actions disponibles :
-  [R] Respawner les SPAWN_PENDING expirés (> 60s sans ACTIF)
+  [R] Respawner les agents expirés (SPAWN_PENDING > 60s ou PING_PENDING > 60s sans réponse)
+  [P] Envoyer un PING à un agent IDLE pour vérifier sa présence
   [F] Fermer agents spécifiques (saisir les numéros séparés par virgule : 1,3)
   [Q] Quitter sans action
 ```
@@ -58,23 +63,35 @@ Attendre la saisie de l'utilisateur.
 
 ### Etape 4a — Respawn [R]
 
-Pour chaque agent `spawn_pending` depuis > 60s :
+Pour chaque agent `spawn_pending` depuis > 60s **ou** `ping_pending` depuis > 60s :
 
 ```
 1. TaskStop(<agent>) si le pane existe encore
-2. Agent({ team_name, name: "<agent>", subagent_type: "general-purpose",
-           prompt: "<prompt de spawn original avec tâche incluse>" })
-3. Mettre à jour workflow-state.json : spawned_at: <ISO maintenant>
+2. Task({ name: "<agent>", prompt: "<prompt de spawn original avec tâche incluse>" })
+3. Mettre à jour .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO maintenant>
 4. Afficher : "↑ <agent> respawné"
 ```
 
-### Etape 4b — Fermeture [F]
+### Etape 4b — PING individuel [P]
+
+Demander le numéro de l'agent à PINGer.
+
+Pour l'agent sélectionné (doit être `IDLE`) :
+
+```
+1. SendMessage({ to: "<agent>", content: "PING" })
+2. .claude/workflow-state.json : status: "ping_pending", pinged_at: <ISO maintenant>
+3. ScheduleWakeup(60, "PING-check <agent> depuis /team-status — PONG reçu → idle, absent → supprimer")
+4. Afficher : "→ PING envoyé à <agent> — réponse attendue sous 60s"
+```
+
+### Etape 4c — Fermeture [F]
 
 Pour chaque agent sélectionné :
 
 ```
 1. TaskStop(<agent>)
-2. Supprimer l'entrée de workflow-state.json — écrire immédiatement
+2. Supprimer l'entrée de .claude/workflow-state.json — écrire immédiatement
 3. Afficher : "✓ <agent> stoppé"
 ```
 
@@ -89,6 +106,7 @@ Terminé.
 
 ## Règles
 
-- Toujours écrire `workflow-state.json` sur disque après chaque modification
+- Toujours écrire `.claude/workflow-state.json` sur disque après chaque modification
 - Ne pas fermer un agent `WORKING` sans confirmation utilisateur explicite
-- Un agent absent du JSON s'est auto-fermé normalement après son DONE
+- Un agent absent du JSON s'est auto-fermé anormalement — le respawner si nécessaire
+- Un agent `IDLE` dans le JSON est vivant et réutilisable via PING/PONG

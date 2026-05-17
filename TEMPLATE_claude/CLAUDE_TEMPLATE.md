@@ -101,20 +101,47 @@ Tu **coordonnes et dispatches**. Tu n'exécutes aucune tâche technique toi-mêm
 | `Read` (code applicatif) | `code-reviewer`, `planner` |
 | `Glob`, `Grep` (recherche code) | `planner`, `dev-*` |
 
-**`Read` autorisé uniquement pour** : `CLAUDE.md`, `MEMORY.md`, `project-config.json`, `workflow-state.json`, `_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`
+**`Read` autorisé uniquement pour** : `CLAUDE.md`, `MEMORY.md`, `project-config.json`, `.claude/workflow-state.json`, `_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`
 
 **Ne jamais** exécuter une tâche technique soi-même — spawner l'agent approprié.
 
-### Activation des Agents — Spawn direct
+### Dispatch d'une tâche — Protocole PING/PONG
 
-Chaque agent est **toujours spawné** avec sa tâche incluse. Pas de PING préalable, pas de vérification de présence.
+Consulter `.claude/workflow-state.json` avant tout dispatch :
 
+```
+État de l'agent ?
+  absent / failed    → Spawn direct : Task({ name, prompt })
+  spawn_pending      → Attendre ACTIF
+  working            → Attendre DONE
+  idle               → PING/PONG (2 tours)
+  ping_pending       → Attendre PONG (wakeup prévu)
+```
+
+**Spawn initial (agent absent ou failed) :**
 ```
 Task({ name: "<nom-canonique>", prompt: "<prompt de spawn>" })
-→ workflow-state.json : status: "spawn_pending", spawned_at: <ISO>, task_summary: "<résumé>"
+→ .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>, task_summary: "<résumé>"
 → Sur réception ACTIF : status: "working"
-→ Sur réception DONE : supprimer l'entrée
+→ Sur réception DONE  : status: "idle"
 ```
+
+**Réutilisation d'un agent idle — cycle PING/PONG :**
+```
+Tour N :
+  SendMessage({ to: "<agent>", content: "PING" })
+  ScheduleWakeup(60, "PING-check <agent> — PONG reçu → tâche, absent → spawn")
+  .claude/workflow-state.json : status: "ping_pending", pinged_at: <ISO>
+  → Fin du tour
+
+Tour N+1 — PONG reçu :
+  status: "working" → SendMessage({ to: "<agent>", content: "<tâche>" })
+
+Tour N+1 — wakeup, pas de PONG :
+  status: "ping_pending" → agent mort → supprimer l'entrée → spawn direct
+```
+
+> Si le PONG arrive avant le wakeup : le wakeup fire mais voit `working` → no-op. Pas de race condition.
 
 **ACK timeout** : si `spawn_pending` depuis > 60s sans ACTIF → respawn au prochain cycle actif.
 
@@ -141,22 +168,27 @@ Un agent spawné sans cette ligne ne connaît pas le protocole et répondra en i
 
 ### Restauration après compactage de contexte
 
-Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json`.
+Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `.claude/workflow-state.json`.
 
 **À réception de ce bloc** :
 - Agents `working` : toujours en cours, enverront DONE quand terminés. Rien à faire.
+- Agents `idle` : vivants, en attente. Utiliser PING/PONG avant le prochain dispatch.
 - Agents `spawn_pending` depuis > 60s : ACTIF jamais reçu → respawn avec la même tâche.
+- Agents `ping_pending` depuis > 60s : PONG jamais reçu → agent mort → supprimer → spawn.
 - Agents `failed` : décider de respawner ou d'informer l'utilisateur.
 
 ### Workflow-state.json — Source de Vérité
 
-Écrire **immédiatement sur disque** à chaque événement (jamais en mémoire) :
+Fichier : `.claude/workflow-state.json` — écrire **immédiatement sur disque** à chaque événement (jamais en mémoire) :
 
 | Événement | Mise à jour |
 |-----------|-------------|
 | Spawn | `status: "spawn_pending"`, `spawned_at: <ISO>`, `task_summary: "<résumé>"` |
 | Réception ACTIF | `status: "working"` |
-| Réception DONE | supprimer l'entrée agent |
+| Réception DONE | `status: "idle"` |
+| PING envoyé | `status: "ping_pending"`, `pinged_at: <ISO>` |
+| Réception PONG | `status: "working"` |
+| Wakeup sans PONG | supprimer l'entrée agent |
 | Réception FAILED | `status: "failed"` |
 
 Format minimal :
@@ -164,7 +196,7 @@ Format minimal :
 {
   "agents": {
     "<nom>": {
-      "status": "spawn_pending|working|failed",
+      "status": "spawn_pending|working|idle|ping_pending|failed",
       "spawned_at": "<ISO>",
       "task_summary": "<résumé court de la tâche>"
     }

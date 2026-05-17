@@ -228,7 +228,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 - **Handoff** : chaque agent écrit `_work/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant ou l'agent le transmet directement si le CDP l'autorise
 - **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
 - **État persistant** : `.claude/workflow-state.json` mis à jour immédiatement à chaque événement (dispatch, DONE, shutdown) — source de vérité pour l'état de chaque agent
-- **Boucle PING-STATUS** : cycle périodique `ScheduleWakeup` — le teamleader envoie `PING-STATUS` à chaque agent connu + passe de découverte sur les 12 noms canoniques absents du state ; les agents répondent `PONG(WORKING)`, `PONG(IDLE)` ou `PONG(IDLE-2)` (déjà IDLE au cycle précédent → shutdown immédiat)
+- **PING/PONG avant dispatch** : avant d'envoyer une tâche à un agent `idle`, le teamleader envoie `PING` + `ScheduleWakeup(60s)` — si `PONG` reçu → envoyer la tâche ; si wakeup sans PONG → agent mort → spawn direct. Les agents restent persistants (IDLE) après DONE et ne se ferment pas.
 
 ---
 
@@ -435,7 +435,7 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 | Commande | Description |
 |----------|-------------|
 | `/progression` | Tableau de bord temps réel — statut de chaque agent actif |
-| `/team-status` | État de la team (tableau agents + durée idle/working) — fermeture sélective ; `[P]` lance un PING-STATUS individuel à chaque agent pour confirmer présence et état |
+| `/team-status` | État de la team (tableau agents + statut WORKING/IDLE/SPAWN_PENDING/PING_PENDING/FAILED) — `[R]` respawn expirés, `[P]` PING individuel sur un agent IDLE, `[F]` fermeture sélective |
 
 ### Validation
 
@@ -514,9 +514,9 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
 Zone 1 — Contenu projet           Zone 2 — Règles template
 ─────────────────────────         ───────────────────────────────────────
 Config, stack, agents,            <!-- BEGIN TEAMLEADER_PROTOCOL -->
-commandes, mémoire.               Rôle CDP, PING protocol, nommage
+commandes, mémoire.               Rôle CDP, protocole PING/PONG, nommage
 Jamais écrasé par le template.    canonique, délégation stricte,
-                                  workflow-state.json, boucle PING-STATUS.
+                                  workflow-state.json, cycle de vie agents.
                                   <!-- END TEAMLEADER_PROTOCOL -->
                                   Remplacé à chaque sync (step d6).
 ```

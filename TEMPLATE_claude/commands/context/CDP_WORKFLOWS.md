@@ -24,29 +24,43 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 
 ---
 
-## 2.bis Spawn d'un Teammate
+## 2.bis Dispatch d'un Teammate — Protocole PING/PONG
 
-Chaque agent est **toujours spawné** avec sa tâche incluse directement dans le prompt.
-Les agents se ferment seuls après avoir envoyé DONE — il n'y a jamais d'agent "en attente" à réutiliser.
+Les agents sont **persistants** : ils passent en IDLE après DONE et restent disponibles.
+Avant tout dispatch, consulter `.claude/workflow-state.json` pour choisir le pattern.
 
-### Pattern standard : Spawn direct
+### Pattern A — Spawn initial (agent absent ou failed)
 
 ```
-Agent({
-  team_name: <valeur dans project-config.json → team_name>,
+Task({
   name: "<nom>",               // ex: "planner", "dev-backend", "qa"
-  subagent_type: "general-purpose",
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
            Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
            Ta tâche : <description complète de la tâche>
            Commence dès que tu as envoyé ACTIF."
 })
-→ workflow-state.json : status: "spawn_pending", spawned_at: <ISO>, task_summary: "<résumé>"
+→ .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>, task_summary: "<résumé>"
 → Attendre ACTIF (ACK) → status: "working"
-→ Attendre DONE → supprimer l'entrée
+→ Attendre DONE → status: "idle"
 ```
 
 Si pas d'ACTIF dans les 60s → respawn avec la même tâche.
+
+### Pattern B — Réutilisation d'un agent idle (PING/PONG)
+
+```
+Tour N :
+  SendMessage({ to: "<agent>", content: "PING" })
+  ScheduleWakeup(60, "PING-check <agent> — PONG reçu → tâche, absent → spawn")
+  .claude/workflow-state.json : status: "ping_pending", pinged_at: <ISO>
+
+Tour N+1 — PONG reçu :
+  status: "working"
+  SendMessage({ to: "<agent>", content: "<tâche>" })
+
+Tour N+1 — wakeup, pas de PONG :
+  Agent mort → supprimer l'entrée → Pattern A (spawn direct)
+```
 
 ### Agents par phase
 

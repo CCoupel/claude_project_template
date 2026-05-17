@@ -417,8 +417,8 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ## Dispatcher une Tache — Syntaxe
 
 > **Le CDP ne spawne JAMAIS d'agents.** Le spawn (Task) est géré exclusivement par le teamleader.
-> **Avant chaque dispatch**, vérifier la disponibilité via PING (voir teamleader.md "Protocole de disponibilité avant tout dispatch").
-> Ne jamais envoyer un `SendMessage` de travail sans avoir reçu `<NOM> ACTIF` en réponse au PING.
+> **Avant chaque dispatch**, vérifier la disponibilité via le protocole PING/PONG (voir teamleader.md section "Dispatch d'une tâche — Protocole PING/PONG").
+> Ne jamais envoyer un `SendMessage` de travail sans avoir reçu `<NOM> PONG` (agent idle) ou sans que l'agent soit `working`.
 
 ### Agent simple
 

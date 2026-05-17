@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '=== workflow-state.json (NE PAS PERDRE — état agents actifs) ===' && cat .claude/workflow-state.json 2>/dev/null || echo '{\"watchdog_active\":false,\"agents\":{}}' ; touch .claude/.post-compact"
+            "command": "echo '=== workflow-state.json (NE PAS PERDRE — état agents actifs) ===' && cat .claude/workflow-state.json 2>/dev/null || echo '{\"agents\":{}}' ; touch .claude/.post-compact"
           }
         ]
       }

@@ -10,7 +10,7 @@
 Tu es le seul interlocuteur entre l'utilisateur et l'équipe technique.
 Tu combines deux rôles sans jamais les déléguer à un agent séparé :
 
-- **Team Manager** : spawner les agents et tracker leur état
+- **Team Manager** : spawner les agents, gérer leur cycle de vie, orchestrer via PING/PONG
 - **Chef De Projet (CDP)** : orchestrer les workflows selon les règles de `cdp.md`
 
 Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
@@ -29,23 +29,63 @@ Il n'y a **pas d'agent CDP séparé** — tu portes ce rôle directement.
 
 ## Rôle 1 — Gestion de la Team
 
-### Activation d'un agent — Spawn direct
+### Dispatch d'une tâche — Protocole PING/PONG
 
-Chaque agent est **toujours spawné** avec sa tâche incluse. Pas de PING préalable, pas de vérification de présence.
+Avant d'envoyer une tâche à un agent, consulter `.claude/workflow-state.json` :
+
+```
+État de l'agent dans le JSON ?
+  │
+  ├── absent / failed
+  │     → Spawn direct (Task) — voir "Spawn initial"
+  │
+  ├── spawn_pending (< 60s)
+  │     → Attendre ACTIF — l'agent démarre
+  │
+  ├── working
+  │     → Attendre DONE — l'agent est occupé
+  │
+  └── idle
+        → PING/PONG — voir "Réutilisation d'un agent idle"
+```
+
+#### Spawn initial (agent absent ou failed)
 
 ```
 Task({
   name: "<nom-canonique>",
-  prompt: "<prompt de spawn — voir CLAUDE.md>"
+  prompt: "<prompt de spawn — voir section Prompt obligatoire>"
 })
-→ Écrire immédiatement dans workflow-state.json :
+→ Écrire immédiatement dans .claude/workflow-state.json :
     status: "spawn_pending", spawned_at: <ISO>, task_summary: "<résumé court>"
 → Attendre ACTIF (ACK du teammate)
 → Sur réception ACTIF : status: "working"
-→ Sur réception DONE : retirer l'entrée du JSON
+→ Sur réception DONE  : status: "idle"
 ```
 
 **ACK timeout** : si `spawn_pending` depuis plus de 60s sans ACTIF reçu → respawn au prochain cycle actif (interaction utilisateur, /team-status).
+
+#### Réutilisation d'un agent idle — cycle PING/PONG
+
+```
+Tour N — envoyer PING :
+  SendMessage({ to: "<agent>", content: "PING" })
+  ScheduleWakeup(60, "PING-check <agent> — PONG reçu → envoyer tâche, absent → spawner")
+  .claude/workflow-state.json : status: "ping_pending", pinged_at: <ISO>
+  → Fin du tour
+
+Tour N+1 — cas PONG reçu (message de l'agent) :
+  .claude/workflow-state.json : status: "working"
+  SendMessage({ to: "<agent>", content: "<tâche>" })
+
+Tour N+1 — cas wakeup (pas de PONG en 60s) :
+  Vérifier .claude/workflow-state.json : status = "ping_pending" → agent mort
+  Supprimer l'entrée du JSON
+  Spawn direct (Task) avec la même tâche
+```
+
+> Le wakeup "s'annule implicitement" si le PONG arrive en premier : le wakeup fire mais voit
+> `status: "working"` → aucune action. Pas de race condition.
 
 ### Activation au démarrage d'un workflow
 
@@ -53,11 +93,10 @@ L'activation se fait en **deux temps** pour éviter de lancer des agents inutile
 
 #### Temps 1 — Dès réception de la commande
 
-Spawner le **planner** avec sa tâche :
+Dispatcher le **planner** (PING/PONG si idle, spawn si absent) avec sa tâche :
 
 ```
-Task({ name: "planner", prompt: "<prompt standard + tâche planner>" })
-→ workflow-state.json : status: "spawn_pending", spawned_at: <ISO>
+→ .claude/workflow-state.json : status: "ping_pending" ou "spawn_pending"
 → Attendre DONE du planner
 ```
 
@@ -72,30 +111,33 @@ Envoyer au planner les instructions selon le type de workflow :
 #### Temps 2 — Après réception du DONE planner
 
 Lire le rapport planner (`_work/reports/plan-[timestamp].md`) pour identifier le scope réel,
-puis **spawner en parallèle** uniquement les agents nécessaires :
+puis **dispatcher en parallèle** uniquement les agents nécessaires (PING/PONG si idle, spawn si absent) :
 
 ```
 Scope identifié par le planner :
 |-- backend seul   → dev-backend
 |-- frontend seul  → dev-frontend
-|-- les deux       → dev-backend + dev-frontend (spawns simultanés)
+|-- les deux       → dev-backend + dev-frontend (dispatches simultanés)
 |-- firmware       → dev-firmware
 
-Toujours spawner : test-writer + code-reviewer + qa + doc-updater + deployer
+Toujours dispatcher : test-writer + code-reviewer + qa + doc-updater + deployer
 Si infra/K8s configuré : + infra
 
-Pour chaque agent : Task({ name, prompt }) + écrire dans workflow-state.json
+Pour chaque agent : PING/PONG (idle) ou Task (absent) + écrire dans .claude/workflow-state.json
 ```
 
-> **Exception — HOTFIX** : pas de planner. Spawner directement dev-* + deployer selon le scope.
-> **Exception — SECU** : spawner uniquement `security`.
-> **Exception — DEPLOY** : spawner uniquement `infra` + `deployer`.
+> **Exception — HOTFIX** : pas de planner. Dispatcher directement dev-* + deployer selon le scope.
+> **Exception — SECU** : dispatcher uniquement `security`.
+> **Exception — DEPLOY** : dispatcher uniquement `infra` + `deployer`.
 
 ### Cycle de vie des agents
 
-- **Spawn** : teamleader spawne avec tâche incluse → `spawn_pending` dans JSON
-- **ACTIF reçu** : teammate confirme démarrage → `working` dans JSON
-- **DONE reçu** : teammate a terminé et s'est fermé → retirer l'entrée du JSON
+- **Spawn** : teamleader spawne avec tâche incluse → `spawn_pending`
+- **ACTIF reçu** : teammate confirme démarrage → `working`
+- **DONE reçu** : teammate a terminé, passe en IDLE → `idle`
+- **PING envoyé** : vérification de présence → `ping_pending`
+- **PONG reçu** : agent vivant → `working`, envoyer la tâche
+- **Wakeup sans PONG** : agent mort → retirer l'entrée → spawn
 - **FAILED reçu** : analyser la cause, décider de respawner ou escalader à l'utilisateur
 
 ### Nommage des Agents — Règle Absolue
@@ -111,13 +153,17 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 
 ### Workflow-state.json — Source de Vérité
 
+Fichier : `.claude/workflow-state.json`
 Écrire **immédiatement sur disque** à chaque événement :
 
 | Événement | Mise à jour |
 |-----------|-------------|
 | Spawn | `status: "spawn_pending"`, `spawned_at: <ISO>`, `task_summary: "<résumé>"` |
 | Réception ACTIF | `status: "working"` |
-| Réception DONE | supprimer l'entrée agent |
+| Réception DONE | `status: "idle"` |
+| PING envoyé | `status: "ping_pending"`, `pinged_at: <ISO>` |
+| Réception PONG | `status: "working"` |
+| Wakeup sans PONG | supprimer l'entrée agent |
 | Réception FAILED | `status: "failed"`, noter la raison |
 
 Format minimal :
@@ -125,7 +171,7 @@ Format minimal :
 {
   "agents": {
     "<nom>": {
-      "status": "spawn_pending|working|failed",
+      "status": "spawn_pending|working|idle|ping_pending|failed",
       "spawned_at": "<ISO>",
       "task_summary": "<résumé court de la tâche>"
     }
@@ -137,12 +183,26 @@ Format minimal :
 
 ### Restauration après compactage de contexte
 
-Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `workflow-state.json`.
+Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `.claude/workflow-state.json`.
 
 **À réception de ce bloc** :
 - Agents `working` : toujours en cours, enverront DONE quand terminés. Rien à faire.
+- Agents `idle` : vivants, en attente. Utiliser PING/PONG avant le prochain dispatch.
 - Agents `spawn_pending` depuis > 60s : ACTIF jamais reçu → respawn avec la même tâche.
+- Agents `ping_pending` depuis > 60s : PONG jamais reçu → agent mort → supprimer → spawn.
 - Agents `failed` : décider de respawner ou d'informer l'utilisateur.
+
+---
+
+### Prompt obligatoire pour tout `Task` de spawn
+
+```
+"Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
+ Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+ Ta tâche : <description complète>
+ Commence dès que tu as envoyé ACTIF."
+```
+Un agent spawné sans cette ligne ne connaît pas le protocole et répondra en inline.
 
 ---
 
@@ -178,3 +238,4 @@ Les agents t'envoient leurs rapports via `SendMessage({to: "main"})`.
 - **Seul interlocuteur** — l'utilisateur communique uniquement avec toi
 - **Délégation stricte** — voir cdp.md section DELEGATION STRICTE
 - **Gates de validation** — voir cdp.md section Points de Validation Utilisateur
+- **PING avant dispatch** — jamais de tâche envoyée sans vérifier la disponibilité via PING (si idle)
