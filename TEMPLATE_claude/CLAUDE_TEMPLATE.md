@@ -139,10 +139,7 @@ Tour N+1 — PONG reçu :
 
 Tour N+1 — wakeup, pas de PONG :
   SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
-  status: "shutdown_pending" → ScheduleWakeup(60, "respawn <agent>")
-  → Fin du tour
-
-Tour N+2 — wakeup respawn :
+  Bash("sleep 10")
   Task({ name: "<agent>", prompt: "<même tâche — lue dans workflow-state.json>" })
   status: "spawn_pending", spawned_at: <ISO>
 ```
@@ -180,8 +177,7 @@ Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `.c
 - Agents `working` : toujours en cours, enverront DONE quand terminés. Rien à faire.
 - Agents `idle` : vivants, en attente. Utiliser PING/PONG avant le prochain dispatch.
 - Agents `spawn_pending` depuis > 60s : ACTIF jamais reçu → respawn avec la même tâche.
-- Agents `ping_pending` depuis > 60s : PONG jamais reçu → SendMessage(shutdown_request) → `shutdown_pending` → ScheduleWakeup(60s) → [Tour suivant] spawn.
-- Agents `shutdown_pending` : shutdown envoyé, wakeup en cours → Task() maintenant (pane libéré).
+- Agents `ping_pending` depuis > 60s : PONG jamais reçu → shutdown_request + sleep(10s) + Task() → `spawn_pending`.
 - Agents `failed` : décider de respawner ou d'informer l'utilisateur.
 
 ### Workflow-state.json — Source de Vérité
@@ -191,20 +187,23 @@ Fichier : `.claude/workflow-state.json` — écrire **immédiatement sur disque*
 | Événement | Mise à jour |
 |-----------|-------------|
 | Spawn | `status: "spawn_pending"`, `spawned_at: <ISO>`, `task_summary: "<résumé>"` |
-| Réception ACTIF | `status: "working"` |
+| Réception ACTIF | `status: "working"`, `actual_name` si le harness a renommé l'agent |
 | Réception DONE | `status: "idle"` |
 | PING envoyé | `status: "ping_pending"`, `pinged_at: <ISO>` |
 | Réception PONG | `status: "working"` |
-| Wakeup sans PONG | SendMessage(shutdown_request) → `status: "shutdown_pending"` + ScheduleWakeup(60s) |
-| Wakeup respawn | supprimer l'entrée → Task() spawn |
+| Wakeup sans PONG | shutdown_request + sleep(10s) + Task() → `status: "spawn_pending"` |
 | Réception FAILED | `status: "failed"` |
 
-Format minimal :
+**`actual_name`** : si le harness crée `generic-2` au lieu de `generic`, l'ACTIF indique le vrai nom.
+Enregistrer `actual_name` et l'utiliser pour tous les `SendMessage` ultérieurs vers ce rôle.
+
+Format :
 ```json
 {
   "agents": {
-    "<nom>": {
-      "status": "spawn_pending|working|idle|ping_pending|shutdown_pending|failed",
+    "generic": {
+      "status": "working",
+      "actual_name": "generic-2",
       "spawned_at": "<ISO>",
       "task_summary": "<résumé court de la tâche>"
     }

@@ -60,11 +60,7 @@ Tour N+1 — PONG reçu :
 
 Tour N+1 — wakeup, pas de PONG :
   SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
-  .claude/workflow-state.json : status: "shutdown_pending"
-  ScheduleWakeup(60, "respawn <agent> — pane libéré après shutdown_request")
-  → Fin du tour
-
-Tour N+2 — wakeup respawn :
+  Bash("sleep 10")
   Task({ name: "<agent>", prompt: "<même tâche>" })
   .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>
 ```

@@ -81,11 +81,7 @@ Tour N+1 — cas PONG reçu (message de l'agent) :
 Tour N+1 — cas wakeup (pas de PONG en 60s) :
   Vérifier .claude/workflow-state.json : status = "ping_pending" → agent mort
   SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
-  .claude/workflow-state.json : status: "shutdown_pending", task_summary: "<conserver>"
-  ScheduleWakeup(60, "respawn <agent> — pane libéré après shutdown_request")
-  → Fin du tour
-
-Tour N+2 — wakeup respawn :
+  Bash("sleep 10")   ← délai court pour que le pane se libère
   Task({ name: "<agent>", prompt: "<même tâche — lue dans workflow-state.json>" })
   .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>
 ```
@@ -143,8 +139,7 @@ Pour chaque agent : PING/PONG (idle) ou Task (absent) + écrire dans .claude/wor
 - **DONE reçu** : teammate a terminé, passe en IDLE → `idle`
 - **PING envoyé** : vérification de présence → `ping_pending`
 - **PONG reçu** : agent vivant → `working`, envoyer la tâche
-- **Wakeup sans PONG** : agent mort → SendMessage(shutdown_request) → `shutdown_pending` → ScheduleWakeup(60s)
-- **Wakeup respawn** : spawn avec le nom canonique (pane libéré) → `spawn_pending`
+- **Wakeup sans PONG** : agent mort → SendMessage(shutdown_request) + sleep(10s) + Task() → `spawn_pending`
 - **FAILED reçu** : analyser la cause, décider de respawner ou escalader à l'utilisateur
 
 ### Nommage des Agents — Règle Absolue
@@ -166,20 +161,25 @@ Fichier : `.claude/workflow-state.json`
 | Événement | Mise à jour |
 |-----------|-------------|
 | Spawn | `status: "spawn_pending"`, `spawned_at: <ISO>`, `task_summary: "<résumé>"` |
-| Réception ACTIF | `status: "working"` |
+| Réception ACTIF | `status: "working"`, `actual_name: "<nom reçu>"` si différent du nom canonique |
 | Réception DONE | `status: "idle"` |
 | PING envoyé | `status: "ping_pending"`, `pinged_at: <ISO>` |
 | Réception PONG | `status: "working"` |
-| Wakeup sans PONG | SendMessage(shutdown_request) → `status: "shutdown_pending"` + ScheduleWakeup(60s) |
-| Wakeup respawn | supprimer l'entrée → Task() spawn |
+| Wakeup sans PONG | shutdown_request + sleep(10s) + Task() → `status: "spawn_pending"` |
 | Réception FAILED | `status: "failed"`, noter la raison |
 
-Format minimal :
+**Règle `actual_name`** : le harness peut assigner un nom différent du nom canonique (`generic-2` au lieu de `generic`).
+À la réception du message ACTIF (`"GENERIC-2 ACTIF"`), parser le nom de l'expéditeur :
+- Si `nom_reçu ≠ clé_du_JSON` → enregistrer `actual_name: "<nom_reçu>"`
+- Pour tout `SendMessage` ultérieur vers ce rôle : utiliser `actual_name` si défini, sinon la clé canonique
+
+Format :
 ```json
 {
   "agents": {
-    "<nom>": {
-      "status": "spawn_pending|working|idle|ping_pending|shutdown_pending|failed",
+    "generic": {
+      "status": "working",
+      "actual_name": "generic-2",
       "spawned_at": "<ISO>",
       "task_summary": "<résumé court de la tâche>"
     }
@@ -197,8 +197,7 @@ Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `.c
 - Agents `working` : toujours en cours, enverront DONE quand terminés. Rien à faire.
 - Agents `idle` : vivants, en attente. Utiliser PING/PONG avant le prochain dispatch.
 - Agents `spawn_pending` depuis > 60s : ACTIF jamais reçu → respawn avec la même tâche.
-- Agents `ping_pending` depuis > 60s : PONG jamais reçu → SendMessage(shutdown_request) → `shutdown_pending` → ScheduleWakeup(60s) → [Tour suivant] spawn.
-- Agents `shutdown_pending` : shutdown_request envoyé, wakeup en cours → Task() maintenant (le pane est libéré).
+- Agents `ping_pending` depuis > 60s : PONG jamais reçu → shutdown_request + sleep(10s) + Task() → `spawn_pending`.
 - Agents `failed` : décider de respawner ou d'informer l'utilisateur.
 
 ---
