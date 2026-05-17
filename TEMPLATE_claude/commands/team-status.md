@@ -100,7 +100,15 @@ Utiliser `actual_name` si défini, sinon la clé canonique, pour l'adresse du `S
 ```
 
 > Ce PING est un **check de liveness**, pas un dispatch. Si le wakeup fire sans PONG :
-> marquer `status: "failed"` (ne pas respawner automatiquement — laisser l'utilisateur décider).
+> ```
+> status: "failed"
+> Afficher : "⚠ <agent> ne répond plus (PING sans réponse).
+>             Voulez-vous le respawner ? [O/N]"
+> O → shutdown_request + Bash("sleep 10") + Task() → status: "spawn_pending"
+> N → supprimer l'entrée du JSON
+> ```
+> Contrairement au dispatch PING, il n'y a pas de tâche en attente — le teamleader ne peut pas
+> respawner automatiquement sans savoir ce qu'il doit confier à l'agent.
 
 ### Etape 4c — Fermeture [F]
 
