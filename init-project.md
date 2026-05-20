@@ -938,7 +938,8 @@ Pour rétablir le template, supprimer le fichier .claude/commands/[nom].md et re
 #### Etape d2 — Calculer les noms deployes attendus
 
 ```bash
-# Noms attendus pour les commandes (strip .template)
+# Noms attendus pour les commandes — tous les *.md du top-level (glob non récursif)
+# NB : context-audit.md est une commande normale, pas un fichier du sous-répertoire context/
 EXPECTED_COMMANDS=$(for f in TEMPLATE_claude/commands/*.md; do
   basename "$f" .md
 done)
@@ -952,11 +953,12 @@ done)
 #### Etape d3 — Comparer avec les fichiers deployes
 
 ```bash
-# Commandes template déployées (*.md ou *.template.md legacy — hors context/ et hors init-project)
+# Commandes template déployées (*.md ou *.template.md legacy — hors sous-répertoire context/ et hors init-project)
+# Le filtre exclut le répertoire .claude/commands/context/ uniquement — pas les fichiers nommés context-*.md
 # init-project est le bootstrapper lui-même : jamais traité comme reliquat ni supprimé
 DEPLOYED_COMMANDS=$(
   { ls .claude/commands/*.md 2>/dev/null; ls .claude/commands/*.template.md 2>/dev/null; } \
-  | grep -v '/context/' \
+  | grep -v '/commands/context/' \
   | grep -v 'init-project' \
   | xargs -I{} basename {} \
   | sed 's/\.template\.md$//' | sed 's/\.md$//' \
