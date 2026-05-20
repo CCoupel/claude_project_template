@@ -24,45 +24,30 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 
 ---
 
-## 2.bis Dispatch d'un Teammate — Protocole PING/PONG
+## 2.bis Dispatch d'un Teammate
 
-Les agents sont **persistants** : ils passent en IDLE après DONE et restent disponibles.
-Avant tout dispatch, consulter `.claude/workflow-state.json` pour choisir le pattern.
+Les teammates sont **persistants** : ils restent en IDLE après DONE et sont réutilisables.
+Avant tout dispatch, consulter `.claude/workflow-state.json` (liste `teammates`).
 
-### Pattern A — Spawn initial (agent absent ou failed)
+### Teammate déjà spawned
+
+```
+SendMessage({ to: "<nom>", content: "<tâche complète>" })
+→ Attendre ACTIF (confirmation réception) + DONE
+```
+
+### Premier spawn d'un teammate
 
 ```
 Task({
-  name: "<nom>",               // ex: "planner", "dev-backend", "qa"
+  name: "<nom>",
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
            Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-           Ta tâche : <description complète de la tâche>
-           Commence dès que tu as envoyé ACTIF."
+           Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
 })
-→ .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>, task_summary: "<résumé>"
-→ Attendre ACTIF (ACK) → status: "working"
-→ Attendre DONE → status: "idle"
-```
-
-Si pas d'ACTIF dans les 60s → respawn avec la même tâche.
-
-### Pattern B — Réutilisation d'un agent idle (PING/PONG)
-
-```
-Tour N :
-  SendMessage({ to: "<agent>", content: "PING" })
-  ScheduleWakeup(60, "PING-check <agent> — PONG reçu → tâche, absent → spawn")
-  .claude/workflow-state.json : status: "ping_pending", pinged_at: <ISO>
-
-Tour N+1 — PONG reçu :
-  status: "working"
-  SendMessage({ to: "<agent>", content: "<tâche>" })
-
-Tour N+1 — wakeup, pas de PONG :
-  SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
-  Bash("sleep 10")
-  Task({ name: "<agent>", prompt: "<même tâche>" })
-  .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>
+→ Attendre ACTIF
+→ SendMessage({ to: "<nom>", content: "<tâche complète>" })
+→ Ajouter "<nom>" dans .claude/workflow-state.json (liste teammates)
 ```
 
 ### Agents par phase

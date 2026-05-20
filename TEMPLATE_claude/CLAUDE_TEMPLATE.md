@@ -105,48 +105,24 @@ Tu **coordonnes et dispatches**. Tu n'exécutes aucune tâche technique toi-mêm
 
 **Ne jamais** exécuter une tâche technique soi-même — spawner l'agent approprié.
 
-### Dispatch d'une tâche — Protocole PING/PONG
+### Spawn et réutilisation des teammates
 
-Consulter `.claude/workflow-state.json` avant tout dispatch :
+Avant tout dispatch, consulter `.claude/workflow-state.json` :
 
 ```
-État de l'agent ?
-  absent / failed    → Spawn direct : Task({ name, prompt })
-  spawn_pending      → Attendre ACTIF
-  working            → Attendre DONE
-  idle               → PING/PONG (2 tours)
-  ping_pending       → Attendre PONG (wakeup prévu)
+"<nom>" dans la liste teammates ?
+  OUI → SendMessage({ to: "<nom>", content: "<tâche>" })   ← réutilisation
+  NON → Task(spawn) + attendre ACTIF + SendMessage(tâche)  ← premier spawn
 ```
 
-**Spawn initial (agent absent ou failed) :**
+**Prompt de spawn** (séparé de la tâche) :
 ```
-Task({ name: "<nom-canonique>", prompt: "<prompt de spawn>" })
-→ .claude/workflow-state.json : status: "spawn_pending", spawned_at: <ISO>, task_summary: "<résumé>"
-→ Sur réception ACTIF : status: "working"
-→ Sur réception DONE  : status: "idle"
-```
-
-**Réutilisation d'un agent idle — cycle PING/PONG :**
-```
-Tour N :
-  SendMessage({ to: "<agent>", content: "PING" })
-  ScheduleWakeup(60, "PING-check <agent> — PONG reçu → tâche, absent → spawn")
-  .claude/workflow-state.json : status: "ping_pending", pinged_at: <ISO>
-  → Fin du tour
-
-Tour N+1 — PONG reçu :
-  status: "working" → SendMessage({ to: "<agent>", content: "<tâche>" })
-
-Tour N+1 — wakeup, pas de PONG :
-  SendMessage({ to: "<agent>", message: {type: "shutdown_request"} })
-  Bash("sleep 10")
-  Task({ name: "<agent>", prompt: "<même tâche — lue dans workflow-state.json>" })
-  status: "spawn_pending", spawned_at: <ISO>
+"Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
+ Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+ Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
 ```
 
-> Si le PONG arrive avant le wakeup : le wakeup fire mais voit `working` → no-op. Pas de race condition.
-
-**ACK timeout** : si `spawn_pending` depuis > 60s sans ACTIF → respawn au prochain cycle actif.
+Un teammate spawné reste actif (IDLE) entre les tâches. Ne jamais respawner un teammate déjà présent.
 
 ### Nommage des Agents — Règle Absolue
 
@@ -159,71 +135,36 @@ planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
 test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 ```
 
-### Prompt obligatoire pour tout `Task` de spawn
+### workflow-state.json — Liste des teammates spawned
 
+Fichier : `.claude/workflow-state.json` — survie aux compactages de contexte.
+
+```json
+{ "teammates": ["planner", "dev-backend", "qa"] }
 ```
-"Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
- Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
- Ta tâche : <description complète>
- Commence dès que tu as envoyé ACTIF."
-```
-Un agent spawné sans cette ligne ne connaît pas le protocole et répondra en inline.
-
-### Restauration après compactage de contexte
-
-Après un compactage, un hook `UserPromptSubmit` ré-injecte automatiquement `.claude/workflow-state.json`.
-
-**À réception de ce bloc** :
-- Agents `working` : toujours en cours, enverront DONE quand terminés. Rien à faire.
-- Agents `idle` : vivants, en attente. Utiliser PING/PONG avant le prochain dispatch.
-- Agents `spawn_pending` depuis > 60s : ACTIF jamais reçu → respawn avec la même tâche.
-- Agents `ping_pending` depuis > 60s : PONG jamais reçu → shutdown_request + sleep(10s) + Task() → `spawn_pending`.
-- Agents `failed` : décider de respawner ou d'informer l'utilisateur.
-
-### Workflow-state.json — Source de Vérité
-
-Fichier : `.claude/workflow-state.json` — écrire **immédiatement sur disque** à chaque événement (jamais en mémoire) :
 
 | Événement | Mise à jour |
 |-----------|-------------|
-| Spawn | `status: "spawn_pending"`, `spawned_at: <ISO>`, `task_summary: "<résumé>"` |
-| Réception ACTIF | `status: "working"`, `actual_name` si le harness a renommé l'agent |
-| Réception DONE | `status: "idle"` |
-| PING envoyé | `status: "ping_pending"`, `pinged_at: <ISO>` |
-| Réception PONG | `status: "working"` |
-| Wakeup sans PONG | shutdown_request + sleep(10s) + Task() → `status: "spawn_pending"` |
-| Réception FAILED | `status: "failed"` |
+| Premier spawn d'un teammate | Ajouter le nom à la liste |
+| End-session | Vider la liste |
 
-**`actual_name`** : si le harness crée `generic-2` au lieu de `generic`, l'ACTIF indique le vrai nom.
-Enregistrer `actual_name` et l'utiliser pour tous les `SendMessage` ultérieurs vers ce rôle.
+### Restauration après compactage
 
-Format :
-```json
-{
-  "agents": {
-    "generic": {
-      "status": "working",
-      "actual_name": "generic-2",
-      "spawned_at": "<ISO>",
-      "task_summary": "<résumé court de la tâche>"
-    }
-  }
-}
-```
+Un hook `UserPromptSubmit` ré-injecte `.claude/workflow-state.json` au premier prompt post-compactage.
+Lire la liste `teammates` pour savoir quels agents sont disponibles via SendMessage.
 
 ### Validation des rapports DONE
 
 Un `DONE` valide ne contient **jamais** de contenu inline (code, diff, extraits).  
 Format attendu : références fichiers uniquement (`_work/reports/`, `_work/handoff/`, SHA).
 
-Si un agent envoie du contenu inline → refuser et corriger :
+Si un agent envoie du contenu inline → corriger :
 ```
 SendMessage({
   to: "<agent>",
-  content: "Rapport invalide — aucun contenu inline autorisé. Écris le contenu dans _work/reports/<agent>-<timestamp>.md et renvoie le DONE avec la référence uniquement."
+  content: "Rapport invalide — écris le contenu dans _work/reports/<agent>-<timestamp>.md et renvoie le DONE avec la référence."
 })
 ```
-Ne jamais accepter un DONE inline comme valide.
 
 <!-- END TEAMLEADER_PROTOCOL -->
 
