@@ -417,8 +417,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ## Dispatcher une Tache — Syntaxe
 
 > **Le CDP ne spawne JAMAIS d'agents.** Le spawn (Task) est géré exclusivement par le teamleader.
-> **Avant chaque dispatch**, vérifier si le teammate est déjà spawned (liste dans `.claude/workflow-state.json`).
-> Teammate présent → SendMessage(tâche). Teammate absent → teamleader spawne d'abord, attend ACTIF, puis envoie la tâche.
+> **Avant chaque dispatch** : teammate déjà actif → SendMessage(tâche). Sinon → teamleader spawne d'abord, attend ACTIF, puis envoie la tâche.
 
 ### Agent simple
 
@@ -511,8 +510,7 @@ Format complet :
     "issue_nums": [123],
     "milestone_num": 5,
     "started_at": "<ISO>"
-  },
-  "teammates": ["planner", "dev-backend", "qa"]
+  }
 }
 ```
 

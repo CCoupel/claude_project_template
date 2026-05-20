@@ -26,17 +26,7 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 
 ## 2.bis Dispatch d'un Teammate
 
-Les teammates sont **persistants** : ils restent en IDLE après DONE et sont réutilisables.
-Avant tout dispatch, consulter `.claude/workflow-state.json` (liste `teammates`).
-
-### Teammate déjà spawned
-
-```
-SendMessage({ to: "<nom>", content: "<tâche complète>" })
-→ Attendre ACTIF (confirmation réception) + DONE
-```
-
-### Premier spawn d'un teammate
+### Spawn
 
 ```
 Task({
@@ -45,9 +35,13 @@ Task({
            Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
            Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
 })
-→ Attendre ACTIF
-→ SendMessage({ to: "<nom>", content: "<tâche complète>" })
-→ Ajouter "<nom>" dans .claude/workflow-state.json (liste teammates)
+→ Attendre ACTIF → SendMessage({ to: "<nom>", content: "<tâche>" })
+```
+
+### Teammate déjà actif
+
+```
+SendMessage({ to: "<nom>", content: "<tâche>" })
 ```
 
 ### Agents par phase

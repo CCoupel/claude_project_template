@@ -130,16 +130,7 @@ Si des changements non commites existent :
 
 ### 5. TEAM — Dissolution de la Team
 
-Lire `.claude/workflow-state.json` pour obtenir la liste des teammates spawned.
-
-Pour chaque teammate dans la liste → `TaskStop(<nom>)`.
-
-Réinitialiser la liste :
-```bash
-echo '{"teammates":[]}' > .claude/workflow-state.json
-```
-
-Appeler **TeamDelete** avec le nom `{TEAM_NAME}` pour dissoudre la team.
+Appeler **TeamDelete** avec le nom `{TEAM_NAME}` — le harness arrête tous les teammates.
 
 Si aucune team n'est active, passer cette etape.
 

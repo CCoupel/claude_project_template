@@ -56,12 +56,6 @@ rm -rf _work/
 > Supprime les rapports et handoffs d'une session précédente éventuellement non clôturée.
 > Sans risque : `_work/` est gitignored et jamais lu avant le démarrage d'un workflow.
 
-Initialiser `workflow-state.json` (liste vide — aucun teammate spawned) :
-
-```bash
-echo '{"teammates":[]}' > .claude/workflow-state.json
-```
-
 ### Etape 3 — Lecture de la memoire projet
 
 Lire `.claude/memory/MEMORY.md` (source de verite unique).

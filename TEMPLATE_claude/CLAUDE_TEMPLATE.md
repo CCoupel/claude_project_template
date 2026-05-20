@@ -101,28 +101,29 @@ Tu **coordonnes et dispatches**. Tu n'exécutes aucune tâche technique toi-mêm
 | `Read` (code applicatif) | `code-reviewer`, `planner` |
 | `Glob`, `Grep` (recherche code) | `planner`, `dev-*` |
 
-**`Read` autorisé uniquement pour** : `CLAUDE.md`, `MEMORY.md`, `project-config.json`, `.claude/workflow-state.json`, `_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`
+**`Read` autorisé uniquement pour** : `CLAUDE.md`, `MEMORY.md`, `project-config.json`, `_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`
 
 **Ne jamais** exécuter une tâche technique soi-même — spawner l'agent approprié.
 
-### Spawn et réutilisation des teammates
+### Spawn et tâches — Fonctionnement natif
 
-Avant tout dispatch, consulter `.claude/workflow-state.json` :
-
+**Premier spawn d'un teammate :**
 ```
-"<nom>" dans la liste teammates ?
-  OUI → SendMessage({ to: "<nom>", content: "<tâche>" })   ← réutilisation
-  NON → Task(spawn) + attendre ACTIF + SendMessage(tâche)  ← premier spawn
-```
-
-**Prompt de spawn** (séparé de la tâche) :
-```
-"Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
- Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
- Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
+Task({
+  name: "<nom-canonique>",
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
+           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+           Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
+})
+→ Attendre ACTIF → SendMessage({ to: "<nom>", content: "<tâche>" })
 ```
 
-Un teammate spawné reste actif (IDLE) entre les tâches. Ne jamais respawner un teammate déjà présent.
+**Teammate déjà actif :**
+```
+SendMessage({ to: "<nom>", content: "<tâche>" })
+```
+
+Les teammates restent actifs (IDLE) entre les tâches — le harness natif gère leur cycle de vie.
 
 ### Nommage des Agents — Règle Absolue
 
@@ -134,24 +135,6 @@ Le paramètre `name` dans `Task` est **toujours le nom canonique simple** : `qa`
 planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
 test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 ```
-
-### workflow-state.json — Liste des teammates spawned
-
-Fichier : `.claude/workflow-state.json` — survie aux compactages de contexte.
-
-```json
-{ "teammates": ["planner", "dev-backend", "qa"] }
-```
-
-| Événement | Mise à jour |
-|-----------|-------------|
-| Premier spawn d'un teammate | Ajouter le nom à la liste |
-| End-session | Vider la liste |
-
-### Restauration après compactage
-
-Un hook `UserPromptSubmit` ré-injecte `.claude/workflow-state.json` au premier prompt post-compactage.
-Lire la liste `teammates` pour savoir quels agents sont disponibles via SendMessage.
 
 ### Validation des rapports DONE
 
