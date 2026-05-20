@@ -91,7 +91,8 @@ TEMPLATE_BRANCH_DEFAULT = "main"
 ### Quand fetcher
 
 - **Premiere initialisation** : toujours
-- **Reinitialisation option d)** : synchronisation manuelle
+- **Pre-menu de reinitialisation** : toujours (silencieusement, avant l'analyse)
+- **Reinitialisation option d)** : appliquer les changements detectes (fetch deja fait au pre-menu)
 
 ### Procedure de fetch
 
@@ -859,23 +860,25 @@ Bonne utilisation de Claude Code !
 
 Si `project-config.json` + `TEMPLATE_claude/` existent :
 
-### Etape pre-menu — Calcul automatique des changements disponibles
+### Etape pre-menu — Fetch GitHub + Calcul automatique des changements
 
-Avant d'afficher le menu, calculer silencieusement les changements entre le template
-local (`TEMPLATE_claude/`) et les fichiers deployes (`.claude/commands/`, `.claude/agents/`).
-Ne pas fetcher GitHub a ce stade — utiliser le template local tel qu'il est.
+Avant d'afficher le menu :
 
-Calculer le statut de chaque fichier (NOUVEAU / MODIFIE / INCHANGE / RELIQUAT) selon
-la meme logique que l'etape d3 ci-dessous, puis afficher la synthese :
+**1. Fetcher silencieusement le template depuis GitHub** (procedure "Fetch du Template depuis GitHub").
+Si le fetch echoue (pas de reseau, gh non auth) → continuer avec le template local en place,
+afficher un avertissement discret : `⚠ Fetch GitHub impossible — analyse basee sur le template local (sync du <date>).`
+
+**2. Calculer les changements** entre `TEMPLATE_claude/` (maintenant a jour) et les fichiers deployes
+(`.claude/commands/`, `.claude/agents/`). Meme logique que l'etape d3 ci-dessous.
 
 Pour chaque fichier MODIFIE, lire les deux versions et generer une explication courte
 (1 ligne max) decrivant ce qui a change.
 
 ```
 Ce projet est deja initialise (config du YYYY-MM-DD).
-Template local : CCoupel/claude_project_template — dernier sync : <date> (<commit>)
+Template GitHub : CCoupel/claude_project_template — <commit> (fetch a l'instant)
 
-Changements disponibles (template local) :
+Changements disponibles :
   [+] feature, hotfix                   ← 2 nouveaux
   [~] cdp       — <explication courte du changement>
   [~] bugfix    — <explication courte du changement>
@@ -884,26 +887,18 @@ Changements disponibles (template local) :
 
   → Aucun changement detecte            ← afficher si tout est INCHANGE
 
-  ⚠ Analyse basee sur le template local (sync du <date>).
-    Des commandes ajoutees apres ce sync ne sont pas visibles ici.
-    L'option d) fetchera GitHub et les detectera (ex: context-audit, team-status...).
-
 Voulez-vous :
 a) Reconfigurer completement (ecrase la config)
 b) Modifier certains parametres
 c) Re-analyser le code (detecter les changements)
-d) Synchroniser le template depuis GitHub (fetch + appliquer)
+d) Appliquer les mises a jour detectees
 e) Annuler
 ```
 
-> Afficher le bloc ⚠ systematiquement — meme si des changements locaux sont detectes,
-> de nouvelles commandes absentes du template local peuvent exister sur GitHub.
+### Option d : Appliquer les mises a jour detectees
 
-### Option d : Synchronisation avec diff et nettoyage
-
-#### Etape d1 — Fetcher le nouveau template depuis GitHub
-
-Executer la procedure "Fetch du Template depuis GitHub" pour mettre a jour `TEMPLATE_claude/`.
+> Le fetch GitHub a deja ete effectue au pre-menu — `TEMPLATE_claude/` est a jour.
+> Cette option calcule le diff precis et deploie les changements dans `.claude/`.
 
 #### Etape d1b — Migration : renommer les commandes legacy *.template.md → *.md
 
