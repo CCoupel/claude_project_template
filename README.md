@@ -134,7 +134,7 @@ CLAUDE.md                        # Guide de contribution au template lui-même
 TEMPLATE_claude/                 # Tous les composants livrés aux projets cibles
 ├── INITIALIZATION.md            # Documentation détaillée du processus d'init
 ├── CLAUDE_TEMPLATE.md           # Modèle de CLAUDE.md (Zone 1 projet + Zone 2 teamleader)
-├── settings.json                # Hooks PreCompact + UserPromptSubmit (persistance workflow-state.json)
+├── settings.json                # Configuration Claude Code (vide par défaut — extensible par le projet)
 ├── .template-source.json        # Référence GitHub (repo + commit du dernier fetch)
 ├── gitignore-for-projects       # Copié en .gitignore par /init-project
 │
@@ -227,8 +227,7 @@ spécialisés, valide leurs livrables et reporte la progression.
   - Agents de code → SHA du commit
 - **Handoff** : chaque agent écrit `_work/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant ou l'agent le transmet directement si le CDP l'autorise
 - **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
-- **État persistant** : `.claude/workflow-state.json` mis à jour immédiatement à chaque événement (dispatch, DONE, shutdown) — source de vérité pour l'état de chaque agent
-- **PING/PONG avant dispatch** : avant d'envoyer une tâche à un agent `idle`, le teamleader envoie `PING` + `ScheduleWakeup(60s)` — si `PONG` reçu → envoyer la tâche ; si wakeup sans PONG → agent mort → spawn direct. Les agents restent persistants (IDLE) après DONE et ne se ferment pas.
+- **Teammates persistants** : tous les agents sont spawned au `/start-session` et restent en IDLE — le teamleader n'utilise que `SendMessage` pendant la session, jamais de nouveau spawn
 
 ---
 
@@ -504,7 +503,7 @@ Pour récupérer les nouvelles fonctionnalités du template dans un projet exist
 Fetche la dernière version de `TEMPLATE_claude/` et :
 - Écrase les commandes (`*.md`) et agents template (`*.template.md`)
 - Met à jour le bloc `<!-- BEGIN/END TEAMLEADER_PROTOCOL -->` dans `CLAUDE.md` sans toucher au reste
-- Merge les hooks `PreCompact` + `UserPromptSubmit` dans `.claude/settings.json` sans dupliquer les entrées existantes
+- Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL`) et `.claude/settings.json`
 
 ### Structure de CLAUDE.md — Zone projet / Zone template
 
@@ -514,9 +513,9 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
 Zone 1 — Contenu projet           Zone 2 — Règles template
 ─────────────────────────         ───────────────────────────────────────
 Config, stack, agents,            <!-- BEGIN TEAMLEADER_PROTOCOL -->
-commandes, mémoire.               Rôle CDP, protocole PING/PONG, nommage
-Jamais écrasé par le template.    canonique, délégation stricte,
-                                  workflow-state.json, cycle de vie agents.
+commandes, mémoire.               Rôle CDP, nommage canonique,
+Jamais écrasé par le template.    délégation stricte, spawn au start-session,
+                                  SendMessage only, validation DONE.
                                   <!-- END TEAMLEADER_PROTOCOL -->
                                   Remplacé à chaque sync (step d6).
 ```
