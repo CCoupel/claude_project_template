@@ -417,7 +417,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ## Dispatcher une Tache — Syntaxe
 
 > **Le CDP ne spawne JAMAIS d'agents.** Le spawn (Task) est géré exclusivement par le teamleader.
-> **Avant chaque dispatch** : teammate déjà actif → SendMessage(tâche). Sinon → teamleader spawne d'abord, attend ACTIF, puis envoie la tâche.
+> Tous les teammates sont en IDLE depuis `/start-session`. Dispatch = `SendMessage` uniquement — jamais de spawn pendant la session.
 
 ### Agent simple
 

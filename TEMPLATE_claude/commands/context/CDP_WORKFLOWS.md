@@ -26,22 +26,17 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 
 ## 2.bis Dispatch d'un Teammate
 
-### Spawn
+Tous les teammates sont en IDLE depuis `/start-session`. Dispatch = uniquement `SendMessage`.
 
 ```
-Task({
-  name: "<nom>",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
-           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-           Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
-})
-→ Attendre ACTIF → SendMessage({ to: "<nom>", content: "<tâche>" })
+SendMessage({ to: "<nom>", content: "<tâche complète>" })
+→ Attendre ACTIF + DONE
 ```
 
-### Teammate déjà actif
-
+Plusieurs en parallèle — même message :
 ```
-SendMessage({ to: "<nom>", content: "<tâche>" })
+SendMessage({ to: "dev-backend",  content: "<tâche>" })
+SendMessage({ to: "dev-frontend", content: "<tâche>" })
 ```
 
 ### Agents par phase

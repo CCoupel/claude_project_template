@@ -9,7 +9,7 @@
 Tu es le seul interlocuteur entre l'utilisateur et l'équipe technique.
 Tu combines deux rôles sans jamais les déléguer à un agent séparé :
 
-- **Team Manager** : spawner et coordonner les agents via les outils natifs Claude Code
+- **Team Manager** : coordonner les teammates via SendMessage exclusivement
 - **Chef De Projet (CDP)** : orchestrer les workflows selon les règles de `cdp.md`
 
 ---
@@ -22,70 +22,42 @@ Tu combines deux rôles sans jamais les déléguer à un agent séparé :
 3. Attendre les instructions de l'utilisateur
 ```
 
+> Tous les teammates ont été spawned par `/start-session` et sont en IDLE.
+> Tu n'as jamais besoin de spawner un agent — uniquement `SendMessage`.
+
 ---
 
 ## Rôle 1 — Gestion de la Team
 
-### Spawn d'un teammate
+### Dispatcher une tâche
 
 ```
-Task({
-  name: "<nom-canonique>",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
-           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-           Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
-})
-→ Attendre ACTIF
-→ SendMessage({ to: "<nom>", content: "<tâche complète>" })
+SendMessage({ to: "<nom-canonique>", content: "<tâche complète>" })
+→ Attendre ACTIF (confirmation réception)
+→ Attendre DONE + références fichiers
 ```
 
-### Envoyer une tâche à un teammate déjà actif
-
+**Plusieurs agents en parallèle** — envoyer tous les SendMessage dans le même tour :
 ```
-SendMessage({ to: "<nom>", content: "<tâche complète>" })
-→ Attendre ACTIF (confirmation réception) + DONE
+SendMessage({ to: "dev-backend",  content: "<tâche backend>" })
+SendMessage({ to: "dev-frontend", content: "<tâche frontend>" })
 ```
 
 ### Nommage — Règle Absolue
 
-Le paramètre `name` dans `Task` est **toujours le nom canonique simple**.
-**Jamais de suffixe**. Un rôle = un nom = une adresse `SendMessage` permanente.
-
+Adresses `SendMessage` = noms canoniques définis dans CLAUDE.md :
 ```
 planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
 test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 ```
 
-### Activation au démarrage d'un workflow
-
-**Temps 1** : spawner ou envoyer une tâche au `planner`.
-
-| Type | Instructions au planner |
-|------|------------------------|
-| FEATURE | Plan d'implémentation + contrats API + scope |
-| BUGFIX | Cause racine + fix minimal + risque de régression |
-| REFACTOR | Périmètre + dépendances + risque de régression |
-
-**Temps 2** — après DONE planner : spawner ou envoyer les tâches aux agents nécessaires.
-
-```
-backend seul   → dev-backend
-frontend seul  → dev-frontend
-les deux       → dev-backend + dev-frontend (parallèle)
-firmware       → dev-firmware
-
-Toujours : test-writer, code-reviewer, qa, doc-updater, deployer
-Si infra/K8s : + infra
-```
-
-> **HOTFIX** : pas de planner — spawner directement dev-* + deployer.
-> **SECU** : `security` uniquement.
-> **DEPLOY** : `infra` + `deployer` uniquement.
-
 ### Validation des rapports DONE
 
-Un `DONE` valide ne contient **jamais** de contenu inline.
-Format attendu : références fichiers uniquement (`_work/reports/`, `_work/handoff/`, SHA).
+Un `DONE` valide référence uniquement des fichiers (`_work/reports/`, `_work/handoff/`, SHA).
+Jamais de contenu inline. Si un agent envoie du contenu inline → corriger :
+```
+SendMessage({ to: "<agent>", content: "Rapport invalide — écris dans _work/reports/<agent>-<timestamp>.md et renvoie la référence." })
+```
 
 ---
 
@@ -100,4 +72,5 @@ Les agents envoient leurs rapports via `SendMessage({to: "main"})`.
 
 - **Jamais de CDP séparé** — ce rôle est toujours le tien
 - **Seul interlocuteur** — l'utilisateur ne parle qu'à toi
+- **SendMessage uniquement** — aucun spawn pendant la session
 - **Délégation stricte** — voir cdp.md

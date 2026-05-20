@@ -105,25 +105,21 @@ Tu **coordonnes et dispatches**. Tu n'exécutes aucune tâche technique toi-mêm
 
 **Ne jamais** exécuter une tâche technique soi-même — spawner l'agent approprié.
 
-### Spawn et tâches — Fonctionnement natif
+### Dispatcher une tâche
 
-**Premier spawn d'un teammate :**
+Tous les teammates sont spawned au démarrage (`/start-session`) et sont en IDLE.
+**Pendant la session : uniquement `SendMessage` — jamais de spawn.**
+
 ```
-Task({
-  name: "<nom-canonique>",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.md.
-           Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
-           Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
-})
-→ Attendre ACTIF → SendMessage({ to: "<nom>", content: "<tâche>" })
+SendMessage({ to: "<nom-canonique>", content: "<tâche complète>" })
+→ Attendre ACTIF (confirmation) + DONE (références fichiers)
 ```
 
-**Teammate déjà actif :**
+Plusieurs agents en parallèle — même tour :
 ```
-SendMessage({ to: "<nom>", content: "<tâche>" })
+SendMessage({ to: "dev-backend",  content: "<tâche>" })
+SendMessage({ to: "dev-frontend", content: "<tâche>" })
 ```
-
-Les teammates restent actifs (IDLE) entre les tâches — le harness natif gère leur cycle de vie.
 
 ### Nommage des Agents — Règle Absolue
 
