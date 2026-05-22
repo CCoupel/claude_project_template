@@ -88,6 +88,15 @@ CLAUDE_DISABLE_MOUSE=1
 CLAUDE_EXPERIMENTAL_TEAMS=1
 CLAUDE_OPTIONS=""
 
+# ── Proportions du layout (configurables dans ~/.config/claude-launcher.conf) ─
+# 2 lignes (≤5 teammates) : leader_pct / teammates  — reste toujours au teammate
+LAYOUT_2ROW_LEADER_PCT=50
+# 3 lignes (>5 teammates) : fractions leader/mid/bot  — bot reçoit toujours le reliquat
+# Valeurs par défaut : 3/7 leader · 2/7 mid · 2/7+ bot
+LAYOUT_3ROW_LEADER_NUM=3
+LAYOUT_3ROW_MID_NUM=2
+LAYOUT_3ROW_DEN=7
+
 # ── Couleurs de fond par projet ──────────────────────────────────────────────
 # Palette sombre, couleurs distinctes (indices tmux 256)
 COLOR_PALETTE=(17 52 22 53 58 23 54 238 18 59)
@@ -387,16 +396,16 @@ do_layout() {
     # Pas de teammates : teamleader plein écran
     layout_body=$(build_row "$W" "$H" 0 0 "${top_idxs[@]}")
   elif [[ $n_bot -le 5 ]]; then
-    # ≤ 5 teammates : 2 lignes 50% / 50%
-    local top_h=$(( H * 50 / 100 ))
+    # ≤ 5 teammates : 2 lignes — leader LAYOUT_2ROW_LEADER_PCT% / teammates (reliquat, toujours ≥)
+    local top_h=$(( H * LAYOUT_2ROW_LEADER_PCT / 100 ))
     local bot_h=$(( H - top_h - 1 ))
     top_row=$(build_row "$W" "$top_h" 0 0 "${top_idxs[@]}")
     bot_row=$(build_row "$W" "$bot_h" 0 $(( top_h + 1 )) "${bot_idxs[@]}")
     layout_body="${W}x${H},0,0[${top_row},${bot_row}]"
   else
-    # > 5 teammates : 3 lignes — teamleader 30% / moitié haute 30% / moitié basse ~40%
-    local leader_h=$(( H * 30 / 100 ))
-    local mid_h=$(( H * 30 / 100 ))
+    # > 5 teammates : 3 lignes — fractions LAYOUT_3ROW_*NUM/LAYOUT_3ROW_DEN / bot reçoit le reliquat
+    local leader_h=$(( H * LAYOUT_3ROW_LEADER_NUM / LAYOUT_3ROW_DEN ))
+    local mid_h=$(( H * LAYOUT_3ROW_MID_NUM / LAYOUT_3ROW_DEN ))
     local bot_h=$(( H - leader_h - mid_h - 2 ))
     local n_mid=$(( (n_bot + 1) / 2 ))
     local mid_idxs=("${bot_idxs[@]:0:$n_mid}")
