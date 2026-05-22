@@ -87,7 +87,17 @@ En cas de probleme :
 
 ## Agent
 
-Dispatcher via `SendMessage` (teammate en IDLE depuis `/start-session`) :
+Vérifier si le teammate `deployer` est déjà actif via `TaskList`.
+Si absent → spawner avant d'envoyer la tâche :
+
+```
+Task({
+  name: "deployer",
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/deploy.md. Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
+})
+```
+
+Attendre ACTIF, puis dispatcher via `SendMessage` :
 `SendMessage({to: "deployer", content: ...})`
 
 Spec : `.claude/agents/deploy.md`

@@ -106,7 +106,17 @@ Le rapport inclut :
 
 ## Agent
 
-Dispatcher via `SendMessage` (teammate en IDLE depuis `/start-session`) :
+Vérifier si le teammate `code-reviewer` est déjà actif via `TaskList`.
+Si absent → spawner avant d'envoyer la tâche :
+
+```
+Task({
+  name: "code-reviewer",
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/code-reviewer.md. Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
+})
+```
+
+Attendre ACTIF, puis dispatcher via `SendMessage` :
 `SendMessage({to: "code-reviewer", content: ...})`
 
 Spec : `.claude/agents/code-reviewer.md`
