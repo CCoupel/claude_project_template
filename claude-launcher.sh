@@ -318,8 +318,6 @@ do_layout() {
   local W H
   W=$(tmux display-message -t "$win" -p '#{window_width}'  2>/dev/null)
   H=$(tmux display-message -t "$win" -p '#{window_height}' 2>/dev/null)
-  local top_h=$(( H * 55 / 100 ))
-  local bot_h=$(( H - top_h - 1 ))
 
   # ── Construction de la layout string tmux ────────────────────────────────
   # Format exact (vérifié sur layout réelle) :
@@ -383,14 +381,30 @@ do_layout() {
   done
 
   # Construit la layout string
-  local layout_body top_row bot_row
+  local layout_body top_row mid_row bot_row
 
   if [[ $n_bot -eq 0 ]]; then
+    # Pas de teammates : teamleader plein écran
     layout_body=$(build_row "$W" "$H" 0 0 "${top_idxs[@]}")
-  else
+  elif [[ $n_bot -le 5 ]]; then
+    # ≤ 5 teammates : 2 lignes 50% / 50%
+    local top_h=$(( H * 50 / 100 ))
+    local bot_h=$(( H - top_h - 1 ))
     top_row=$(build_row "$W" "$top_h" 0 0 "${top_idxs[@]}")
     bot_row=$(build_row "$W" "$bot_h" 0 $(( top_h + 1 )) "${bot_idxs[@]}")
     layout_body="${W}x${H},0,0[${top_row},${bot_row}]"
+  else
+    # > 5 teammates : 3 lignes — teamleader 30% / moitié haute 30% / moitié basse ~40%
+    local leader_h=$(( H * 30 / 100 ))
+    local mid_h=$(( H * 30 / 100 ))
+    local bot_h=$(( H - leader_h - mid_h - 2 ))
+    local n_mid=$(( (n_bot + 1) / 2 ))
+    local mid_idxs=("${bot_idxs[@]:0:$n_mid}")
+    local bot2_idxs=("${bot_idxs[@]:$n_mid}")
+    top_row=$(build_row "$W" "$leader_h" 0 0 "${top_idxs[@]}")
+    mid_row=$(build_row "$W" "$mid_h" 0 $(( leader_h + 1 )) "${mid_idxs[@]}")
+    bot_row=$(build_row "$W" "$bot_h" 0 $(( leader_h + mid_h + 2 )) "${bot2_idxs[@]}")
+    layout_body="${W}x${H},0,0[${top_row},${mid_row},${bot_row}]"
   fi
 
   local checksum
