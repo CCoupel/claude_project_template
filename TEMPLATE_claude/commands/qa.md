@@ -70,17 +70,7 @@ Le rapport QA inclut :
 
 ## Agent
 
-Vérifier si le teammate `qa` est déjà actif via `TaskList`.
-Si absent → spawner avant d'envoyer la tâche :
-
-```
-Task({
-  name: "qa",
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/qa.md. Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
-})
-```
-
-Attendre ACTIF, puis dispatcher via `SendMessage` :
+Dispatcher via `SendMessage` (teammate en IDLE depuis `/start-session`) :
 `SendMessage({to: "qa", content: ...})`
 
 Spec : `.claude/agents/qa.md`
