@@ -368,7 +368,16 @@ Selon la reponse utilisateur :
   Phase 6 (PROD)
 - **NON** →
   > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
-  Retour Phase DEV ou Phase 1 selon l'ecart — la documentation produite reste valide pour le delta
+
+  **Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV :**
+  - dev-* et test-writer : **pas de CLEAR** — leur contexte est la carte exacte de ce qu'ils ont construit
+  - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater) avant redispatch
+  - La documentation reste valide pour le delta
+
+  **Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1 :**
+  - CLEAR(planner) → nouveau plan → GATE 2
+  - Après réception du nouveau plan : CLEAR(dev-*) + CLEAR(test-writer) — contexte obsolète
+  - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater) avant redispatch
 
 ### Phase 6 — Deploiement PROD (via confirmation GATE 4)
 
@@ -453,10 +462,16 @@ Phase C : Validation fonctionnelle → Phase D : Merge
 ```
 MAX_CYCLES = 3
 
-Si REVIEW = REFUSE    → cycle++ → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points]" })
-                                 → relancer REVIEW + TEST-WRITER en parallele
-Si QA = NOT VALIDATED → cycle++ → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [erreurs]" })
-                                 → relancer REVIEW + TEST-WRITER en parallele
+Si REVIEW = REFUSE    → cycle++
+  → SendMessage(dev-*, "Corriger : [points]")       ← pas de CLEAR (contexte précieux)
+  → CLEAR(code-reviewer) puis redispatch REVIEW
+  → CLEAR(test-writer) si BREAKING change, sinon pas de CLEAR
+
+Si QA = NOT VALIDATED → cycle++
+  → SendMessage(dev-*, "Corriger : [erreurs]")       ← pas de CLEAR (contexte précieux)
+  → CLEAR(code-reviewer) + CLEAR(qa) puis redispatch REVIEW + QA
+  → CLEAR(test-writer) si régression de couverture, sinon pas de CLEAR
+
 Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ```
 
@@ -475,32 +490,81 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 
 **Tout le reste est execute en autonomie** — QA validee → DOC → DEPLOY QUALIF sans interruption.
 
-## Dispatcher une Tache — Syntaxe
+## Gestion du Contexte Agents (CLEAR)
 
-> **Le CDP ne spawne JAMAIS d'agents.** Le spawn (Task) est géré exclusivement par le teamleader.
-> Tous les teammates sont en IDLE depuis `/start-session`. Dispatch = `SendMessage` uniquement — jamais de spawn pendant la session.
+### Agents clearables vs agents à contexte préservé
 
-### Agent simple
+| Catégorie | Agents | Règle |
+|-----------|--------|-------|
+| **Clearables** | `planner`, `code-reviewer`, `qa`, `doc-updater`, `security`, `infra`, `deployer`, `marketing`, `pr-reviewer` | CLEAR systématique avant chaque dispatch |
+| **Contexte préservé** | `dev-backend`, `dev-frontend`, `dev-firmware`, `dev-plugin`, `test-writer` | Jamais clearer mid-feature — seulement entre features (retour Phase 1) |
+
+### Procédure CLEAR
 
 ```
-SendMessage({
-  to: "dev-backend",
-  content: "
-    Implemente [description precise].
-    Contrats : consulter contracts/http-endpoints.md.
-    Commits atomiques.
-    Reponse attendue UNIQUEMENT : statut DONE/FAILED + liste des fichiers modifies + SHA commit.
-    Pas de rapport detaille, pas de code, pas de diff dans les messages.
-  "
-})
+CLEAR(<agent>) :
+  SendMessage({ to: "<agent>", content: "/clear" })
+  Attendre [AGENT] ACTIF
+  → Agent prêt pour le prochain SendMessage
+```
+
+Pour plusieurs agents clearables en parallèle :
+```
+// Étape 1 — CLEAR simultané
+SendMessage({ to: "qa",          content: "/clear" })
+SendMessage({ to: "doc-updater", content: "/clear" })
+// Attendre tous les ACTIF
+
+// Étape 2 — dispatch simultané
+SendMessage({ to: "qa",          content: "<tâche qa>" })
+SendMessage({ to: "doc-updater", content: "<tâche doc>" })
+```
+
+### Règle absolue
+
+> Tout dispatch vers un agent clearable est **toujours précédé** de `CLEAR(<agent>)`.
+> Jamais de SendMessage(tâche) sans CLEAR préalable pour ces agents.
+> Les agents dev-* et test-writer ne reçoivent jamais `/clear` mid-feature.
+
+---
+
+## Dispatcher une Tache — Syntaxe
+
+> **Le CDP ne spawne JAMAIS d'agents.** Dispatch = `SendMessage` uniquement.
+> `/clear` est la seule exception — c'est du lifecycle, pas du spawn.
+
+### Agent clearable (toujours précédé de CLEAR)
+
+```
+// 1. CLEAR
+SendMessage({ to: "code-reviewer", content: "/clear" })
+// Attendre ACTIF
+
+// 2. Tâche
+SendMessage({ to: "code-reviewer", content: "
+  Revue depuis [branche/commit]. [...]
+" })
+```
+
+### Agent à contexte préservé (pas de CLEAR)
+
+```
+SendMessage({ to: "dev-backend", content: "
+  Implemente [description precise].
+  Contrats : consulter contracts/http-endpoints.md.
+  Commits atomiques.
+  Reponse : DONE/FAILED + fichiers modifies + SHA commit.
+" })
 ```
 
 ### Agents en parallele (meme message)
 
 ```
-// Dans un seul message, deux SendMessage :
+// dev-* : pas de CLEAR
 SendMessage({ to: "dev-backend",  content: "[plan backend]\nHandoff planner : _work/handoff/planner-[timestamp].md" })
 SendMessage({ to: "dev-frontend", content: "[plan frontend]\nHandoff planner : _work/handoff/planner-[timestamp].md" })
+
+// clearables en parallele : CLEAR d'abord (voir procédure CLEAR ci-dessus)
 ```
 
 ## Reporting de Progression
