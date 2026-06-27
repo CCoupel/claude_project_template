@@ -812,19 +812,35 @@ _n_dirs=\${#GITHUB_DIRS[@]}
 for _dir in "\${GITHUB_DIRS[@]}"; do
   [[ -d "\$_dir" ]] || continue
   _dirname=\$(basename "\$_dir")
+  # Pour disambiguïser quand deux dirs ont le même basename, afficher les 2 derniers composants
+  _dirlabel=\$(printf '%s' "\$_dir" | rev | cut -d'/' -f1-2 | rev)
   if [[ \$_n_dirs -gt 1 ]]; then
-    printf '__sep__%s\t  \033[0;90m── %s ──\033[0m\t\n' "\$_dirname" "\$_dirname"
+    printf '__sep__%s\t  \033[0;34m▸ \033[0;36m%s\033[0m\t\n' "\$_dirname" "\$_dirlabel"
   fi
+  _projects=()
   while IFS= read -r entry; do
-    [[ -d "\$_dir/\$entry" ]] || continue
+    [[ -d "\$_dir/\$entry" ]] && _projects+=("\$entry")
+  done < <(ls -1A "\$_dir" 2>/dev/null)
+  _np=\${#_projects[@]}
+  for _i in "\${!_projects[@]}"; do
+    entry="\${_projects[\$_i]}"
     local_color=\$(get_project_color "\$entry")
     dot=\$(printf '\033[38;5;%sm●\033[0m' "\$local_color")
-    if echo "\$existing_windows" | grep -qxF "\$entry"; then
-      printf '%s\t%s \033[1;32m%s\033[0;32m [ouvert]\033[0m\t%s\n' "\$entry" "\$dot" "\$entry" "\$_dir"
+    if [[ \$_n_dirs -gt 1 ]]; then
+      if [[ \$((_i + 1)) -eq \$_np ]]; then
+        _pfx="\033[0;90m  └─\033[0m "
+      else
+        _pfx="\033[0;90m  ├─\033[0m "
+      fi
     else
-      printf '%s\t%s %s\t%s\n' "\$entry" "\$dot" "\$entry" "\$_dir"
+      _pfx=""
     fi
-  done < <(ls -1A "\$_dir" 2>/dev/null)
+    if echo "\$existing_windows" | grep -qxF "\$entry"; then
+      printf '%s\t%s%s \033[1;32m%s\033[0;32m [ouvert]\033[0m\t%s\n' "\$entry" "\$_pfx" "\$dot" "\$entry" "\$_dir"
+    else
+      printf '%s\t%s%s %s\t%s\n' "\$entry" "\$_pfx" "\$dot" "\$entry" "\$_dir"
+    fi
+  done
 done
 GENSCRIPT
   chmod +x "$tmp_gen"
