@@ -784,7 +784,64 @@ get_project_color() {
 
 existing_windows=\$(tmux list-windows -t "\$SESSION" -F '#{window_name}' 2>/dev/null)
 
-# Autres sessions launcher (window [menu] présente, session ≠ courante)
+# Génération en ordre INVERSE : fzf inverse la liste, donc on pré-inverse
+# pour qu'elle s'affiche dans le bon sens sans dépendre d'options fzf.
+#
+# Ordre d'affichage voulu (top→bottom) :
+#   sessions · update · quit · new · dir1 { sep + projets } · dir2 { sep + projets }
+# Ordre de génération (inversé) :
+#   dir2 { projets↑ + sep } · dir1 { projets↑ + sep } · new · quit · update · sessions
+
+_n_dirs=\${#GITHUB_DIRS[@]}
+for (( _di = _n_dirs - 1; _di >= 0; _di-- )); do
+  _dir="\${GITHUB_DIRS[\$_di]}"
+  [[ -d "\$_dir" ]] || continue
+  _dirname=\$(basename "\$_dir")
+  _dirlabel=\$(printf '%s' "\$_dir" | rev | cut -d'/' -f1-2 | rev)
+
+  _projects=()
+  while IFS= read -r entry; do
+    [[ -d "\$_dir/\$entry" ]] && _projects+=("\$entry")
+  done < <(ls -1A "\$_dir" 2>/dev/null)
+  _np=\${#_projects[@]}
+
+  # Projets en ordre inverse (dernier alpha en premier → après inversion fzf : ordre alpha)
+  for (( _ri = _np - 1; _ri >= 0; _ri-- )); do
+    entry="\${_projects[\$_ri]}"
+    local_color=\$(get_project_color "\$entry")
+    dot=\$(printf '\033[38;5;%sm●\033[0m' "\$local_color")
+    if [[ \$_n_dirs -gt 1 ]]; then
+      # Premier généré (index _np-1) = dernier affiché dans le groupe = └─
+      if [[ \$_ri -eq \$((_np - 1)) ]]; then
+        _pfx=\$'\033[0;90m  └─\033[0m '
+      else
+        _pfx=\$'\033[0;90m  ├─\033[0m '
+      fi
+    else
+      _pfx=""
+    fi
+    if echo "\$existing_windows" | grep -qxF "\$entry"; then
+      printf '%s\t%s%s \033[1;32m%s\033[0;32m [ouvert]\033[0m\t%s\n' "\$entry" "\$_pfx" "\$dot" "\$entry" "\$_dir"
+    else
+      printf '%s\t%s%s %s\t%s\n' "\$entry" "\$_pfx" "\$dot" "\$entry" "\$_dir"
+    fi
+  done
+
+  # Séparateur généré APRÈS les projets → affiché AU-DESSUS après inversion fzf
+  if [[ \$_n_dirs -gt 1 ]]; then
+    printf '__sep__%s\t  \033[0;34m▸ \033[0;36m%s\033[0m\t\n' "\$_dirname" "\$_dirlabel"
+  fi
+done
+
+printf '__new__\t  \033[1;36m✦ Créer nouveau projet\033[0m\t\n'
+printf '__quit__\t  \033[0;90m✕ Quitter le launcher\033[0m\t\n'
+
+if [[ -s "\$UPDATE_FLAG" ]]; then
+  _latest=\$(cat "\$UPDATE_FLAG")
+  printf '__update__\t  \033[1;32m↑ %s disponible\033[0m  \033[0;90m[Entrée] mettre à jour\033[0m\t\n' "\$_latest"
+fi
+
+# Sessions autres launcher (générées en dernier = affichées en premier après inversion)
 while IFS= read -r _sess; do
   [[ "\$_sess" == "\$SESSION" ]] && continue
   tmux list-windows -t "\$_sess" -F '#{window_name}' 2>/dev/null \
@@ -799,49 +856,6 @@ while IFS= read -r _sess; do
   printf '__session__%s\t  \033[0;35m⬡ %s\033[0m  %b  \033[0;90m%s projet(s)\033[0m\t\n' \
     "\$_sess" "\$_sess" "\$_badge" "\$_pcount"
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
-
-if [[ -s "\$UPDATE_FLAG" ]]; then
-  _latest=\$(cat "\$UPDATE_FLAG")
-  printf '__update__\t  \033[1;32m↑ %s disponible\033[0m  \033[0;90m[Entrée] mettre à jour\033[0m\t\n' "\$_latest"
-fi
-
-printf '__quit__\t  \033[0;90m✕ Quitter le launcher\033[0m\t\n'
-printf '__new__\t  \033[1;36m✦ Créer nouveau projet\033[0m\t\n'
-
-_n_dirs=\${#GITHUB_DIRS[@]}
-for _dir in "\${GITHUB_DIRS[@]}"; do
-  [[ -d "\$_dir" ]] || continue
-  _dirname=\$(basename "\$_dir")
-  # Pour disambiguïser quand deux dirs ont le même basename, afficher les 2 derniers composants
-  _dirlabel=\$(printf '%s' "\$_dir" | rev | cut -d'/' -f1-2 | rev)
-  if [[ \$_n_dirs -gt 1 ]]; then
-    printf '__sep__%s\t  \033[0;34m▸ \033[0;36m%s\033[0m\t\n' "\$_dirname" "\$_dirlabel"
-  fi
-  _projects=()
-  while IFS= read -r entry; do
-    [[ -d "\$_dir/\$entry" ]] && _projects+=("\$entry")
-  done < <(ls -1A "\$_dir" 2>/dev/null)
-  _np=\${#_projects[@]}
-  for _i in "\${!_projects[@]}"; do
-    entry="\${_projects[\$_i]}"
-    local_color=\$(get_project_color "\$entry")
-    dot=\$(printf '\033[38;5;%sm●\033[0m' "\$local_color")
-    if [[ \$_n_dirs -gt 1 ]]; then
-      if [[ \$((_i + 1)) -eq \$_np ]]; then
-        _pfx=\$'\033[0;90m  └─\033[0m '
-      else
-        _pfx=\$'\033[0;90m  ├─\033[0m '
-      fi
-    else
-      _pfx=""
-    fi
-    if echo "\$existing_windows" | grep -qxF "\$entry"; then
-      printf '%s\t%s%s \033[1;32m%s\033[0;32m [ouvert]\033[0m\t%s\n' "\$entry" "\$_pfx" "\$dot" "\$entry" "\$_dir"
-    else
-      printf '%s\t%s%s %s\t%s\n' "\$entry" "\$_pfx" "\$dot" "\$entry" "\$_dir"
-    fi
-  done
-done
 GENSCRIPT
   chmod +x "$tmp_gen"
 
@@ -901,14 +915,7 @@ GENSCRIPT
     _n_clients=$(tmux list-clients -t "$SESSION" 2>/dev/null | wc -l | tr -d ' ')
     _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$CURRENT_SESSION" "$_n_clients")
 
-    # Détecter si fzf inverse l'ordre des entrées (--tac dans config ou env)
-    # La probe simule exactement les options de l'appel réel (FZF_DEFAULT_OPTS="" + --layout=default)
-    _fzf_probe=$(printf 'first\nsecond\n' \
-      | FZF_DEFAULT_OPTS="" fzf --layout=default --filter='' 2>/dev/null | head -1)
-    _gen_pipe="cat"
-    [[ "$_fzf_probe" == "second" ]] && _gen_pipe="tac"
-
-    selected=$(bash "$tmp_gen" | $_gen_pipe | FZF_DEFAULT_OPTS="" fzf \
+    selected=$(bash "$tmp_gen" | FZF_DEFAULT_OPTS="" fzf \
       --layout=default \
       --listen "$fzf_port" \
       --ansi \
