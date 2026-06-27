@@ -901,8 +901,7 @@ GENSCRIPT
     _n_clients=$(tmux list-clients -t "$SESSION" 2>/dev/null | wc -l | tr -d ' ')
     _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$CURRENT_SESSION" "$_n_clients")
 
-    selected=$(bash "$tmp_gen" | fzf \
-      +tac \
+    selected=$(bash "$tmp_gen" | FZF_DEFAULT_OPTS="" fzf \
       --listen "$fzf_port" \
       --ansi \
       --delimiter=$'\t' \
