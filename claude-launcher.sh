@@ -902,6 +902,7 @@ GENSCRIPT
     _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$CURRENT_SESSION" "$_n_clients")
 
     selected=$(bash "$tmp_gen" | fzf \
+      +tac \
       --listen "$fzf_port" \
       --ansi \
       --delimiter=$'\t' \
