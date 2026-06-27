@@ -901,7 +901,14 @@ GENSCRIPT
     _n_clients=$(tmux list-clients -t "$SESSION" 2>/dev/null | wc -l | tr -d ' ')
     _fzf_header=$(printf '  \033[0;90msession :\033[0m \033[1;36m%s\033[0m  \033[0;90m·  %s client(s) attaché(s)\033[0m' "$CURRENT_SESSION" "$_n_clients")
 
-    selected=$(bash "$tmp_gen" | FZF_DEFAULT_OPTS="" fzf \
+    # Détecter si fzf inverse l'ordre des entrées (--tac dans config ou env)
+    # La probe simule exactement les options de l'appel réel (FZF_DEFAULT_OPTS="" + --layout=default)
+    _fzf_probe=$(printf 'first\nsecond\n' \
+      | FZF_DEFAULT_OPTS="" fzf --layout=default --filter='' 2>/dev/null | head -1)
+    _gen_pipe="cat"
+    [[ "$_fzf_probe" == "second" ]] && _gen_pipe="tac"
+
+    selected=$(bash "$tmp_gen" | $_gen_pipe | FZF_DEFAULT_OPTS="" fzf \
       --layout=default \
       --listen "$fzf_port" \
       --ansi \
