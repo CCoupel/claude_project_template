@@ -208,7 +208,7 @@ auto_update() {
     chmod +x "$tmp"
     mv "$tmp" "$SCRIPT_PATH"
     printf "  ✓ Launcher mis à jour. Relancement...\n\n"
-    exec "$SCRIPT_PATH"
+    exec "$SCRIPT_PATH" "$@"
   fi
   rm -f "$tmp"
 }
@@ -929,7 +929,7 @@ GENSCRIPT
     project_root=$(printf '%s' "$selected" | cut -f3)
 
     if [[ "$project" == "__update__" ]]; then
-      auto_update
+      auto_update --menu "$SCRIPT_PATH"
       rm -f "$tmp_update_flag"
       continue
     fi
