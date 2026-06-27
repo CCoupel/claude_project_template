@@ -83,6 +83,7 @@ CONFIG_FILE="${HOME}/.config/claude-launcher.conf"
 
 # ── Valeurs par défaut (écrasées par le fichier de config) ───────────────────
 GITHUB_DIR="$HOME/GITHUB"
+GITHUB_DIRS=()   # Si non vide, remplace GITHUB_DIR — tableau de dossiers racine
 GITHUB_TOKEN=""
 CLAUDE_DISABLE_MOUSE=1
 CLAUDE_EXPERIMENTAL_TEAMS=1
@@ -115,8 +116,13 @@ create_default_config() {
 # claude-launcher — configuration utilisateur
 # Éditer puis relancer le launcher.
 
-# Répertoire contenant vos projets
+# Répertoire contenant vos projets (utilisé si GITHUB_DIRS est vide)
 GITHUB_DIR="$HOME/GITHUB"
+
+# Plusieurs dossiers racine — si renseigné, remplace GITHUB_DIR
+# Les projets seront listés groupés par dossier dans le menu
+# GITHUB_DIRS=("$HOME/GITHUB" "/mnt/c/Users/username/Documents/VScode/GITHUB")
+GITHUB_DIRS=()
 
 # Token GitHub (gh CLI + Claude Code MCP)
 GITHUB_TOKEN=""
@@ -222,6 +228,11 @@ sync_init_project() {
 }
 
 load_config
+
+# Si GITHUB_DIRS vide (config ancienne ou non renseigné), repli sur GITHUB_DIR
+if [[ ${#GITHUB_DIRS[@]} -eq 0 ]]; then
+  GITHUB_DIRS=("$GITHUB_DIR")
+fi
 
 # ════════════════════════════════════════════════════════════════════════════
 # FONCTION : find_team_config PROJECT_DIR
@@ -745,14 +756,20 @@ if [[ "$1" == "--menu" ]]; then
   for _k in "${!PROJECT_COLORS[@]}"; do
     colors_decl+=$'\n'"PROJECT_COLORS[$(printf '%q' "$_k")]=$(printf '%q' "${PROJECT_COLORS[$_k]}")"
   done
+  dirs_decl="GITHUB_DIRS=($(printf '%q ' "${GITHUB_DIRS[@]}"))"
+
+  # Format des entrées fzf : 3 champs séparés par \t
+  #   champ 1 : clé (nom du projet ou token spécial) — utilisé pour la recherche (--nth=1)
+  #   champ 2 : affichage ANSI coloré                — montré via --with-nth=2
+  #   champ 3 : chemin absolu du dossier racine      — récupéré à la sélection via cut -f3
 
   cat > "$tmp_gen" <<GENSCRIPT
 #!/usr/bin/env bash
-GITHUB_DIR=$(printf '%q' "$GITHUB_DIR")
 SESSION=$(printf '%q' "$SESSION")
 UPDATE_FLAG=$(printf '%q' "$tmp_update_flag")
 ${palette_decl}
 ${colors_decl}
+${dirs_decl}
 
 get_project_color() {
   local project="\$1"
@@ -779,28 +796,36 @@ while IFS= read -r _sess; do
   else
     _badge="\$(printf '\033[0;33m[orpheline]\033[0m')"
   fi
-  printf '__session__%s\t  \033[0;35m⬡ %s\033[0m  %b  \033[0;90m%s projet(s)\033[0m\n' \
+  printf '__session__%s\t  \033[0;35m⬡ %s\033[0m  %b  \033[0;90m%s projet(s)\033[0m\t\n' \
     "\$_sess" "\$_sess" "\$_badge" "\$_pcount"
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
 
 if [[ -s "\$UPDATE_FLAG" ]]; then
   _latest=\$(cat "\$UPDATE_FLAG")
-  printf '__update__\t  \033[1;32m↑ %s disponible\033[0m  \033[0;90m[Entrée] mettre à jour\033[0m\n' "\$_latest"
+  printf '__update__\t  \033[1;32m↑ %s disponible\033[0m  \033[0;90m[Entrée] mettre à jour\033[0m\t\n' "\$_latest"
 fi
 
-printf '__quit__\t  \033[0;90m✕ Quitter le launcher\033[0m\n'
-printf '__new__\t  \033[1;36m✦ Créer nouveau projet\033[0m\n'
+printf '__quit__\t  \033[0;90m✕ Quitter le launcher\033[0m\t\n'
+printf '__new__\t  \033[1;36m✦ Créer nouveau projet\033[0m\t\n'
 
-while IFS= read -r entry; do
-  [[ -d "\$GITHUB_DIR/\$entry" ]] || continue
-  local_color=\$(get_project_color "\$entry")
-  dot=\$(printf '\033[38;5;%sm●\033[0m' "\$local_color")
-  if echo "\$existing_windows" | grep -qxF "\$entry"; then
-    printf '%s\t%s \033[1;32m%s\033[0;32m [ouvert]\033[0m\n' "\$entry" "\$dot" "\$entry"
-  else
-    printf '%s\t%s %s\n' "\$entry" "\$dot" "\$entry"
+_n_dirs=\${#GITHUB_DIRS[@]}
+for _dir in "\${GITHUB_DIRS[@]}"; do
+  [[ -d "\$_dir" ]] || continue
+  _dirname=\$(basename "\$_dir")
+  if [[ \$_n_dirs -gt 1 ]]; then
+    printf '__sep__%s\t  \033[0;90m── %s ──\033[0m\t\n' "\$_dirname" "\$_dirname"
   fi
-done < <(ls -1A "\$GITHUB_DIR" 2>/dev/null)
+  while IFS= read -r entry; do
+    [[ -d "\$_dir/\$entry" ]] || continue
+    local_color=\$(get_project_color "\$entry")
+    dot=\$(printf '\033[38;5;%sm●\033[0m' "\$local_color")
+    if echo "\$existing_windows" | grep -qxF "\$entry"; then
+      printf '%s\t%s \033[1;32m%s\033[0;32m [ouvert]\033[0m\t%s\n' "\$entry" "\$dot" "\$entry" "\$_dir"
+    else
+      printf '%s\t%s %s\t%s\n' "\$entry" "\$dot" "\$entry" "\$_dir"
+    fi
+  done < <(ls -1A "\$_dir" 2>/dev/null)
+done
 GENSCRIPT
   chmod +x "$tmp_gen"
 
@@ -811,7 +836,9 @@ GENSCRIPT
       printf "  Appuyer sur Entrée pour télécharger et relancer le launcher.\n"
       exit 0
     fi
-    full="'"$GITHUB_DIR"'/$entry"
+    [[ "$entry" == __sep__* || "$entry" == __quit__ || "$entry" == __new__ || "$entry" == __session__* ]] && exit 0
+    dirpath=$(printf "%s" "$1" | cut -f3)
+    full="$dirpath/$entry"
     wins=$(tmux list-windows -t "'"$SESSION"'" -F "#{window_name}" 2>/dev/null)
     if echo "$wins" | grep -qxF "$entry"; then
       printf "\033[1;32m  ● window ouvert : %s\033[0m\n\n" "$entry"
@@ -864,7 +891,7 @@ GENSCRIPT
       --delimiter=$'\t' \
       --with-nth=2 \
       --nth=1 \
-      --prompt "  $GITHUB_DIR/ > " \
+      --prompt "  ❯ " \
       --height=70% --border \
       --header "$_fzf_header" \
       --header-first \
@@ -882,6 +909,7 @@ GENSCRIPT
     [[ -z "$selected" ]] && { sleep 0.2; continue; }
 
     project="${selected%%$'\t'*}"
+    project_root=$(printf '%s' "$selected" | cut -f3)
 
     if [[ "$project" == "__update__" ]]; then
       auto_update
@@ -913,13 +941,28 @@ GENSCRIPT
       continue
     fi
 
+    if [[ "$project" == __sep__* ]]; then
+      continue
+    fi
+
     if [[ "$project" == "__new__" ]]; then
       clear
       printf "\033[1;36m  Créer nouveau projet\033[0m\n\n"
+      if [[ ${#GITHUB_DIRS[@]} -gt 1 ]]; then
+        printf "  Dossier racine :\n"
+        for _i in "${!GITHUB_DIRS[@]}"; do
+          printf "  [%d] %s\n" "$((_i+1))" "${GITHUB_DIRS[$_i]}"
+        done
+        read -rp "  Choix [1] : " _dir_choice
+        _dir_choice="${_dir_choice:-1}"
+        project_root="${GITHUB_DIRS[$((_dir_choice-1))]:-${GITHUB_DIRS[0]}}"
+      else
+        project_root="${GITHUB_DIRS[0]}"
+      fi
       read -rp "  Nom du projet : " project
       [[ -z "$project" ]] && continue
       read -rp "  URL git remote (optionnel, Entrée pour ignorer) : " git_remote
-      project_dir="$GITHUB_DIR/$project"
+      project_dir="$project_root/$project"
       if [[ -d "$project_dir" ]]; then
         printf "\033[1;31m  ✗ Le répertoire existe déjà : %s\033[0m\n" "$project_dir"
         sleep 2
@@ -931,7 +974,7 @@ GENSCRIPT
       printf "\n  \033[1;32m✓ Projet créé : %s\033[0m\n\n" "$project_dir"
       sleep 1
     else
-      project_dir="$GITHUB_DIR/$project"
+      project_dir="$project_root/$project"
     fi
 
     if tmux list-windows -t "$SESSION" -F '#{window_name}' 2>/dev/null \
