@@ -828,9 +828,9 @@ for _dir in "\${GITHUB_DIRS[@]}"; do
     dot=\$(printf '\033[38;5;%sm●\033[0m' "\$local_color")
     if [[ \$_n_dirs -gt 1 ]]; then
       if [[ \$((_i + 1)) -eq \$_np ]]; then
-        _pfx="\033[0;90m  └─\033[0m "
+        _pfx=\$'\033[0;90m  └─\033[0m '
       else
-        _pfx="\033[0;90m  ├─\033[0m "
+        _pfx=\$'\033[0;90m  ├─\033[0m '
       fi
     else
       _pfx=""
