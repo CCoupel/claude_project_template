@@ -503,7 +503,10 @@ Pour récupérer les nouvelles fonctionnalités du template dans un projet exist
 Fetche la dernière version de `TEMPLATE_claude/` et :
 - Écrase les commandes (`*.md`) et agents template (`*.template.md`)
 - Met à jour le bloc `<!-- BEGIN/END TEAMLEADER_PROTOCOL -->` dans `CLAUDE.md` sans toucher au reste
-- Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL`) et `.claude/settings.json`
+- Compare la table `## Agents Disponibles` de `CLAUDE.md` à la structure attendue (agents génériques
+  + agents `dev-*` selon la stack configurée) et la met à jour — documentation uniquement, cette
+  comparaison ne crée/modifie/supprime jamais `.claude/agents/*.md`
+- Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL` + table `Agents Disponibles`) et `.claude/settings.json`
 
 ### Structure de CLAUDE.md — Zone projet / Zone template
 
@@ -512,12 +515,16 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
 ```
 Zone 1 — Contenu projet           Zone 2 — Règles template
 ─────────────────────────         ───────────────────────────────────────
-Config, stack, agents,            <!-- BEGIN TEAMLEADER_PROTOCOL -->
-commandes, mémoire.               Rôle CDP, nommage canonique,
-Jamais écrasé par le template.    délégation stricte, spawn au start-session,
+Config, stack, commandes,         <!-- BEGIN TEAMLEADER_PROTOCOL -->
+mémoire. Jamais écrasé            Rôle CDP, nommage canonique,
+par le template.                 délégation stricte, spawn au start-session,
                                   SendMessage only, validation DONE.
                                   <!-- END TEAMLEADER_PROTOCOL -->
                                   Remplacé à chaque sync (step d6).
+
+Table "## Agents Disponibles" — exception documentaire dans la Zone 1 : comparée à la
+stack configurée et resynchronisée à chaque sync (step d5c), mais uniquement son texte —
+`.claude/agents/*.md` n'est jamais touché par cette resynchronisation.
 ```
 
 `CLAUDE.md` étant chargé nativement par Claude Code à chaque session, les règles de la Zone 2 survivent aux compactages de contexte sans mécanisme de hook supplémentaire.
