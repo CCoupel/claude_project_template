@@ -127,7 +127,12 @@ Scopes courants : `commands`, `agents`, `templates`, `init-project`, `ci`, `read
 - **patch** (Z) : correction, amélioration d'un template existant
 - **major** (X) : changement d'architecture (ex: v1→v2 = introduction de TEMPLATE_claude/)
 
-Pour publier une release, pousser un tag SemVer sur main :
+Avant de tagger, mettre à jour la documentation :
+
+1. Vérifier que `README.md` reflète l'état réel du template (cf. section "README — Maintenir la cohérence" ci-dessus) — aucune divergence sur `TEMPLATE_claude/`, `init-project.md`, les commandes ou les chemins.
+2. Committer les mises à jour de doc dans la même PR que le changement (pas de commit de doc séparé après le tag).
+
+Puis publier la release en poussant un tag SemVer sur main :
 
 ```bash
 git tag vX.Y.Z && git push origin vX.Y.Z

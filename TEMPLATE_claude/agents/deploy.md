@@ -105,6 +105,9 @@ echo "Deploiement QUALIF termine - $VERSION → $BUILD_DIR"
 [1. VERIFICATION] -- Prerequis + validation manuelle
     |
     v
+[1bis. DOCUMENTATION] -- Verification doc finalisee (CHANGELOG, README, docs API)
+    |
+    v
 [2. MERGE] -- Merge branche travail -> main
     |
     v
@@ -132,6 +135,15 @@ echo "Deploiement QUALIF termine - $VERSION → $BUILD_DIR"
 # Voir context/COMMON.md section 5.3
 DEV_VERSION=$(cat {VERSION_FILE})   # ex: 1.3.1.1 -> version prod = 1.4.1
 # Ecrire la version prod calculee dans {VERSION_FILE} avant le merge
+
+# 1ter. Verification documentation (avant merge)
+# En orchestration CDP : le doc-updater a deja fait le DOC FINALIZE (Phase 5) — verifier juste la reception du DONE.
+# En usage standalone (/deploy prod hors CDP) : verifier manuellement que la doc est a jour, sinon STOP.
+grep -q "$DEV_VERSION" CHANGELOG.md || {
+  echo "CHANGELOG.md non mis a jour pour cette version — STOP, retour doc-updater avant de continuer."
+  exit 1
+}
+# README/docs concernes : verifier manuellement qu'ils refletent les changements de ce release.
 
 # 2. Merge (sans supprimer la branche de travail)
 git checkout main
