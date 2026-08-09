@@ -388,6 +388,11 @@ Après un déploiement PROD (CI OK), le CDP vérifie le milestone actif :
 - **100% des issues fermées** → milestone clos automatiquement
 - **Issues encore ouvertes** → alerte utilisateur avec la liste
 
+Si le milestone clos contient des issues avec un label visible utilisateur (`feature`, `enhancement`,
+`breaking-change`), le deployer propose de lancer l'agent `marketing-release` pour mettre à jour le
+site (`gh-pages`). Sans changement marquant (que des `fix`/`chore`/`refactor`), la proposition est
+sautée.
+
 ---
 
 ## Approche TDD
