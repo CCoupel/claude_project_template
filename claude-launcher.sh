@@ -329,8 +329,10 @@ do_layout() {
   local bot_panes=()
 
   if [[ -f "$TEAM_CONFIG" ]]; then
-    # Collecte nom + pane_id + agentType + isActive, triés (actifs d'abord, puis nom) pour les bots
-    local bot_named=()
+    # Collecte nom + agentType + isActive de chaque bot
+    local -A bot_name_of=()
+    local -A bot_active_of=()
+    local -a bot_all_ids=()
     while IFS=$'\t' read -r pane_id agent_type agent_name is_active; do
       [[ -z "$pane_id" || "$pane_id" == "null" ]] && continue
       [[ "$pane_id" == "$LEADER_PANE" ]] && continue
@@ -339,10 +341,9 @@ do_layout() {
       if [[ "$agent_type" == "cdp" ]]; then
         top_panes+=("$pane_id")
       else
-        # Stocke "actKey|nom|pane_id" : actKey=0 (actif) trie avant 1 (inactif), puis alphabétique
-        local act_key=1
-        [[ "$is_active" == "true" ]] && act_key=0
-        bot_named+=("${act_key}|${agent_name}|${pane_id}")
+        bot_all_ids+=("$pane_id")
+        bot_name_of["$pane_id"]="$agent_name"
+        bot_active_of["$pane_id"]="$is_active"
       fi
     done < <(jq -r '
       .members[]
@@ -351,11 +352,58 @@ do_layout() {
       | @tsv
     ' "$TEAM_CONFIG" 2>/dev/null)
 
-    # Trie les bots : actifs en premier, puis ordre alphabétique
-    local sorted_bots
-    while IFS= read -r entry; do
-      bot_panes+=("${entry##*|}")
-    done < <(printf '%s\n' "${bot_named[@]}" | sort)
+    # ── Ordre MRU des panes actifs (persisté entre appels de do_layout) ──────
+    # Une pane qui devient active passe en tête ; les autres actives gardent
+    # leur ordre relatif. Une pane qui redevient inactive quitte cet ordre et
+    # retrouve sa place alphabétique parmi les inactives.
+    local order_file="/tmp/claude_layout_${WIN_ID}.order"
+    local -a prev_order=()
+    [[ -f "$order_file" ]] && mapfile -t prev_order < "$order_file"
+
+    # Panes toujours actives : ordre MRU précédent conservé (les disparues sont exclues)
+    local -a kept_order=()
+    for pid in "${prev_order[@]}"; do
+      [[ -z "$pid" ]] && continue
+      [[ "${bot_active_of[$pid]:-}" == "true" ]] && kept_order+=("$pid")
+    done
+
+    # Panes nouvellement actives (absentes de l'ordre précédent) → triées par nom, placées en tête
+    local -a newly_active=()
+    for pid in "${bot_all_ids[@]}"; do
+      [[ "${bot_active_of[$pid]}" != "true" ]] && continue
+      local was_active=0
+      for p in "${prev_order[@]}"; do [[ "$p" == "$pid" ]] && was_active=1 && break; done
+      [[ $was_active -eq 0 ]] && newly_active+=("${bot_name_of[$pid]}|${pid}")
+    done
+    local -a newly_active_sorted=()
+    if [[ ${#newly_active[@]} -gt 0 ]]; then
+      while IFS='|' read -r _ pid; do
+        newly_active_sorted+=("$pid")
+      done < <(printf '%s\n' "${newly_active[@]}" | sort)
+    fi
+
+    # Nouvel ordre MRU : nouvelles actives en tête, puis les actives existantes
+    local -a active_order=("${newly_active_sorted[@]}" "${kept_order[@]}")
+    if [[ ${#active_order[@]} -gt 0 ]]; then
+      printf '%s\n' "${active_order[@]}" > "$order_file"
+    else
+      : > "$order_file"
+    fi
+
+    # Panes inactives, triées par ordre alphabétique
+    local -a inactive_named=()
+    for pid in "${bot_all_ids[@]}"; do
+      [[ "${bot_active_of[$pid]}" == "true" ]] && continue
+      inactive_named+=("${bot_name_of[$pid]}|${pid}")
+    done
+    local -a inactive_sorted=()
+    if [[ ${#inactive_named[@]} -gt 0 ]]; then
+      while IFS='|' read -r _ pid; do
+        inactive_sorted+=("$pid")
+      done < <(printf '%s\n' "${inactive_named[@]}" | sort)
+    fi
+
+    bot_panes+=("${active_order[@]}" "${inactive_sorted[@]}")
   fi
 
   # Panes non référencés (panes manuels) → ligne basse non triée
@@ -369,6 +417,22 @@ do_layout() {
 
   local n_top=${#top_panes[@]}
   local n_bot=${#bot_panes[@]}
+
+  # ── Réordonnancement physique des panes ───────────────────────────────────
+  # tmux select-layout n'applique que la géométrie (tailles/positions) aux
+  # panes dans leur ordre d'index ascendant existant : associer un index
+  # arbitraire à un slot dans la layout string est silencieusement ignoré.
+  # Pour déplacer réellement une pane, il faut échanger les index physiques
+  # via swap-pane avant de calculer la géométrie ci-dessous.
+  local -a target_order=("${top_panes[@]}" "${bot_panes[@]}")
+  local ti tcur_pid twant
+  for (( ti=0; ti<${#target_order[@]}; ti++ )); do
+    twant="${target_order[$ti]}"
+    tcur_pid=$(tmux list-panes -t "$win" -F '#{pane_index} #{pane_id}' 2>/dev/null \
+      | awk -v idx="$ti" '$1==idx{print $2}')
+    [[ -z "$tcur_pid" || "$tcur_pid" == "$twant" ]] && continue
+    tmux swap-pane -s "$twant" -t "$tcur_pid" 2>/dev/null
+  done
 
   # ── Dimensions ────────────────────────────────────────────────────────────
   local W H
