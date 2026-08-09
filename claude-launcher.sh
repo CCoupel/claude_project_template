@@ -103,6 +103,10 @@ LAYOUT_3ROW_DEN=7
 COLOR_PALETTE=(17 52 22 53 58 23 54 238 18 59)
 # Override optionnel : declare -A PROJECT_COLORS=(["mon-projet"]="53")
 declare -A PROJECT_COLORS=()
+# Intensité de l'éclaircissement pour la surbrillance des panes teammates actifs
+# (agent en train de travailler) — variante éclaircie de la couleur du projet,
+# pas une couleur fixe. 1 = léger, 5 = blanc/couleur pleine.
+PANE_ACTIVE_BRIGHTEN_STEP=1
 
 load_config() {
   [[ -f "$CONFIG_FILE" ]] || return
@@ -147,6 +151,10 @@ EXTRA_ENVS=()
 #   ["mon-projet"]="53"
 #   ["autre-projet"]="17"
 # )
+
+# Surbrillance des panes teammates actifs (agent en train de travailler) :
+# variante éclaircie de la couleur du projet. 1 = léger, 5 = blanc/couleur pleine.
+# PANE_ACTIVE_BRIGHTEN_STEP=1
 EOF
 }
 
@@ -175,6 +183,31 @@ get_project_color() {
     hash=$(( (hash * 31 + c) % ${#COLOR_PALETTE[@]} ))
   done
   echo "${COLOR_PALETTE[$hash]}"
+}
+
+# Éclaircit une couleur tmux 256 (cube 6x6x6 pour 16-231, niveaux de gris pour 232-255)
+# en conservant sa teinte — utilisé pour la surbrillance des panes actifs sans
+# s'écarter de la couleur du projet.
+brighten_color() {
+  local c="$1" step="${PANE_ACTIVE_BRIGHTEN_STEP:-1}"
+  if (( c >= 16 && c <= 231 )); then
+    local idx=$(( c - 16 ))
+    local b=$(( idx % 6 )); idx=$(( idx / 6 ))
+    local g=$(( idx % 6 )); idx=$(( idx / 6 ))
+    local r=$(( idx % 6 ))
+    # N'éclaircit que les canaux déjà non-nuls : préserve la teinte au lieu
+    # d'allumer un canal éteint (saut disproportionné, 0 → ~95/255).
+    (( r > 0 )) && { r=$(( r + step )); (( r > 5 )) && r=5; }
+    (( g > 0 )) && { g=$(( g + step )); (( g > 5 )) && g=5; }
+    (( b > 0 )) && { b=$(( b + step )); (( b > 5 )) && b=5; }
+    echo $(( 16 + 36 * r + 6 * g + b ))
+  elif (( c >= 232 && c <= 255 )); then
+    local v=$(( c + step * 2 ))
+    (( v > 255 )) && v=255
+    echo "$v"
+  else
+    echo "$c"
+  fi
 }
 
 apply_pane_color() {
@@ -295,9 +328,9 @@ do_layout() {
   local bot_panes=()
 
   if [[ -f "$TEAM_CONFIG" ]]; then
-    # Collecte nom + pane_id + agentType, triés par nom pour les bots
+    # Collecte nom + pane_id + agentType + isActive, triés (actifs d'abord, puis nom) pour les bots
     local bot_named=()
-    while IFS=$'\t' read -r pane_id agent_type agent_name; do
+    while IFS=$'\t' read -r pane_id agent_type agent_name is_active; do
       [[ -z "$pane_id" || "$pane_id" == "null" ]] && continue
       [[ "$pane_id" == "$LEADER_PANE" ]] && continue
       tmux list-panes -t "$win" -F '#{pane_id}' 2>/dev/null \
@@ -305,20 +338,22 @@ do_layout() {
       if [[ "$agent_type" == "cdp" ]]; then
         top_panes+=("$pane_id")
       else
-        # Stocke "nom|pane_id" pour tri alphabétique
-        bot_named+=("${agent_name}|${pane_id}")
+        # Stocke "actKey|nom|pane_id" : actKey=0 (actif) trie avant 1 (inactif), puis alphabétique
+        local act_key=1
+        [[ "$is_active" == "true" ]] && act_key=0
+        bot_named+=("${act_key}|${agent_name}|${pane_id}")
       fi
     done < <(jq -r '
       .members[]
       | select(.tmuxPaneId != null and .tmuxPaneId != "")
-      | [.tmuxPaneId, .agentType, .name]
+      | [.tmuxPaneId, .agentType, .name, (.isActive // false)]
       | @tsv
     ' "$TEAM_CONFIG" 2>/dev/null)
 
-    # Trie les bots par nom alphabétique
+    # Trie les bots : actifs en premier, puis ordre alphabétique
     local sorted_bots
     while IFS= read -r entry; do
-      bot_panes+=("${entry#*|}")
+      bot_panes+=("${entry##*|}")
     done < <(printf '%s\n' "${bot_named[@]}" | sort)
   fi
 
@@ -572,6 +607,28 @@ if [[ "$1" == "--layout-watch" ]]; then
     fi
 
     pane_count=$(tmux list-panes -t "${TARGET_SESSION}:${WIN_ID}" 2>/dev/null       | wc -l | tr -d ' ')
+
+    # ── Surbrillance des panes teammates actifs (agent en train de travailler) ──
+    active_cfg=$(find_team_config "$PROJECT_DIR")
+    if [[ -n "$active_cfg" ]]; then
+      active_project_name=$(tmux display-message -t "${TARGET_SESSION}:${WIN_ID}" -p '#{window_name}' 2>/dev/null)
+      active_project_color=$(get_project_color "$active_project_name")
+      while IFS=$'\t' read -r active_pane_id active_is_active; do
+        [[ -z "$active_pane_id" || "$active_pane_id" == "null" ]] && continue
+        [[ "$active_pane_id" == "$LEADER_PANE" ]] && continue
+        tmux list-panes -t "${TARGET_SESSION}:${WIN_ID}" -F '#{pane_id}' 2>/dev/null           | grep -qxF "$active_pane_id" || continue
+        if [[ "$active_is_active" == "true" ]]; then
+          apply_pane_color "$active_pane_id" "$(brighten_color "$active_project_color")"
+        else
+          apply_pane_color "$active_pane_id" "$active_project_color"
+        fi
+      done < <(jq -r '
+        .members[]
+        | select(.tmuxPaneId != null and .tmuxPaneId != "")
+        | [.tmuxPaneId, (.isActive // false)]
+        | @tsv
+      ' "$active_cfg" 2>/dev/null)
+    fi
 
     # Vérifie si un re-run a été demandé pendant un layout précédent
     rerun_flag="/tmp/claude_layout_${WIN_ID}.rerun"
