@@ -212,7 +212,8 @@ brighten_color() {
 
 apply_pane_color() {
   local pane_id="$1" color="$2"
-  tmux select-pane -t "$pane_id" -P "bg=colour${color}" 2>/dev/null
+  # set-option -p (et non select-pane -P) : colore le pane sans changer le focus.
+  tmux set-option -p -t "$pane_id" window-style "bg=colour${color}" 2>/dev/null
 }
 
 auto_update() {
