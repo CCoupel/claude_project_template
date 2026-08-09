@@ -598,6 +598,7 @@ if [[ "$1" == "--layout-watch" ]]; then
   SCRIPT_PATH="$6"
 
   prev_count=1
+  prev_active_signature=""
 
   while true; do
     sleep 1
@@ -629,6 +630,18 @@ if [[ "$1" == "--layout-watch" ]]; then
         | [.tmuxPaneId, (.isActive // false)]
         | @tsv
       ' "$active_cfg" 2>/dev/null)
+
+      # Ré-ordonne les panes si l'ensemble des agents actifs a changé
+      # (do_layout n'est sinon déclenché que sur un changement de pane_count)
+      active_signature=$(jq -r '
+        [.members[] | select(.tmuxPaneId != null and .tmuxPaneId != "" and ((.isActive // false) == true)) | .tmuxPaneId]
+        | sort
+        | join(",")
+      ' "$active_cfg" 2>/dev/null)
+      if [[ "$active_signature" != "$prev_active_signature" ]]; then
+        prev_active_signature="$active_signature"
+        do_layout "$TARGET_SESSION" "$WIN_ID" "$LEADER_PANE" "$active_cfg"
+      fi
     fi
 
     # Vérifie si un re-run a été demandé pendant un layout précédent
