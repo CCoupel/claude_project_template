@@ -107,6 +107,9 @@ declare -A PROJECT_COLORS=()
 # (agent en train de travailler) — variante éclaircie de la couleur du projet,
 # pas une couleur fixe. 1 = léger, 5 = blanc/couleur pleine.
 PANE_ACTIVE_BRIGHTEN_STEP=1
+# Intensité de l'assombrissement des panes teammates inactifs (agent en IDLE) —
+# variante assombrie de la couleur du projet. 1 = léger, 5 = quasi-noir.
+PANE_INACTIVE_DARKEN_STEP=1
 
 load_config() {
   [[ -f "$CONFIG_FILE" ]] || return
@@ -155,6 +158,10 @@ EXTRA_ENVS=()
 # Surbrillance des panes teammates actifs (agent en train de travailler) :
 # variante éclaircie de la couleur du projet. 1 = léger, 5 = blanc/couleur pleine.
 # PANE_ACTIVE_BRIGHTEN_STEP=1
+
+# Assombrissement des panes teammates inactifs (agent en IDLE) :
+# variante assombrie de la couleur du projet. 1 = léger, 5 = quasi-noir.
+# PANE_INACTIVE_DARKEN_STEP=1
 EOF
 }
 
@@ -204,6 +211,31 @@ brighten_color() {
   elif (( c >= 232 && c <= 255 )); then
     local v=$(( c + step * 2 ))
     (( v > 255 )) && v=255
+    echo "$v"
+  else
+    echo "$c"
+  fi
+}
+
+# Assombrit une couleur tmux 256 (cube 6x6x6 / niveaux de gris), symétrique de
+# brighten_color() — utilisé pour les panes teammates inactifs (agent en IDLE).
+# Contrairement à brighten_color (plancher à 1 pour ne pas allumer un canal
+# éteint), va jusqu'à 0 : la palette projet est déjà proche du noir (canaux à
+# l'index 1), donc un plancher à 1 laisserait la plupart des couleurs inchangées.
+darken_color() {
+  local c="$1" step="${PANE_INACTIVE_DARKEN_STEP:-1}"
+  if (( c >= 16 && c <= 231 )); then
+    local idx=$(( c - 16 ))
+    local b=$(( idx % 6 )); idx=$(( idx / 6 ))
+    local g=$(( idx % 6 )); idx=$(( idx / 6 ))
+    local r=$(( idx % 6 ))
+    (( r > 0 )) && { r=$(( r - step )); (( r < 0 )) && r=0; }
+    (( g > 0 )) && { g=$(( g - step )); (( g < 0 )) && g=0; }
+    (( b > 0 )) && { b=$(( b - step )); (( b < 0 )) && b=0; }
+    echo $(( 16 + 36 * r + 6 * g + b ))
+  elif (( c >= 232 && c <= 255 )); then
+    local v=$(( c - step * 2 ))
+    (( v < 232 )) && v=232
     echo "$v"
   else
     echo "$c"
@@ -686,7 +718,7 @@ if [[ "$1" == "--layout-watch" ]]; then
         if [[ "$active_is_active" == "true" ]]; then
           apply_pane_color "$active_pane_id" "$(brighten_color "$active_project_color")"
         else
-          apply_pane_color "$active_pane_id" "$active_project_color"
+          apply_pane_color "$active_pane_id" "$(darken_color "$active_project_color")"
         fi
       done < <(jq -r '
         .members[]
