@@ -388,10 +388,20 @@ Après un déploiement PROD (CI OK), le CDP vérifie le milestone actif :
 - **100% des issues fermées** → milestone clos automatiquement
 - **Issues encore ouvertes** → alerte utilisateur avec la liste
 
-Si le milestone clos contient des issues avec un label visible utilisateur (`feature`, `enhancement`,
-`breaking-change`), le deployer propose de lancer l'agent `marketing-release` pour mettre à jour le
-site (`gh-pages`). Sans changement marquant (que des `fix`/`chore`/`refactor`), la proposition est
-sautée.
+### Marketing en parallèle du déploiement
+
+Dès qu'un milestone `vX.Y` correspond à la version cible, le CDP dispatche `marketing-release`
+**en parallèle du `deployer`**, sans attendre le résultat de la CI — le contenu du milestone
+(issues fermées, labels) est déjà figé avant le déploiement. L'agent vérifie s'il contient des
+issues avec un label visible utilisateur (`feature`, `enhancement`, `breaking-change`) : sans
+changement marquant (que des `fix`/`chore`/`refactor`), il s'arrête immédiatement, sans
+solliciter l'utilisateur.
+
+S'il y a lieu de publier, l'agent prépare le contenu (release notes, posts, site) **sans
+commit**, et le CDP relaie la maquette à l'utilisateur pour validation. La publication
+(commit + push sur `gh-pages`) n'est déclenchée que lorsque **les deux conditions sont
+réunies** : maquette validée par l'utilisateur ET déploiement PROD confirmé réussi — dans
+n'importe quel ordre. Si le déploiement échoue, rien n'est publié.
 
 ---
 
