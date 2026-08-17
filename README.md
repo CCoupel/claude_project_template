@@ -261,7 +261,7 @@ DEPLOY QUALIF
     ↓
 [GATE 4] Validation manuelle ── CDP présente les scénarios à tester
     ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD → milestone si 100%
-    └─ NON → label EN COURS → retour DEV ou PLAN selon l'écart
+    └─ NON → label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
 DEPLOY PROD ────────────────── merge → tag → surveille CI → succès : release + milestone
                                échec  : rollback adapté → rapport à main → routing agent
@@ -275,7 +275,7 @@ DEPLOY PROD ────────────────── merge → tag
 | 2 | Après plan | Valider le plan et les contrats API |
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
-| 4 | QUALIF prête | OUI (issue fermée + deploy prod) ou NON (retour DEV) |
+| 4 | QUALIF prête | OUI (issue fermée + deploy prod) ou NON (retour DEV ou PLAN) |
 | 4b | Procédure QUALIF incohérente | Corriger avant deploy |
 | 4c | Procédure PROD incohérente | Corriger avant deploy |
 
@@ -357,7 +357,8 @@ Le CDP met à jour les labels de l'issue associée (via plugin GitHub MCP) à ch
 | *(issue fermée)* | GATE 4 — utilisateur confirme que l'implémentation est conforme |
 
 Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
-Si l'utilisateur rejette à GATE 4, l'issue repasse à `EN COURS` et repart en DEV ou PLAN.
+Si l'utilisateur rejette à GATE 4, le label `DONE` est retiré et l'issue repart vers
+`EN COURS` (correction dans le scope, retour DEV) ou `PLANNING` (scope invalide, retour PLAN).
 
 ### Déploiement PROD et suivi CI
 
