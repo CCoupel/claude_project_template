@@ -102,7 +102,7 @@ Format prod : X.Y.Z   (le "a" n'est jamais publie en prod)
 | Segment | Role |
 |---------|------|
 | X | Compatibilite des donnees (DB, fichiers). Rupture = upgrade possible mais rollback complique. |
-| Y | Compteur de milestone/livraison. Impair = dev, pair = prod. Avance toujours de +1 (jamais +2). |
+| Y | Compteur de milestone/livraison. Pair = dev, impair = prod. Avance toujours de +1 (jamais +2). |
 | Z | Compteur de bugfix. Remis a 0 uniquement au demarrage d'un nouveau milestone. |
 | a | Iteration dev interne (un commit = un `a`). Jamais visible en prod. |
 
@@ -114,7 +114,7 @@ Format prod : X.Y.Z   (le "a" n'est jamais publie en prod)
 | Nouveau milestone (feature planifiee) | `Y+1 ; Z=0 ; a=0` |
 | Nouveau cycle bugfix (aucun milestone actif) | `Z+1 ; a=0` (reprend le Y de dev de la derniere wave) |
 | Promotion dev -> prod | `Y+1 ; Z conserve ; a supprime` — **sauf** si un milestone `OPEN` correspond (voir 5.7) : `X.Y` est alors lu sur son titre, pas recalcule |
-| Rupture de compatibilite de donnees | `X+1 ; Y=0 ; Z=0 ; a=0` (le prochain milestone repart au Y impair suivant, donc `Y=1`) |
+| Rupture de compatibilite de donnees | `X+1 ; Y=0 ; Z=0 ; a=0` (le prochain milestone repart au Y pair suivant, donc `Y=0`) |
 
 ### 5.4 Regle d'Or — Bug Remonte
 
@@ -125,14 +125,14 @@ Format prod : X.Y.Z   (le "a" n'est jamais publie en prod)
 ### 5.5 Exemple
 
 ```
-1.1.0.0 -> 1.1.0.1 -> 1.1.0.2        (dev, Milestone A)
-1.2.0                                 (promotion prod)
-1.3.0.0 -> 1.3.0.1                    (dev, Milestone B)
-1.4.0                                 (promotion prod)
-1.3.1.0 -> 1.3.1.1                    (bug remonte, aucun milestone actif — reprise Y=3)
-1.4.1                                 (promotion prod, Z conserve)
-1.5.0.0                               (nouveau milestone, Z revient a 0)
-1.6.0                                 (promotion prod)
+1.2.0.0 -> 1.2.0.1 -> 1.2.0.2        (dev, Milestone A)
+1.3.0                                 (promotion prod)
+1.4.0.0 -> 1.4.0.1                    (dev, Milestone B)
+1.5.0                                 (promotion prod)
+1.4.1.0 -> 1.4.1.1                    (bug remonte, aucun milestone actif — reprise Y=4)
+1.5.1                                 (promotion prod, Z conserve)
+1.6.0.0                               (nouveau milestone, Z revient a 0)
+1.7.0                                 (promotion prod)
 ```
 
 ### 5.6 Lire la Version

@@ -52,7 +52,7 @@ gh repo view --json owner,name --jq '"repos/" + .owner.login + "/" + .name'
 
 > Voir `context/COMMON.md` section 5.7 — le titre du milestone pinne la version prod du cycle.
 
-`<version>` (`vX.Y`) doit correspondre au prochain Y pair valide, soit `Y_prod_actuel + 2`.
+`<version>` (`vX.Y`) doit correspondre au prochain Y impair valide, soit `Y_prod_actuel + 2`.
 
 ```bash
 # Derniere version prod connue (dernier tag)
@@ -64,7 +64,7 @@ Comparer le `X.Y` de `<version>` a celui de `LAST_PROD` :
 - **`Y` = `Y_LAST_PROD` + 2** → coherent, continuer a l'etape 3.
 - **Ecart** → alerter avant de creer :
   ```
-  Attention : le dernier prod est <LAST_PROD>, le prochain Y pair attendu est v<X>.<Y_LAST_PROD + 2>.
+  Attention : le dernier prod est <LAST_PROD>, le prochain Y impair attendu est v<X>.<Y_LAST_PROD + 2>.
   <version> ne correspond pas a cette suite. Continuer quand meme ? [O/n]
   ```
   Si non → annuler, ne pas creer le milestone.
@@ -243,7 +243,7 @@ Si des issues sont encore ouvertes, proposer :
 2 issues non terminees. Que faire ?
 
   [A] Reporter vers le prochain milestone
-      → Entrer le nom du prochain milestone (ex: v1.6 — Y pair suivant, voir context/COMMON.md section 5)
+      → Entrer le nom du prochain milestone (ex: v1.7 — Y impair suivant, voir context/COMMON.md section 5)
   [B] Fermer toutes les issues et cloturer
       → Les issues seront fermees avec le commentaire "Cloture avec le milestone <version>"
   [C] Cloturer le milestone sans toucher aux issues
