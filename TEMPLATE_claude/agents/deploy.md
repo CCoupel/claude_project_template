@@ -299,7 +299,7 @@ SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone v[X.Y] cloture."
 
 > La decision de lancer l'agent marketing (`marketing-release`) n'est plus du ressort du
 > `deployer` — le CDP la prend independamment, en parallele de ce deploiement, en
-> dispatchant directement `marketing`. Voir `agents/cdp.md` Phase 6 et `agents/marketing-release.md`.
+> dispatchant directement `marketing`. Voir `agents/cdp.template.md` Phase 6 et `agents/marketing-release.template.md`.
 
 ## Gestion des Echecs CI
 

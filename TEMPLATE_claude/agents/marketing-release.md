@@ -66,7 +66,7 @@ technique est a jour (doc-updater).
 ## Declenchement
 
 - Spawn par le CDP **en parallele du deploiement PROD**, des qu'un milestone `vX.Y` correspond
-  a la version cible — sans attendre le resultat de la CI (voir `agents/cdp.md` Phase 6)
+  a la version cible — sans attendre le resultat de la CI (voir `agents/cdp.template.md` Phase 6)
 - Commande directe `/marketing [version]` (mode autonome, hors orchestration CDP — voir `commands/marketing.md`)
 
 ## Prerequis

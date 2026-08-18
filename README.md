@@ -554,8 +554,13 @@ les dérives dans les deux sens :
 |--------|---------------|-----------------|
 | `[↓]` DERIVE-TEMPLATE | Le template couvre maintenant ce que vous aviez customisé | Simplification possible |
 | `[↑]` DERIVE-PROJET | Le fichier `.md` a grossi depuis la dernière sync | Vérifier que c'est intentionnel |
+| `[~]` MIXTE | Une partie du `.md` est couverte par le template, une autre reste propre au projet | Retirer seulement la partie redondante |
 | `[=]` IDENTIQUE | Le `.md` duplique le template sans rien ajouter | Peut être supprimé |
 | `[*]` PROPRE | Contenu projet uniquement | Rien à faire |
+
+La détection opère règle par règle, pas seulement fichier par fichier : dès qu'une règle
+du `.md` compagnon se retrouve — littéralement ou en substance — dans le template mis à
+jour, elle peut être retirée du compagnon, même si le reste du fichier reste propre.
 
 Cette analyse est silencieuse si tout est propre. Elle sert aussi de migration one-shot
 pour les projets qui avaient du contenu mixte avant l'introduction de la convention.
