@@ -104,35 +104,41 @@ Format prod : X.Y.Z   (le "a" n'est jamais publie en prod)
 | X | Compatibilite des donnees (DB, fichiers). Rupture = upgrade possible mais rollback complique. |
 | Y | Compteur de milestone/livraison. Pair = dev, impair = prod. Avance toujours de +1 (jamais +2). |
 | Z | Compteur de bugfix. Remis a 0 uniquement au demarrage d'un nouveau milestone. |
-| a | Iteration dev interne (un commit = un `a`). Jamais visible en prod. |
+| a | Compteur de build QUALIF, gere exclusivement par `deploy`. Les agents `dev-*` ne le touchent jamais. Jamais visible en prod. |
+
+`X.Y.Z` est la version globale (compatibilite donnees / milestone / bugfix) — pilotee par `dev`/`plan`. `a` est un simple compteur de build, independant des commits dev : il ne bouge qu'au moment ou `deploy` construit un artefact QUALIF.
 
 ### 5.3 Les 5 Operations
 
 | Evenement | Effet |
 |-----------|-------|
-| Iteration dev (commit courant) | `a+1` |
+| Deploiement QUALIF (avant build) | `a+1` — a la charge de `deploy`, commit dedie `chore(version): Bump to X.Y.Z.a+1`. Seul declencheur de `a` : garantit un artefact unique par deploiement, meme sans nouveau commit dev entre deux deploiements. Le dossier `build/qualif/X.Y.Z/` (sans `a`) reste le meme entre deux builds ; c'est le nom de l'artefact a l'interieur (`app-X.Y.Z.a.tar.gz`) qui change (voir `deploy.template.md`) |
 | Nouveau milestone (feature planifiee) | `Y+1 ; Z=0 ; a=0` |
 | Nouveau cycle bugfix (aucun milestone actif) | `Z+1 ; a=0` (reprend le Y de dev de la derniere wave) |
 | Promotion dev -> prod | `Y+1 ; Z conserve ; a supprime` — **sauf** si un milestone `OPEN` correspond (voir 5.7) : `X.Y` est alors lu sur son titre, pas recalcule |
 | Rupture de compatibilite de donnees | `X+1 ; Y=0 ; Z=0 ; a=0` (le prochain milestone repart au Y pair suivant, donc `Y=0`) |
 
+> Les commits dev ordinaires (`feat`, `fix`, `refactor`...) ne touchent jamais `{VERSION_FILE}`. `a` s'incremente uniquement au fil des deploiements QUALIF — plusieurs commits dev peuvent donc s'accumuler sous le meme `a`, et `a` peut s'incrementer plusieurs fois sans aucun nouveau commit dev entre deux deploiements (ex: redeploiement suite a un correctif infra hors code). C'est le comportement attendu.
+
 ### 5.4 Regle d'Or — Bug Remonte
 
-- **Milestone en cours** : le fix est integre aux iterations du milestone (`a+1`, `Z` ne bouge pas). La prochaine prod livre le Y du milestone.
+- **Milestone en cours** : le fix est integre normalement (commit sans toucher `{VERSION_FILE}`), `Z` ne bouge pas. Le prochain deploiement QUALIF incremente `a` automatiquement. La prochaine prod livre le Y du milestone.
 - **Aucun milestone en cours** : nouveau cycle bugfix cree a partir du dernier Y de dev (meme wave que la prod courante), `Z+1`.
 - **Une version prod deja depassee n'est jamais repatchee** — le fix cible toujours la ligne prod courante, jamais une ancienne.
 
 ### 5.5 Exemple
 
 ```
-1.2.0.0 -> 1.2.0.1 -> 1.2.0.2        (dev, Milestone A)
-1.3.0                                 (promotion prod)
-1.4.0.0 -> 1.4.0.1                    (dev, Milestone B)
-1.5.0                                 (promotion prod)
-1.4.1.0 -> 1.4.1.1                    (bug remonte, aucun milestone actif — reprise Y=4)
-1.5.1                                 (promotion prod, Z conserve)
-1.6.0.0                               (nouveau milestone, Z revient a 0)
-1.7.0                                 (promotion prod)
+1.2.0.0                                (dev, Milestone A — plusieurs commits, a inchange)
+1.2.0.1                                (1er deploiement QUALIF — a+1 par deploy)
+1.2.0.2                                (redeploiement QUALIF apres correctif — a+1 par deploy)
+1.3.0                                  (promotion prod — a supprime)
+1.4.0.0 -> 1.4.0.1                     (dev Milestone B, puis 1 deploiement QUALIF)
+1.5.0                                  (promotion prod)
+1.4.1.0 -> 1.4.1.1                     (bug remonte, aucun milestone actif — reprise Y=4, 1 deploiement QUALIF)
+1.5.1                                  (promotion prod, Z conserve)
+1.6.0.0                                (nouveau milestone, Z revient a 0)
+1.7.0                                  (promotion prod)
 ```
 
 ### 5.6 Lire la Version
@@ -146,7 +152,7 @@ Format prod : X.Y.Z   (le "a" n'est jamais publie en prod)
 Le titre du milestone (`vX.Y`, cree par `/milestone new`) pinne la version prod qui sera livree a la fin du cycle, au lieu de la laisser se deduire arithmetiquement en fin de course.
 
 **A la creation (`/milestone new vX.Y`)** :
-- Validation : `Y` doit etre le prochain Y pair valide, soit `Y_prod_actuel + 2`. Ecart detecte -> alerter avant de creer (voir `commands/milestone.md` Mode NEW).
+- Validation : `Y` doit etre le prochain Y impair valide, soit `Y_prod_actuel + 2`. Ecart detecte -> alerter avant de creer (voir `commands/milestone.md` Mode NEW).
 - Le titre `vX.Y` devient ensuite la reference unique de la cible prod pour tout le cycle — il ne change plus.
 
 **A la promotion dev -> prod (`/deploy prod`)** :

@@ -200,6 +200,22 @@ Action requise : [ce dont j'ai besoin]
 
 ---
 
+## Gestion des Versions (OBLIGATOIRE)
+
+> **Reference complete** (les 6 operations detaillees, exemple, regle du milestone) : `commands/context/COMMON.md` section 5.
+> **Qui incremente quoi** (agents dev/deploy) : `context/DEV_COMMON.md`.
+
+Format : `X.Y.Z.a` en dev, `X.Y.Z` en prod (le `a` n'est jamais publie en prod).
+
+| Segment | Role |
+|---------|------|
+| `X` | Compatibilite des donnees (DB, fichiers) |
+| `Y` | Compteur de milestone/livraison. Pair = dev, impair = prod |
+| `Z` | Compteur de bugfix. Remis a 0 au demarrage d'un nouveau milestone |
+| `a` | Compteur de build QUALIF, gere exclusivement par `deploy`. Les agents `dev-*` ne le touchent jamais. Jamais visible en prod |
+
+---
+
 ## Coordination Inter-Agents
 
 ### Workflow Standard

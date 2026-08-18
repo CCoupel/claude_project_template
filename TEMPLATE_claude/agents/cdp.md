@@ -332,14 +332,16 @@ SendMessage({ to: "infra", content: "
 **Si infra VALIDATED — dispatcher deployer + doc-updater dans le meme tour :**
 ```
 SendMessage({ to: "deployer", content: "
-  Deploie en QUALIF la version [X.Y.Z] depuis la branche [branche].
-  Retourne : statut des services, smoke tests OK/KO.
+  Deploie en QUALIF depuis la branche [branche].
+  Incremente toi-meme `a` avant le build (voir ton propre protocole, deploy.template.md) — n'attends pas de version fournie.
+  Retourne : DONE + version deployee [X.Y.Z.a] + statut des services + smoke tests OK/KO.
 " })
 
 SendMessage({ to: "doc-updater", content: "
   DOC FINALIZE — completer la documentation initiee en Phase 4.
-  Ajouter : numero de version [X.Y.Z], release notes, resultats QA si pertinents.
-  Incrementer la version dans les fichiers concernes.
+  Ajouter : version dev courante [X.Y.Z] (a titre indicatif — le build QUALIF exact, avec son `a`,
+  est rapporte separement par deployer), release notes, resultats QA si pertinents.
+  Ne pas toucher {VERSION_FILE} — `a` est gere exclusivement par deployer.
   Retourne : DONE + fichiers modifies + SHA commit doc.
 " })
 ```
@@ -351,11 +353,17 @@ Attendre DONE de deployer ET DONE de doc-updater avant de presenter a l'utilisat
 ```markdown
 ## QUALIF deployee + Documentation prete — Validation manuelle requise avant PROD
 
-**Version** : [X.Y.Z]   **Branche** : [branche]   **URL** : [url qualif]
+**Version deployee (QUALIF)** : [X.Y.Z.a — depuis le rapport deployer]   **Branche** : [branche]   **URL** : [url qualif]
+**Binaire a tester** : [chemin exact — depuis le champ "Binaire" du rapport DEPLOY DONE]
 **Documentation** : finalisee (SHA [sha])
 
 > Tout est pret. Tester les scenarios ci-dessous, puis repondre OUI pour lancer le PROD.
 > Apres OUI : aucune modification — PROD est purement mecanique.
+
+### Issues integrees
+
+[Si `ISSUE_NUMS[]` non vide, un item par issue ; sinon omettre cette section]
+- #[num] — [titre]
 
 ### Ce qu'il faut valider
 

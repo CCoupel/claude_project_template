@@ -18,9 +18,9 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 | Commande | Type | Workflow | Version |
 |----------|------|----------|---------|
 | `/feature` | FEATURE | Complet | Nouveau milestone -> `Y+1 ; Z=0 ; a=0` |
-| `/bugfix` | BUGFIX | Simplifie | Milestone actif -> `a+1` seul ; sinon -> `Z+1 ; a=0` |
+| `/bugfix` | BUGFIX | Simplifie | Milestone actif -> aucun changement (commits normaux) ; sinon -> `Z+1 ; a=0` |
 | `/hotfix` | HOTFIX | Accelere | Toujours `Z+1 ; a=0` (meme si un milestone est en cours) |
-| `/refactor` | REFACTOR | Leger | Aucun changement (`a+1` sur les commits) |
+| `/refactor` | REFACTOR | Leger | Aucun changement (`a` est gere par `deploy` au prochain deploiement QUALIF) |
 
 ---
 
@@ -252,10 +252,10 @@ git checkout -b refactor/<nom-court>
 | Type | Condition | Action | Exemple |
 |------|-----------|--------|---------|
 | FEATURE | Toujours | Nouveau milestone : `Y+1 ; Z=0 ; a=0` | dev `1.3.0.0` → prod `1.4.0` |
-| BUGFIX | Milestone actif | Intégré aux itérations du milestone : `a+1` (Z inchangé) | dev `1.3.0.2` → prod `1.4.0` (fix inclus) |
+| BUGFIX | Milestone actif | Intégré aux itérations du milestone : commit normal, sans toucher `{VERSION_FILE}` (Z inchangé). `a` s'incrémente au prochain deploiement QUALIF, à la charge de `deploy` | dev `1.3.0.0` (fix inclus) → prod `1.4.0` |
 | BUGFIX | Aucun milestone actif | Nouveau cycle bugfix : `Z+1 ; a=0` (reprend le Y de dev de la dernière wave) | dev `1.3.1.0` → prod `1.4.1` |
 | HOTFIX | Toujours (urgence prod) | Nouveau cycle bugfix, même si un milestone est en cours : `Z+1 ; a=0` sur la wave dev de la prod courante | dev `1.3.1.0` → prod `1.4.1` |
-| REFACTOR | — | Aucun changement de version (`a+1` sur les commits) | `1.3.0.4` (inchangé en prod) |
+| REFACTOR | — | Aucun changement de version — `a` reste sous la seule responsabilité de `deploy` | `1.3.0.x` (inchangé en prod) |
 
 #### Règle — bug remonté sur une ancienne version prod
 
