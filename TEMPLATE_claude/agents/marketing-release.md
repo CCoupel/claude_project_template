@@ -198,6 +198,20 @@ Bonjour communaute,
 Si le projet a un site marketing (`gh-pages` ou `MARKETING/`), generer ou mettre a jour
 le site avec la structure suivante. Le site est bilingue (FR/EN) avec un commutateur de langue.
 
+**La maquette presentee au GATE 4d doit toujours partir de la page marketing existante** —
+recuperer le contenu actuellement publie avant de produire quoi que ce soit, et faire evoluer
+cette base plutot que regenerer le site depuis zero. L'utilisateur valide une evolution du
+site existant, pas une refonte.
+
+Le contenu de reference est celui du **distant** (`origin`), jamais une copie locale
+potentiellement perimee :
+```bash
+git fetch origin gh-pages
+git show origin/gh-pages:index.html   # ou le chemin equivalent si structure differente
+```
+Si le site vit dans `MARKETING/` sur la branche courante, `git pull origin <branche>` avant
+lecture pour etre sur l'etat le plus recent.
+
 #### Structure du site
 
 ```
