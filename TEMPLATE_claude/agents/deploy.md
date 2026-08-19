@@ -165,28 +165,12 @@ echo "Deploiement QUALIF termine - $VERSION → $BUILD_DIR/app-$VERSION.tar.gz"
 # Prerequis confirmes par le CDP avant cet ordre
 
 # 1bis. Determination de la version prod cible
-# Le milestone est la source prioritaire (regle complete : commands/context/COMMON.md
-# section 5.7, fichier distinct non accessible depuis cet agent — la logique est
-# entierement implementee ci-dessous) ;
-# le calcul arithmetique (section 5.3) ne sert que de repli hors milestone.
-DEV_VERSION=$(cat {VERSION_FILE})   # ex: 1.3.1.1
-X=$(echo "$DEV_VERSION" | cut -d. -f1)
-Y_DEV=$(echo "$DEV_VERSION" | cut -d. -f2)
-Z=$(echo "$DEV_VERSION" | cut -d. -f3)
-Y_PROD_ATTENDU=$((Y_DEV + 1))
-
-# Candidat de recherche uniquement — sert a trouver le milestone, pas a fixer la version
-MILESTONE_TITLE=$(gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.state==\"open\" and .title==\"v${X}.${Y_PROD_ATTENDU}\") | .title")
-
-if [ -n "$MILESTONE_TITLE" ]; then
-  # SI un milestone OPEN correspond : X.Y lu tel quel sur son titre, aucun calcul
-  XY="${MILESTONE_TITLE#v}"        # ex: "v1.4" -> "1.4"
-else
-  # SINON (bugfix hors milestone) : calcul arithmetique existant, Y+1
-  XY="${X}.${Y_PROD_ATTENDU}"
-fi
-VERSION="${XY}.${Z}"
+# X.Y.Z est fixe integralement par le milestone (regle complete : commands/context/COMMON.md
+# section 5.7, fichier distinct non accessible depuis cet agent). {VERSION_FILE} porte deja
+# ce X.Y.Z depuis l'ouverture du cycle — aucun calcul, on retire uniquement le compteur
+# de build "a".
+DEV_VERSION=$(cat {VERSION_FILE})       # ex: 1.4.0.3
+VERSION=$(echo "$DEV_VERSION" | cut -d. -f1-3)   # X.Y.Z, ex: 1.4.0
 # Ecrire $VERSION dans {VERSION_FILE} avant le merge
 
 # 1ter. Verification documentation (avant merge)
@@ -296,22 +280,24 @@ gh release create v1.2.0 --title "v1.2.0" --notes-file RELEASE_NOTES.md
 ### Etape 7 — Cloture du milestone (apres CI OK)
 
 Apres un deploiement PROD reussi, verifier si un milestone correspond a la version deployee.
-Le titre du milestone est `vX.Y` (sans `Z`, section 5.7) — le matching se fait sur ce prefixe, jamais sur `X.Y.Z` complet :
+Le titre du milestone est `vX.Y.Z` complet (section 5.7) — puisque `X.Y.Z` a ete fixe par
+ce meme milestone des l'ouverture du cycle, le matching se fait directement sur `vX.Y.Z`
+(= `v$VERSION`), jamais sur un prefixe :
 
 ```bash
-# Chercher le milestone correspondant au X.Y de la version deployee (pas X.Y.Z)
+# Chercher le milestone correspondant a la version X.Y.Z deployee
 gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.state==\"open\" and .title==\"v$XY\")"
+  --jq ".[] | select(.state==\"open\" and .title==\"v$VERSION\")"
 ```
 
 Si un milestone actif correspond :
 
 ```
-Milestone v[X.Y] detecte (<N> issues — <X>% complete).
-Cloturer le milestone v[X.Y] ? [O/n]
+Milestone v[X.Y.Z] detecte (<N> issues — <X>% complete).
+Cloturer le milestone v[X.Y.Z] ? [O/n]
 ```
 
-Si oui → executer la logique de cloture (identique a `/milestone close v[X.Y]`) :
+Si oui → executer la logique de cloture (identique a `/milestone close v[X.Y.Z]`) :
 
 1. Lister les issues ouvertes restantes dans le milestone
 2. Si issues ouvertes → proposer : reporter vers prochain milestone / fermer / laisser en suspens
@@ -320,7 +306,7 @@ Si oui → executer la logique de cloture (identique a `/milestone close v[X.Y]`
    gh api repos/{owner}/{repo}/milestones/<numero> \
      --method PATCH \
      -f state=closed \
-     -f description="Release v$XY — livre en v$VERSION, tag v$VERSION"
+     -f description="Release v$VERSION — livre, tag v$VERSION"
    ```
 4. Afficher le bilan de cloture
 
@@ -328,7 +314,7 @@ En orchestration CDP (jamais de contact direct utilisateur) : remonter le result
 cloture dans le rapport `DEPLOY DONE` a `main`, qui le presente a l'utilisateur (meme
 principe que GATE 4) :
 ```
-SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone v[X.Y] cloture." })
+SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone v[X.Y.Z] cloture." })
 ```
 
 > La decision de lancer l'agent marketing (`marketing-release`) n'est plus du ressort du

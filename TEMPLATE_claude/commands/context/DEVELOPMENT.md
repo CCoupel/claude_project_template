@@ -68,18 +68,9 @@ Lancer dev-backend ET dev-frontend en parallele (2 Task tools)
 git branch --show-current
 ```
 
-### Etape 2 : Version (uniquement si nouveau cycle bugfix sans milestone actif)
+### Etape 2 : Version (jamais a la charge de DEV)
 
-`a` est un compteur de build QUALIF gere exclusivement par `deploy` — ne jamais l'incrementer ici (voir `context/COMMON.md` section 5). La seule action de version a la charge de DEV est le demarrage d'un cycle bugfix sans milestone actif :
-
-```bash
-# Uniquement au 1er commit d'un cycle bugfix sans milestone actif
-# X.Y.Z.a -> X.Y.(Z+1).0  (voir context/COMMON.md section 5.3)
-git add {VERSION_FILE}
-git commit -m "chore(version): Start bugfix cycle X.Y.Z+1.0"
-```
-
-Dans tous les autres cas (feature planifiee, commits suivants d'un cycle deja demarre), ne pas toucher `{VERSION_FILE}`.
+`X.Y.Z` est fixe integralement par le titre du milestone actif — voir `context/COMMON.md` section 5.7. `a` est un compteur de build QUALIF gere exclusivement par `deploy`. DEV ne touche jamais `{VERSION_FILE}`, quel que soit le type de commit (feature ou bugfix).
 
 ### Etape 3 : Implementer
 

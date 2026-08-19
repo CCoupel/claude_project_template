@@ -428,9 +428,9 @@ SendMessage({ to: "deployer", content: "
 " })
 ```
 
-Si un milestone `v[X.Y]` correspond a la version cible : `CLEAR(marketing)` puis
+Si un milestone `v[X.Y.Z]` correspond a la version cible : `CLEAR(marketing)` puis
 ```
-SendMessage({ to: "marketing", content: "PREPARE v[X.Y]" })
+SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z]" })
 ```
 La preparation marketing ne depend pas du resultat du deploiement — le contenu du milestone
 (issues fermees, labels) est deja fige avant le lancement de la CI.
@@ -440,12 +440,12 @@ La preparation marketing ne depend pas du resultat du deploiement — le contenu
 - `MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md` → lire le rapport, puis
   presenter a l'utilisateur ← **GATE 4d** :
   ```
-  Maquette de communication prete pour v[X.Y] :
+  Maquette de communication prete pour v[X.Y.Z] :
   [resume tire du rapport]
 
   Valider et publier des que le deploiement sera confirme ? [O/n]
   ```
-  - Refus / corrections demandees → `SendMessage({ to: "marketing", content: "PREPARE v[X.Y] — corrections : [...]" })`
+  - Refus / corrections demandees → `SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — corrections : [...]" })`
     (pas de `CLEAR` — le contexte de ce qui a deja ete produit doit etre conserve), reboucler jusqu'a validation.
   - Valide → `mockup_ok = true`.
 

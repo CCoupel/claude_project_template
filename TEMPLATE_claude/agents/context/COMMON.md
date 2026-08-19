@@ -202,16 +202,18 @@ Action requise : [ce dont j'ai besoin]
 
 ## Gestion des Versions (OBLIGATOIRE)
 
-> **Reference complete** (les 6 operations detaillees, exemple, regle du milestone) : `commands/context/COMMON.md` section 5.
+> **Reference complete** (cycle de vie detaille, exemple, regle du milestone) : `commands/context/COMMON.md` section 5.
 > **Qui incremente quoi** (agents dev/deploy) : `context/DEV_COMMON.md`.
 
-Format : `X.Y.Z.a` en dev, `X.Y.Z` en prod (le `a` n'est jamais publie en prod).
+Format : `X.Y.Z.a` en dev/qualif, `X.Y.Z` en prod (le `a` n'est jamais publie en prod).
+
+Le milestone GitHub actif est la SEULE source de verite pour `X.Y.Z` — fixe des sa creation, jamais recalcule par les agents. Aucun developpement ne se fait hors milestone.
 
 | Segment | Role |
 |---------|------|
-| `X` | Compatibilite des donnees (DB, fichiers) |
-| `Y` | Compteur de milestone/livraison. Pair = dev, impair = prod |
-| `Z` | Compteur de bugfix. Remis a 0 au demarrage d'un nouveau milestone |
+| `X` | Compatibilite des donnees (DB, fichiers). Fixe par le milestone |
+| `Y` | Compteur de milestone/livraison. Fixe par le milestone |
+| `Z` | Compteur de bugfix au sein de la ligne `X.Y`. Fixe par le milestone |
 | `a` | Compteur de build QUALIF, gere exclusivement par `deploy`. Les agents `dev-*` ne le touchent jamais. Jamais visible en prod |
 
 ---
@@ -253,6 +255,8 @@ Chaque agent doit :
 Chaque agent `xxx.template.md` peut avoir un fichier compagnon `xxx.md` dans le même dossier.
 **Si ce fichier existe, le lire après le fichier `.template.md`** — il contient les règles et adaptations spécifiques au projet.
 Pour toute modification du comportement de cet agent, écrire dans `xxx.md` (jamais dans `xxx.template.md`).
+
+Les fichiers `context/` partagés (`context/COMMON.md`, `context/GITHUB.md`, `context/DEV_COMMON.md`...) suivent le même pattern : `context/X.template.md` (sync) + `context/X.md` compagnon optionnel (tracké git). Le lire après le `.template.md` s'il existe. Pour adapter une règle partagée au projet, écrire dans le compagnon `context/X.md`, jamais dans `context/X.template.md`.
 
 ---
 

@@ -86,10 +86,11 @@ TEMPLATE_claude/           │     ├── commands/
 ├── agents/                │     ├── agents/
 │   └── context/           └──►  │   ├── *.template.md ← sync depuis TEMPLATE_claude/ (gitignore)
 ├── templates/                   │   ├── *.md          ← adaptations projet par agent (tracké git)
-│   └── workflows/               │   ├── context/      ← sync depuis TEMPLATE_claude/ (gitignore)
-├── INITIALIZATION.md            │   └── dev-*.md      ← généré stack (tracké git)
-├── CLAUDE_TEMPLATE.md           ├── CLAUDE.md         ← généré (tracké git)
-└── .template-source.json        ├── project-config.json ← généré (tracké git)
+│   └── workflows/               │   ├── context/*.template.md ← sync (gitignore)
+├── INITIALIZATION.md            │   ├── context/*.md  ← adaptations projet par contexte (tracké git)
+├── CLAUDE_TEMPLATE.md           │   └── dev-*.md      ← généré stack (tracké git)
+└── .template-source.json        ├── CLAUDE.md         ← généré (tracké git)
+                                 ├── project-config.json ← généré (tracké git)
                                  └── memory/           ← tracké git
 
                                  TEMPLATE_claude/      ← gitignore (fetché depuis GitHub)
@@ -105,13 +106,14 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/agents/*.template.md` | Agents template (jamais édités) | Non (gitignore) |
 | `.claude/agents/*.md` | Adaptations projet par agent | Oui |
 | `.claude/agents/dev-*.md` | Agents projet (stack-spécifique) | Oui |
+| `.claude/{agents,commands}/context/*.template.md` | Contextes partagés template (jamais édités) | Non (gitignore) |
+| `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
 
 ### Séparation template / projet
 
 **Commandes** : déployées en `*.md`, directement invocables (`/feature`, `/bugfix`...).
-Ne pas les éditer — elles sont écrasées à la prochaine sync.
-Toute personnalisation se fait via les fichiers `context/` qu'elles référencent.
+Ne pas les éditer — elles sont écrasées à la prochaine sync, sans compagnon.
 
 **Agents** : déployés en deux fichiers compagnons :
 
@@ -120,7 +122,15 @@ Toute personnalisation se fait via les fichiers `context/` qu'elles référencen
 .claude/agents/cdp.md            ← adaptations projet, tracké git, jamais écrasé
 ```
 
-Claude lit les deux automatiquement. Les projets sans adaptation n'ont pas besoin de créer de fichier `*.md`.
+**Contextes partagés** (`context/COMMON.md`, `context/GITHUB.md`... référencés par les commandes
+et les agents) : même convention que les agents, un compagnon optionnel par fichier :
+
+```
+.claude/commands/context/COMMON.template.md   ← template, jamais édité, mis à jour par sync
+.claude/commands/context/COMMON.md            ← adaptations projet, tracké git, jamais écrasé
+```
+
+Claude lit les deux automatiquement (agents comme contextes). Les projets sans adaptation n'ont pas besoin de créer de fichier `*.md`.
 
 ---
 
@@ -391,10 +401,10 @@ Après un déploiement PROD (CI OK), le CDP vérifie le milestone actif :
 
 ### Marketing en parallèle du déploiement
 
-Dès qu'un milestone `vX.Y` correspond à la version cible, le CDP dispatche `marketing-release`
+Dès qu'un milestone `vX.Y.Z` correspond à la version cible, le CDP dispatche `marketing-release`
 **en parallèle du `deployer`**, sans attendre le résultat de la CI — le contenu du milestone
 (issues fermées, labels) est déjà figé avant le déploiement. L'agent vérifie s'il contient des
-issues avec un label visible utilisateur (`feature`, `enhancement`, `breaking-change`) : sans
+issues avec un label visible utilisateur (`feature`, `enhancement`, `breaking`) : sans
 changement marquant (que des `fix`/`chore`/`refactor`), il s'arrête immédiatement, sans
 solliciter l'utilisateur.
 
@@ -517,7 +527,7 @@ Pour récupérer les nouvelles fonctionnalités du template dans un projet exist
 ```
 
 Fetche la dernière version de `TEMPLATE_claude/` et :
-- Écrase les commandes (`*.md`) et agents template (`*.template.md`)
+- Écrase les commandes (`*.md`), agents template (`*.template.md`) et contextes partagés template (`context/*.template.md`)
 - Met à jour le bloc `<!-- BEGIN/END TEAMLEADER_PROTOCOL -->` dans `CLAUDE.md` sans toucher au reste
 - Compare la table `## Agents Disponibles` de `CLAUDE.md` à la structure attendue (agents génériques
   + agents `dev-*` selon la stack configurée) et la met à jour — documentation uniquement, cette
@@ -547,8 +557,8 @@ stack configurée et resynchronisée à chaque sync (step d5c), mais uniquement 
 
 ### Détection de dérive (automatique à chaque sync)
 
-À chaque synchronisation, Claude analyse les fichiers `*.md` compagnons et détecte
-les dérives dans les deux sens :
+À chaque synchronisation, Claude analyse les fichiers `*.md` compagnons (agents et contextes
+partagés) et détecte les dérives dans les deux sens :
 
 | Signal | Signification | Action proposée |
 |--------|---------------|-----------------|
@@ -569,27 +579,48 @@ pour les projets qui avaient du contenu mixte avant l'introduction de la convent
 
 ## Personnalisation
 
-### Adapter les commandes et agents au projet
+### Adapter les agents et contextes partagés au projet
 
-Pour surcharger le comportement d'une commande ou d'un agent, créer le fichier `.md` compagnon :
+Les commandes (`*.md`) n'ont pas de compagnon — leur comportement se personnalise via les
+contextes partagés qu'elles référencent (voir plus bas). Les agents et les contextes partagés
+suivent tous deux le pattern template + compagnon : créer le fichier `.md` compagnon à côté
+du `.template.md` pour surcharger le comportement.
 
 ```bash
-# Exemple : règles spécifiques pour /feature
-touch .claude/commands/feature.md
+# Exemple : règles spécifiques pour l'agent deployer
+touch .claude/agents/deploy.md
 ```
 
 ```markdown
-# Adaptations projet — feature
+# Adaptations projet — deploy
 
 ## Conventions de nommage
-- Toutes les branches feature suivent le pattern `feat/<ticket>-<slug>`
+- Les tags de release suivent le pattern `v<version>-<env>`
 
 ## Règles métier spécifiques
-- Ne jamais modifier le module `billing/` sans validation du lead
+- Ne jamais déployer en PROD un vendredi sans validation explicite
 ```
 
-Claude lit `feature.template.md` (comportement standard) puis `feature.md` (règles projet).
-Le fichier `feature.template.md` n'est jamais à modifier — il se met à jour automatiquement.
+Claude lit `deploy.template.md` (comportement standard) puis `deploy.md` (règles projet).
+Le fichier `deploy.template.md` n'est jamais à modifier — il se met à jour automatiquement.
+
+Même principe pour un contexte partagé, référencé par plusieurs commandes/agents à la fois :
+
+```bash
+# Exemple : règle de versionnement spécifique au projet
+touch .claude/commands/context/COMMON.md
+```
+
+```markdown
+# Adaptations projet — COMMON
+
+## Règle de versionnement spécifique
+- Les milestones de ce projet incluent systématiquement un numéro de sprint dans leur description
+```
+
+Claude lit `context/COMMON.template.md` (règles génériques du template) puis `context/COMMON.md`
+(règles projet) — toute commande ou agent référençant "`context/COMMON.md`" lit en réalité les deux.
+Le fichier `context/COMMON.template.md` n'est jamais à modifier — il se met à jour automatiquement.
 
 ### Forker ce template
 
