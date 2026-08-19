@@ -114,7 +114,7 @@ Format prod       : X.Y.Z   (le "a" n'est jamais publie en prod)
 |-----------|-------|
 | Creation du milestone (`/milestone new vX.Y[.Z]`) | Le titre fixe `X.Y.Z` pour tout le cycle — logique complete de validation en 5.7 |
 | Ouverture du cycle (1er commit sur la branche rattachee au milestone) | `{VERSION_FILE}` -> `X.Y.Z.0` (version du milestone, `a=0`) |
-| Deploiement QUALIF (avant build) | `a+1` — a la charge de `deploy`, commit dedie `chore(version): Bump to X.Y.Z.a+1`. Seul declencheur de `a` : garantit un artefact unique par deploiement, meme sans nouveau commit dev entre deux deploiements. Le dossier `build/qualif/X.Y.Z/` (sans `a`) reste le meme entre deux builds ; c'est le nom de l'artefact a l'interieur (`app-X.Y.Z.a.tar.gz`) qui change (voir `deploy.template.md`) |
+| Deploiement QUALIF (avant build) | `a+1` — a la charge de `deploy`, commit dedie `chore(version): Bump to X.Y.Z.a+1`. Seul declencheur de `a` : garantit un artefact unique par deploiement, meme sans nouveau commit dev entre deux deploiements. Le dossier non gitte `build/qualif_vX.Y.Z/` (sans `a`) reste le meme entre deux builds ; c'est le nom de l'artefact a l'interieur (`app-X.Y.Z.a.tar.gz`) qui change (voir `deploy.template.md`) |
 | Promotion dev -> prod | `a` est supprime — la version livree est exactement `X.Y.Z`, telle que fixee par le milestone. Aucun calcul. |
 
 > Les commits dev ordinaires (`feat`, `fix`, `refactor`...) ne touchent jamais `{VERSION_FILE}`. `a` s'incremente uniquement au fil des deploiements QUALIF — plusieurs commits dev peuvent donc s'accumuler sous le meme `a`, et `a` peut s'incrementer plusieurs fois sans aucun nouveau commit dev entre deux deploiements (ex: redeploiement suite a un correctif infra hors code). C'est le comportement attendu.

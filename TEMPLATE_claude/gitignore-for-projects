@@ -33,5 +33,5 @@ TEMPLATE_claude/
 # Dossier de travail inter-agents (rapports et handoffs temporaires)
 _work/
 
-# Build artifacts (qualif : build/qualif/<X.Y.Z>/<artefact>-<X.Y.Z.a>.<ext>)
+# Build artifacts (qualif : build/qualif_v<X.Y.Z>/<artefact>-<X.Y.Z.a>.<ext>)
 build/
