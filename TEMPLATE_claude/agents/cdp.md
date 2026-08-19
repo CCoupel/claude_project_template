@@ -121,12 +121,15 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 ## Workflow Standard
 
 ```
-ROUTING → PLAN → DEV (arbre planner) → REVIEW → [QA ∥ DOC draft] → [QUALIF ∥ DOC finalize] → PROD
+ROUTING → PLAN → DEV (arbre planner) → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] → PROD
 ```
 
 > DEV : dispatch selon l'Arbre d'Execution du plan (batches sequentiels, agents en parallele par batch).
 > REVIEW et TEST-WRITER s'executent en parallele apres DEV.
-> DOC draft demarre en parallele de QA (code REVIEW-approuve).
+> Par defaut (`qa_parallelizable != false`, voir `context/QUALITY.md` section 12), QA demarre des que
+> TEST-WRITER a livre ses scripts — en parallele de REVIEW, sans attendre son verdict.
+> Repli sequentiel explicite si `qa_parallelizable == false` : QA demarre seulement apres verdict REVIEW positif.
+> DOC draft demarre une fois REVIEW approuve (code stable) — que QA ait ou non deja termine.
 > DOC finalize demarre en parallele de DEPLOY QUALIF.
 > GATE 4 s'ouvre uniquement quand QUALIF + DOC finalize sont tous les deux DONE.
 > PROD = zero modification — tout est fige avant GATE 4.
@@ -254,9 +257,11 @@ SendMessage({ to: "dev-backend", content: "
 - DONE → Phase REVIEW (test-writer a déjà produit ses livrables)
 - FAILED → escalade utilisateur (conflits non résolvables automatiquement) ← GATE 2b
 
-### Phase 3 — Revue
+### Phase 3 — Revue + QA (parallelisation par defaut)
 
 > `ISSUE_NUMS[]` non vide → label `EN REVIEW` sur toutes les issues (appliquer via `mcp__plugin_github_github__issue_write`)
+> Critere `qa_parallelizable` du plan (voir `implementation-planner.md`, section "Parallelisation Review/QA") —
+> sans plan, heuristique CDP : `true` par defaut. Mecanisme complet : `context/QUALITY.md` section 12.
 
 ```
 SendMessage({ to: "code-reviewer", content: "
@@ -268,23 +273,11 @@ SendMessage({ to: "code-reviewer", content: "
 " })
 ```
 
-**Apres reception :**
-- APPROUVE (ou AVEC RESERVES) → Phase QA
-- REFUSE → cycle++
-  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
-  → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points du rapport]" })
-  → Si la correction touche le scope fonctionnel (BREAKING/CHANGED dans contracts/CHANGELOG.md) :
-    relancer TEST-WRITER + REVIEW en parallèle
-  → Sinon : relancer REVIEW seul
-- Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR ← GATE 3
-
-### Phase 4 — QA + Documentation Draft (parallele)
-
-> `ISSUE_NUMS[]` non vide → label `EN QA` sur toutes les issues (appliquer via `mcp__plugin_github_github__issue_write`)
-
-Dispatcher QA et doc-updater dans le meme tour — le code est REVIEW-approuve, stable pour etre documente :
+**Si `qa_parallelizable != false` (defaut)** — dispatcher `qa` dans le meme tour (test-writer a deja livre ses
+scripts en Phase 2, aucune attente necessaire) :
 
 ```
+> `ISSUE_NUMS[]` non vide → label `EN QA` sur toutes les issues (en plus de `EN REVIEW`)
 SendMessage({ to: "qa", content: "
   Execute les tests sur la branche [branche].
   Scripts de tests : commites par test-writer (SHA [sha]).
@@ -292,7 +285,38 @@ SendMessage({ to: "qa", content: "
   Scope : [unit|integration|e2e|all]
   Retourne : verdict VALIDATED / NOT VALIDATED + rapport detaille.
 " })
+```
 
+**Apres reception du verdict `code-reviewer` :**
+- REFUSE → cycle++
+  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
+  → Si `qa` dispatche en parallele et encore en cours : `SendMessage({ to: "qa", content: "ANNULATION — la
+    revue de code a ete REJETEE, ce travail est invalide. Arrete l'execution des tests, ne produis pas de
+    rapport pour cette iteration, reste IDLE." })`, ignorer tout resultat tardif
+  → Si `qa` deja DONE : ignorer son resultat
+  → SendMessage({ to: "[dev-backend|dev-frontend selon scope]", content: "Corriger : [points du rapport]" })
+  → Si la correction touche le scope fonctionnel (BREAKING/CHANGED dans contracts/CHANGELOG.md) :
+    relancer TEST-WRITER + REVIEW en parallele (+ QA si `qa_parallelizable` toujours vrai)
+  → Sinon : relancer REVIEW seul (+ QA si mode parallele)
+- Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR ← GATE 3
+- APPROUVE (ou AVEC RESERVES) →
+  - `qa` deja dispatche (mode parallele) : attendre son DONE si pas encore recu, puis traiter son verdict ci-dessous
+  - `qa` pas encore dispatche (mode sequentiel, `qa_parallelizable == false`) :
+    > `ISSUE_NUMS[]` non vide → label `EN QA`
+    dispatcher `qa` maintenant (meme message ci-dessus), attendre son DONE
+
+**Verdict `qa` (parallele ou sequentiel) :**
+- VALIDATED / VALIDATED WITH RESERVATIONS → Phase 4 (Documentation Draft)
+- NOT VALIDATED → cycle++
+  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
+  → Retour Phase DEV, puis relance REVIEW (+ QA selon mode) en parallele
+  → Si cycle > 3 : **Escalade utilisateur** ← GATE 3
+
+### Phase 4 — Documentation Draft
+
+Le code est REVIEW-approuve et QA VALIDATED (voir Phase 3) — dispatcher `doc-updater` :
+
+```
 SendMessage({ to: "doc-updater", content: "
   DOC DRAFT — redige la documentation pour : [description du changement]
   Sources : plan planner (_work/handoff/planner-[timestamp].md), contracts/, code REVIEW-approuve (SHA [sha]).
@@ -302,19 +326,11 @@ SendMessage({ to: "doc-updater", content: "
 " })
 ```
 
-**Apres reception des deux reponses :**
-
-- **QA VALIDATED + DOC DONE** →
-  > `ISSUE_NUMS[]` non vide → label `DONE` sur toutes les issues
+**Apres reception :**
+- DONE →
+  > `ISSUE_NUMS[]` non vide → label `DONE` sur toutes les issues, remove `EN QA`/`EN REVIEW`/`EN COURS`/`PLANNING`
   Phase DEPLOY QUALIF (automatique)
-
-- **QA NOT VALIDATED** (quel que soit le statut DOC) → cycle++
-  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
-  → Retour Phase DEV, puis relance REVIEW + TEST-WRITER en parallele
-  → DOC draft partiellement fait : noter le SHA pour repartir du delta a la prochaine iteration
-  → Si cycle > 3 : **Escalade utilisateur** ← GATE 3
-
-- **DOC FAILED** (QA VALIDATED) → renvoyer au doc-updater avec correction avant de continuer
+- FAILED → renvoyer au doc-updater avec correction avant de continuer
 
 ### Phase 5 — Deploiement QUALIF + Documentation Finalize (parallele)
 
@@ -483,13 +499,13 @@ Informer l'utilisateur du resultat du deploiement (et de la publication marketin
 ### Feature
 
 ```
-PLAN (arbre exec) → DEV (batches) → REVIEW → [QA ∥ DOC draft] → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
+PLAN (arbre exec) → DEV (batches) → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
 ```
 
 ### Bugfix
 
 ```
-ROUTING → DEV → REVIEW → [QA ∥ DOC draft] → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
+ROUTING → DEV → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
 ```
 
 ### Hotfix
@@ -502,7 +518,7 @@ DEV (minimal) → REVIEW rapide → DEPLOY PROD direct → DOC (post-mortem apre
 ### Refactor
 
 ```
-QA (avant) → DEV (arbre exec) → REVIEW → [QA apres ∥ DOC draft] → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
+QA (avant) → DEV (arbre exec) → [REVIEW ∥ QA apres] → DOC draft → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
 ```
 
 ### Securite
@@ -524,8 +540,9 @@ Phase C : Validation fonctionnelle → Phase D : Merge
 MAX_CYCLES = 3
 
 Si REVIEW = REFUSE    → cycle++
+  → Si qa a ete dispatche en parallele : annuler/ignorer son resultat (voir Phase 3, context/QUALITY.md section 12)
   → SendMessage(dev-*, "Corriger : [points]")       ← pas de CLEAR (contexte précieux)
-  → CLEAR(code-reviewer) puis redispatch REVIEW
+  → CLEAR(code-reviewer) + CLEAR(qa) si dispatche, puis redispatch REVIEW (+ QA si mode parallele)
   → CLEAR(test-writer) si BREAKING change, sinon pas de CLEAR
 
 Si QA = NOT VALIDATED → cycle++

@@ -159,6 +159,15 @@ Le support est libre et choisi selon sa pertinence :
 
 Cette maquette est la reference que **test-writer** utilisera pour deriver les scenarios de test et que **QA** utilisera pour valider que l'implementation livree correspond a ce qui a ete valide par l'utilisateur.
 
+### 3d. Evaluer la Parallelisation Review/QA
+
+Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-writer` a livre ses scripts), sans attendre le verdict de Review — voir `context/QUALITY.md` section 12 pour le mecanisme complet.
+
+`qa_parallelizable: true` (**defaut**) sauf si l'un de ces facteurs est present, auquel cas passer a `false` et justifier en une ligne :
+- Scope large (typiquement FEATURE consequente) avec risque de rejet en review significatif
+- Changement d'architecture
+- Code concurrent ou sensible (races, transactions, etat partage)
+
 ### 4. Evaluer les Risques
 
 - Complexite technique
@@ -239,6 +248,10 @@ Cette maquette est la reference que **test-writer** utilisera pour deriver les s
 |--------|-------------|--------|------------|
 | ... | Faible/Moyen/Eleve | ... | ... |
 
+## Parallelisation Review/QA
+- qa_parallelizable: true|false
+- Justification : <1 ligne — scope, risque de rejet en review, sensibilite concurrence/architecture>
+
 ## Estimation
 - Complexite : Faible / Moyenne / Elevee
 - Nombre de fichiers : ~X
@@ -267,6 +280,7 @@ Resume :
 - Composants : Backend, Frontend
 - Complexite : Moyenne
 - Maquette : <reference si interface ou machine a etats impactee>
+- QA parallele a Review : Oui/Non (<raison si Non>)
 
 Voulez-vous :
 a) Valider et lancer l'implementation

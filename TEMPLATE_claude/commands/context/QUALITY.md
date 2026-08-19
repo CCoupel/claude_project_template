@@ -207,6 +207,49 @@ Ce fichier centralise les patterns partages par les commandes `/code-review`, `/
 
 ---
 
+## 12. Dispatch Review/QA — Parallelisation par Defaut
+
+Par defaut, `qa` est dispatche des que ses dependances (scripts de test) sont pretes — **sans attendre le verdict de `code-reviewer`**. Le mode sequentiel (QA demarre seulement apres verdict Review positif) reste disponible comme repli explicite quand le risque est juge trop eleve.
+
+### Critere de risque — `qa_parallelizable`
+
+Champ produit par le planner (voir `implementation-planner.md`, section "Parallelisation Review/QA") :
+
+| Valeur | Sens | Declencheur |
+|--------|------|-------------|
+| `true` (**defaut**) | Faible risque qu'un REJECTED invalide le travail QA | Scope limite, pas de changement d'architecture, pas de concurrence sensible |
+| `false` (exception, justifiee en 1 ligne) | Risque eleve | Scope large, forte probabilite de rejet en review, code concurrent/architecture sensible |
+
+**Sans plan** (BUGFIX/HOTFIX simple sans planner dispatche) : heuristique de l'orchestrateur (CDP) — `true` par defaut, `false` uniquement si un risque eleve est identifie explicitement (architecture, concurrence).
+
+### Mode parallele (defaut)
+
+1. Dispatcher `code-reviewer` — et `test-writer` dans le meme tour si ses livrables n'existent pas deja.
+2. Des que les scripts de test sont prets (immediatement s'ils sont deja livres, sinon des reception du DONE de `test-writer`) → dispatcher `qa`, **sans attendre le verdict de `code-reviewer`**.
+3. Attendre les deux verdicts en parallele.
+4. `code-reviewer` = REJECTED (ou equivalent local, voir verdicts en vigueur dans le fichier appelant) :
+   - `qa` encore en cours → lui envoyer le message d'annulation ci-dessous, ignorer tout resultat qui arriverait apres.
+   - `qa` deja DONE → ignorer son resultat.
+   - Retour Phase Dev (cycle++), comme le flow standard.
+5. `code-reviewer` = APPROVED (ou AVEC RESERVES) :
+   - Attendre `qa` DONE si pas encore recu.
+   - Traiter son verdict normalement (VALIDATED → suite du workflow, NOT VALIDATED → retour Dev).
+
+### Mode sequentiel (repli explicite, `qa_parallelizable: false`)
+
+Dispatcher `code-reviewer` (+ `test-writer` si besoin) seul. Attendre son verdict. Positif → dispatcher `qa`. REJECTED → retour Dev, `qa` n'est jamais dispatche pour ce cycle.
+
+### Message d'annulation `qa`
+
+```
+SendMessage({ to: "qa", content: "
+  ANNULATION — la revue de code a ete REJETEE, ce travail est invalide.
+  Arrete l'execution des tests en cours, ne produis pas de rapport pour cette iteration, reste IDLE.
+" })
+```
+
+---
+
 ## Usage
 
 Dans les commandes Qualite, referencer ce fichier :
@@ -217,4 +260,5 @@ Dans les commandes Qualite, referencer ce fichier :
 - Verdicts : section 5
 - Tests : section 7
 - Rapports : sections 8-9
+- Dispatch Review/QA (parallelisation) : section 12
 ```

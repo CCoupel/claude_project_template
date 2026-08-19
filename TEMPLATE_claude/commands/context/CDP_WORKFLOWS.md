@@ -48,7 +48,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | Dev — Frontend seul | `dev-frontend` |
 | Dev — Les deux | `dev-backend` + `dev-frontend` (parallèle si indépendants) |
 | Review | `code-reviewer` + `test-writer` (parallèle) |
-| QA | `qa` |
+| QA | `qa` — par défaut en parallèle de Review (voir `QUALITY.md` section 12), dès `test-writer` DONE |
 | Doc | `doc-updater` |
 | Deploy QUALIF / PROD | `deployer` |
 
@@ -182,7 +182,10 @@ Enchaîner directement sur la phase suivante sans autre attente.
 ### Labels GitHub — Suivi de Phase
 
 > **Condition** : s'applique si `ISSUE_NUMS[]` est non vide (construit en CLARIFICATION).
-> **Règle** : chaque transition de phase met à jour le label de **toutes** les issues suivies. Un seul label actif à la fois par issue.
+> **Règle** : chaque transition de phase met à jour le label de **toutes** les issues suivies. Un seul label
+> actif à la fois par issue, **sauf** `EN REVIEW` + `EN QA` simultanés pendant la fenêtre de parallélisation
+> Review/QA par défaut (voir `QUALITY.md` section 12) — les deux coexistent tant que REVIEW n'a pas rendu
+> son verdict.
 
 | Transition | Label à ajouter | Labels à retirer |
 |------------|----------------|-----------------|
@@ -190,8 +193,9 @@ Enchaîner directement sur la phase suivante sans autre attente.
 | Entrée Phase Dev | `EN COURS` | `PLANNING`, `EN REVIEW`, `EN QA`, `DONE` |
 | Retour Phase Dev (cycle REVIEW ou QA) | `EN COURS` | `EN REVIEW`, `EN QA` |
 | Entrée Phase Review | `EN REVIEW` | `EN COURS`, `PLANNING`, `EN QA`, `DONE` |
-| Entrée Phase QA | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE` |
-| QA VALIDATED | `DONE` | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING` |
+| Entrée Phase QA — mode parallèle (`qa_parallelizable` != false, dès TEST-WRITER DONE) | `EN QA` | `EN COURS`, `PLANNING`, `DONE` (garder `EN REVIEW`) |
+| Entrée Phase QA — mode séquentiel (après verdict Review positif) | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE` |
+| QA VALIDATED (et Review déjà approuvée) | `DONE` | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING` |
 | Deploy PROD confirmé (GATE 4) | — (issues fermées) | — |
 
 Appel MCP pour chaque transition — boucler sur toutes les issues suivies :
@@ -344,6 +348,8 @@ Analyser le scope, puis dispatcher les agents concernés via SendMessage :
 
 ### Phase Review
 
+> **Dispatch Review/QA** : voir `context/QUALITY.md` section 12 pour le mecanisme complet (critere `qa_parallelizable`, mode parallele par defaut, repli sequentiel, message d'annulation). Resume ci-dessous.
+
 **→ Appliquer label `EN REVIEW`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
 
 ```
@@ -370,20 +376,29 @@ SendMessage({ to: "test-writer", content: "
   Produire : scripts de tests + procédures manuelles tests/procedures/.
 " })
 
-|-- Recevoir DONE + ref fichier rapport
+|-- qa_parallelizable != false (défaut) :
+|     Dès réception DONE de test-writer -> appliquer label EN QA + dispatcher qa immédiatement
+|     (sans attendre le verdict code-reviewer) -> voir Phase QA, "Dispatch parallèle"
+|-- qa_parallelizable == false (repli explicite du plan, ou heuristique CDP si risque élevé sans plan) :
+|     Attendre le verdict code-reviewer avant de dispatcher qa -> voir Phase QA, "Dispatch séquentiel"
+
+|-- Recevoir DONE code-reviewer + ref fichier rapport
 |-- CDP lit le rapport et valide la conformite
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
-        |-- APPROVED            -> Phase QA
-        |-- APPROVED WITH RESERVATIONS -> Phase QA (noter reserves)
-        |-- REJECTED            -> Retour Phase Dev (cycle++) :
-                                   mcp__plugin_github_github__issue_write( labels: add ["EN COURS"], remove ["EN REVIEW", "EN QA"] )
-                                   relancer code-reviewer + test-writer
+        |-- APPROVED / APPROVED WITH RESERVATIONS ->
+              Si qa déjà dispatché (mode parallèle) : attendre son DONE si pas encore reçu, puis traiter
+              son verdict (voir Phase QA). Sinon (mode séquentiel) : dispatcher qa maintenant -> Phase QA.
+        |-- REJECTED -> Retour Phase Dev (cycle++) :
+              mcp__plugin_github_github__issue_write( labels: add ["EN COURS"], remove ["EN REVIEW", "EN QA"] )
+              Si qa est en cours (mode parallèle) -> lui envoyer le message d'annulation (QUALITY.md
+              section 12), ignorer tout résultat tardif. Si qa déjà DONE -> ignorer son résultat.
+              relancer code-reviewer + test-writer (+ qa si mode parallèle, réévalué après correction)
 ```
 
 ### Phase QA
 
-**→ Appliquer label `EN QA`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
+**→ Appliquer label `EN QA`** sur toutes les issues de `ISSUE_NUMS[]` si non vide, au moment du dispatch effectif de `qa` (dès test-writer DONE en mode parallèle, ou après verdict Review positif en mode séquentiel — voir Phase Review) :
 
 ```
 pour chaque issue_num dans ISSUE_NUMS[] :
@@ -392,16 +407,16 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 ```
 
 ```
-// Dispatcher qa
+// Dispatcher qa — déclencheur selon le mode retenu en Phase Review (QUALITY.md section 12)
 SendMessage({ to: "qa", content: "
   Execute les tests sur [branche].
   Scripts de tests : SHA [sha] (commités par test-writer).
   Procédures manuelles : tests/procedures/[feature].md
-  Rapport code-reviewer : _work/reports/code-reviewer-[timestamp].md
+  Rapport code-reviewer : _work/reports/code-reviewer-[timestamp].md (si déjà disponible)
   Retourne : VALIDATED / NOT VALIDATED + rapport.
 " })
 
-|-- Recevoir DONE + ref fichier rapport
+|-- Recevoir DONE + ref fichier rapport (ou annulation reçue entre-temps, voir Phase Review REJECTED)
 |-- CDP lit le rapport et valide la conformite
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
@@ -712,6 +727,7 @@ Dans les commandes CDP, referencer ce fichier :
 - Clarification : section 4
 - Labels GitHub + Milestone : section 5 (Labels GitHub — Suivi de Phase)
 - Phases communes : section 5
+- Dispatch Review/QA (parallelisation) : voir `context/QUALITY.md` section 12
 - Validation : section 6
 - Erreurs : section 7
 - Regles : section 9

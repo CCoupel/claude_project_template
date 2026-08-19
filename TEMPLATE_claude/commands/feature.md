@@ -44,12 +44,13 @@ Sinon -> workflow normal.
     |           |
     v           v
 [REVIEW]   [TEST-WRITER] --> (en parallele)
-    \           /
-     v         v
-      [QA] --> Execution scripts + procedures manuelles
-    |
-    v
-[DOC] --> Documentation
+    |           |
+    |           v
+    |         [QA] --> demarre des TEST-WRITER termine, en parallele de REVIEW (defaut)
+    |           |
+     `----+-----'
+          v
+       [DOC] --> Documentation
     |
     v
 [DEPLOY] --> Deploiement QUALIF (PROD sur /deploy prod)
@@ -72,7 +73,7 @@ Orchestre le workflow FEATURE pour {PROJECT_NAME}.
 - Regles : section 9
 
 **Contexte DEV :** Voir `context/DEVELOPMENT.md`
-**Contexte Qualite :** Voir `context/QUALITY.md`
+**Contexte Qualite :** Voir `context/QUALITY.md` (dispatch Review/QA parallele par defaut : section 12)
 
 **Demande utilisateur :** $ARGUMENTS
 

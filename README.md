@@ -243,12 +243,22 @@ spécialisés, valide leurs livrables et reporte la progression.
 
 ## Workflows
 
+### Phase Review/QA — parallélisation par défaut
+
+Par défaut, `qa` démarre dès que `test-writer` a livré ses scripts — **en parallèle de `code-reviewer`**,
+sans attendre son verdict. Si REVIEW rejette, le travail QA en cours (ou déjà fini) est annulé/ignoré et
+on repart en DEV comme avant ; la durée totale n'est donc jamais pire que l'ancien enchaînement strictement
+séquentiel, et souvent meilleure (QA masqué sous REVIEW). Le planner fixe ce comportement via le champ
+`qa_parallelizable: true|false` du plan (`true` par défaut ; `false` justifié en une ligne si le risque de
+rejet en review est élevé — scope large, architecture, concurrence sensible). Sans plan, l'orchestrateur
+applique la même valeur par défaut. Détail complet : `TEMPLATE_claude/commands/context/QUALITY.md` section 12.
+
 ### Feature — workflow complet
 
 ```
 [GATE 1] Confirmation démarrage
     ↓
-PLAN ──────────────────────── contrats API + contracts/CHANGELOG.md
+PLAN ──────────────────────── contrats API + contracts/CHANGELOG.md + qa_parallelizable
     ↓  label PLANNING
 [GATE 2] Validation plan (+ alerte breaking changes si détectés)
     ↓  label EN COURS
@@ -257,11 +267,11 @@ PLAN ──────────────────────── co
     └──────────────────────────┘
     ↓  (si backend+frontend parallèle → merge conflicts résolus par dev-backend)
     ↓  [GATE 2b] escalade si conflits non résolvables
-    ↓  label EN REVIEW
-REVIEW ─────────────────────── code + vérifie couverture des contrats par les tests
-    ↓
-    ↓  label EN QA
-QA ────────────────────────── exécute scripts + suit procédures manuelles
+    ↓  label EN REVIEW (+ EN QA si qa_parallelizable, dès TEST-WRITER DONE)
+    ├──────────────────────────┐
+  REVIEW                     QA ── démarre dès TEST-WRITER DONE, sans attendre REVIEW (défaut)
+    └──────────────────────────┘
+    ↓  REVIEW REJECTED → annule/ignore QA ; sinon attend QA si pas encore DONE
     ↓  label DONE
 DOC ───────────────────────── CHANGELOG + documentation technique
     ↓
@@ -290,8 +300,9 @@ DEPLOY PROD ────────────────── merge → tag
 | 4c | Procédure PROD incohérente | Corriger avant deploy |
 
 **Cycles de correction** (max 3 avant escalade) :
-- REVIEW refuse → DEV corrige → REVIEW seul (TEST-WRITER uniquement si scope change)
-- QA échoue → DEV corrige → REVIEW seul (TEST-WRITER uniquement si scope change)
+- REVIEW refuse → si QA tournait en parallèle, annulé/ignoré → DEV corrige → REVIEW seul (+ QA si toujours
+  parallélisable) (TEST-WRITER uniquement si scope change)
+- QA échoue → DEV corrige → REVIEW seul (+ QA) (TEST-WRITER uniquement si scope change)
 - Scope change = changement `BREAKING` ou `CHANGED` dans `contracts/CHANGELOG.md`
 
 ### Bugfix
@@ -302,10 +313,10 @@ ANALYSE ── cause racine
     ├──────────────────────────┐
   DEV ── fix minimal       TEST-WRITER ── test de régression depuis la spec du bug
     └──────────────────────────┘
-    ↓  label EN REVIEW
-REVIEW
-    ↓  label EN QA
-QA ── exécute les tests + procédure manuelle
+    ↓  label EN REVIEW (+ EN QA si qa_parallelizable, dès TEST-WRITER DONE)
+    ├──────────────────────────┐
+  REVIEW                     QA ── démarre dès TEST-WRITER DONE, sans attendre REVIEW (défaut)
+    └──────────────────────────┘
     ↓  label DONE
 DOC ── CHANGELOG (Fixed)
     ↓
@@ -331,10 +342,8 @@ QA (avant) ── capture l'état actuel des tests
     ↓
 DEV ── refactoring (comportement identique obligatoire)
     ├──────────────────┐
-  REVIEW           TEST-WRITER
+  REVIEW          QA (après) ── vérifie la non-régression, en parallèle de REVIEW (défaut)
     └──────────────────┘
-    ↓
-QA (après) ── vérifie la non-régression
     ↓
 DEPLOY QUALIF
 ```
@@ -362,7 +371,7 @@ Le CDP met à jour les labels de l'issue associée (via plugin GitHub MCP) à ch
 | `PLANNING` | Phase 1 — plan en cours |
 | `EN COURS` | GATE 2 validé — DEV + TEST-WRITER démarrés |
 | `EN REVIEW` | Phase 3 — REVIEW en cours |
-| `EN QA` | Phase 4 — QA en cours |
+| `EN QA` | Phase 3 — QA en cours (dès TEST-WRITER DONE si parallèle au défaut, sinon après REVIEW) |
 | `DONE` | QA validée |
 | *(issue fermée)* | GATE 4 — utilisateur confirme que l'implémentation est conforme |
 

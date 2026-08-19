@@ -52,10 +52,11 @@ Sinon -> workflow normal.
 [DEV] --> Refactoring incremental
     |       Tests entre chaque etape
     v
-[REVIEW] --> Verification absence de regression
-    |
-    v
-[QA] --> Tests complets
+[REVIEW]   [QA] --> Tests complets, en parallele de REVIEW par defaut (context/QUALITY.md section 12)
+    |           |
+     `----+-----'
+          v
+   Fin refactor (pas de DOC)
 ```
 
 ## Etapes Detaillees
@@ -162,7 +163,7 @@ Orchestre le workflow REFACTOR pour {PROJECT_NAME}.
 - Regles : section 8
 
 **Contexte DEV :** Voir `context/DEVELOPMENT.md`
-**Contexte Qualite :** Voir `context/QUALITY.md`
+**Contexte Qualite :** Voir `context/QUALITY.md` (dispatch Review/QA parallele par defaut : section 12)
 
 **Demande utilisateur :** $ARGUMENTS
 

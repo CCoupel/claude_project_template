@@ -47,12 +47,13 @@ Sinon -> workflow normal.
     |           |
     v           v
 [REVIEW]   [TEST-WRITER] --> test de regression (en parallele)
-    \           /
-     v         v
-      [QA] --> Execution + procedure manuelle
-    |
-    v
-[DOC] --> CHANGELOG (Fixed)
+    |           |
+    |           v
+    |         [QA] --> demarre des TEST-WRITER termine, en parallele de REVIEW (defaut)
+    |           |
+     `----+-----'
+          v
+       [DOC] --> CHANGELOG (Fixed)
 ```
 
 ## Etapes Detaillees
@@ -95,6 +96,8 @@ Pour les bugs complexes uniquement :
 - Execution de tous les tests
 - Verification specifique du scenario du bug
 - Build OK
+- Par defaut, demarre des que TEST-WRITER a livre ses scripts — en parallele de REVIEW, sans attendre son
+  verdict (voir `context/QUALITY.md` section 12). Repli sequentiel si le risque est juge eleve.
 
 ### 7. DOC
 
@@ -139,7 +142,7 @@ Orchestre le workflow BUGFIX pour {PROJECT_NAME}.
 - Regles : section 9
 
 **Contexte DEV :** Voir `context/DEVELOPMENT.md`
-**Contexte Qualite :** Voir `context/QUALITY.md`
+**Contexte Qualite :** Voir `context/QUALITY.md` (dispatch Review/QA parallele par defaut : section 12)
 
 **Demande utilisateur :** $ARGUMENTS
 

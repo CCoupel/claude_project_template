@@ -399,11 +399,13 @@ fi
 | `PLANNING` | CDP (MCP) | Phase 1 — plan en cours |
 | `EN COURS` | CDP (MCP) | GATE 2 validé — DEV démarré |
 | `EN REVIEW` | CDP (MCP) | Phase 3 — REVIEW + TEST-WRITER en cours |
-| `EN QA` | CDP (MCP) | Phase 4 — QA en cours |
+| `EN QA` | CDP (MCP) | Phase 3 — QA en cours (dès TEST-WRITER DONE si parallèle au REVIEW, défaut, sinon après REVIEW) |
 | `DONE` | CDP (MCP) | QA validée |
 | — (issue fermée) | CDP (MCP) | Validation utilisateur à GATE 4 |
 
-Ces labels évoluent séquentiellement et sont mutuellement exclusifs.
+Ces labels évoluent séquentiellement et sont mutuellement exclusifs, **sauf** `EN REVIEW` + `EN QA`
+simultanés pendant la fenêtre de parallélisation Review/QA par défaut (voir `QUALITY.md` section 12) —
+les deux coexistent tant que REVIEW n'a pas rendu son verdict.
 Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
 Si l'utilisateur valide à GATE 4, l'issue est fermée (elle porte déjà `DONE`, aucun changement de label).
 Si l'utilisateur rejette à GATE 4, le label `DONE` est retiré et l'issue repart vers :
