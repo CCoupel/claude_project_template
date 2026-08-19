@@ -221,7 +221,7 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 ### Milestone — Suivi de Complétion
 
 > **Condition** : s'applique toujours — `MILESTONE_NUM` est désormais obligatoire (construit ou créé automatiquement en CLARIFICATION, voir "Convention Milestone" ci-dessous).
-> **Nommage** : le titre du milestone est `vX.Y.Z` complet. Voir "Convention Milestone" ci-dessous.
+> **Nommage** : le titre du milestone est `vX.Y.Z` complet, optionnellement suivi de `" — <nom>"`. Voir "Convention Milestone" ci-dessous.
 
 | Moment | Action |
 |--------|--------|
@@ -264,12 +264,16 @@ Le milestone GitHub actif est la **seule source de vérité** pour `X.Y.Z` — p
 
 Une version prod déjà remplacée n'est **jamais repatchée**. Le fix cible toujours la ligne prod courante, quelle que soit l'ancienneté du bug (voir `context/COMMON.md` section 5.4).
 
-#### Convention Milestone GitHub — nommage `vX.Y.Z`
+#### Convention Milestone GitHub — nommage `vX.Y.Z` (+ nom optionnel)
 
-Le titre du milestone GitHub porte la version complète `X.Y.Z` fixée dès sa création — voir `COMMON.md` section 5.7 pour la logique complète de validation (X/Y obligatoires, Z auto-complété, unicité, cohérence labels↔version).
-- Un cycle FEATURE crée/utilise le milestone GitHub `vX.Y.Z`, clôturé au deploy PROD (tag `vX.Y.Z` identique).
-- Un cycle BUGFIX/HOTFIX sans milestone actif crée automatiquement le milestone `vX.Y.(Z+1)` — plus de cycle "hors milestone" qui patcherait silencieusement une livraison.
-- `deploy.template.md` lit `X.Y.Z` directement depuis `{VERSION_FILE}` à la promotion (déjà fixé par le milestone à l'ouverture du cycle) — aucun recalcul.
+Le titre du milestone GitHub porte la version complète `X.Y.Z` fixée dès sa création, optionnellement
+suivie de `" — <nom>"` (ex: `v1.4.0 — Authentification OAuth2`) — voir `COMMON.md` section 5.7 pour la
+logique complète de validation (X/Y obligatoires, Z auto-complété, unicité, cohérence labels↔version).
+Toute recherche/comparaison de milestone par version porte sur le **préfixe** `vX.Y.Z`, jamais sur le
+titre entier (le nom ne doit jamais empêcher un matching).
+- Un cycle FEATURE crée/utilise le milestone GitHub `vX.Y.Z[ — nom]`, clôturé au deploy PROD (tag `vX.Y.Z` identique).
+- Un cycle BUGFIX/HOTFIX sans milestone actif crée automatiquement le milestone `vX.Y.(Z+1)` (sans nom, création non-interactive) — plus de cycle "hors milestone" qui patcherait silencieusement une livraison.
+- `deploy.template.md` lit `X.Y.Z` directement depuis `{VERSION_FILE}` à la promotion (déjà fixé par le milestone à l'ouverture du cycle) — aucun recalcul, et matche le milestone à clôturer par préfixe (voir `deploy.template.md` Étape 7).
 
 ### Phase Plan
 
