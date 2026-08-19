@@ -463,7 +463,11 @@ do_layout() {
     tcur_pid=$(tmux list-panes -t "$win" -F '#{pane_index} #{pane_id}' 2>/dev/null \
       | awk -v idx="$ti" '$1==idx{print $2}')
     [[ -z "$tcur_pid" || "$tcur_pid" == "$twant" ]] && continue
-    tmux swap-pane -s "$twant" -t "$tcur_pid" 2>/dev/null
+    # -d : ne jamais changer la pane active tmux lors de l'échange — seul le
+    # teamleader doit garder le focus, un teammate qui passe actif/inactif ne
+    # doit jamais le voler pendant ce réordonnancement (sinon le focus tmux
+    # saute silencieusement sur un teammate a chaque bascule de son statut).
+    tmux swap-pane -d -s "$twant" -t "$tcur_pid" 2>/dev/null
   done
 
   # ── Dimensions ────────────────────────────────────────────────────────────
