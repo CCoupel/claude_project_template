@@ -19,7 +19,7 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 |----------|------|----------|---------|
 | `/feature` | FEATURE | Complet | Rattache a un milestone (nouveau ou existant) — `X.Y.Z` fixe par son titre |
 | `/bugfix` | BUGFIX | Simplifie | Milestone actif -> aucun changement (commits normaux) ; sinon -> milestone `X.Y.Z+1` cree automatiquement |
-| `/hotfix` | HOTFIX | Accelere | Milestone `X.Y.Z+1` cree automatiquement si absent, meme si un autre milestone est en cours |
+| `/hotfix` | HOTFIX | Accelere | Milestone actif -> integre a celui-ci (commit direct sur sa branche) ; sinon -> milestone `X.Y.Z+1` dedie cree automatiquement |
 | `/refactor` | REFACTOR | Leger | Rattache au milestone actif — aucun changement de version (`a` gere par `deploy` au prochain deploiement QUALIF) |
 
 ---
@@ -109,10 +109,17 @@ Si des zones d'ombre existent → les lister et attendre la validation utilisate
         --json number,title,labels
       → ajouter toutes les issues ouvertes du milestone à ISSUE_NUMS[] (dédupliquer)
 
-   c. Si MILESTONE_NUM toujours indéfini (BUGFIX/HOTFIX sans milestone actif) :
-      → créer automatiquement le milestone cible `X.Y.Z+1` (Z+1 sur la dernière version prod livrée)
-        en suivant la logique de `/milestone new` (`commands/milestone.md` Mode NEW,
-        `context/COMMON.md` section 5.7) → MILESTONE_NUM
+   c. Si MILESTONE_NUM toujours indéfini (BUGFIX/HOTFIX sans référence explicite) :
+      → Chercher le milestone actuellement actif — au plus un milestone `OPEN` en développement
+        à la fois (règle d'or, voir `context/COMMON.md` section 5.4) :
+        gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
+      → Un seul résultat → MILESTONE_NUM = ce milestone (BUGFIX/HOTFIX s'y intègre, aucune
+        création, commit direct sur sa branche `milestone/vX.Y.Z`)
+      → Aucun résultat → créer automatiquement le milestone cible `X.Y.Z+1` (Z+1 sur la
+        dernière version prod livrée) en suivant la logique de `/milestone new`
+        (`commands/milestone.md` Mode NEW, `context/COMMON.md` section 5.7) → MILESTONE_NUM
+      → Plusieurs résultats (ne devrait pas arriver sous cette règle) → alerter l'utilisateur,
+        demander lequel cibler
       → tout développement doit être rattaché à un milestone, aucun cycle hors milestone (section 5.4)
 
 4. Persister dans workflow-state.json :
@@ -237,17 +244,31 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 
 ### Phase Init (Git)
 
-```bash
-# FEATURE / BUGFIX / HOTFIX / REFACTOR — meme sequence, prefixe de branche different
-git checkout main && git pull origin main
-git checkout -b <feature|bugfix|hotfix|refactor>/<nom-court>
+> **Regle d'or** : on ne travaille jamais directement sur `main`. FEATURE/BUGFIX/HOTFIX/REFACTOR
+> commitent tous directement sur la branche du milestone actif (pas de sous-branche par cycle,
+> HOTFIX inclus) ; cette branche n'est mergee sur `main` qu'au deploiement PROD du milestone
+> (voir `agents/deploy.md` Workflow PROD etape 2). Un seul milestone est en developpement a la
+> fois (voir `context/COMMON.md` section 5.4) — HOTFIX/BUGFIX sans reference explicite
+> rejoignent ce milestone actif s'il existe, sinon un milestone dedie est cree automatiquement
+> (voir Phase Clarification etape 3c et Phase Versionnement ci-dessous).
 
-# Ecriture de la version du milestone (X.Y.Z fixe par son titre, voir Phase Versionnement
-# ci-dessous) — a la charge de CDP, avant tout commit DEV :
-echo "X.Y.Z.0" > {VERSION_FILE}   # adapter selon le format reel de {VERSION_FILE}
-git add {VERSION_FILE}
-git commit -m "chore(version): Start vX.Y.Z.0 - <nom-court>"
-git push -u origin <feature|bugfix|hotfix|refactor>/<nom-court>
+```bash
+# FEATURE / BUGFIX / HOTFIX / REFACTOR — checkout-ou-creation idempotent de la branche milestone
+git fetch origin
+if git ls-remote --exit-code --heads origin milestone/vX.Y.Z ; then
+  git checkout milestone/vX.Y.Z && git pull origin milestone/vX.Y.Z
+else
+  git checkout main && git pull origin main
+  git checkout -b milestone/vX.Y.Z
+
+  # Ecriture de la version du milestone (X.Y.Z fixe par son titre, voir Phase Versionnement
+  # ci-dessous) — uniquement a cette toute premiere ouverture de la branche, jamais re-ecrite
+  # ensuite (a la charge de CDP, avant tout commit DEV) :
+  echo "X.Y.Z.0" > {VERSION_FILE}   # adapter selon le format reel de {VERSION_FILE}
+  git add {VERSION_FILE}
+  git commit -m "chore(version): Start vX.Y.Z.0 - <titre milestone>"
+  git push -u origin milestone/vX.Y.Z
+fi
 ```
 
 ### Phase Versionnement
@@ -261,12 +282,26 @@ Le milestone GitHub actif est la **seule source de vérité** pour `X.Y.Z` — p
 | FEATURE | Toujours | Rattaché à un milestone (nouveau ou existant, `X.Y.Z` fixé par son titre) | milestone `v1.4.0` → dev `1.4.0.0` → prod `1.4.0` |
 | BUGFIX | Milestone actif | Intégré aux itérations du milestone : commit normal, sans toucher `{VERSION_FILE}`. `a` s'incrémente au prochain deploiement QUALIF, à la charge de `deploy` | milestone `v1.4.0` → dev `1.4.0.0` (fix inclus) → prod `1.4.0` |
 | BUGFIX | Aucun milestone actif | Milestone `X.Y.Z+1` créé automatiquement (Z+1 sur la dernière prod livrée) | dernière prod `1.4.0` → milestone `v1.4.1` créé → dev `1.4.1.0` → prod `1.4.1` |
-| HOTFIX | Toujours (urgence prod) | Milestone `X.Y.Z+1` créé automatiquement si absent, même si un autre milestone est en cours | dernière prod `1.4.0` → milestone `v1.4.1` créé → dev `1.4.1.0` → prod `1.4.1` |
+| HOTFIX | Milestone actif | Intégré au milestone en cours : commit direct sur sa branche `milestone/vX.Y.Z`, aucun nouveau milestone créé | milestone `v1.4.0` en cours → hotfix intégré → dev `1.4.0.x` → prod `1.4.0` |
+| HOTFIX | Aucun milestone actif | Milestone `X.Y.Z+1` dédié créé automatiquement (Z+1 sur la dernière prod livrée) | dernière prod `1.4.0` → milestone `v1.4.1` créé → dev `1.4.1.0` → prod `1.4.1` |
 | REFACTOR | — | Rattaché au milestone actif — aucun changement de version, `a` reste sous la seule responsabilité de `deploy` | `1.4.0.x` (inchangé en prod) |
 
 #### Règle — bug remonté sur une ancienne version prod
 
 Une version prod déjà remplacée n'est **jamais repatchée**. Le fix cible toujours la ligne prod courante, quelle que soit l'ancienneté du bug (voir `context/COMMON.md` section 5.4).
+
+#### Règle — Aucune Livraison Partielle
+
+La branche milestone part toujours **en bloc** au déploiement PROD — urgence ou non, il n'existe
+aucun mécanisme de promotion partielle (pas de sous-branche par issue, donc pas de cherry-pick
+propre possible entre commits validés et commits en cours).
+
+- **Issue non commencée** (aucun commit sur la branche) → reportable sans impact vers le
+  prochain milestone (simple `gh issue edit --milestone`, rien à toucher côté git).
+- **Issue déjà en chantier** (commits déjà présents sur la branche, Review/QA en cours ou pas
+  encore lancés) → doit être finalisée et validée (DONE) avant tout déploiement PROD, y compris
+  un hotfix intégré au même milestone. Un hotfix urgent force donc à accélérer la validation du
+  travail déjà en cours sur la branche — il ne le contourne jamais.
 
 #### Convention Milestone GitHub — nommage `vX.Y.Z` (+ nom optionnel)
 
@@ -455,7 +490,8 @@ SendMessage({ to: "doc-updater", content: "
 ### Phase Deploy QUALIF
 
 ```
-// Dispatcher deployer
+// Dispatcher deployer — [branche] = branche milestone active (milestone/vX.Y.Z), commune a
+// FEATURE/BUGFIX/HOTFIX/REFACTOR
 SendMessage({ to: "deployer", content: "
   Déploie en QUALIF.
   Branche : [branche]
@@ -543,6 +579,11 @@ SendMessage({ to: "deployer", content: "
 - Test critique obligatoire
 - QUALIF optionnel si urgent
 - Post-mortem requis
+- Rejoint la branche du milestone actif (ou un milestone dedie cree automatiquement si aucun
+  n'est en cours) — jamais sa propre branche isolee
+- Aucune livraison partielle : le deploiement PROD emporte tout l'etat de la branche, y compris
+  le travail deja en chantier des autres issues du milestone (voir "Regle — Aucune Livraison
+  Partielle" en section Phase Versionnement)
 
 ### REFACTOR
 
@@ -594,7 +635,7 @@ Pour supporter `status`/`resume`/`jumpto`, le CDP maintient un etat :
 workflow_state:
   type: FEATURE|BUGFIX|HOTFIX|REFACTOR
   description: "..."
-  branch: feature/xxx
+  branch: milestone/vX.Y.Z   # commune a FEATURE/BUGFIX/HOTFIX/REFACTOR, aucune exception
   current_phase: dev|review|qa|doc|deploy
   phase_status:
     init: completed
@@ -624,7 +665,7 @@ cdp_state:
   active_workflow:
     type: FEATURE|BUGFIX|HOTFIX|REFACTOR
     description: "..."
-    branch: feature/xxx
+    branch: milestone/vX.Y.Z   # commune a FEATURE/BUGFIX/HOTFIX/REFACTOR, aucune exception
     current_phase: dev
   context_additions:
     - "Information supplementaire 1"
@@ -676,7 +717,7 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
 {
   "type": "FEATURE",
   "description": "...",
-  "branch": "feature/xxx",
+  "branch": "milestone/v1.4.0",
   "version": "X.Y.Z",
   "started_at": "2026-04-26T14:30:00Z",
   "cycles": 1,

@@ -87,10 +87,11 @@ Voir ordre par agent dans `context/PROJECT_CONTEXT.md`.
 ```bash
 # Tests
 {TEST_CMD}
-
-# Push
-git push origin <branche>
 ```
+
+Commit local uniquement — **pas de push**. Tous les agents (dev, review, qa) travaillent sur
+le meme clone local ; le premier push des commits dev vers origin a lieu au prochain
+deploiement QUALIF, jamais avant (voir `context/COMMON.md` section 7.1).
 
 ### Etape 6 : Generer Resume
 

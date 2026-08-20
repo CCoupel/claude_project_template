@@ -22,8 +22,9 @@ Structure:
 
 Branches:
   Production: main
-  Features: feature/<nom-court>
-  Bugfixes: fix/<nom-court>
+  Milestone (dev/qualif): milestone/vX.Y.Z — accueille tout le travail FEATURE/BUGFIX/HOTFIX/
+    REFACTOR du cycle (un seul milestone en developpement a la fois), mergee sur main
+    uniquement au deploiement PROD du milestone
 ```
 
 ---
@@ -122,8 +123,13 @@ Format prod       : X.Y.Z   (le "a" n'est jamais publie en prod)
 ### 5.4 Regle d'Or — Tout Developpement Rattache a un Milestone
 
 - Il n'existe plus de cycle de developpement hors milestone : toute issue travaillee doit etre associee a un milestone `OPEN`.
+- **Un seul milestone est en developpement a la fois.** BUGFIX/HOTFIX sans reference explicite
+  rejoignent le milestone actif s'il existe (commit direct sur sa branche `milestone/vX.Y.Z`,
+  aucune creation) — voir `commands/hotfix.md` et `context/CDP_WORKFLOWS.md` Phase Clarification
+  etape 3c.
 - **Bug remonte pendant un milestone en cours** : le fix est integre normalement (commit sans toucher `{VERSION_FILE}`), `X.Y.Z` ne bouge pas. Le prochain deploiement QUALIF incremente `a` automatiquement.
-- **Bugfix urgent solitaire, aucun milestone actif** : le milestone cible `X.Y.Z+1` (Z+1 par rapport a la derniere version prod livree) est cree automatiquement, sans intervention manuelle prealable — voir `commands/hotfix.md`.
+- **Bugfix/hotfix urgent solitaire, aucun milestone actif** : le milestone cible `X.Y.Z+1` (Z+1 par rapport a la derniere version prod livree) est cree automatiquement, sans intervention manuelle prealable — voir `commands/hotfix.md`.
+- **Aucune livraison partielle** : la branche milestone part toujours en bloc au deploiement PROD (urgence ou non) — pas de sous-branche par issue, donc pas de cherry-pick propre. Seules les issues **non commencees** (aucun commit) sont reportables sans impact vers le milestone suivant ; celles deja en chantier doivent etre finalisees et validees avant de shipper (voir `context/CDP_WORKFLOWS.md`, Regle "Aucune Livraison Partielle").
 - **Une version prod deja depassee n'est jamais repatchee** — le fix cible toujours la ligne prod courante, jamais une ancienne.
 
 ### 5.5 Exemple
@@ -176,17 +182,16 @@ Le titre du milestone (`vX.Y.Z` ou `vX.Y.Z — <nom>`, cree par `/milestone new`
 
 ## 6. Operations Git
 
-### 6.1 Creation de Branche Feature
+### 6.1 Creation/Reutilisation de la Branche Milestone
 
-```bash
-git checkout main
-git pull origin main
-git checkout -b feature/<nom-court>
-# Version du milestone actif ecrite dans {VERSION_FILE} : X.Y.Z.0 (voir section 5.7)
-git add {VERSION_FILE}
-git commit -m "chore(version): Start vX.Y.Z.0 - <feature name>"
-git push -u origin feature/<nom-court>
-```
+> On ne travaille jamais directement sur `main`. FEATURE/BUGFIX/HOTFIX/REFACTOR commitent tous
+> directement sur la branche du milestone actif (pas de sous-branche par cycle) — checkout si
+> elle existe deja, creation depuis `main` sinon. Un seul milestone est en developpement a la
+> fois (section 5.4) — HOTFIX/BUGFIX sans reference explicite rejoignent ce milestone actif
+> s'il existe, sinon un milestone dedie est cree automatiquement.
+>
+> Commande executee par le CDP a chaque cycle — voir `context/CDP_WORKFLOWS.md` Phase Init
+> (Git) pour la sequence exacte. Ne pas dupliquer ici, meme raison qu'en 6.3/6.4.
 
 ### 6.2 Commit Atomique (Style)
 
@@ -205,23 +210,23 @@ style:    Formatage, pas de changement de code
 perf:     Amelioration de performance
 ```
 
-### 6.3 Squash Merge (PROD)
+### 6.3 Merge vers main (PROD)
 
-```bash
-git checkout main
-git pull origin main
-git merge --squash feature/<branch>
-git commit -m "feat: <description> (v<version>)"
-git push origin main
-```
+> Seul `deployer` merge vers `main` (aucun autre agent ne push dessus), **à l'exception
+> documentée** de `agents/pr-reviewer.md` pour les Pull Requests externes (contributions
+> tierces, dépendances) — celles-ci ciblent `main` par convention GitHub, hors cycle milestone.
+> Cette exception inclut sa propre resynchronisation de la branche milestone active si besoin
+> (voir `agents/pr-reviewer.md` Phase D). Pour le cas normal (cycle milestone) — voir
+> `agents/deploy.md` Workflow PROD étape 2 pour la commande exacte (`git merge --no-ff`,
+> qui préserve l'historique detaillé de la branche milestone, condition necessaire au
+> nettoyage remote sans perte de `agents/deploy.md` Étape 8). Ne pas dupliquer cette
+> commande ici — la source unique de vérité est `agents/deploy.md`, pour éviter toute
+> nouvelle dérive entre les deux fichiers.
 
 ### 6.4 Tag et Release
 
-```bash
-# Creer le tag annote
-git tag -a v<version> -m "Release v<version> - <description>"
-git push origin v<version>
-```
+> Seul `deployer` cree le tag de release — voir `agents/deploy.md` Workflow PROD étape 3
+> pour la commande exacte. Ne pas dupliquer ici, pour la meme raison qu'en 6.3.
 
 ---
 
@@ -233,9 +238,11 @@ git push origin v<version>
 - [ ] Code compile sans erreur
 - [ ] Tests unitaires passes
 - [ ] Version `X.Y.Z` inchangee (fixee par le milestone, jamais editee manuellement) ; `a` non touche (reserve a `deploy`)
-- [ ] Commits atomiques avec messages clairs
+- [ ] Commits atomiques avec messages clairs, en local
 - [ ] Pas de fichiers temporaires
-- [ ] Push effectue
+- [ ] PAS de push — tous les agents (dev, review, qa) travaillent sur le meme clone local ;
+      le premier push des commits dev vers origin a lieu au prochain deploiement QUALIF
+      (voir `agents/deploy.md` Workflow QUALIF etape 2), jamais avant
 ```
 
 ### 7.2 Checklist Pre-QUALIF
@@ -261,10 +268,11 @@ git push origin v<version>
 ### 7.4 Checklist Post-PROD
 
 ```markdown
-- [ ] Squash merge vers main effectue
+- [ ] Merge vers main effectue
 - [ ] Tag Git cree et pushe
 - [ ] Release creee avec artefacts
-- [ ] Branche feature conservee (rollback)
+- [ ] Branche milestone : copie locale conservee, copie distante supprimee une fois le succes
+      confirme (le tag est l'ancrage de rollback, pas la branche — voir `agents/deploy.md` Etape 8)
 ```
 
 ---

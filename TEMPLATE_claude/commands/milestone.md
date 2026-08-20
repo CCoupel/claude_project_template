@@ -290,6 +290,20 @@ Milestone <TITLE> — Rapport avant cloture
   5 issues au total — 3 terminees (60%) — 2 non terminees
 ```
 
+**Verification securite — commits non merges** : si la branche `milestone/<version>` existe
+encore (cycle clos manuellement sans passer par `/deploy prod`), verifier qu'elle ne contient
+pas de commits absents de `main` :
+
+```bash
+git log main..milestone/<version> --oneline 2>/dev/null
+```
+
+Si non vide → avertissement non-bloquant dans le rapport :
+```
+⚠️  La branche milestone/<version> contient des commits jamais merges dans main. Ils seront
+perdus si la branche est supprimee. Continuer la cloture quand meme ? [O/n]
+```
+
 ### Etape 3 — Gestion des issues non terminees
 
 Si des issues sont encore ouvertes, proposer :
@@ -350,6 +364,23 @@ gh api repos/{owner}/{repo}/milestones/<numero> \
   -f state="closed"
 ```
 
+### Etape 4bis — Nettoyage de la branche distante (complement a `agents/deploy.md` Etape 8)
+
+Couvre le cas d'un milestone clos **sans** etre passe par `/deploy prod` (abandonne, ou issues
+reportees vers le suivant) — dans ce cas l'Etape 8 de `deploy.md` ne s'est jamais executee et
+la branche `milestone/<version>` distante, si elle existe encore, n'a jamais ete nettoyee.
+
+```bash
+git ls-remote --exit-code --heads origin milestone/<version>
+```
+
+- **Branche absente** → rien a faire.
+- **Branche presente, sans commit non merge** (verifie a l'Etape 2 — `git log main..milestone/<version>` vide) → rien a perdre, suppression directe sans redemander :
+  ```bash
+  git push origin --delete milestone/<version>
+  ```
+- **Branche presente, avec commits non merges** → suppression **uniquement** si l'utilisateur a confirme "continuer quand meme" a l'avertissement de l'Etape 2 ; sinon la branche est conservee intacte (travail non perdu, a traiter manuellement).
+
 ### Etape 5 — Rapport de cloture
 
 ```
@@ -360,6 +391,7 @@ Milestone <TITLE> cloture.
     ↩️  Issues reportees : <N> → <NEXT_TITLE>   (ou)
     🔒 Issues fermees    : <N>                   (ou)
     📌 Issues en suspens : <N> (toujours ouvertes)
+    🧹 Branche distante  : supprimee | conservee (commits non merges) | absente
 
   URL : https://github.com/{owner}/{repo}/milestone/<numero>?closed=1
 

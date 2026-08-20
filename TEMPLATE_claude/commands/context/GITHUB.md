@@ -374,9 +374,7 @@ fi
 |---------|------------|---------|
 | Milestone | `vX.Y.Z` complet (sans `a`), optionnellement suivi de `" — <nom>"` — seule source de verite de la version du cycle (voir section 5.7 et section 3.1 ci-dessus pour le matching par prefixe) | `v1.4.0` ou `v1.4.0 — Authentification OAuth2` |
 | Tag | Prefixe `v` + `X.Y.Z` | `v1.4.1` |
-| Branche feature | `feature/<nom-court>` | `feature/auth-oauth` |
-| Branche bugfix | `fix/<nom-court>` | `fix/crash-login` |
-| Branche hotfix | `hotfix/<nom-court>` | `hotfix/security-patch` |
+| Branche milestone | `milestone/vX.Y.Z` — accueille tout le travail FEATURE/BUGFIX/HOTFIX/REFACTOR du cycle (un seul milestone en developpement a la fois) | `milestone/v1.4.0` |
 
 ### 8.2 Labels standards
 

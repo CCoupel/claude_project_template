@@ -34,7 +34,7 @@ verification de l'etat du projet.
 [MEMOIRE] --> Mettre a jour .claude/memory/MEMORY.md
     |
     v
-[GIT] --> S'assurer que tout est commite/pousse
+[GIT] --> S'assurer que tout est commite (jamais de push pendant le dev, voir COMMON.md 7.1)
     |
     v
 [TEAM] --> Dissoudre la team (TeamDelete)
@@ -117,9 +117,10 @@ Mettre a jour les sections pertinentes :
 ### 4. GIT — Verification Git
 
 ```bash
-# S'assurer que tout est pousse
+# S'assurer que tout est commite (PAS de push — voir context/COMMON.md section 7.1 :
+# le premier push des commits dev vers origin a lieu au prochain deploiement QUALIF,
+# jamais avant ; tous les agents partagent le meme clone local)
 git status
-git push origin <branche-courante>
 
 # Verifier qu'il n'y a pas de travail en attente
 git stash list
@@ -180,11 +181,11 @@ rm -rf _work/
 [ETAT] Tests : 47/47 passes ✅
 [DOC] CHANGELOG.md : a jour ✅
 [MEMOIRE] MEMORY.md mis a jour ✅
-[GIT] Tout est pousse sur origin/feature/auth ✅
+[GIT] Commits locaux sur milestone/v1.4.0 — push differe au prochain deploiement QUALIF ✅
 [TEAM] TeamDelete my-project-team ✅
 
 --- Rapport de Session ---
-Branche : feature/auth
+Branche : milestone/v1.4.0
 Travail : Implementation OAuth2 (phases PLAN + DEV completees)
 Prochaine etape : /review puis /qa
 ```

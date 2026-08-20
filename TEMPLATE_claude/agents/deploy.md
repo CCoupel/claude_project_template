@@ -97,6 +97,9 @@ DIR_VERSION="$X.$Y.$Z"          # ex: 1.2.0   — version globale, sans a : suff
 # Ecrire $VERSION dans {VERSION_FILE}
 git add {VERSION_FILE}
 git commit -m "chore(version): Bump to $VERSION (QUALIF deploy)"
+# Premier vrai push des commits dev vers origin — les agents dev ne poussent jamais
+# (voir context/COMMON.md section 7.1) ; ce push envoie donc d'un coup tout l'historique
+# local accumule depuis le dernier deploy QUALIF (ou depuis la creation de la branche)
 git push origin [branche]
 
 # 3. Build — dossier nomme en qualif_vX.Y.Z (version globale, SANS a), artefact(s) a l'interieur
@@ -182,9 +185,18 @@ grep -q "$DEV_VERSION" CHANGELOG.md || {
 }
 # README/docs concernes : verifier manuellement qu'ils refletent les changements de ce release.
 
-# 2. Merge (sans supprimer la branche de travail)
+# 2. Merge (sans supprimer la branche de travail) — la branche de travail est la branche
+# milestone (milestone/vX.Y.Z), qui a accueilli tout le cycle FEATURE/BUGFIX/REFACTOR ;
+# ce merge est le SEUL moment ou ce travail rejoint main
+#
+# Securite : pousser d'abord l'etat local exact de la branche milestone — un commit local
+# peut exister depuis le dernier deploy QUALIF (ex: fix mineur post-QUALIF) sans avoir
+# encore ete pousse (voir context/COMMON.md section 7.1). Garantit que le rollback en cas
+# d'echec CI (Etape 4b) dispose de l'etat exact merge, avant la suppression de la branche
+# distante en cas de succes (Etape 8).
+git push origin milestone/vX.Y.Z
 git checkout main
-git merge --no-ff feature/xyz -m "Release v$VERSION"
+git merge --no-ff milestone/vX.Y.Z -m "Release v$VERSION"
 git push origin main
 
 # 3. Tag
@@ -252,7 +264,9 @@ git tag -d v[X.Y.Z]
 git push origin --delete v[X.Y.Z]
 ```
 
-> La branche de travail n'est jamais supprimée.
+> En cas d'echec, la branche de travail n'est jamais supprimee (ni en local ni sur le remote) —
+> necessaire pour investiguer/corriger. En cas de succes (CI OK), voir Etape 8 (nettoyage
+> remote) : seul ce cas autorise la suppression, et uniquement la copie distante.
 
 **Etape 4c — Rapport à main :**
 
@@ -323,6 +337,22 @@ SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture.
 > `deployer` — le CDP la prend independamment, en parallele de ce deploiement, en
 > dispatchant directement `marketing`. Voir `agents/cdp.template.md` Phase 6 et `agents/marketing-release.template.md`.
 
+### Étape 8 — Nettoyage de la branche de travail (remote uniquement, apres succes confirme)
+
+Une fois le déploiement PROD confirmé réussi (CI OK, tag `vX.Y.Z` poussé), la branche de
+travail distante n'a plus d'utilité opérationnelle : le tag est l'ancrage de rollback durable
+(voir section Rollback ci-dessous, qui cible déjà le tag, jamais la branche), et `main`
+contient déjà tout son contenu (merge `--no-ff`, aucun commit perdu). Supprimer uniquement la
+copie **distante** — la copie locale n'est jamais touchée (laissée à la discrétion de chaque
+poste) :
+
+```bash
+git push origin --delete milestone/vX.Y.Z
+```
+
+> Ne s'applique qu'en cas de succès confirmé. En cas d'échec CI, voir Étape 4b — la branche
+> reste intacte (local et remote) pour investigation.
+
 ## Gestion des Echecs CI
 
 Le protocole complet est dans **Etape 4 — Suivi de la CI et correction automatique**.
@@ -337,7 +367,8 @@ Résumé des actions selon la catégorie d'échec :
 | INFRA | Suppression du tag uniquement |
 
 Le deployer remonte toujours les faits bruts à `main` — catégorie, run ID, rollback effectué.
-`main` décide du routing et de la suite. La branche de travail n'est jamais supprimée.
+`main` décide du routing et de la suite. En cas d'échec, la branche de travail n'est jamais
+supprimée (ni en local ni sur le remote) — voir Etape 8 pour le nettoyage en cas de succès.
 
 ## Rollback
 
@@ -362,7 +393,7 @@ docker-compose up -d --force-recreate app:v1.1.0
 
 ### QUALIF
 
-- [ ] Branche a jour avec develop/main
+- [ ] Branche milestone a jour avec main
 - [ ] Tests unitaires passent
 - [ ] Tests E2E passent
 - [ ] Version incrementee (`a+1`, a la charge de deploy — voir Etapes Detaillees etape 2)

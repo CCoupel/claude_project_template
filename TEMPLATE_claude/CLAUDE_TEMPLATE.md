@@ -158,7 +158,8 @@ SendMessage({
 
 ## Conventions Git
 
-- **Branches** : `feature/<name>`, `bugfix/<name>`, `hotfix/<name>`
+- **Branches** : `milestone/vX.Y.Z` — accueille tout le travail FEATURE/BUGFIX/HOTFIX/REFACTOR
+  du cycle (un seul milestone en développement à la fois)
 - **Commits** : `type(scope): message` — types : `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 - **Tags** : `vX.Y.Z` — la CI patche et publie la release automatiquement
-- **Jamais de push direct sur main** sans validation
+- **Jamais de travail direct sur `main`** — la branche milestone n'y est mergée qu'au déploiement PROD

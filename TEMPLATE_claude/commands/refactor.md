@@ -157,10 +157,10 @@ Orchestre le workflow REFACTOR pour {PROJECT_NAME}.
 **Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
 - Type : REFACTOR
 - Phases : section 3
-- Dispatch DEV : section 4
-- Validation : section 5
-- Erreurs : section 6
-- Regles : section 8
+- Dispatch DEV : section 5
+- Validation : section 6
+- Erreurs : section 7
+- Regles : section 9
 
 **Contexte DEV :** Voir `context/DEVELOPMENT.md`
 **Contexte Qualite :** Voir `context/QUALITY.md` (dispatch Review/QA parallele par defaut : section 12)

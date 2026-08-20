@@ -372,9 +372,7 @@ fi
 |---------|------------|---------|
 | Milestone | `vX.Y.Z` complet (sans `a`), optionnellement suivi de `" — <nom>"` — seule source de verite de la version du cycle, matching toujours par prefixe | `v1.4.0` ou `v1.4.0 — Authentification OAuth2` |
 | Tag | Prefixe `v` + `X.Y.Z` | `v1.4.1` |
-| Branche feature | `feature/<nom-court>` | `feature/auth-oauth` |
-| Branche bugfix | `fix/<nom-court>` | `fix/crash-login` |
-| Branche hotfix | `hotfix/<nom-court>` | `hotfix/security-patch` |
+| Branche milestone | `milestone/vX.Y.Z` — accueille tout le travail FEATURE/BUGFIX/HOTFIX/REFACTOR du cycle (un seul milestone en developpement a la fois) | `milestone/v1.4.0` |
 
 ### 8.2 Labels standards
 
@@ -396,4 +394,67 @@ fi
 ```bash
 feat(scope): Description (#42)
 fix(scope): Description (#38)
+```
+
+---
+
+## 9. Gestion des Labels de Phase
+
+Le deployer utilise ces commandes pour mettre à jour les labels d'issue
+lors des transitions de phase du workflow CDP.
+
+### 9.1 Transition vers `EN COURS` (DEV démarré)
+
+```bash
+gh issue edit <numero> --add-label "EN COURS" --remove-label "EN REVIEW,EN QA,DONE"
+```
+
+### 9.2 Transition vers `EN REVIEW` (REVIEW en cours)
+
+```bash
+gh issue edit <numero> --add-label "EN REVIEW" --remove-label "EN COURS,EN QA,DONE"
+```
+
+### 9.3 Transition vers `EN QA` (QA en cours)
+
+```bash
+gh issue edit <numero> --add-label "EN QA" --remove-label "EN COURS,EN REVIEW,DONE"
+```
+
+### 9.4 Transition vers `DONE` (QA validée)
+
+```bash
+gh issue edit <numero> --add-label "DONE" --remove-label "EN COURS,EN REVIEW,EN QA"
+```
+
+### 9.5 Rejet à GATE 4 (validation utilisateur refusée)
+
+Le label `DONE` est retiré. La destination dépend de la nature de la correction
+(cf. `cdp.template.md`, GATE 4 — Cas A / Cas B) :
+
+```bash
+# Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV
+gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
+
+# Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1
+gh issue edit <numero> --add-label "PLANNING" --remove-label "DONE"
+```
+
+### 9.6 Fermeture (validation utilisateur à GATE 4)
+
+L'issue porte déjà le label `DONE` — la fermeture suffit, aucun changement de label.
+
+```bash
+gh issue comment <numero> --body "✅ Validé — QA OK — documentation mise à jour"
+gh issue close <numero>
+```
+
+### 9.7 Création des labels (si absents du repo)
+
+```bash
+gh label create "PLANNING"  --color "c5def5" --description "Planification en cours"
+gh label create "EN COURS"  --color "0075ca" --description "En cours de developpement"
+gh label create "EN REVIEW" --color "e4e669" --description "En cours de revue"
+gh label create "EN QA"     --color "d93f0b" --description "En cours de validation QA"
+gh label create "DONE"      --color "0e8a16" --description "Implementation validee (QA OK)"
 ```

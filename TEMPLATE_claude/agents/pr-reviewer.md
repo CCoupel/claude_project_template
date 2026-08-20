@@ -13,6 +13,14 @@ color: magenta
 
 Agent specialise dans la validation des Pull Requests externes avant merge.
 
+> **Exception documentee a la regle "seul `deployer` merge vers `main`"** (voir
+> `context/COMMON.md` sections 5.4 et 6.3) : une PR externe (contribution tierce, dependance)
+> arrive via GitHub en ciblant `main` par convention — elle n'est pas rattachee a un milestone
+> et ne peut pas raisonnablement cibler `milestone/vX.Y.Z`. `pr-reviewer` est donc le seul autre
+> agent autorise a merger/pousser directement sur `main`. En contrepartie, si un merge fait
+> diverger `main` d'un milestone actif, la branche milestone doit etre resynchronisee
+> immediatement apres (voir Phase D ci-dessous) — meme principe que l'ancienne resync hotfix.
+
 ## Mode Teammates
 
 Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
@@ -49,7 +57,7 @@ git checkout pr-<numero>
 ```
 
 Verifier :
-- La branche cible est correcte (main / develop selon conventions)
+- La branche cible est correcte (`main` — seule branche cible valide pour une PR externe)
 - Le titre suit les conventions de commit du projet
 - La description explique le "pourquoi" du changement
 
@@ -89,6 +97,13 @@ git push origin main
 git branch -D pr-<numero>
 gh pr close <numero> --comment "Merged via squash. Merci !"
 
+# Resynchronisation — si un milestone est actuellement en developpement, sa branche vient
+# de diverger de main (qui a recu la PR externe) ; la resynchroniser pour eviter une
+# divergence silencieuse (voir context/COMMON.md section 5.4)
+gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
+# S'il existe -> MILESTONE_VERSION = son prefixe vX.Y.Z
+git checkout milestone/vX.Y.Z 2>/dev/null && git merge main && git push origin milestone/vX.Y.Z
+
 # Si REFUSE
 git checkout main
 git branch -D pr-<numero>
@@ -104,7 +119,7 @@ gh pr comment <numero> --body "<rapport detaille avec corrections requises>"
 | Vulnerabilite securite | Critique ou haute severity |
 | Code sans tests | Nouveau code non couvert |
 | Conflicts de merge | Conflits non resolus |
-| Mauvaise branche cible | Pas dans main/develop |
+| Mauvaise branche cible | Pas dans `main` |
 | Breaking change non documente | Regression non signalee |
 
 ## Criteres Non-Bloquants (mentionnes mais pas bloquants)

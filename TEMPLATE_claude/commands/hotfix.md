@@ -68,15 +68,21 @@ Sinon -> workflow normal.
 
 ### 1bis. MILESTONE (automatique)
 
-Tout developpement est rattache a un milestone — voir `context/COMMON.md` section 5.4.
+Tout developpement est rattache a un milestone — voir `context/COMMON.md` section 5.4. Un seul
+milestone est en developpement a la fois (regle d'or) — le hotfix ne cree jamais de milestone
+parallele a un cycle deja en cours.
 
-Si aucun milestone `OPEN` ne cible `X.Y.Z+1` (Z+1 sur la derniere version prod livree) :
-- Le creer automatiquement, sans validation utilisateur prealable (urgence prod) — logique
+```bash
+gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
+```
+
+- **Un milestone actif existe** -> le hotfix s'y integre directement (aucune creation). Le fix
+  sera commite sur sa branche `milestone/vX.Y.Z`, au meme titre qu'un bugfix — voir
+  `context/CDP_WORKFLOWS.md` Phase Init (Git).
+- **Aucun milestone actif** -> creer automatiquement le milestone dedie `X.Y.Z+1` (Z+1 sur la
+  derniere version prod livree), sans validation utilisateur prealable (urgence prod) — logique
   de `/milestone new` (`commands/milestone.md` Mode NEW, `context/COMMON.md` section 5.7).
-- `{VERSION_FILE}` est positionne sur `X.Y.Z+1.0`.
-
-Si un milestone `X.Y.Z+1` existe deja (autre hotfix en cours sur la meme ligne) -> le reutiliser
-(matching par prefixe de version — un nom descriptif eventuel sur ce milestone n'empeche pas la detection).
+  `{VERSION_FILE}` est positionne sur `X.Y.Z+1.0`.
 
 ### 2. FIX
 
@@ -96,24 +102,25 @@ Uniquement :
 
 ### 4. DEPLOY PROD
 
-Deploiement direct en production :
+Le fix est deja commite directement sur la branche du milestone actif (etape 1bis) — HOTFIX ne
+cree plus sa propre branche isolee, il rejoint `milestone/vX.Y.Z` comme FEATURE/BUGFIX/REFACTOR
+(voir `context/CDP_WORKFLOWS.md` Phase Init (Git)) :
 
 ```bash
-# Branche depuis main
-git checkout -b hotfix/<name> main
-
-# Fix + commit
 git commit -m "fix: <description>"
-
-# Merge et tag
-# Version X.Y.Z fixee par le milestone (etape 1bis) — lue directement depuis {VERSION_FILE}
-# Voir context/COMMON.md section 5.7
-VERSION=$(cat {VERSION_FILE} | cut -d. -f1-3)
-git checkout main
-git merge --no-ff hotfix/<name>
-git tag "v$VERSION"
-git push origin main --tags
 ```
+
+**Avant de continuer — Regle "Aucune Livraison Partielle"** (`context/CDP_WORKFLOWS.md`, section
+Phase Versionnement) : si d'autres issues du meme milestone sont deja en chantier sur cette
+branche (commits presents, pas encore DONE), elles partent **aussi** en prod avec ce hotfix —
+il n'existe aucun moyen de les exclure proprement (pas de sous-branche par issue, donc pas de
+cherry-pick propre entre commits valides et commits en cours). Si elles ne peuvent pas etre
+finalisees a temps, l'urgence du hotfix force a les valider en priorite (Review + QA accelerees)
+avant de deployer — jamais de contournement.
+
+Deploiement, mecanique identique a `agents/deploy.md` Workflow PROD (push de la branche
+milestone, merge `--no-ff` vers `main`, tag `vX.Y.Z`, suivi CI, nettoyage remote de la branche
+a l'Etape 8 en cas de succes) — dispatcher `deployer` avec l'ordre PROD.
 
 ### 5. POST-MORTEM
 
@@ -160,8 +167,7 @@ Description du fix.
 
 1. **Tests complets** en background
 2. **Revue de code** post-mortem
-3. **Backport** vers les branches de dev si necessaire
-4. **Communication** a l'equipe
+3. **Communication** a l'equipe
 
 ## Regles Critiques
 
@@ -179,10 +185,10 @@ Orchestre le workflow HOTFIX pour {PROJECT_NAME}.
 **Workflow CDP :** Voir `context/CDP_WORKFLOWS.md`
 - Type : HOTFIX
 - Phases : section 3
-- Dispatch DEV : section 4
-- Validation : section 5
-- Erreurs : section 6
-- Regles : section 8
+- Dispatch DEV : section 5
+- Validation : section 6
+- Erreurs : section 7
+- Regles : section 9
 
 **Contexte DEV :** Voir `context/DEVELOPMENT.md`
 
