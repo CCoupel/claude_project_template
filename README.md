@@ -558,31 +558,46 @@ par le template.                 délégation stricte, spawn au start-session,
                                   Remplacé à chaque sync (step d6).
 
 Table "## Agents Disponibles" — exception documentaire dans la Zone 1 : comparée à la
-stack configurée et resynchronisée à chaque sync (step d5c), mais uniquement son texte —
+stack configurée et resynchronisée à chaque sync (step d5d), mais uniquement son texte —
 `.claude/agents/*.md` n'est jamais touché par cette resynchronisation.
 ```
 
 `CLAUDE.md` étant chargé nativement par Claude Code à chaque session, les règles de la Zone 2 survivent aux compactages de contexte sans mécanisme de hook supplémentaire.
 
-### Détection de dérive (automatique à chaque sync)
+### Détection de doublons et de conflits (automatique à chaque sync)
 
 À chaque synchronisation, Claude analyse les fichiers `*.md` compagnons (agents et contextes
-partagés) et détecte les dérives dans les deux sens :
+partagés) en deux passes distinctes.
+
+**1. Doublons (step d5b)** — règles du compagnon qui disent la même chose que le template,
+devenues redondantes :
 
 | Signal | Signification | Action proposée |
 |--------|---------------|-----------------|
 | `[↓]` DERIVE-TEMPLATE | Le template couvre maintenant ce que vous aviez customisé | Simplification possible |
-| `[↑]` DERIVE-PROJET | Le fichier `.md` a grossi depuis la dernière sync | Vérifier que c'est intentionnel |
 | `[~]` MIXTE | Une partie du `.md` est couverte par le template, une autre reste propre au projet | Retirer seulement la partie redondante |
 | `[=]` IDENTIQUE | Le `.md` duplique le template sans rien ajouter | Peut être supprimé |
-| `[*]` PROPRE | Contenu projet uniquement | Rien à faire |
+| `[*]` PROPRE | Rien de redondant — passe à l'analyse de conflits | — |
 
 La détection opère règle par règle, pas seulement fichier par fichier : dès qu'une règle
-du `.md` compagnon se retrouve — littéralement ou en substance — dans le template mis à
-jour, elle peut être retirée du compagnon, même si le reste du fichier reste propre.
+du `.md` compagnon se retrouve — littéralement ou en substance, **en disant la même
+chose** — dans le template mis à jour, elle peut être retirée du compagnon, même si le
+reste du fichier reste propre.
 
-Cette analyse est silencieuse si tout est propre. Elle sert aussi de migration one-shot
-pour les projets qui avaient du contenu mixte avant l'introduction de la convention.
+**2. Conflits (step d5c)** — règles du compagnon qui portent sur le même sujet que le
+template mais disent **autre chose** (incohérence, pas simple ajout) :
+
+| Signal | Signification | Action proposée |
+|--------|---------------|-----------------|
+| `[X]` CONFLIT | Compagnon et template se contredisent sur le même sujet | Arbitrage utilisateur : template, compagnon, ou édition manuelle |
+| — | COHERENT | Le compagnon ajoute du contenu spécifique sans contredire le template | Rien à faire |
+
+Chaque conflit est présenté individuellement pour trancher : garder la règle du template
+(la règle projet est retirée/adaptée), garder la règle du compagnon (dérogation projet
+assumée, re-signalée aux sync suivantes tant qu'elle diffère), ou éditer manuellement.
+
+Ces analyses sont silencieuses si tout est propre. Elles servent aussi de migration
+one-shot pour les projets qui avaient du contenu mixte avant l'introduction de la convention.
 
 ---
 
