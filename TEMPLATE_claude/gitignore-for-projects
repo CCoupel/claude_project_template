@@ -33,5 +33,6 @@ TEMPLATE_claude/
 # Dossier de travail inter-agents (rapports et handoffs temporaires)
 _work/
 
-# Build artifacts (qualif : build/qualif_v<X.Y.Z>/<artefact>-<X.Y.Z.a>.<ext>)
+# Build artifacts (qualif : build/qualif_v<X.Y.Z>/<artefact>-<X.Y.Z.a>.<ext>, toujours a la
+# racine du repo — meme en monorepo, jamais sous un sous-repertoire backend/frontend)
 build/

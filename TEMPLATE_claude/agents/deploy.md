@@ -27,6 +27,7 @@ de label), tu envoies ton rapport au CDP :
 SendMessage({ to: "main", content: "DEPLOY DONE\nVersion : [X.Y.Z]\nFichiers : [liste]\nSHA : <sha>" })
 
 # QUALIF — le binaire a tester DOIT etre inclus, le CDP le relaie tel quel au GATE 4
+# Chemin toujours relatif a la racine du repo (build/qualif_v.../), jamais a un sous-repertoire
 SendMessage({ to: "main", content: "DEPLOY DONE\nVersion : [X.Y.Z.a]\nBinaire : build/qualif_v[X.Y.Z]/[artefact]-[X.Y.Z.a].[ext]\nSmoke tests : [OK|KO]\nSHA : <sha>" })
 ```
 
@@ -104,17 +105,24 @@ git push origin [branche]
 
 # 3. Build — dossier nomme en qualif_vX.Y.Z (version globale, SANS a), artefact(s) a l'interieur
 # nommes en X.Y.Z.a (version de build complete, AVEC a). Emplacement du dossier impose,
-# non negociable : toujours build/qualif_v$DIR_VERSION/, jamais un autre chemin, jamais le
-# dossier nomme avec le `a`. Dossier non gitte (voir .gitignore, motif build/).
+# non negociable : toujours build/qualif_v$DIR_VERSION/ A LA RACINE DU REPO, jamais un autre
+# chemin, jamais le dossier nomme avec le `a`. Dossier non gitte (voir .gitignore, motif build/).
+#
+# Racine du repo, meme si le build tourne depuis un sous-repertoire (monorepo : backend/,
+# server-go/...) — ancrer explicitement sur la racine, ne jamais laisser le dossier se creer
+# relativement au repertoire courant de la commande de build :
+REPO_ROOT=$(git rev-parse --show-toplevel)
+BUILD_DIR="$REPO_ROOT/build/qualif_v$DIR_VERSION"
+mkdir -p "$BUILD_DIR"
 #
 # Exemple concret (DEV_VERSION=1.2.0.3, ce build incremente a=3 -> a=4) :
-#   AVANT (incorrect) : build/qualif_v1.2.0.4/app.tar.gz
-#   APRES (correct)   : build/qualif_v1.2.0/app-1.2.0.4.tar.gz
+#   INCORRECT           : build/qualif_v1.2.0.4/app.tar.gz          (le `a` dans le nom du dossier)
+#   INCORRECT (monorepo) : server-go/build/qualif_v1.2.0/app-1.2.0.4.tar.gz  (dossier cree sous le
+#                          sous-repertoire backend au lieu de la racine du repo)
+#   CORRECT              : build/qualif_v1.2.0/app-1.2.0.4.tar.gz    (toujours a la racine du repo)
 # Un redeploiement QUALIF sans nouveau commit dev reutilise le meme dossier qualif_v1.2.0/ et y
 # ajoute app-1.2.0.5.tar.gz, app-1.2.0.6.tar.gz... — le dossier identifie la ligne globale,
 # les fichiers a l'interieur tracent chaque build individuel.
-BUILD_DIR="build/qualif_v$DIR_VERSION"
-mkdir -p "$BUILD_DIR"
 
 npm run build:qualif -- --outDir "$BUILD_DIR/tmp" && \
   tar -czf "$BUILD_DIR/app-$VERSION.tar.gz" -C "$BUILD_DIR/tmp" . && rm -rf "$BUILD_DIR/tmp"
@@ -397,7 +405,7 @@ docker-compose up -d --force-recreate app:v1.1.0
 - [ ] Tests unitaires passent
 - [ ] Tests E2E passent
 - [ ] Version incrementee (`a+1`, a la charge de deploy — voir Etapes Detaillees etape 2)
-- [ ] Build reussi → `build/qualif_v<X.Y.Z>/<artefact>-<X.Y.Z.a>.<ext>` (dossier non gitte, SANS `a` dans son nom ; artefact AVEC `a` — emplacement impose, ne pas deroger)
+- [ ] Build reussi → `build/qualif_v<X.Y.Z>/<artefact>-<X.Y.Z.a>.<ext>` **a la racine du repo** (dossier non gitte, SANS `a` dans son nom ; artefact AVEC `a` — emplacement impose, jamais sous un sous-repertoire backend/monorepo, ne pas deroger)
 - [ ] Variables d'environnement configurees
 
 ### PROD
@@ -477,7 +485,7 @@ Branche : [branche]
 ```
 DEPLOY DONE
 Version : [X.Y.Z] (PROD) ou [X.Y.Z.a] (QUALIF, apres increment)
-Binaire : build/qualif_v[X.Y.Z]/app-[X.Y.Z.a].tar.gz  (QUALIF uniquement — dossier non gitte, SANS `a` dans son nom, artefact AVEC `a`, emplacement impose)
+Binaire : build/qualif_v[X.Y.Z]/app-[X.Y.Z.a].tar.gz  (QUALIF uniquement — dossier non gitte, a la racine du repo, SANS `a` dans son nom, artefact AVEC `a`, emplacement impose)
 Smoke tests : [OK|KO]
 Fichiers : [liste]
 SHA : <sha>
