@@ -109,19 +109,24 @@
       </div>
       <div class="pipeline-arrow">↓</div>
 
-      <div class="pipeline-step step-review">
-        <div class="step-agent">code-reviewer</div>
-        <div class="step-title" data-i18n="wf.review"></div>
-        <div class="step-desc" data-i18n="wf.review.desc"></div>
-        <span class="step-label label-review">EN REVIEW</span>
-      </div>
-      <div class="pipeline-arrow">↓</div>
-
-      <div class="pipeline-step step-qa">
-        <div class="step-agent">qa</div>
-        <div class="step-title" data-i18n="wf.qa"></div>
-        <div class="step-desc" data-i18n="wf.qa.desc"></div>
-        <span class="step-label label-qa">EN QA</span>
+      <div class="pipeline-parallel-block">
+        <div class="parallel-header" data-i18n="wf.parallel"></div>
+        <div class="pipeline-parallel">
+          <div class="pipeline-step step-review">
+            <div class="step-agent">code-reviewer</div>
+            <div class="step-title" data-i18n="wf.review"></div>
+            <div class="step-desc" data-i18n="wf.review.desc"></div>
+            <span class="step-label label-review">EN REVIEW</span>
+          </div>
+          <div class="parallel-sep">∥</div>
+          <div class="pipeline-step step-qa">
+            <div class="step-agent">qa</div>
+            <div class="step-title" data-i18n="wf.qa"></div>
+            <div class="step-desc" data-i18n="wf.qa.desc"></div>
+            <span class="step-label label-qa">EN QA</span>
+          </div>
+        </div>
+        <div class="pipeline-note" style="margin-top:.75rem" data-i18n="wf.reviewqa.note"></div>
       </div>
       <div class="pipeline-arrow">↓</div>
 
@@ -133,10 +138,22 @@
       </div>
       <div class="pipeline-arrow">↓</div>
 
-      <div class="pipeline-step step-qualif">
-        <div class="step-agent">infra · deployer</div>
-        <div class="step-title" data-i18n="wf.qualif"></div>
-        <div class="step-desc" data-i18n="wf.qualif.desc"></div>
+      <div class="pipeline-parallel-block">
+        <div class="parallel-header" data-i18n="wf.parallel"></div>
+        <div class="pipeline-parallel">
+          <div class="pipeline-step step-qualif">
+            <div class="step-agent">infra · deployer</div>
+            <div class="step-title" data-i18n="wf.qualif"></div>
+            <div class="step-desc" data-i18n="wf.qualif.desc"></div>
+          </div>
+          <div class="parallel-sep">∥</div>
+          <div class="pipeline-step step-docfinal">
+            <div class="step-agent">doc-updater</div>
+            <div class="step-title" data-i18n="wf.docfinal"></div>
+            <div class="step-desc" data-i18n="wf.docfinal.desc"></div>
+          </div>
+        </div>
+        <div class="pipeline-note" style="margin-top:.75rem" data-i18n="wf.qualifdoc.note"></div>
       </div>
       <div class="pipeline-arrow">↓</div>
 
@@ -150,10 +167,22 @@
       </div>
       <div class="pipeline-arrow">↓</div>
 
-      <div class="pipeline-step step-prod">
-        <div class="step-agent">infra · deployer</div>
-        <div class="step-title" data-i18n="wf.prod"></div>
-        <div class="step-desc" data-i18n="wf.prod.desc"></div>
+      <div class="pipeline-parallel-block">
+        <div class="parallel-header" data-i18n="wf.parallel"></div>
+        <div class="pipeline-parallel">
+          <div class="pipeline-step step-prod">
+            <div class="step-agent">infra · deployer</div>
+            <div class="step-title" data-i18n="wf.prod"></div>
+            <div class="step-desc" data-i18n="wf.prod.desc"></div>
+          </div>
+          <div class="parallel-sep">∥</div>
+          <div class="pipeline-step step-marketing">
+            <div class="step-agent">marketing-release</div>
+            <div class="step-title" data-i18n="wf.marketing"></div>
+            <div class="step-desc" data-i18n="wf.marketing.desc"></div>
+          </div>
+        </div>
+        <div class="pipeline-note" style="margin-top:.75rem" data-i18n="wf.marketing.note"></div>
       </div>
 
     </div>

@@ -99,7 +99,9 @@ nav {
 .pipeline-step.step-qa    { border-left: 3px solid var(--orange); }
 .pipeline-step.step-doc   { border-left: 3px solid var(--green); }
 .pipeline-step.step-qualif{ border-left: 3px solid var(--muted); }
+.pipeline-step.step-docfinal { border-left: 3px solid var(--green); }
 .pipeline-step.step-prod  { border-left: 3px solid var(--green); background: rgba(16,185,129,.06); }
+.pipeline-step.step-marketing { border-left: 3px solid var(--accent); }
 .step-agent { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
 .step-title { font-weight: 600; font-size: .95rem; }
 .step-desc  { font-size: .8rem; color: var(--muted); }
