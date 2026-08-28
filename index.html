@@ -21,6 +21,8 @@
       <li><a href="#github"   data-i18n="nav.github">GitHub</a></li>
       <li><a href="#features" data-i18n="nav.features">Fonctionnalités</a></li>
       <li><a href="#install"  data-i18n="nav.install">Installation</a></li>
+      <li><a href="#working"  data-i18n="nav.working">Travailler</a></li>
+      <li><a href="#commands" data-i18n="nav.commands">Commandes</a></li>
       <li><a href="#roadmap"  data-i18n="nav.roadmap">Roadmap</a></li>
     </ul>
     <div class="lang-switcher">
@@ -308,26 +310,136 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<section id="working">
+  <div class="container">
+    <div class="section-header">
+      <h2 data-i18n="working.title"></h2>
+      <p data-i18n="working.subtitle"></p>
+    </div>
+    <div class="install-steps">
+
       <div class="install-step">
-        <div class="step-num">4</div>
+        <div class="step-num">1</div>
         <div class="step-content">
-          <h3 data-i18n="install.step4.title"></h3>
-          <p data-i18n="install.step4.desc"></p>
+          <h3 data-i18n="working.step1.title"></h3>
+          <p data-i18n="working.step1.desc"></p>
+          <div class="commands-list"><span class="cmd-tag">/start-session</span></div>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h3 data-i18n="working.step2.title"></h3>
+          <p data-i18n="working.step2.desc"></p>
           <div class="commands-list">
-            <span class="cmd-tag">/start-session</span>
-            <span class="cmd-tag">/milestone new v1.0.0</span>
-            <span class="cmd-tag">/backlog</span>
+            <span class="cmd-tag">/milestone new v1.2.0</span>
+            <span class="cmd-tag">/backlog &lt;description&gt;</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h3 data-i18n="working.step3.title"></h3>
+          <p data-i18n="working.step3.desc"></p>
+          <div class="commands-list">
             <span class="cmd-tag">/feature</span>
             <span class="cmd-tag">/bugfix</span>
             <span class="cmd-tag">/hotfix</span>
-            <span class="cmd-tag">/review</span>
-            <span class="cmd-tag">/qa</span>
-            <span class="cmd-tag">/secu</span>
-            <span class="cmd-tag">/deploy qualif</span>
-            <span class="cmd-tag">/deploy prod</span>
-            <span class="cmd-tag">/marketing</span>
+            <span class="cmd-tag">/refactor</span>
           </div>
         </div>
+      </div>
+
+      <div class="install-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3 data-i18n="working.step4.title"></h3>
+          <p data-i18n="working.step4.desc"></p>
+          <div class="commands-list"><span class="cmd-tag">GATE 4</span></div>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h3 data-i18n="working.step5.title"></h3>
+          <p data-i18n="working.step5.desc"></p>
+          <div class="commands-list"><span class="cmd-tag">/deploy prod</span></div>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="step-num">6</div>
+        <div class="step-content">
+          <h3 data-i18n="working.step6.title"></h3>
+          <p data-i18n="working.step6.desc"></p>
+          <div class="commands-list"><span class="cmd-tag">/end-session</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="commands">
+  <div class="container">
+    <div class="section-header">
+      <h2 data-i18n="commands.title"></h2>
+      <p data-i18n="commands.subtitle"></p>
+    </div>
+    <div class="cmd-grid">
+
+      <div class="cmd-card">
+        <h3 data-i18n="commands.cat.session"></h3>
+        <div class="cmd-row"><span class="cmd-name">/start-session</span><span class="cmd-desc" data-i18n="commands.start-session"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/end-session</span><span class="cmd-desc" data-i18n="commands.end-session"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/context-audit [scope]</span><span class="cmd-desc" data-i18n="commands.context-audit"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/init-project</span><span class="cmd-desc" data-i18n="commands.init-project"></span></div>
+      </div>
+
+      <div class="cmd-card">
+        <h3 data-i18n="commands.cat.dev"></h3>
+        <div class="cmd-row"><span class="cmd-name">/feature &lt;desc&gt;</span><span class="cmd-desc" data-i18n="commands.feature"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/bugfix &lt;desc&gt;</span><span class="cmd-desc" data-i18n="commands.bugfix"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/hotfix &lt;desc&gt;</span><span class="cmd-desc" data-i18n="commands.hotfix"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/refactor &lt;desc&gt;</span><span class="cmd-desc" data-i18n="commands.refactor"></span></div>
+      </div>
+
+      <div class="cmd-card">
+        <h3 data-i18n="commands.cat.backlog"></h3>
+        <div class="cmd-row"><span class="cmd-name">/backlog</span><span class="cmd-desc" data-i18n="commands.backlog-list"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/backlog &lt;desc&gt;</span><span class="cmd-desc" data-i18n="commands.backlog-search"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/milestone new &lt;v&gt; [date]</span><span class="cmd-desc" data-i18n="commands.milestone-new"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/milestone status</span><span class="cmd-desc" data-i18n="commands.milestone-status"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/milestone close [v]</span><span class="cmd-desc" data-i18n="commands.milestone-close"></span></div>
+      </div>
+
+      <div class="cmd-card">
+        <h3 data-i18n="commands.cat.team"></h3>
+        <div class="cmd-row"><span class="cmd-name">/progression</span><span class="cmd-desc" data-i18n="commands.progression"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/team-status</span><span class="cmd-desc" data-i18n="commands.team-status"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/team-delete [--force]</span><span class="cmd-desc" data-i18n="commands.team-delete"></span></div>
+      </div>
+
+      <div class="cmd-card">
+        <h3 data-i18n="commands.cat.validation"></h3>
+        <div class="cmd-row"><span class="cmd-name">/review</span><span class="cmd-desc" data-i18n="commands.review"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/qa</span><span class="cmd-desc" data-i18n="commands.qa"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/secu</span><span class="cmd-desc" data-i18n="commands.secu"></span></div>
+      </div>
+
+      <div class="cmd-card">
+        <h3 data-i18n="commands.cat.deploy"></h3>
+        <div class="cmd-row"><span class="cmd-name">/deploy qualif</span><span class="cmd-desc" data-i18n="commands.deploy-qualif"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/deploy prod</span><span class="cmd-desc" data-i18n="commands.deploy-prod"></span></div>
+        <div class="cmd-row"><span class="cmd-name">/marketing [version]</span><span class="cmd-desc" data-i18n="commands.marketing"></span></div>
       </div>
 
     </div>
