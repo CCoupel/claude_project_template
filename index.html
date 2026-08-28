@@ -19,6 +19,7 @@
       <li><a href="#problems" data-i18n="nav.problems">Problèmes</a></li>
       <li><a href="#workflow" data-i18n="nav.workflow">Workflow</a></li>
       <li><a href="#github"   data-i18n="nav.github">GitHub</a></li>
+      <li><a href="#versioning" data-i18n="nav.versioning">Versions</a></li>
       <li><a href="#features" data-i18n="nav.features">Fonctionnalités</a></li>
       <li><a href="#install"  data-i18n="nav.install">Installation</a></li>
       <li><a href="#working"  data-i18n="nav.working">Travailler</a></li>
@@ -219,6 +220,48 @@
           <div class="lm-row"><span class="lm-label">refactor · tech-debt</span><span class="lm-arrow">→</span><span class="lm-cmd">/refactor</span></div>
           <div class="lm-row"><span class="lm-label">security · vulnerability</span><span class="lm-arrow">→</span><span class="lm-cmd">/secu</span></div>
         </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section id="versioning">
+  <div class="container">
+    <div class="section-header">
+      <h2 data-i18n="versioning.title"></h2>
+      <p data-i18n="versioning.subtitle"></p>
+    </div>
+    <div class="github-grid">
+
+      <div class="github-card">
+        <h3 data-i18n="versioning.cycle.title"></h3>
+        <p data-i18n="versioning.cycle.desc"></p>
+        <div class="label-chain">
+          <div class="label-step"><span class="phase-badge badge-dev">X.Y.Z.0</span><span class="label-step-desc" data-i18n="versioning.l1"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-qualif">X.Y.Z.a</span><span class="label-step-desc" data-i18n="versioning.l2"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-prod">X.Y.Z</span><span class="label-step-desc" data-i18n="versioning.l3"></span></div>
+        </div>
+        <p class="label-note" data-i18n="versioning.note"></p>
+      </div>
+
+      <div class="github-card">
+        <h3 data-i18n="versioning.semver.title"></h3>
+        <p data-i18n="versioning.semver.desc"></p>
+        <ul class="milestone-features">
+          <li><code>vX.0.0</code> — <span data-i18n="versioning.major"></span></li>
+          <li><code>vX.Y.0</code> — <span data-i18n="versioning.minor"></span></li>
+          <li><code>vX.Y.Z</code> — <span data-i18n="versioning.patch"></span></li>
+        </ul>
+      </div>
+
+      <div class="github-card">
+        <h3 data-i18n="versioning.tags.title"></h3>
+        <p data-i18n="versioning.tags.desc"></p>
+        <pre><span class="code-cmd">git</span> tag vX.Y.Z &amp;&amp; <span class="code-cmd">git</span> push origin vX.Y.Z</pre>
+        <p class="label-note" data-i18n="versioning.tags.note"></p>
       </div>
 
     </div>
