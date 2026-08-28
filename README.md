@@ -274,14 +274,16 @@ PLAN ──────────────────────── co
     └──────────────────────────┘
     ↓  REVIEW REJECTED → annule/ignore QA ; sinon attend QA si pas encore DONE
     ↓  label DONE
-DOC ───────────────────────── CHANGELOG + documentation technique
+DOC (brouillon) ─────────────── CHANGELOG + documentation technique — pas de version incrémentée
     ↓
 INFRA validation QUALIF ────── cohérence procédure/infrastructure
     ↓  [GATE 4b] escalade si écart détecté
-DEPLOY QUALIF
-    ↓
+    ├──────────────────────────┐
+DEPLOY QUALIF            DOC (finalize) ── release notes + résultats QA, sans attendre le déploiement
+    └──────────────────────────┘
+    ↓  DEPLOY QUALIF incrémente `a` (deployer) · GATE 4 attend les DEUX DONE
 [GATE 4] Validation manuelle ── CDP présente les scénarios à tester
-    ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD → milestone si 100%
+    ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD (∥ marketing-release si milestone) → milestone si 100%
     └─ NON → label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
 DEPLOY PROD ────────────────── merge → tag → surveille CI → succès : release + milestone
@@ -296,7 +298,7 @@ DEPLOY PROD ────────────────── merge → tag
 | 2 | Après plan | Valider le plan et les contrats API |
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
-| 4 | QUALIF prête | OUI (issue fermée + deploy prod) ou NON (retour DEV ou PLAN) |
+| 4 | QUALIF **et** DOC (finalize) tous les deux DONE | OUI (issue fermée + deploy prod) ou NON (retour DEV ou PLAN) |
 | 4b | Procédure QUALIF incohérente | Corriger avant deploy |
 | 4c | Procédure PROD incohérente | Corriger avant deploy |
 
@@ -319,9 +321,11 @@ ANALYSE ── cause racine
   REVIEW                     QA ── démarre dès TEST-WRITER DONE, sans attendre REVIEW (défaut)
     └──────────────────────────┘
     ↓  label DONE
-DOC ── CHANGELOG (Fixed)
+DOC (brouillon) ── CHANGELOG (Fixed)
     ↓
-DEPLOY QUALIF → [GATE 4] OUI → issue fermée → DEPLOY PROD
+DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
+    ↓
+[GATE 4] OUI → issue fermée → DEPLOY PROD (∥ marketing-release si milestone)
 ```
 
 ### Hotfix (urgence production)
@@ -346,7 +350,9 @@ DEV ── refactoring (comportement identique obligatoire)
   REVIEW          QA (après) ── vérifie la non-régression, en parallèle de REVIEW (défaut)
     └──────────────────┘
     ↓
-DEPLOY QUALIF
+DOC (brouillon) ── CHANGELOG (Changed)
+    ↓
+DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
 ```
 
 ### Contrats API (contract-first)
