@@ -152,6 +152,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │   ├── start-session.md
 │   ├── end-session.md
 │   ├── team-status.md
+│   ├── team-delete.md
 │   ├── feature.md
 │   ├── bugfix.md
 │   ├── hotfix.md
@@ -441,7 +442,8 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 |----------|-------------|
 | `/start-session` | Démarre la session, lit la mémoire projet, affiche le milestone actif |
 | `/end-session` | Clôture la session, shutdown propre des agents, met à jour la mémoire |
-| `/team-status` | État de la team — fermeture sélective des agents inactifs |
+| `/team-status` | État de la team (lecture seule) |
+| `/team-delete [--force]` | Ferme les teammates IDLE, ou tous avec `--force` |
 | `/context-audit [scope]` | Audit des fichiers de configuration : doublons, refs cassées, dérive template |
 | `/init-project` | Bootstrap, réinitialisation ou synchronisation du template |
 
@@ -469,7 +471,8 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 | Commande | Description |
 |----------|-------------|
 | `/progression` | Tableau de bord temps réel — statut de chaque agent actif |
-| `/team-status` | État de la team (tableau agents + statut WORKING/IDLE/SPAWN_PENDING/PING_PENDING/FAILED) — `[R]` respawn expirés, `[P]` PING individuel sur un agent IDLE, `[F]` fermeture sélective |
+| `/team-status` | État de la team (tableau agents + statut IDLE/EN COURS) — lecture seule |
+| `/team-delete [--force]` | Ferme les teammates IDLE ; `--force` ferme tous les teammates, y compris ceux EN COURS |
 
 ### Validation
 

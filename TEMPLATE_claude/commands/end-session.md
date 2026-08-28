@@ -37,7 +37,7 @@ verification de l'etat du projet.
 [GIT] --> S'assurer que tout est commite (jamais de push pendant le dev, voir COMMON.md 7.1)
     |
     v
-[TEAM] --> Dissoudre la team (TeamDelete)
+[TEAM] --> Fermer tous les teammates (/team-delete --force)
     |
     v
 [RAPPORT] --> Rapport de session
@@ -129,9 +129,10 @@ git stash list
 Si des changements non commites existent :
 - Demander confirmation : commiter, stasher, ou laisser ?
 
-### 5. TEAM — Dissolution de la Team
+### 5. TEAM — Fermeture des teammates
 
-Appeler **TeamDelete** avec le nom `{TEAM_NAME}` — le harness arrête tous les teammates.
+Fin de session = fermeture inconditionnelle, y compris les teammates en cours de tâche.
+Exécuter `/team-delete --force` (voir `team-delete.md`).
 
 Si aucune team n'est active, passer cette etape.
 
@@ -182,7 +183,7 @@ rm -rf _work/
 [DOC] CHANGELOG.md : a jour ✅
 [MEMOIRE] MEMORY.md mis a jour ✅
 [GIT] Commits locaux sur milestone/v1.4.0 — push differe au prochain deploiement QUALIF ✅
-[TEAM] TeamDelete my-project-team ✅
+[TEAM] /team-delete --force — 2 teammate(s) fermés ✅
 
 --- Rapport de Session ---
 Branche : milestone/v1.4.0
