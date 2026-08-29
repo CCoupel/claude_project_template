@@ -76,12 +76,16 @@
       </div>
       <div class="pipeline-arrow">↓</div>
 
-      <div class="pipeline-step step-plan">
+      <div class="pipeline-step step-plan has-subs subs-right">
         <div class="step-agent">planner</div>
         <div class="step-title" data-i18n="wf.plan"></div>
         <div class="step-desc" data-i18n="wf.plan.desc"></div>
         <div class="step-sub" data-i18n="wf.plan.sub"></div>
         <span class="step-label label-planning">PLANNING</span>
+        <div class="sub-wing">
+          <div class="sub-box">sub-planner-1</div>
+          <div class="sub-box">sub-planner-2</div>
+        </div>
       </div>
       <div class="pipeline-arrow">↓</div>
 
@@ -113,20 +117,28 @@
       <div class="pipeline-parallel-block">
         <div class="parallel-header" data-i18n="wf.parallel"></div>
         <div class="pipeline-parallel">
-          <div class="pipeline-step step-review">
+          <div class="pipeline-step step-review has-subs subs-left">
             <div class="step-agent">code-reviewer</div>
             <div class="step-title" data-i18n="wf.review"></div>
             <div class="step-desc" data-i18n="wf.review.desc"></div>
             <div class="step-sub" data-i18n="wf.review.sub"></div>
             <span class="step-label label-review">EN REVIEW</span>
+            <div class="sub-wing">
+              <div class="sub-box">sub-reviewer-securite</div>
+              <div class="sub-box">sub-reviewer-performance</div>
+            </div>
           </div>
           <div class="parallel-sep">∥</div>
-          <div class="pipeline-step step-qa">
+          <div class="pipeline-step step-qa has-subs subs-right">
             <div class="step-agent">qa</div>
             <div class="step-title" data-i18n="wf.qa"></div>
             <div class="step-desc" data-i18n="wf.qa.desc"></div>
             <div class="step-sub" data-i18n="wf.qa.sub"></div>
             <span class="step-label label-qa">EN QA</span>
+            <div class="sub-wing">
+              <div class="sub-box">sub-qa-unit</div>
+              <div class="sub-box">sub-qa-e2e</div>
+            </div>
           </div>
         </div>
         <div class="pipeline-note" style="margin-top:.75rem" data-i18n="wf.reviewqa.note"></div>

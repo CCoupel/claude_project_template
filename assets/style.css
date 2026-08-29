@@ -23,7 +23,7 @@
 }
 
 html { scroll-behavior: smooth; }
-body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.6; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.6; overflow-x: hidden; }
 a { color: var(--accent2); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -106,6 +106,47 @@ nav {
 .step-title { font-weight: 600; font-size: .95rem; }
 .step-desc  { font-size: .8rem; color: var(--muted); }
 .step-sub   { font-size: .72rem; color: var(--cyan); margin-top: .3rem; font-style: italic; }
+
+/* Branches sous-agents (planner/review/qa) — repli en texte (.step-sub) tant que la marge
+   laterale disponible (container 1100px, pipeline 680px) ne suffit pas a accueillir la branche
+   la plus large ("sub-reviewer-performance", ~210px avec le tronc) sans depassement horizontal. */
+.has-subs { position: relative; }
+.sub-wing { display: none; }
+
+@media (min-width: 1300px) {
+  .has-subs .step-sub { display: none; }
+
+  .sub-wing {
+    display: flex; flex-direction: column; gap: .5rem;
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  }
+  .subs-right .sub-wing { left: calc(100% + 1.75rem); }
+  .subs-left  .sub-wing { right: calc(100% + 1.75rem); }
+
+  .subs-right.has-subs::after,
+  .subs-left.has-subs::after {
+    content: ''; position: absolute; top: 50%; height: 1px; width: 1.75rem; background: var(--border);
+  }
+  .subs-right.has-subs::after { left: 100%; }
+  .subs-left.has-subs::after  { right: 100%; }
+
+  .sub-wing::before {
+    content: ''; position: absolute; top: 8px; bottom: 8px; width: 1px; background: var(--border);
+  }
+  .subs-right .sub-wing::before { left: -1rem; }
+  .subs-left  .sub-wing::before { right: -1rem; }
+
+  .sub-box {
+    position: relative; font-family: var(--mono); font-size: .68rem; color: var(--cyan);
+    background: var(--bg3); border: 1px dashed var(--cyan); border-radius: 6px;
+    padding: .35rem .65rem; white-space: nowrap;
+  }
+  .sub-box::before {
+    content: ''; position: absolute; top: 50%; height: 1px; width: 1rem; background: var(--border);
+  }
+  .subs-right .sub-box::before { left: -1rem; }
+  .subs-left  .sub-box::before { right: -1rem; }
+}
 
 .pipeline-gate {
   width: 100%; background: rgba(124,58,237,.08); border: 1px dashed rgba(124,58,237,.4);
