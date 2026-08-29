@@ -276,6 +276,7 @@ applique la même valeur par défaut. Détail complet : `TEMPLATE_claude/command
 [GATE 1] Confirmation démarrage
     ↓
 PLAN ──────────────────────── contrats API + contracts/CHANGELOG.md + qa_parallelizable
+    ↓  (🧵 peut déléguer à des sub-planner-N — groupes d'issues indépendants)
     ↓  label PLANNING
 [GATE 2] Validation plan (+ alerte breaking changes si détectés)
     ↓  label EN COURS
@@ -287,6 +288,7 @@ PLAN ──────────────────────── co
     ↓  label EN REVIEW (+ EN QA si qa_parallelizable, dès TEST-WRITER DONE)
     ├──────────────────────────┐
   REVIEW                     QA ── démarre dès TEST-WRITER DONE, sans attendre REVIEW (défaut)
+  🧵 sub-reviewer-<dim>       🧵 sub-qa-<scope> (worktree isolé)
     └──────────────────────────┘
     ↓  REVIEW REJECTED → annule/ignore QA ; sinon attend QA si pas encore DONE
     ↓  label DONE
