@@ -86,3 +86,30 @@ Si tu reçois `/clear` via SendMessage :
 ```
 
 Tu repars dans le même état qu'au démarrage de session — contexte propre, prêt pour une nouvelle tâche.
+
+---
+
+## 6. Exception — Sous-agents temporaires (`planner`, `code-reviewer`, `qa` uniquement)
+
+Toutes les règles ci-dessus supposent une communication exclusive avec `main`. **Trois exceptions
+existent**, chacune limitée à l'agent concerné :
+
+- `planner` peut demander au CDP de spawner des `sub-planner-N` temporaires et communiquer avec
+  eux **directement, sans relayer via `main`** — protocole complet dans
+  `agents/implementation-planner.md` section "Délégation à des Sous-Planners". Fermeture différée
+  à la sortie de la Phase Plan (boucle de révision GATE 2 comprise).
+- `code-reviewer` peut demander au CDP de spawner des `sub-reviewer-<dimension>` temporaires,
+  même principe — protocole complet dans `agents/code-reviewer.md` section "Délégation à des
+  Sous-Reviewers". Fermeture immédiate après consolidation (pas de boucle de révision côté
+  review).
+- `qa` peut demander au CDP de spawner des `sub-qa-<scope>` temporaires, même principe —
+  protocole complet dans `agents/qa.md` section "Délégation à des Sous-QA". Fermeture immédiate
+  après consolidation. Particularité : chaque sub-qa isole son exécution avec un `git worktree`
+  créé/nettoyé en `Bash` — jamais via le paramètre `isolation` de l'outil `Agent`, qui change la
+  classification du spawn (voir `agents/qa.md` pour le détail).
+
+Aucun autre teammate n'est autorisé à ce pattern. Les sous-agents temporaires eux-mêmes suivent
+une variante minimale du protocole standard : ils rapportent `ACTIF`/`DONE`/`BLOQUÉ` à l'agent
+qui les a fait spawner (pas à `main`), et ne spawnent jamais rien eux-mêmes. Ils ne ferment
+jamais leur propre process — seul le CDP les ferme (`TaskStop`), jamais l'agent coordinateur ni
+eux-mêmes.

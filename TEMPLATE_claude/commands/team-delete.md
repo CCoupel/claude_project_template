@@ -23,6 +23,14 @@ Si aucun teammate actif → afficher `"Aucun teammate actif."` et s'arrêter.
 Ne jamais confondre avec les "Peer sessions" listées par `ListAgents` (autres sessions Claude
 Code, locales ou cloud) — ne jamais les arrêter, elles ne font pas partie de cette équipe.
 
+**Exclure du mode par défaut** (sans `--force`) tout nom commençant par `sub-planner-`,
+`sub-reviewer-` ou `sub-qa-` — ce sont des sous-agents temporaires gérés exclusivement par le
+CDP (spawn/fermeture ciblée par nom, voir `context/TEAMMATES_PROTOCOL.md` section 6). Même
+IDLE, ne pas les inclure dans le balayage par défaut : un sous-agent IDLE de ce type est
+généralement en attente légitime (ex. boucle de révision GATE 2 du planner), pas orphelin.
+`--force` reste la voie de secours si l'un d'eux est réellement orphelin (ex. après un crash de
+session) — dans ce cas seulement, les inclure comme n'importe quel teammate actif.
+
 ### Etape 2 — Déterminer l'état de chaque teammate
 
 Pour chaque teammate, déterminer l'état à partir du dernier message de protocole reçu

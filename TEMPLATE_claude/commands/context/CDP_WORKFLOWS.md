@@ -338,6 +338,17 @@ SendMessage({ to: "planner", content: "
 " })
 ```
 
+**Si le planner répond `PLANNER NEED SUBPLANNERS`** (groupes indépendants identifiés — voir
+`implementation-planner.md` section "Délégation à des Sous-Planners") :
+```
+Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "planner" comme
+coordinateur — jamais "main") → mémoriser SUBPLANNER_NAMES[]
+SendMessage({ to: "planner", content: "CDP SUBPLANNERS READY\nNoms : [liste]" })
+```
+Le CDP n'échange plus rien avec ces sub-planners ensuite — le planner les gère en direct (P2P)
+jusqu'à son rapport final. Ils restent actifs pendant toute la Phase Plan (y compris pendant la
+boucle de correction ci-dessous), fermés uniquement à la sortie de la Phase Plan (voir Phase Dev).
+
 Recevoir le plan → lire intégralement, vérifier cohérence et complétude.
 Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING lors du GATE 2.
 
@@ -346,6 +357,14 @@ Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING l
 ---
 
 ### Phase Dev (Dispatch)
+
+**→ Sortie de Phase Plan — fermer les sub-planners** si `SUBPLANNER_NAMES[]` non vide (voir Phase
+Plan ci-dessus) :
+```
+pour chaque nom dans SUBPLANNER_NAMES[] :
+  TaskStop({ task_id: nom })
+SUBPLANNER_NAMES[] = []
+```
 
 **→ Appliquer label `EN COURS`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
 
@@ -417,6 +436,23 @@ SendMessage({ to: "test-writer", content: "
 |-- qa_parallelizable == false (repli explicite du plan, ou heuristique CDP si risque élevé sans plan) :
 |     Attendre le verdict code-reviewer avant de dispatcher qa -> voir Phase QA, "Dispatch séquentiel"
 
+**Si code-reviewer répond `CODE-REVIEWER NEED SUBREVIEWERS`** (diff volumineux, découpage par
+dimension du Checklist — voir `code-reviewer.md` section "Délégation à des Sous-Reviewers") :
+```
+Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "code-reviewer" comme
+coordinateur — jamais "main") → mémoriser SUBREVIEWER_NAMES[]
+SendMessage({ to: "code-reviewer", content: "CDP SUBREVIEWERS READY\nNoms : [liste]" })
+```
+Le CDP n'échange plus rien avec ces sub-reviewers ensuite — code-reviewer les gère en direct (P2P).
+Son rapport `DONE` final inclut la liste "Sub-reviewers a fermer" → **étape 1, toujours avant tout
+traitement du verdict** (jamais respawner un nom pas encore fermé si le cycle suivant redemande
+des sub-reviewers) :
+```
+pour chaque nom de la liste "Sub-reviewers a fermer" :
+  TaskStop({ task_id: nom })
+```
+**Étape 2, seulement ensuite** :
+
 |-- Recevoir DONE code-reviewer + ref fichier rapport
 |-- CDP lit le rapport et valide la conformite
     |-- Non conforme -> renvoyer pour correction (hors cycle)
@@ -450,6 +486,24 @@ SendMessage({ to: "qa", content: "
   Rapport code-reviewer : _work/reports/code-reviewer-[timestamp].md (si déjà disponible)
   Retourne : VALIDATED / NOT VALIDATED + rapport.
 " })
+
+**Si `qa` répond `QA NEED SUBAGENTS`** (scopes de tests independants, volume suffisant pour
+justifier la delegation — voir `qa.md` section "Délégation à des Sous-QA") :
+```
+Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "qa" comme coordinateur
+— jamais "main") → mémoriser SUBAGENT_NAMES[]
+SendMessage({ to: "qa", content: "CDP SUBAGENTS READY\nNoms : [liste]" })
+```
+Le CDP n'échange plus rien avec ces sub-qa ensuite — `qa` les gère en direct (P2P), chacun isolant
+son execution via un `git worktree` gere en `Bash` (jamais via `isolation` de l'outil `Agent`).
+Son rapport `DONE` final inclut la liste "Sub-qa a fermer" → **étape 1, toujours avant tout
+traitement du verdict** (même raison que code-reviewer — jamais respawner un nom pas encore
+fermé) :
+```
+pour chaque nom de la liste "Sub-qa a fermer" :
+  TaskStop({ task_id: nom })
+```
+**Étape 2, seulement ensuite** : traiter le verdict VALIDATED/NOT VALIDATED.
 
 |-- Recevoir DONE + ref fichier rapport (ou annulation reçue entre-temps, voir Phase Review REJECTED)
 |-- CDP lit le rapport et valide la conformite
@@ -523,6 +577,7 @@ SendMessage({ to: "deployer", content: "
 |-----------|--------|
 | Issue GitHub non trouvee | Proposer creation via `gh issue create` ou continuer sans |
 | Plan refuse | Demander modifications |
+| Plan/cycle abandonne pendant la Phase Plan (`Annuler` au GATE 2, `/cdp abort`) | Fermer les sub-planners actifs le cas echeant (`SUBPLANNER_NAMES[]`, voir Phase Dev) avant de clore le workflow |
 | Review rejetee | Retour DEV avec corrections |
 | QA echoue | Retour DEV avec erreurs |
 | Build echoue | Retour DEV avec erreur build |
@@ -754,6 +809,13 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
 - `resume <phase>` : lire le fichier, reprendre à la phase indiquée
 - `skip <phase>` : marquer la phase `skipped` et passer à la suivante
 - `jumpto <tache>` : rechercher dans les phases et tâches, se positionner
+
+> **Limite connue** : `SUBPLANNER_NAMES[]`/`SUBREVIEWER_NAMES[]`/`SUBAGENT_NAMES[]` (sous-agents
+> temporaires, voir `context/TEAMMATES_PROTOCOL.md` section 6) ne sont pas persistés dans ce
+> fichier — un crash/redémarrage de session pendant une délégation active peut laisser des
+> sous-agents orphelins. Après un `resume`, lancer `/team-status` et fermer manuellement
+> (`TaskStop`, ou `/team-delete --force` — voir `team-delete.md`) tout `sub-planner-*`/
+> `sub-reviewer-*`/`sub-qa-*` qui ne correspond à aucune délégation en cours.
 
 ---
 

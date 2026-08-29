@@ -73,6 +73,22 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `marketing` | `marketing-release` | Communication de release |
 | `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
 
+> `sub-planner-1..N` : instances temporaires de `implementation-planner`, spawnées par le CDP
+> uniquement sur demande explicite du `planner` (`PLANNER NEED SUBPLANNERS`), vivantes le temps
+> de la Phase Plan uniquement. Pas une ligne fixe de la table — voir `implementation-planner.md`
+> section "Délégation à des Sous-Planners".
+>
+> `sub-reviewer-<dimension>` : instances temporaires de `code-reviewer`, spawnées par le CDP
+> uniquement sur demande explicite du `code-reviewer` (`CODE-REVIEWER NEED SUBREVIEWERS`),
+> fermées immédiatement après le rapport consolidé (pas de phase d'attente). Voir
+> `code-reviewer.md` section "Délégation à des Sous-Reviewers".
+>
+> `sub-qa-<scope>` : instances temporaires de `qa`, spawnées par le CDP uniquement sur demande
+> explicite du `qa` (`QA NEED SUBAGENTS`), fermées immédiatement après le rapport consolidé.
+> Isolation par `git worktree` géré en `Bash` par chaque sub-qa — jamais via le paramètre
+> `isolation` de l'outil `Agent` (voir `qa.md` section "Délégation à des Sous-QA"). Voir aussi
+> `context/TEAMMATES_PROTOCOL.md` section 6.
+
 ## Agents selon le Workflow
 
 La team est gérée par le Claude principal. Tous les agents sont **en IDLE depuis `/start-session`** — le CDP dispatche via `SendMessage` uniquement. Agents à contacter selon le workflow :
@@ -159,6 +175,14 @@ SendMessage({ to: "planner", content: "
 " })
 ```
 
+**Cas NEED SUBPLANNERS** — le planner a identifié des groupes indépendants et demande à
+sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous-Planners") :
+- Spawner chaque nom demandé via `Task`/`Agent` (prompt générique fixe, pointant vers `planner`
+  comme coordinateur — jamais `main`) et mémoriser la liste dans `SUBPLANNER_NAMES[]`
+- Répondre : `SendMessage({ to: "planner", content: "CDP SUBPLANNERS READY\nNoms : [liste]" })`
+- Le CDP ne dispatche plus rien lui-même à ces sub-planners ensuite — le planner les gère en
+  direct (P2P) jusqu'à son rapport `PLANNER DONE`/`BLOCKED` final
+
 **Réception du rapport planner — trois cas :**
 
 **Cas DONE** → appliquer la Validation Systématique des Livrables :
@@ -203,6 +227,16 @@ SendMessage({ to: "planner", content: "
 **Cas FAILED** → escalade utilisateur avec la raison ← GATE 1.5
 
 ### Phase 2 — Developpement + Ecriture des Tests
+
+> **Sortie de Phase Plan — fermer les sub-planners** (si `SUBPLANNER_NAMES[]` non vide, cf. Phase 1) :
+> ```
+> pour chaque nom dans SUBPLANNER_NAMES[] :
+>   TaskStop({ task_id: nom })
+> SUBPLANNER_NAMES[] = []
+> ```
+> Même nettoyage requis si la Phase Plan est abandonnée avant validation (GATE 2 "Annuler"
+> définitif, `/cdp abort` pendant la planification) — ne jamais laisser un sub-planner actif
+> en dehors de la Phase Plan.
 
 > `ISSUE_NUMS[]` non vide → label `EN COURS` sur toutes les issues (appliquer via `mcp__plugin_github_github__issue_write`)
 
@@ -273,6 +307,25 @@ SendMessage({ to: "code-reviewer", content: "
 " })
 ```
 
+**Si code-reviewer répond `CODE-REVIEWER NEED SUBREVIEWERS`** (dimensions indépendantes du
+Checklist — voir `code-reviewer.md` section "Délégation à des Sous-Reviewers") :
+```
+Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "code-reviewer" comme
+coordinateur — jamais "main") → mémoriser SUBREVIEWER_NAMES[]
+SendMessage({ to: "code-reviewer", content: "CDP SUBREVIEWERS READY\nNoms : [liste]" })
+```
+Le CDP n'échange plus rien avec ces sub-reviewers ensuite — code-reviewer les gère en direct (P2P)
+jusqu'à son rapport final, qui inclut la liste à fermer (fermeture immédiate, pas de boucle de
+révision comme pour le planner). **À réception du rapport DONE, étape 1 — toujours avant tout
+traitement du verdict** (une nouvelle demande de sous-reviewers avec les mêmes noms pourrait
+survenir dès le cycle suivant si REFUSE — jamais respawner un nom pas encore fermé) :
+```
+pour chaque nom dans SUBREVIEWER_NAMES[] (liste "Sub-reviewers a fermer" du rapport DONE) :
+  TaskStop({ task_id: nom })
+SUBREVIEWER_NAMES[] = []
+```
+**Étape 2, seulement ensuite** : traiter le verdict (REFUSE/APPROUVE, voir ci-dessous).
+
 **Si `qa_parallelizable != false` (defaut)** — dispatcher `qa` dans le meme tour (test-writer a deja livre ses
 scripts en Phase 2, aucune attente necessaire) :
 
@@ -286,6 +339,24 @@ SendMessage({ to: "qa", content: "
   Retourne : verdict VALIDATED / NOT VALIDATED + rapport detaille.
 " })
 ```
+
+**Si `qa` répond `QA NEED SUBAGENTS`** (scopes indépendants — voir `qa.md` section "Délégation
+à des Sous-QA") :
+```
+Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "qa" comme coordinateur
+— jamais "main") → mémoriser SUBAGENT_NAMES[]
+SendMessage({ to: "qa", content: "CDP SUBAGENTS READY\nNoms : [liste]" })
+```
+Le CDP n'échange plus rien avec ces sub-qa ensuite — `qa` les gère en direct (P2P) jusqu'à son
+rapport final, qui inclut la liste à fermer (fermeture immédiate, pas de boucle de révision).
+**À réception du rapport DONE, étape 1 — toujours avant tout traitement du verdict** (même
+raison que pour code-reviewer : ne jamais respawner un nom pas encore fermé) :
+```
+pour chaque nom dans SUBAGENT_NAMES[] (liste "Sub-qa a fermer" du rapport DONE) :
+  TaskStop({ task_id: nom })
+SUBAGENT_NAMES[] = []
+```
+**Étape 2, seulement ensuite** : traiter le verdict (VALIDATED/NOT VALIDATED, voir ci-dessous).
 
 **Apres reception du verdict `code-reviewer` :**
 - REFUSE → cycle++
@@ -604,6 +675,13 @@ SendMessage({ to: "doc-updater", content: "<tâche doc>" })
 > Tout dispatch vers un agent clearable est **toujours précédé** de `CLEAR(<agent>)`.
 > Jamais de SendMessage(tâche) sans CLEAR préalable pour ces agents.
 > Les agents dev-* et test-writer ne reçoivent jamais `/clear` mid-feature.
+>
+> **Exception — boucle de révision `planner`** : les redispatches vers `planner` pendant la
+> boucle GATE 2 ("Corrections demandées") ou la boucle BLOCKED ("Reprendre la planification —
+> réponses aux ambiguïtés") ne sont **jamais** précédés de CLEAR — le contexte du plan en cours
+> (et la liste `SUBPLANNER_NAMES[]` si des sous-planners sont actifs) doit être préservé. Seul un
+> tout nouveau cycle de planification (nouvelle feature, ou GATE 4 Cas B) applique le CLEAR
+> standard.
 
 ---
 

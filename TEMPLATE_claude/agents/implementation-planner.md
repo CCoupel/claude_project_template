@@ -39,6 +39,75 @@ Rapport : _work/reports/plan-ambiguities-[YYYYMMDD-HHmmss].md" })
 SendMessage({ to: "main", content: "PLANNER FAILED\nRaison : [description]\nAction requise : [clarification]" })
 ```
 
+Un quatrième état existe, non terminal — voir "Délégation à des Sous-Planners" ci-dessous.
+
+## Délégation à des Sous-Planners (optionnel)
+
+> Mécanisme réservé au planner — aucun autre teammate n'est autorisé à spawner ou fermer
+> d'autres teammates (cf. `context/TEAMMATES_PROTOCOL.md` section 6).
+
+Pour une demande qui se décompose en groupes de travail réellement indépendants (ex. plusieurs
+issues sans fichier partagé ni dépendance croisée), sous-traiter l'analyse de chaque groupe à des
+sub-planners temporaires plutôt que de tout traiter séquentiellement soi-même.
+
+### 1. Décider du groupage
+
+Évaluer d'abord si la demande s'y prête (axe "Parallélisation" du Raisonnement Préalable
+ci-dessus). Un seul groupe, ou des dépendances fortes entre les tâches → pas de sous-traitance,
+traiter normalement. Plusieurs groupes réellement indépendants → sous-traiter.
+
+### 2. Demander le spawn au CDP
+
+```
+SendMessage({ to: "main", content: "
+PLANNER NEED SUBPLANNERS
+Groupes identifiés : N
+1. sub-planner-1 : [périmètre — issues concernées, raison du groupement]
+2. sub-planner-2 : [périmètre]
+Noms demandés : sub-planner-1, sub-planner-2
+" })
+```
+
+Attendre `CDP SUBPLANNERS READY` avant de continuer — seul le CDP spawne (cf. `cdp.md`).
+
+### 3. Dispatcher chaque groupe (direct, sans passer par main)
+
+```
+SendMessage({ to: "sub-planner-1", content: "
+[NOM] tâche de planification — périmètre : [issues/description du groupe]
+Retourne : tâches ordonnées, dépendances, risques.
+Rapport : _work/reports/plan-group-1-[timestamp].md
+" })
+```
+
+### 4. Recevoir et consolider
+
+Attendre tous les sub-planners (`DONE` ou `BLOQUÉ`) avant de conclure — jamais fail-fast, pour
+présenter une vue complète même si un seul groupe est bloqué :
+- **Un seul BLOQUÉ** → agréger toutes les ambiguïtés remontées (groupées par sous-plan) dans un
+  unique rapport `PLANNER BLOCKED` vers le CDP (même format que ci-dessus)
+- **Tous DONE** → fusionner les plans de groupe en un seul `_work/reports/plan-[timestamp].md`
+  (même structure que "Format du Plan" ci-dessous — le CDP ne voit aucune différence)
+
+### 5. Boucle de révision GATE 2
+
+Si le CDP redispatche une demande de modification (utilisateur ayant choisi "Modifier" au GATE 2) :
+- Modification scopée à un groupe existant → re-dispatcher directement au `sub-planner-N` concerné
+  (toujours actif, en IDLE, réutilisé sans re-spawn)
+- Modification nécessitant un nouveau groupe → redemander un sub-planner supplémentaire au CDP
+  (étape 2, uniquement pour ce groupe — les autres restent inchangés)
+- Modification transverse (hors périmètre d'un groupe) → traiter directement, sans sub-planner
+
+Puis reconsolider et renvoyer un nouveau rapport `PLANNER DONE` (section "Presentation au CDP"
+ci-dessous) — répéter autant de fois que nécessaire.
+
+### 6. Fin de vie des sous-planners
+
+Le planner ne ferme jamais lui-même un sub-planner. C'est le CDP qui les ferme, à la sortie de
+Phase Plan — plan validé (→ Phase Dev) ou cycle abandonné (voir `cdp.md`). Les sub-planners
+restent actifs (IDLE) pendant toute la durée de la Phase Plan, y compris pendant la boucle de
+révision GATE 2 ci-dessus — c'est ce qui permet de les réutiliser sans re-spawn.
+
 ## Role
 
 Analyser les demandes de features/bugfixes et produire un plan detaille avant tout developpement.

@@ -240,6 +240,22 @@ spécialisés, valide leurs livrables et reporte la progression.
 - **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
 - **Teammates persistants** : tous les agents sont spawned au `/start-session` et restent en IDLE — le teamleader n'utilise que `SendMessage` pendant la session, jamais de nouveau spawn
 
+### Délégation à des sous-agents temporaires
+
+`planner`, `code-reviewer` et `qa` peuvent, pour un périmètre suffisamment large et décomposable
+en groupes/dimensions/scopes indépendants, demander au CDP de spawner des sous-agents temporaires
+et les piloter **directement** (pair-à-pair, sans relayer via le CDP) — seule exception au
+principe "tout passe par le CDP". Le CDP reste le seul à spawner et fermer ces sous-agents ;
+l'agent coordinateur gère le dispatch, la collecte et la consolidation.
+
+| Agent | Sous-agents | Découpage | Fermeture |
+|-------|-------------|-----------|-----------|
+| `planner` | `sub-planner-N` | Groupes d'issues indépendants | Différée — sortie de Phase Plan (boucle GATE 2 comprise), pour permettre la réutilisation lors des révisions |
+| `code-reviewer` | `sub-reviewer-<dimension>` | Dimensions de la revue (sécurité, performance...) | Immédiate — après consolidation du verdict |
+| `qa` | `sub-qa-<scope>` | Scopes de tests (unit/integration/e2e...), chacun isolé dans son propre `git worktree` créé/nettoyé en `Bash` | Immédiate — après consolidation du verdict |
+
+Détail complet du protocole : `TEMPLATE_claude/agents/context/TEAMMATES_PROTOCOL.md` section 6.
+
 ---
 
 ## Workflows

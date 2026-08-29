@@ -229,7 +229,12 @@ Champ produit par le planner (voir `implementation-planner.md`, section "Paralle
 3. Attendre les deux verdicts en parallele.
 4. `code-reviewer` = REJECTED (ou equivalent local, voir verdicts en vigueur dans le fichier appelant) :
    - `qa` encore en cours → lui envoyer le message d'annulation ci-dessous, ignorer tout resultat qui arriverait apres.
-   - `qa` deja DONE → ignorer son resultat.
+     **Si `SUBAGENT_NAMES[]` (sub-qa demandes par `qa`, voir `qa.md` section "Délégation à des
+     Sous-QA") est non vide** : le CDP les ferme lui-meme directement (`TaskStop` par nom) au
+     meme moment que l'envoi de l'annulation — ne pas attendre un rapport DONE de `qa` qui
+     n'arrivera jamais dans sa forme normale (annulation = pas de rapport). `SUBAGENT_NAMES[] = []`.
+   - `qa` deja DONE → ignorer son resultat (ses sub-qa, le cas echeant, sont deja fermes — voir
+     `qa.md`, fermeture immediate incluse dans son propre rapport DONE).
    - Retour Phase Dev (cycle++), comme le flow standard.
 5. `code-reviewer` = APPROVED (ou AVEC RESERVES) :
    - Attendre `qa` DONE si pas encore recu.

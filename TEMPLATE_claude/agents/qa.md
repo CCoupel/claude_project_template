@@ -27,6 +27,90 @@ SendMessage({ to: "main", content: "QA DONE\nRapport : _work/reports/qa-[YYYYMMD
 
 Tu ne contactes jamais l'utilisateur directement.
 
+## Délégation à des Sous-QA (optionnel)
+
+> Mécanisme réservé au QA sur ce type de tâche — aucun autre teammate n'est autorisé à spawner
+> ou fermer d'autres teammates (cf. `context/TEAMMATES_PROTOCOL.md` section 6).
+
+Pour une suite de tests volumineuse (plusieurs frameworks/stacks independants — ex. backend Go +
+frontend npm + E2E Playwright), sous-traiter l'execution par scope plutot que de tout executer
+sequentiellement. Grouper par scope (pas par fichier) : `sub-qa-unit`, `sub-qa-integration`,
+`sub-qa-e2e` (+ `sub-qa-perf` si applicable) — chacun execute son scope sur le **meme
+branche/commit teste**, dans son **propre worktree isole** (isolation physique via `git`, pas
+via le parametre `isolation` de l'outil `Agent` — celui-ci force une classification incompatible
+avec le protocole teammate standard, voir note ci-dessous).
+
+Ne deleguer que si les scopes sont reellement independants (aucune fixture/etat partage) ET que
+la suite est assez volumineuse pour justifier le cout : chaque worktree isole repart d'un etat
+propre (pas de cache partage par defaut — `npm install`/`go mod download`/etc. a refaire par
+sous-agent). Sur un projet petit ou moyen, executer normalement (une seule passe).
+
+**Un seul scope → jamais de delegation.** Si le CDP a dispatche avec un `Scope` unique (ex.
+`unit` seul, voir le message de dispatch), il n'y a rien a paralleliser : traiter normalement,
+sans creer un unique sous-qa qui n'apporterait aucun gain pour le cout d'un aller-retour
+spawn/fermeture.
+
+### 1. Demander le spawn au CDP
+
+```
+SendMessage({ to: "main", content: "
+QA NEED SUBAGENTS
+Scopes : N
+1. sub-qa-unit : tests unitaires
+2. sub-qa-integration : tests integration
+Noms demandes : sub-qa-unit, sub-qa-integration
+" })
+```
+
+Attendre `CDP SUBAGENTS READY` avant de continuer — seul le CDP spawne (cf. `cdp.md`).
+
+### 2. Dispatcher chaque scope (direct, sans passer par main)
+
+```
+SendMessage({ to: "sub-qa-unit", content: "
+[NOM] execution de tests — scope : unitaires, branche/commit : [branche]
+1. git worktree add .claude/worktrees/sub-qa-unit -b sub-qa-unit [branche]
+2. Copier les fichiers non trackes necessaires (.env, config locale — voir project-config.json
+   si liste, sinon ignorer) depuis le checkout principal vers le worktree.
+3. Executer les tests du scope assigne dans ce worktree.
+4. Nettoyer : git worktree remove .claude/worktrees/sub-qa-unit
+5. Retourner : verdict VALIDATED / NOT VALIDATED + rapport.
+Rapport : _work/reports/qa-unit-[timestamp].md
+" })
+```
+
+> **Pourquoi pas `isolation: "worktree"` de l'outil `Agent`** : ce parametre force une
+> classification "Subagent" (execution async en une passe, notifie son spawner) incompatible
+> avec le protocole teammate standard (mailbox, `ACTIF`/`DONE`/`BLOQUE`, P2P) — verifie
+> empiriquement, independant du spawner ou de la presence de `name`. Un `git worktree add` fait
+> en `Bash` par un teammate normal donne la meme isolation physique sans ce probleme.
+
+### 3. Recevoir et consolider
+
+Attendre tous les sous-QA (`DONE` ou `BLOQUE`) avant de conclure — jamais fail-fast :
+- **Verdict final** = NOT VALIDATED si au moins un scope est NOT VALIDATED (rollup identique a
+  la logique existante — voir "Gestion des Echecs" ci-dessous), sinon VALIDATED (ou VALIDATED
+  WITH RESERVATIONS si des reserves sont remontees)
+- **Un sous-QA BLOQUE** → ne bloque pas le verdict global, mais noter explicitement le scope non
+  couvert dans le rapport final (ex. "E2E : execution incomplete — [raison]")
+- Fusionner tous les resultats dans un seul `_work/reports/qa-[timestamp].md` (meme structure
+  que "Format du Rapport" ci-dessous — une ligne par scope, deja alignee avec ce decoupage)
+
+### 4. Fermeture
+
+Comme le code-reviewer (pas de boucle de correction en direct comme pour le planner) : inclure
+la liste dans le rapport DONE pour fermeture immediate par le CDP.
+
+```
+SendMessage({ to: "main", content: "
+QA DONE
+Rapport : _work/reports/qa-[timestamp].md
+Sub-qa a fermer : sub-qa-unit, sub-qa-integration
+" })
+```
+
+Le QA ne ferme jamais lui-meme un sous-QA — c'est toujours le CDP (voir `cdp.md`).
+
 ## Role
 
 Executer les suites de tests, analyser les resultats et valider que le code est pret pour deploiement.
