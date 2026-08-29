@@ -105,6 +105,7 @@ nav {
 .step-agent { font-family: var(--mono); font-size: .72rem; color: var(--muted); }
 .step-title { font-weight: 600; font-size: .95rem; }
 .step-desc  { font-size: .8rem; color: var(--muted); }
+.step-sub   { font-size: .72rem; color: var(--cyan); margin-top: .3rem; font-style: italic; }
 
 .pipeline-gate {
   width: 100%; background: rgba(124,58,237,.08); border: 1px dashed rgba(124,58,237,.4);
