@@ -27,11 +27,14 @@ Il se développe lui-même avec les mêmes pratiques qu'il préconise.
 README.md                    # Documentation utilisateur
 CLAUDE.md                    # Ce fichier
 init-project.md              # Bootstrapper un projet (téléchargé par le launcher)
-claude-launcher.sh           # Launcher tmux — point d'entrée utilisateur
 .claude/
 ├── memory/                  # Mémoire des sessions de développement
 └── settings.local.json      # Config Claude Code locale
 ```
+
+> Le launcher tmux (`claude-launcher.sh`) vit dans son propre repo,
+> [`CCoupel/Claude-Launcher`](https://github.com/CCoupel/Claude-Launcher) — plus dans celui-ci.
+> Il reste le point d'entrée utilisateur recommandé, mais son cycle de release est indépendant.
 
 **2. Les composants du template** (livrés aux projets cibles via fetch GitHub)
 
@@ -58,7 +61,7 @@ TEMPLATE_claude/             # Racine de tous les composants template
 ### Comment un projet cible consomme ce template
 
 ```
-claude-launcher.sh           # Téléchargé une fois par l'utilisateur
+claude-launcher.sh (CCoupel/Claude-Launcher)  # Téléchargé une fois par l'utilisateur
     ↓ ouverture d'un projet
 Projet cible
 ├── .claude/commands/
@@ -138,21 +141,17 @@ Puis publier la release en poussant un tag SemVer sur main :
 git tag vX.Y.Z && git push origin vX.Y.Z
 ```
 
-La CI (`.github/workflows/release.yml`) se déclenche automatiquement et :
-1. Patche `SCRIPT_VERSION` dans `claude-launcher.sh` avec le tag exact (sans commit)
-2. Publie la GitHub Release avec le launcher pré-patché en asset
-
-L'asset est disponible à :
-`https://github.com/CCoupel/claude_project_template/releases/download/vX.Y.Z/claude-launcher.sh`
-
-Ne jamais modifier `SCRIPT_VERSION` à la main — c'est la CI qui le gère.
+Aucune CI ne se déclenche sur ce repo — le tag marque simplement la version du template (pas
+d'artefact à patcher ni à publier ici, contrairement au launcher qui a son propre cycle de
+release dans `CCoupel/Claude-Launcher`). Optionnel : `gh release create vX.Y.Z --generate-notes`
+pour une entrée GitHub Release visible dans le changelog.
 
 ---
 
 ## Ce qu'il ne faut PAS faire
 
 - Ne pas mettre de fichiers spécifiques à un projet dans `TEMPLATE_claude/` (pas de noms de projets, pas d'URLs hardcodées sauf `CCoupel/claude_project_template`)
-- Ne pas ajouter d'autres workflows dans `.github/workflows/` — seul `release.yml` existe (gestion des releases du launcher) ; les workflows CI/CD pour les projets cibles sont dans `TEMPLATE_claude/templates/workflows/`
+- Ne pas ajouter de workflow dans `.github/workflows/` — ce repo n'en a besoin d'aucun (plus de launcher à patcher/publier ici) ; les workflows CI/CD pour les projets cibles sont dans `TEMPLATE_claude/templates/workflows/`
 - Ne pas éditer `CLAUDE_TEMPLATE.md` comme si c'était le `CLAUDE.md` de ce repo (c'est le modèle pour les projets cibles)
 
 ---

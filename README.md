@@ -10,50 +10,21 @@ le développement, la qualité, le déploiement et la communication de release.
 
 ### Option A — Launcher tmux (recommandé)
 
+Hub tmux pour piloter plusieurs projets Claude Code en parallèle (sessions groupées, panes colorés
+par agent, auto-update silencieux, sync automatique de `init-project.md`) — maintenu dans son
+propre repo, compagnon de celui-ci :
+
 ```bash
 curl -fsSL \
-  https://raw.githubusercontent.com/CCoupel/claude_project_template/main/claude-launcher.sh \
-  -o ~/claude-launcher.sh && chmod +x ~/claude-launcher.sh
+  https://raw.githubusercontent.com/CCoupel/Claude-Launcher/main/claude-launcher.sh \
+  -o ~/claude-launcher.sh && chmod +x ~/claude-launcher.sh && ~/claude-launcher.sh
 ```
 
-Au premier lancement, le launcher crée `~/.config/claude-launcher.conf` :
-
-```bash
-~/claude-launcher.sh --configure   # édite la config (GITHUB_DIR, token…)
-~/claude-launcher.sh               # démarre le hub tmux
-```
-
-**Variables disponibles dans la config :**
-
-| Variable | Rôle |
-|----------|------|
-| `GITHUB_DIR` | Répertoire contenant vos projets |
-| `GITHUB_TOKEN` | Token GitHub (gh CLI + MCP) |
-| `CLAUDE_DISABLE_MOUSE` | `1` = désactive la souris |
-| `CLAUDE_EXPERIMENTAL_TEAMS` | `1` = active les agent teams |
-| `CLAUDE_OPTIONS` | Options passées à `claude` |
-| `EXTRA_ENVS` | Variables d'environnement supplémentaires |
-
-`EXTRA_ENVS` permet de passer n'importe quelle variable d'env à Claude Code (clés d'API tierces, URLs…) :
-
-```bash
-EXTRA_ENVS=(
-  "ANTHROPIC_API_KEY=sk-ant-..."
-  "MY_API_URL=https://api.example.com"
-)
-```
-
-**Comportements automatiques à l'ouverture d'un projet :**
-- Le launcher vérifie le dernier tag GitHub et se met à jour silencieusement si une nouvelle version est disponible
-- `init-project.md` est rafraîchi depuis GitHub à chaque ouverture de projet
-- Si GitHub est inaccessible et que le fichier existait déjà, l'ancienne version est conservée
+Documentation complète (configuration, `EXTRA_ENVS`, mise à jour) :
+[CCoupel/Claude-Launcher](https://github.com/CCoupel/Claude-Launcher) ·
+[site](https://ccoupel.github.io/Claude-Launcher/)
 
 Lancer ensuite `/init-project` dans Claude Code.
-
-**Mettre à jour le launcher :**
-```bash
-~/claude-launcher.sh --update      # remplace le script, préserve la config
-```
 
 ### Option B — Fichier seul
 
