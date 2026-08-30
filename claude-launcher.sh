@@ -76,7 +76,8 @@ if [[ "${1:-}" == "--no-update" ]]; then
 fi
 
 SESSION="claude-hub"
-TEMPLATE_REPO="CCoupel/claude_project_template"
+LAUNCHER_REPO="CCoupel/Claude-Launcher"       # hebergement du launcher lui-meme (self-update)
+TEMPLATE_REPO="CCoupel/claude_project_template"  # hebergement du template (init-project.md)
 TEMPLATE_BRANCH="main"
 SCRIPT_VERSION="v2.15.4"
 CONFIG_FILE="${HOME}/.config/claude-launcher.conf"
@@ -251,7 +252,7 @@ apply_pane_color() {
 auto_update() {
   local latest_tag
   latest_tag=$(curl -fsSL --ipv4 --max-time 5 \
-    "https://api.github.com/repos/${TEMPLATE_REPO}/tags" 2>/dev/null \
+    "https://api.github.com/repos/${LAUNCHER_REPO}/tags" 2>/dev/null \
     | jq -r '.[0].name // empty')
   [[ -z "$latest_tag" ]] && return
 
@@ -267,7 +268,7 @@ auto_update() {
   local tmp
   tmp=$(mktemp)
   if curl -fsSL --ipv4 --max-time 5 \
-      "https://github.com/${TEMPLATE_REPO}/releases/download/${latest_tag}/claude-launcher.sh" \
+      "https://github.com/${LAUNCHER_REPO}/releases/download/${latest_tag}/claude-launcher.sh" \
       -o "$tmp" 2>/dev/null && [[ -s "$tmp" ]]; then
     printf "\033[1;32m  ↑ Nouvelle version %s disponible (installée : %s) — mise à jour...\033[0m\n" \
       "$latest_tag" "$SCRIPT_VERSION"
@@ -826,10 +827,10 @@ cleanup_orphan_teams() {
 # ════════════════════════════════════════════════════════════════════════════
 if [[ "$1" == "--update" ]]; then
   SCRIPT_PATH="$(realpath "$0")"
-  echo "Mise à jour du launcher depuis GitHub (${TEMPLATE_REPO}@${TEMPLATE_BRANCH})..."
+  echo "Mise à jour du launcher depuis GitHub (${LAUNCHER_REPO}@${TEMPLATE_BRANCH})..."
   tmp=$(mktemp)
   if curl -fsSL --ipv4 \
-      "https://raw.githubusercontent.com/${TEMPLATE_REPO}/${TEMPLATE_BRANCH}/claude-launcher.sh" \
+      "https://raw.githubusercontent.com/${LAUNCHER_REPO}/${TEMPLATE_BRANCH}/claude-launcher.sh" \
       -o "$tmp"; then
     chmod +x "$tmp"
     mv "$tmp" "$SCRIPT_PATH"
@@ -1072,7 +1073,7 @@ GENSCRIPT
         # Vérifie les MàJ GitHub : au 1er tick (~6s après lancement), puis toutes les 5 min
         if (( _upd_tick++ % 150 == 0 )); then
           _latest=$(curl -fsSL --ipv4 --max-time 5 \
-            "https://api.github.com/repos/${TEMPLATE_REPO}/tags" 2>/dev/null \
+            "https://api.github.com/repos/${LAUNCHER_REPO}/tags" 2>/dev/null \
             | jq -r '.[0].name // empty')
           if [[ -n "$_latest" && "$_latest" != "$SCRIPT_VERSION" ]]; then
             _newer=$(printf '%s\n%s\n' "$SCRIPT_VERSION" "$_latest" | sort -V | tail -1)
