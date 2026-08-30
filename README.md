@@ -24,6 +24,13 @@ Documentation complète (configuration, `EXTRA_ENVS`, mise à jour) :
 [CCoupel/Claude-Launcher](https://github.com/CCoupel/Claude-Launcher) ·
 [site](https://ccoupel.github.io/Claude-Launcher/)
 
+> **Déjà installé avant `v3.0.0` ?** Le launcher vivait ici auparavant — votre script cherche
+> encore ses mises à jour sur ce repo, qui ne l'héberge plus. Relancez une fois la commande
+> ci-dessus (même URL, elle pointe déjà vers le nouveau repo) pour basculer définitivement ;
+> votre config (`~/.config/claude-launcher.conf`) n'est pas touchée. Détails :
+> [notes de la release v3.0.0](https://github.com/CCoupel/claude_project_template/releases/tag/v3.0.0)
+> · [procédure de migration complète](https://github.com/CCoupel/Claude-Launcher#migration-depuis-claude_project_template).
+
 Lancer ensuite `/init-project` dans Claude Code.
 
 ### Option B — Fichier seul
