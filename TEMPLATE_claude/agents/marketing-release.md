@@ -20,27 +20,47 @@ taches, dispatchees separement (le cycle ACTIF → DONE → IDLE se repete a cha
 
 ### Tache `PREPARE vX.Y.Z`
 
-Recue en parallele du deploiement PROD, sans attendre son resultat — le contenu du milestone
-(issues fermees, labels) est deja fige avant le lancement de la CI.
+Recue systematiquement en parallele de chaque deploiement PROD (tous workflows confondus, y
+compris Hotfix), sans attendre son resultat — le contenu du milestone (issues fermees, labels)
+est deja fige avant le lancement de la CI. Le CDP ne verifie rien en amont : c'est toi qui
+resous le milestone et decides seul de la pertinence d'une publication.
 
-1. **Determiner si une publication est necessaire** — lister les issues fermees du milestone
-   `vX.Y.Z` et filtrer sur les labels visibles utilisateur :
+1. **Resoudre le milestone** correspondant a la version — matching par **prefixe**, jamais par
+   titre exact (le titre peut porter un nom descriptif apres le prefixe, separateur non
+   garanti — voir Prerequis ci-dessous, section 4) :
    ```bash
-   gh issue list --milestone "vX.Y.Z" --state closed \
-     --json number,title,labels \
-     --jq '[.[] | select(.labels[]?.name as $l | ["feature","enhancement","breaking"] | index($l))]
-           | .[] | "#" + (.number|tostring) + " — " + .title + " [" + (.labels | map(.name) | join(", ")) + "]"'
+   TITLE=$(gh api repos/{owner}/{repo}/milestones \
+     --jq '.[] | select(.title == "vX.Y.Z" or ((.title | ltrimstr("vX.Y.Z")) as $rest
+           | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))) | .title')
    ```
-   - Liste vide (que des `fix`/`chore`/`refactor`) → `SendMessage({ to: "main", content: "MARKETING RIEN A PUBLIER" })`, repasser IDLE. Ne rien generer d'autre.
-   - Au moins une issue marquante → continuer.
-2. Produire les livrables (voir section Livrables) — **sans commit ni push**.
-3. Ecrire un rapport `_work/reports/marketing-[timestamp].md` : resume + apercu (textes courts
-   inline pour les posts/release notes, chemins des fichiers generes pour le site).
-4. `SendMessage({ to: "main", content: "MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md" })`, repasser IDLE.
+2. **Determiner si une publication est necessaire :**
+   - **Milestone trouve** — lister ses issues fermees et filtrer sur les labels visibles
+     utilisateur :
+     ```bash
+     gh issue list --milestone "$TITLE" --state closed \
+       --json number,title,labels \
+       --jq '[.[] | select(.labels[]?.name as $l | ["feature","enhancement","breaking"] | index($l))]
+             | .[] | "#" + (.number|tostring) + " — " + .title + " [" + (.labels | map(.name) | join(", ")) + "]"'
+     ```
+     - Liste vide (que des `fix`/`chore`/`refactor`) → rien a publier.
+     - Au moins une issue marquante (`feature`/`enhancement`/`breaking`) → continuer.
+   - **Aucun milestone trouve** (deploiement hors cycle milestone) — se rabattre sur
+     `CHANGELOG.md` : lire la section de la version `vX.Y.Z` fraichement ajoutee par
+     doc-updater. Sous-sections `Added`/`Changed`/`Breaking` non vides → continuer ; seulement
+     `Fixed`/`Chore` (ou section absente) → rien a publier.
+   - Rien a publier → `SendMessage({ to: "main", content: "MARKETING RIEN A PUBLIER" })`, repasser IDLE. Ne rien generer d'autre.
+3. Produire les livrables (voir section Livrables) — **sans commit ni push**. Si un site
+   marketing est concerne, publier systematiquement l'apercu Artifact (voir section Livrables
+   4. Site Marketing → "Apercu de validation (Artifact)") — obligatoire, pas seulement si
+   demande.
+4. Ecrire un rapport `_work/reports/marketing-[timestamp].md` : resume + apercu (textes courts
+   inline pour les posts/release notes, chemin du fichier + **URL de l'apercu Artifact** pour
+   le site).
+5. `SendMessage({ to: "main", content: "MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md" })`, repasser IDLE.
 
 Si le CDP redispatche `PREPARE vX.Y.Z` avec des corrections (apres refus utilisateur au GATE 4d),
-reprendre directement a l'etape 2 en tenant compte des corrections — pas de nouveau check de
-pertinence.
+reprendre directement a l'etape 3 en tenant compte des corrections — pas de nouveau check de
+pertinence. Republier l'apercu Artifact sur le meme chemin de fichier (meme URL mise a jour).
 
 ### Tache `PUBLISH`
 
@@ -65,8 +85,10 @@ technique est a jour (doc-updater).
 
 ## Declenchement
 
-- Spawn par le CDP **en parallele du deploiement PROD**, des qu'un milestone `vX.Y.Z` correspond
-  a la version cible — sans attendre le resultat de la CI (voir `agents/cdp.template.md` Phase 6)
+- Spawn par le CDP **systematiquement en parallele du deploiement PROD**, tous workflows
+  confondus (y compris Hotfix) — sans attendre le resultat de la CI (voir `agents/cdp.template.md`
+  Phase 6). C'est l'agent marketing lui-meme qui resout le milestone et decide de la pertinence
+  d'une publication (voir Tache PREPARE) — le CDP ne verifie rien en amont.
 - Commande directe `/marketing [version]` (mode autonome, hors orchestration CDP — voir `commands/marketing.md`)
 
 ## Prerequis
@@ -78,11 +100,15 @@ Avant de produire tout contenu :
 3. Lire `docs/` pour les details techniques si necessaire
 4. **Recuperer le milestone GitHub correspondant a la version** (source privilegiee) — matching
    par **prefixe** de version, jamais par titre exact (le titre peut porter un nom descriptif
-   apres " — ", voir `context/COMMON.md` section 5.7) :
+   apres le prefixe, separateur non garanti — convention `" — "` via `/milestone new`, mais
+   milestones plus anciens/manuels parfois en `" - "` ou autre, voir `context/COMMON.md`
+   section 5.7 — ne jamais figer sur un separateur precis, seulement verifier que le caractere
+   suivant le prefixe n'est ni un chiffre ni un point) :
    ```bash
    # Resoudre le titre exact du milestone a partir de la version
    TITLE=$(gh api repos/{owner}/{repo}/milestones \
-     --jq ".[] | select(.title == \"<version>\" or (.title | startswith(\"<version> — \"))) | .title")
+     --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
+           | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))) | .title')
 
    # Issues livrees dans ce milestone (ce qui a ete reellement livre)
    gh issue list --milestone "$TITLE" --state closed \
@@ -226,6 +252,7 @@ MARKETING/
 ├── assets/
 │   ├── style.css           # Styles communs
 │   ├── lang.js             # Gestion commutateur FR/EN
+│   ├── badges.js           # Calcul couleur/suppression des badges "Nouveau vX.Y.Z"
 │   └── architecture.svg    # Diagramme d'architecture (si disponible)
 └── locales/
     ├── fr.json             # Textes FR
@@ -325,6 +352,110 @@ Si le site existe deja :
 - Ajouter la fonctionnalite majeure de la version dans la section Solutions
 - Ajouter une entree dans la section Releases/Changelog si elle existe
 - Verifier que les commandes de deploiement sont toujours valides
+- Si cette release introduit un **nouveau X** (nouvelle fonctionnalite majeure) : poser un
+  badge sur le nouvel element concerne (voir "Badges de nouveaute" ci-dessous) — jamais sur un
+  simple bump Y/Z
+
+#### Badges de nouveaute
+
+Un element marquant du site (une carte fonctionnalite, ex. "RAFALE", "Roue de la Fortune") peut
+porter un badge `Nouveau vX.Y.Z` qui vieillit avec les releases suivantes — **sans jamais etre
+republie pour cette seule raison**.
+
+**Regle de pose — une seule fois, jamais modifiee ensuite :**
+- Un badge est pose sur un element **uniquement** quand cet element apparait pour la premiere
+  fois a l'occasion d'un changement de **X** (nouvelle fonctionnalite majeure — ex. RAFALE en
+  `v8.0.0`, Roue de la Fortune en `v9.0.0`). La version inscrite dans le badge
+  (`data-badge-version`) est **figee** a cette version de premiere apparition et **n'est plus
+  jamais modifiee** ensuite, meme si l'element recoit plus tard de nouvelles ameliorations sous
+  le meme X (ex. RAFALE enrichi en `v8.1.0` : le badge reste `v8.0.0`).
+- Un bump de **Y** ou **Z** seul (pas de nouveau X) ne pose jamais de nouveau badge et ne
+  modifie aucun badge existant.
+
+**Regle de couleur — recalculee a l'affichage, jamais par republication dediee :**
+
+La couleur/visibilite depend uniquement de l'ecart entre le X fige du badge et le X de la
+version courante du site (`CURRENT_MAJOR`, dans le `<meta>` du header) :
+
+| Ecart (X courant − X du badge) | Etat |
+|---|---|
+| 0 | 🟠 orange — `Nouveau vX.Y.Z` |
+| 1 | 🔵 bleu — `vX.Y.Z` |
+| ≥ 2 | retire (badge masque) |
+
+Ce calcul se fait **cote client** (JS, au chargement de la page) — jamais recalcule ni reecrit
+par l'agent a chaque republication : il suffit que `CURRENT_MAJOR` soit a jour pour que tous
+les badges se recolorent automatiquement, y compris ceux qui n'ont pas ete touches depuis
+plusieurs releases. **Consequence directe : ne jamais republier le site uniquement pour faire
+vieillir un badge** — meme si des badges existants auraient techniquement change d'etat, un
+`RIEN A PUBLIER` (Tache PREPARE, etape 2) reste un arret net. Le recalcul est un pur
+sous-produit de la prochaine republication motivee par du contenu reel.
+
+**Implementation :**
+```html
+<!-- Dans le header, version courante -->
+<meta name="current-major" content="8">
+
+<!-- Sur un element marquant, pose une seule fois a sa creation -->
+<span class="badge" data-badge-version="v8.0.0">Nouveau v8.0.0</span>
+```
+```javascript
+// assets/badges.js
+const CURRENT_MAJOR = parseInt(document.querySelector('meta[name="current-major"]').content, 10);
+document.querySelectorAll('[data-badge-version]').forEach(el => {
+  const badgeMajor = parseInt(el.dataset.badgeVersion.match(/^v(\d+)/)[1], 10);
+  const diff = CURRENT_MAJOR - badgeMajor;
+  if (diff >= 2) { el.remove(); return; }
+  el.classList.toggle('badge-orange', diff === 0);
+  el.classList.toggle('badge-blue', diff === 1);
+  el.textContent = diff === 0 ? `Nouveau ${el.dataset.badgeVersion}` : el.dataset.badgeVersion;
+});
+```
+
+**Ce que l'agent fait a chaque republication reelle du site :**
+1. Mettre a jour `<meta name="current-major">` avec le X de la version deployee.
+2. Si cette release introduit un **nouveau X** : ajouter `data-badge-version="vX.0.0"` sur le
+   nouvel element concerne.
+3. Ne **jamais** toucher aux `data-badge-version` des badges existants — le JS s'occupe seul de
+   leur couleur/suppression a l'affichage, a partir du seul `CURRENT_MAJOR`.
+
+#### Placeholders images
+
+Tout visuel non disponible (capture d'ecran, photo, diagramme non fourni) est remplace par un
+placeholder SVG inline leger — jamais par une reference vers un fichier inexistant, jamais omis
+en silence :
+```html
+<svg viewBox="0 0 800 450" role="img" aria-label="Capture — Interface Admin">
+  <rect width="800" height="450" fill="#e5e7eb"/>
+  <text x="400" y="225" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#6b7280">
+    [Capture a ajouter — Interface Admin]
+  </text>
+</svg>
+```
+Objectif double : (1) la page reste utilisable et honnete en attendant les vrais assets fournis
+par l'utilisateur, (2) elle reste legere — un placeholder SVG pese quelques centaines d'octets
+contre potentiellement plusieurs Mo pour une vraie capture encodee en base64, ce qui compte pour
+l'apercu Artifact ci-dessous (limite 16 Mo). `architecture.svg` suit la meme regle : un
+placeholder si le diagramme reel n'existe pas encore.
+
+#### Apercu de validation (Artifact)
+
+A chaque generation ou mise a jour du site (PREPARE initial ou re-PREPARE apres corrections),
+publier systematiquement un apercu visuel complet de la page pour que l'utilisateur valide **le
+rendu**, pas seulement un resume texte :
+
+1. Charger la skill `artifact-design` avant de publier (calibrage du soin visuel).
+2. Construire le contenu de l'apercu a partir de `MARKETING/index.html` **sans** les balises
+   `<!DOCTYPE>`, `<html>`, `<head>`, `<body>` (le skeleton Artifact les fournit automatiquement)
+   — conserver `<title>` et `<style>` en tete du fichier.
+3. Publier via l'outil Artifact (favicon a choisir une fois, jamais changer ensuite). Sur un
+   re-PREPARE (corrections), republier sur le **meme chemin de fichier** pour mettre a jour la
+   meme URL plutot que d'en creer une nouvelle.
+4. Inclure l'URL de l'artifact dans le rapport `_work/reports/marketing-[timestamp].md` — c'est
+   ce lien que le CDP relaie a l'utilisateur au GATE 4d pour la validation globale.
+
+Cet apercu est un outil de validation uniquement — le fichier reel `MARKETING/index.html`
+(document complet, structure gh-pages) reste la seule source publiee lors de `PUBLISH`.
 
 ## Regles de Ton
 

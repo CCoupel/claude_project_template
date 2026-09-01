@@ -131,10 +131,14 @@ gh api repos/{owner}/{repo}/milestones \
 gh api repos/{owner}/{repo}/milestones \
   --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0]'
 
-# Milestone correspondant a une version — matching par PREFIXE, jamais par titre exact
-# (le titre reel peut porter un nom descriptif apres " — ", voir context/COMMON.md section 5.7)
+# Milestone correspondant a une version — matching par PREFIXE, jamais par titre exact ni sur
+# un separateur precis (le titre reel peut porter un nom descriptif apres le prefixe, avec un
+# separateur non garanti — convention " — " via /milestone new, mais milestones plus
+# anciens/manuels parfois en " - " ou autre ; voir context/COMMON.md section 5.7). Seul compte
+# le caractere suivant le prefixe : ni chiffre ni point.
 gh api repos/{owner}/{repo}/milestones \
-  --jq '.[] | select(.title == "<version>" or (.title | startswith("<version> — ")))'
+  --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not))))'
 ```
 
 ### 3.2 Creer un milestone
@@ -161,7 +165,8 @@ gh api repos/{owner}/{repo}/milestones \
 ```bash
 # Recuperer d'abord le numero du milestone — matching par prefixe (voir 3.1)
 MILESTONE_NUM=$(gh api repos/{owner}/{repo}/milestones \
-  --jq '.[] | select(.title == "<version>" or (.title | startswith("<version> — "))) | .number')
+  --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))) | .number')
 
 # Cloturer
 gh api repos/{owner}/{repo}/milestones/$MILESTONE_NUM \
@@ -174,7 +179,8 @@ gh api repos/{owner}/{repo}/milestones/$MILESTONE_NUM \
 ```bash
 # Calcul : closed / (open + closed) * 100 — matching par prefixe (voir 3.1)
 gh api repos/{owner}/{repo}/milestones \
-  --jq '.[] | select(.title == "<version>" or (.title | startswith("<version> — "))) |
+  --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))) |
     {
       title,
       total: (.open_issues + .closed_issues),

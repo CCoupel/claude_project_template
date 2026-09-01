@@ -302,15 +302,18 @@ gh release create v1.2.0 --title "v1.2.0" --notes-file RELEASE_NOTES.md
 ### Etape 7 — Cloture du milestone (apres CI OK)
 
 Apres un deploiement PROD reussi, verifier si un milestone correspond a la version deployee.
-Le titre du milestone est `vX.Y.Z` ou `vX.Y.Z — <nom>` (section 5.7) — puisque `X.Y.Z` a ete
-fixe par ce meme milestone des l'ouverture du cycle, le matching se fait sur le **prefixe**
-`vX.Y.Z` (= `v$VERSION`), jamais sur le titre entier (le nom descriptif ne doit pas empecher
-le match) :
+Le titre du milestone est `vX.Y.Z` ou `vX.Y.Z<separateur><nom>` (section 5.7) — puisque
+`X.Y.Z` a ete fixe par ce meme milestone des l'ouverture du cycle, le matching se fait sur le
+**prefixe** `vX.Y.Z` (= `v$VERSION`), jamais sur le titre entier ni sur un separateur precis
+(convention `" — "` via `/milestone new`, mais milestones plus anciens/manuels parfois en
+`" - "` ou autre) — le nom descriptif ne doit pas empecher le match :
 
 ```bash
-# Chercher le milestone dont le prefixe version correspond a la version deployee
+# Chercher le milestone dont le prefixe version correspond a la version deployee (le caractere
+# suivant le prefixe, s'il existe, ne doit etre ni un chiffre ni un point)
 MILESTONE_JSON=$(gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.state==\"open\" and (.title == \"v$VERSION\" or (.title | startswith(\"v$VERSION — \"))))")
+  --jq --arg v "v$VERSION" '.[] | select(.state=="open" and (.title == $v or
+        ((.title | ltrimstr($v)) as $rest | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))))')
 TITLE=$(echo "$MILESTONE_JSON" | jq -r '.title')   # ex: "v1.4.0" ou "v1.4.0 — Authentification OAuth2"
 ```
 

@@ -99,10 +99,12 @@ Détecter si `$ARGUMENTS` correspond à un filtre (`label:`, `@me`, `milestone:`
 et traduire en flags `gh issue list` correspondants (`--label`, `--assignee @me`, `--milestone`).
 
 Pour `milestone:<version>` : `--milestone` de `gh` exige le titre exact, or `<version>` n'est
-qu'un préfixe (le titre réel peut porter un nom après " — "). Résoudre d'abord le titre complet :
+qu'un préfixe (le titre réel peut porter un nom après un séparateur non garanti). Résoudre
+d'abord le titre complet :
 ```bash
 TITLE=$(gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.title == \"<version>\" or (.title | startswith(\"<version> — \"))) | .title")
+  --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))) | .title')
 gh issue list --state open --milestone "$TITLE" --json number,title,labels,milestone,assignees,updatedAt
 ```
 Le filtre `milestone:<nom>` court-circuite le groupement (un seul milestone concerné, la

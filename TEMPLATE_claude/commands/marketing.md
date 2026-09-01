@@ -93,9 +93,12 @@ Dans la phase COLLECTE, recuperer les donnees du milestone correspondant a la ve
 
 ```bash
 # Milestone cloture correspondant a la version — matching par PREFIXE, jamais par titre exact
-# (le titre reel peut porter un nom descriptif apres " — ", voir context/COMMON.md section 5.7)
+# (le titre reel peut porter un nom descriptif apres un separateur non garanti — convention
+# " — " via /milestone new, mais milestones plus anciens/manuels parfois en " - " ou autre,
+# voir context/COMMON.md section 5.7)
 TITLE=$(gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.title == \"<version>\" or (.title | startswith(\"<version> — \"))) | .title")
+  --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))) | .title')
 
 # Issues fermees dans ce milestone (= ce qui a ete livre)
 gh issue list --milestone "$TITLE" --state closed \

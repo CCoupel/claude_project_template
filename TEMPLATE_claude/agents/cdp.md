@@ -97,7 +97,7 @@ La team est gérée par le Claude principal. Tous les agents sont **en IDLE depu
 |----------|--------|
 | Feature | planner + dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + infra + deployer |
 | Bugfix | dev(s) concernes + test-writer + code-reviewer + qa + doc-updater + infra + deployer |
-| Hotfix | dev(s) concernes + deployer |
+| Hotfix | dev(s) concernes + deployer + marketing (PREPARE systematique, voir Phase 6) |
 | Refactor | dev(s) concernes + test-writer + code-reviewer + qa |
 | Secu | security |
 | Deploy | infra + deployer |
@@ -506,21 +506,27 @@ SendMessage({ to: "infra", content: "
 ```
 - NOT VALIDATED → escalade utilisateur avec le rapport d'ecarts ← GATE 4c (aucune correction ici — retour Phase DEV)
 
-**Dispatch parallele — deploiement + preparation marketing (meme tour) :**
+**Dispatch systematique — deploiement + preparation marketing (meme tour), quel que soit le
+type de workflow (y compris Hotfix — voir aussi section "Dispatch selon le Type de Workflow") :**
 
 ```
 SendMessage({ to: "deployer", content: "
   Deploie en PROD la version [X.Y.Z].
   Workflow : squash merge → main → tag vX.Y.Z → push → monitoring CI.
 " })
-```
 
-Si un milestone `v[X.Y.Z]` correspond a la version cible : `CLEAR(marketing)` puis
-```
+CLEAR(marketing)
 SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z]" })
 ```
-La preparation marketing ne depend pas du resultat du deploiement — le contenu du milestone
-(issues fermees, labels) est deja fige avant le lancement de la CI.
+
+Le CDP ne verifie rien en amont — ni l'existence d'un milestone, ni son contenu. C'est l'agent
+marketing qui, en Phase PREPARE, resout lui-meme le milestone correspondant (par prefixe,
+jamais par titre exact — voir `marketing-release.md` section Tache PREPARE) et decide seul de
+la pertinence d'une publication : au moins une issue fermee labellisee
+`feature`/`enhancement`/`breaking` → prepare du contenu ; sinon (que des
+`fix`/`chore`/`refactor`, ou aucun milestone trouve → repli sur `CHANGELOG.md`) → rien a
+publier. La preparation marketing ne depend pas du resultat du deploiement — le contenu du
+milestone (issues fermees, labels) est deja fige avant le lancement de la CI.
 
 **Reponse de `marketing` (asynchrone, n'attend pas `deployer`) :**
 - `MARKETING RIEN A PUBLIER` → `TaskStop(marketing)`, rien d'autre a faire, aucune sollicitation utilisateur.
@@ -529,6 +535,7 @@ La preparation marketing ne depend pas du resultat du deploiement — le contenu
   ```
   Maquette de communication prete pour v[X.Y.Z] :
   [resume tire du rapport]
+  [Apercu visuel complet (site) : URL Artifact tiree du rapport, si un site marketing est concerne]
 
   Valider et publier des que le deploiement sera confirme ? [O/n]
   ```

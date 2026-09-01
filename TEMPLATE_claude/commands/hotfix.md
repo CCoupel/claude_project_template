@@ -122,6 +122,13 @@ Deploiement, mecanique identique a `agents/deploy.md` Workflow PROD (push de la 
 milestone, merge `--no-ff` vers `main`, tag `vX.Y.Z`, suivi CI, nettoyage remote de la branche
 a l'Etape 8 en cas de succes) — dispatcher `deployer` avec l'ordre PROD.
 
+**Preparation marketing — dispatch systematique en parallele, comme pour tout deploiement PROD**
+(voir `agents/cdp.template.md` Phase 6, meme mecanique GATE 4d / PUBLISH) : `CLEAR(marketing)`
+puis `SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z]" })` dans le meme tour que le
+dispatch `deployer`. Le hotfix peut embarquer plus que le simple correctif (regle "Aucune
+Livraison Partielle" ci-dessus) — c'est l'agent marketing qui decide seul, sur le contenu reel
+du milestone, s'il y a matiere a publier.
+
 ### 5. POST-MORTEM
 
 Apres le fix, documenter :

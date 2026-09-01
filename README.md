@@ -279,7 +279,7 @@ DEPLOY QUALIF            DOC (finalize) ── release notes + résultats QA, sa
     └──────────────────────────┘
     ↓  DEPLOY QUALIF incrémente `a` (deployer) · GATE 4 attend les DEUX DONE
 [GATE 4] Validation manuelle ── CDP présente les scénarios à tester
-    ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD (∥ marketing-release si milestone) → milestone si 100%
+    ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD (∥ marketing-release systématique) → milestone si 100%
     └─ NON → label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
 DEPLOY PROD ────────────────── merge → tag → surveille CI → succès : release + milestone
@@ -321,7 +321,7 @@ DOC (brouillon) ── CHANGELOG (Fixed)
     ↓
 DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
     ↓
-[GATE 4] OUI → issue fermée → DEPLOY PROD (∥ marketing-release si milestone)
+[GATE 4] OUI → issue fermée → DEPLOY PROD (∥ marketing-release systématique)
 ```
 
 ### Hotfix (urgence production)
@@ -331,7 +331,7 @@ DEV ── fix minimal uniquement
     ↓
 REVIEW rapide
     ↓
-DEPLOY PROD direct
+DEPLOY PROD direct (∥ marketing-release systématique)
     ↓
 DOC ── post-mortem
 ```
@@ -413,12 +413,17 @@ Après un déploiement PROD (CI OK), le CDP vérifie le milestone actif :
 
 ### Marketing en parallèle du déploiement
 
-Dès qu'un milestone `vX.Y.Z` correspond à la version cible, le CDP dispatche `marketing-release`
-**en parallèle du `deployer`**, sans attendre le résultat de la CI — le contenu du milestone
-(issues fermées, labels) est déjà figé avant le déploiement. L'agent vérifie s'il contient des
-issues avec un label visible utilisateur (`feature`, `enhancement`, `breaking`) : sans
-changement marquant (que des `fix`/`chore`/`refactor`), il s'arrête immédiatement, sans
-solliciter l'utilisateur.
+Le CDP dispatche systématiquement `marketing-release` **en parallèle du `deployer`** à chaque
+déploiement PROD — tous workflows confondus, y compris Hotfix — sans attendre le résultat de
+la CI et sans vérifier lui-même l'existence ou le contenu d'un milestone. C'est l'agent
+marketing qui, une fois lancé, résout lui-même le milestone correspondant à la version — par
+**préfixe**, jamais par titre exact (le titre peut porter un nom descriptif après le préfixe,
+séparateur non garanti, ex. `v8.0.0 — Mode RAFALE` ou `v8.0.0 - Mode RAFALE`) — et statue seul
+sur la pertinence d'une publication en examinant les changements réellement livrés : au moins
+une issue fermée avec un label visible utilisateur (`feature`, `enhancement`, `breaking`) →
+prépare du contenu ; sans changement marquant (que des `fix`/`chore`/`refactor`), ou aucun
+milestone trouvé (repli sur `CHANGELOG.md`), il s'arrête immédiatement, sans solliciter
+l'utilisateur.
 
 S'il y a lieu de publier, l'agent prépare le contenu (release notes, posts, site) **sans
 commit**, et le CDP relaie la maquette à l'utilisateur pour validation. La publication

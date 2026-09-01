@@ -81,9 +81,12 @@ Nom descriptif du milestone (optionnel, ex: "Authentification OAuth2") :
 ```bash
 # Derniere version prod connue (dernier tag, toutes lignes confondues)
 LAST_PROD=$(git tag --list 'v*' --sort=-v:refname | head -1)
-# Milestones existants dont le prefixe version correspond (titre = VERSION ou VERSION + " — ...")
+# Milestones existants dont le prefixe version correspond (titre = VERSION, ou VERSION suivi
+# d'un separateur non garanti + nom — jamais figer sur " — " precisement, seul le caractere
+# suivant le prefixe compte : ni chiffre ni point)
 gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.title == \"${VERSION}\" or (.title | startswith(\"${VERSION} — \")))"
+  --jq --arg v "${VERSION}" '.[] | select(.title == $v or ((.title | ltrimstr($v)) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not))))'
 ```
 - Si un tag existe deja pour `VERSION`, ou si un milestone dont le prefixe version est `VERSION` existe deja → alerter, ne pas creer :
   ```
@@ -247,15 +250,18 @@ Si aucune version precisee → utiliser le milestone avec le plus de progression
 
 ### Etape 1 — Identifier le milestone
 
-`<version>` designe toujours un prefixe `vX.Y.Z` — le titre reel peut porter un nom apres
-" — " (ex: `/milestone close v1.4.0` doit matcher `v1.4.0 — Authentification OAuth2`).
+`<version>` designe toujours un prefixe `vX.Y.Z` — le titre reel peut porter un nom apres un
+separateur non garanti (ex: `/milestone close v1.4.0` doit matcher aussi bien
+`v1.4.0 — Authentification OAuth2` que `v1.4.0 - Authentification OAuth2`).
 Le resultat de cette etape est `TITLE`, le titre exact du milestone trouve, utilise pour
 toutes les commandes `gh` suivantes (`--milestone` exige une correspondance exacte).
 
 ```bash
-# Avec version specifiee — matching par prefixe
+# Avec version specifiee — matching par prefixe (le caractere suivant le prefixe, s'il existe,
+# ne doit etre ni un chiffre ni un point — n'importe quel separateur est accepte)
 gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.title == \"<version>\" or (.title | startswith(\"<version> — \")))"
+  --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not))))'
 # → TITLE = .title du resultat
 
 # Sans version → le plus avance
@@ -328,7 +334,8 @@ Votre choix :
 ```bash
 # Verifier si le prochain milestone existe deja (matching par prefixe) → NEXT_TITLE
 gh api repos/{owner}/{repo}/milestones \
-  --jq ".[] | select(.title == \"<next-version>\" or (.title | startswith(\"<next-version> — \")))"
+  --jq '.[] | select(.title == "<next-version>" or ((.title | ltrimstr("<next-version>")) as $rest
+        | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not))))'
 
 # Si n'existe pas : creer (titre = version seule, pas de nom dans ce flux non-interactif)
 gh api repos/{owner}/{repo}/milestones --method POST -f title="<next-version>"
