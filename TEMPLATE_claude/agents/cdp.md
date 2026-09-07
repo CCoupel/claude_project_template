@@ -492,6 +492,10 @@ Selon la reponse utilisateur :
 
 ### Phase 6 — Deploiement PROD (via confirmation GATE 4)
 
+> Cette phase s'execute pour toute invocation de `/deploy prod`, qu'elle survienne en
+> confirmation GATE 4 en plein cycle CDP ou en commande directe hors cycle — aucune
+> distinction, meme protocole dans les deux cas (voir `commands/deploy.template.md`).
+
 > **Principe absolu : PROD = zero modification.**
 > A ce stade, code, tests, documentation et contrats sont figes et valides.
 > Le deploiement PROD est purement mecanique — aucune correction, aucun ajustement.

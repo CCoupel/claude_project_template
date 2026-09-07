@@ -89,7 +89,14 @@ En cas de probleme :
 
 ## Agent
 
-Dispatcher via `SendMessage` (teammate en IDLE depuis `/start-session`) :
+**QUALIF** — dispatch direct au teammate `deployer` (en IDLE depuis `/start-session`) :
 `SendMessage({to: "deployer", content: ...})`
+
+**PROD** — `/deploy prod` execute systematiquement la Phase 6 du CDP (validation infra PROD +
+dispatch `deployer` + preparation marketing en parallele, meme tour), **sans distinction entre
+une commande directe et une confirmation GATE 4 en plein cycle CDP** — les deux cas suivent
+exactement le meme chemin. Voir `agents/cdp.template.md` Phase 6 pour le protocole complet
+(reponses asynchrones, GATE 4d, condition de publication) et
+`agents/marketing-release.template.md` pour l'agent marketing.
 
 Spec : `.claude/agents/deploy.template.md` (+ `.claude/agents/deploy.md` si présent)
