@@ -481,8 +481,14 @@ Selon la reponse utilisateur :
   **Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV :**
   > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues (`--add-label "EN COURS" --remove-label "DONE"`)
   - dev-* et test-writer : **pas de CLEAR** — leur contexte est la carte exacte de ce qu'ils ont construit
-  - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater) avant redispatch
-  - La documentation reste valide pour le delta
+  - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater)
+  - Une fois REVIEW + QA a nouveau valides sur le fix, avant de repasser en GATE 4 :
+    redispatcher `doc-updater` (`DOC FINALIZE` — rattrapage), **sauf si le fix n'a aucun
+    impact documente ou observable** (ex : renommage interne, typo de commentaire).
+    Jugement laxiste — en cas de doute sur l'impact doc, redispatcher quand meme : le cout
+    d'un `doc-updater` inutile est negligeable face a un CHANGELOG perime jusqu'a PROD
+    (incident constate : 6+ rounds de fixes ont laisse le CHANGELOG figé sur le contenu du
+    batch initial, detecte tardivement par `deployer` en Phase 6 — voir `deploy.md` étape 1ter).
 
   **Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1 :**
   > `ISSUE_NUMS[]` non vide → reset label `PLANNING` sur toutes les issues (`--add-label "PLANNING" --remove-label "DONE"`)
