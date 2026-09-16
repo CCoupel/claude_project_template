@@ -474,7 +474,7 @@ Agents a generer :
 Commandes disponibles :
 - /feature, /bugfix, /hotfix, /refactor
 - /review, /qa, /secu
-- /deploy qualif, /deploy prod
+- /publish, /deploy qualif, /deploy prod
 
 Confirmer et generer ? (o/n)
 ```
@@ -483,21 +483,24 @@ Confirmer et generer ? (o/n)
 
 Ces comportements sont natifs au template — aucune configuration requise.
 
-### Déploiement PROD avec suivi CI actif
+### Publication (build once) puis Déploiement (installation, sans rebuild)
 
-`/deploy prod` ne se limite pas à pousser un tag. Le deployer surveille la CI jusqu'à
-complétion et gère les échecs de façon autonome :
+`/publish` construit l'artefact une seule fois et le pousse vers le registre — commun à
+QUALIF et PROD (principe BORE, jamais de rebuild entre les deux). `/deploy qualif` et
+`/deploy prod` installent ensuite cet artefact déjà publié sur la plateforme cible :
 
 ```
-merge → push tag → surveille CI (gh run watch)
+/publish  : build → push registre → surveille CI de build (gh run watch)
                         ↓
-              succès : release notes + milestone
+              succès : artefact disponible pour /deploy
               échec  :
                 ├── lire logs → classifier (CODE / FLAKY / CONFIG / INFRA)
-                ├── rollback adapté :
-                │     CODE/FLAKY  → revert merge + suppression du tag
-                │     CONFIG/INFRA → suppression du tag uniquement
-                └── rapport à main → main route vers l'agent responsable
+                └── rapport à main → main route vers l'agent responsable (dev/qa/infra)
+
+/deploy prod : merge → tag officiel (promotion, aucun rebuild) → installe l'artefact publié
+                        ↓
+              succès : release notes + milestone
+              échec  : rollback infra (rollout undo) → rapport à main
 ```
 
 Le deployer ne corrige jamais lui-même — il remonte les faits, `main` décide du routing.

@@ -20,7 +20,7 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 | `/feature` | FEATURE | Complet | Rattache a un milestone (nouveau ou existant) — `X.Y.Z` fixe par son titre |
 | `/bugfix` | BUGFIX | Simplifie | Milestone actif -> aucun changement (commits normaux) ; sinon -> milestone `X.Y.Z+1` cree automatiquement |
 | `/hotfix` | HOTFIX | Accelere | Milestone actif -> integre a celui-ci (commit direct sur sa branche) ; sinon -> milestone `X.Y.Z+1` dedie cree automatiquement |
-| `/refactor` | REFACTOR | Leger | Rattache au milestone actif — aucun changement de version (`a` gere par `deploy` au prochain deploiement QUALIF) |
+| `/refactor` | REFACTOR | Leger | Rattache au milestone actif — aucun changement de version (`a` gere par `deployer` a la prochaine publication) |
 
 ---
 
@@ -50,7 +50,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | Review | `code-reviewer` + `test-writer` (parallèle) |
 | QA | `qa` — par défaut en parallèle de Review (voir `QUALITY.md` section 12), dès `test-writer` DONE |
 | Doc | `doc-updater` |
-| Deploy QUALIF / PROD | `deployer` |
+| Publish / Deploy QUALIF / PROD | `deployer` |
 
 ---
 
@@ -71,7 +71,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | Review | Oui | Oui | Rapide | Oui |
 | QA | Complet | Regression | Critique | Complet |
 | Doc | Oui | Si majeur | Post-mortem | Non |
-| Deploy QUALIF | Oui | Oui | Optionnel | Oui |
+| Publish + Deploy QUALIF | Oui | Oui | Optionnel | Oui |
 
 ---
 
@@ -247,7 +247,7 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 > **Regle d'or** : on ne travaille jamais directement sur `main`. FEATURE/BUGFIX/HOTFIX/REFACTOR
 > commitent tous directement sur la branche du milestone actif (pas de sous-branche par cycle,
 > HOTFIX inclus) ; cette branche n'est mergee sur `main` qu'au deploiement PROD du milestone
-> (voir `agents/deploy.md` Workflow PROD etape 2). Un seul milestone est en developpement a la
+> (voir `agents/deploy.md` Tache DEPLOY PROD, etape 2). Un seul milestone est en developpement a la
 > fois (voir `context/COMMON.md` section 5.4) — HOTFIX/BUGFIX sans reference explicite
 > rejoignent ce milestone actif s'il existe, sinon un milestone dedie est cree automatiquement
 > (voir Phase Clarification etape 3c et Phase Versionnement ci-dessous).
@@ -280,11 +280,11 @@ Le milestone GitHub actif est la **seule source de vérité** pour `X.Y.Z` — p
 | Type | Condition | Action | Exemple |
 |------|-----------|--------|---------|
 | FEATURE | Toujours | Rattaché à un milestone (nouveau ou existant, `X.Y.Z` fixé par son titre) | milestone `v1.4.0` → dev `1.4.0.0` → prod `1.4.0` |
-| BUGFIX | Milestone actif | Intégré aux itérations du milestone : commit normal, sans toucher `{VERSION_FILE}`. `a` s'incrémente au prochain deploiement QUALIF, à la charge de `deploy` | milestone `v1.4.0` → dev `1.4.0.0` (fix inclus) → prod `1.4.0` |
+| BUGFIX | Milestone actif | Intégré aux itérations du milestone : commit normal, sans toucher `{VERSION_FILE}`. `a` s'incrémente à la prochaine publication (`/publish`), à la charge de `deployer` | milestone `v1.4.0` → dev `1.4.0.0` (fix inclus) → prod `1.4.0` |
 | BUGFIX | Aucun milestone actif | Milestone `X.Y.Z+1` créé automatiquement (Z+1 sur la dernière prod livrée) | dernière prod `1.4.0` → milestone `v1.4.1` créé → dev `1.4.1.0` → prod `1.4.1` |
 | HOTFIX | Milestone actif | Intégré au milestone en cours : commit direct sur sa branche `milestone/vX.Y.Z`, aucun nouveau milestone créé | milestone `v1.4.0` en cours → hotfix intégré → dev `1.4.0.x` → prod `1.4.0` |
 | HOTFIX | Aucun milestone actif | Milestone `X.Y.Z+1` dédié créé automatiquement (Z+1 sur la dernière prod livrée) | dernière prod `1.4.0` → milestone `v1.4.1` créé → dev `1.4.1.0` → prod `1.4.1` |
-| REFACTOR | — | Rattaché au milestone actif — aucun changement de version, `a` reste sous la seule responsabilité de `deploy` | `1.4.0.x` (inchangé en prod) |
+| REFACTOR | — | Rattaché au milestone actif — aucun changement de version, `a` reste sous la seule responsabilité de `deployer` (tâche PUBLISH) | `1.4.0.x` (inchangé en prod) |
 
 #### Règle — bug remonté sur une ancienne version prod
 
@@ -312,7 +312,7 @@ Toute recherche/comparaison de milestone par version porte sur le **préfixe** `
 titre entier (le nom ne doit jamais empêcher un matching).
 - Un cycle FEATURE crée/utilise le milestone GitHub `vX.Y.Z[ — nom]`, clôturé au deploy PROD (tag `vX.Y.Z` identique).
 - Un cycle BUGFIX/HOTFIX sans milestone actif crée automatiquement le milestone `vX.Y.(Z+1)` (sans nom, création non-interactive) — plus de cycle "hors milestone" qui patcherait silencieusement une livraison.
-- `deploy.template.md` lit `X.Y.Z` directement depuis `{VERSION_FILE}` à la promotion (déjà fixé par le milestone à l'ouverture du cycle) — aucun recalcul, et matche le milestone à clôturer par préfixe (voir `deploy.template.md` Étape 7).
+- `deploy.template.md` lit `X.Y.Z` directement depuis `{VERSION_FILE}` à la promotion (déjà fixé par le milestone à l'ouverture du cycle) — aucun recalcul, et matche le milestone à clôturer par préfixe (voir `deploy.template.md` Tâche DEPLOY PROD, Étape 6).
 
 ### Phase Plan
 
@@ -538,24 +538,27 @@ SendMessage({ to: "doc-updater", content: "
 |-- Recevoir DONE + ref handoff
 |-- CDP valide la conformité
     |-- Non conforme -> renvoyer pour correction
-    |-- Conforme     -> Phase Deploy QUALIF
+    |-- Conforme     -> Phase Publish + Deploy QUALIF
 ```
 
-### Phase Deploy QUALIF
+### Phase Publish + Deploy QUALIF
 
 ```
 // Dispatcher deployer — [branche] = branche milestone active (milestone/vX.Y.Z), commune a
-// FEATURE/BUGFIX/HOTFIX/REFACTOR
+// FEATURE/BUGFIX/HOTFIX/REFACTOR. Un seul message : deployer enchaine PUBLISH (build + push
+// registre, incremente `a` lui-meme) puis DEPLOY QUALIF (installation, pas de rebuild) avant
+// de repondre.
 SendMessage({ to: "deployer", content: "
-  Déploie en QUALIF.
+  Publie puis déploie en QUALIF.
   Branche : [branche]
   Version : [X.Y.Z]
   Handoff doc : _work/handoff/doc-updater-[timestamp].md
 " })
 
-|-- Recevoir DONE + rapport de déploiement
+|-- Recevoir DONE + rapport de publication/déploiement
 |-- CDP informe l'utilisateur : QUALIF déployée, scénarios de validation fournis
-|-- Deploy PROD : déclenché uniquement par commande explicite `/deploy prod`
+|-- Deploy PROD : déclenché uniquement par commande explicite `/deploy prod` (installe l'artefact
+    déjà publié, aucun rebuild)
 ```
 
 ---

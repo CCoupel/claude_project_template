@@ -68,7 +68,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `qa` | `qa` | Execution des tests et validation |
 | `security` | `security` | Audit securite |
 | `doc-updater` | `doc-updater` | Documentation |
-| `deployer` | `deploy` | Deploiement QUALIF/PROD |
+| `deployer` | `deploy` | Publication + Deploiement QUALIF/PROD |
 | `infra` | `infra` | Validation infra + procedures deploy |
 | `marketing` | `marketing-release` | Communication de release |
 | `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
@@ -419,9 +419,11 @@ SendMessage({ to: "infra", content: "
 **Si infra VALIDATED — dispatcher deployer + doc-updater dans le meme tour :**
 ```
 SendMessage({ to: "deployer", content: "
-  Deploie en QUALIF depuis la branche [branche].
-  Incremente toi-meme `a` avant le build (voir ton propre protocole, deploy.template.md) — n'attends pas de version fournie.
-  Retourne : DONE + version deployee [X.Y.Z.a] + statut des services + smoke tests OK/KO.
+  Publie puis deploie en QUALIF depuis la branche [branche].
+  Incremente toi-meme `a` avant le build (voir ton propre protocole, deploy.template.md — Tache PUBLISH)
+  — n'attends pas de version fournie. Enchaine PUBLISH puis DEPLOY QUALIF sans attendre de
+  nouvel ordre.
+  Retourne : DONE + version publiee/deployee [X.Y.Z.a] + statut des services + smoke tests OK/KO.
 " })
 
 SendMessage({ to: "doc-updater", content: "
@@ -521,8 +523,9 @@ type de workflow (y compris Hotfix — voir aussi section "Dispatch selon le Typ
 
 ```
 SendMessage({ to: "deployer", content: "
-  Deploie en PROD la version [X.Y.Z].
-  Workflow : squash merge → main → tag vX.Y.Z → push → monitoring CI.
+  Deploie en PROD la version [X.Y.Z] — l'artefact [X.Y.Z.a] est deja publie et valide en QUALIF.
+  Workflow : merge → main → tag officiel vX.Y.Z (promotion, aucun rebuild) → installation de
+  l'artefact deja publie → verification du rollout.
 " })
 
 CLEAR(marketing)
@@ -536,7 +539,7 @@ la pertinence d'une publication : au moins une issue fermee labellisee
 `feature`/`enhancement`/`breaking` → prepare du contenu ; sinon (que des
 `fix`/`chore`/`refactor`, ou aucun milestone trouve → repli sur `CHANGELOG.md`) → rien a
 publier. La preparation marketing ne depend pas du resultat du deploiement — le contenu du
-milestone (issues fermees, labels) est deja fige avant le lancement de la CI.
+milestone (issues fermees, labels) est deja fige avant le lancement du deploiement.
 
 **Reponse de `marketing` (asynchrone, n'attend pas `deployer`) :**
 - `MARKETING RIEN A PUBLIER` → `TaskStop(marketing)`, rien d'autre a faire, aucune sollicitation utilisateur.
@@ -554,7 +557,7 @@ milestone (issues fermees, labels) est deja fige avant le lancement de la CI.
   - Valide → `mockup_ok = true`.
 
 **Reponse de `deployer` :**
-- CI PROD OK → `deploy_ok = true`, poursuivre la cloture de milestone (ci-dessous).
+- Rollout PROD OK → `deploy_ok = true`, poursuivre la cloture de milestone (ci-dessous).
 - Echec → gestion d'echec standard du deployer. Si `marketing` a deja produit une maquette
   (PRET ou en attente de validation) → `TaskStop(marketing)` **sans jamais dispatcher `PUBLISH`**
   — rien n'est publie pour une release qui n'a pas ete livree.
@@ -567,7 +570,7 @@ deploy_ok == true ET mockup_ok == true
   → TaskStop(marketing)
 ```
 
-Apres CI PROD OK — verifier le milestone via GitHub MCP :
+Apres rollout PROD OK — verifier le milestone via GitHub MCP :
 ```
 mcp__plugin_github_github__issue_read — lister les issues ouvertes du milestone actif
 ```

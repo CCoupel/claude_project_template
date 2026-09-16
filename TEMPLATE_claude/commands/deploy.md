@@ -1,6 +1,8 @@
 # Commande /deploy
 
-Deployer l'application vers un environnement cible.
+Installer sur un environnement cible la version deja publiee via `/publish`. `/deploy` ne
+build jamais — voir `/publish` pour la construction/mise a disposition de l'artefact
+(principe BORE, `agents/infra.md` section 3).
 
 ## Usage
 
@@ -45,11 +47,11 @@ Sinon -> workflow normal.
 ## Prerequis
 
 ### Pour QUALIF
-- [ ] Tests QA passes
-- [ ] Build reussi
+- [ ] Version publiee disponible (`/publish` execute)
 
 ### Pour PROD
 - [ ] QUALIF validee
+- [ ] Version publiee disponible (`/publish` execute)
 - [ ] Tests complets OK
 - [ ] Documentation a jour
 - [ ] Confirmation utilisateur
@@ -60,7 +62,7 @@ Sinon -> workflow normal.
 /deploy qualif
     |
     v
-Build --> Push --> Smoke Tests --> Notification
+Install (artefact publie) --> Smoke Tests --> Notification
 ```
 
 ## Workflow PROD
@@ -69,7 +71,7 @@ Build --> Push --> Smoke Tests --> Notification
 /deploy prod
     |
     v
-Confirmation --> Verification Doc --> Merge main --> Tag --> CI/CD
+Confirmation --> Verification Doc --> Merge main --> Tag officiel (promotion, pas de rebuild) --> Install (artefact publie)
     |
     |-- SI OK --> Release Notes --> Monitoring
     |
@@ -77,6 +79,7 @@ Confirmation --> Verification Doc --> Merge main --> Tag --> CI/CD
 ```
 
 > **Verification Doc** : CHANGELOG.md et README/docs concernes doivent etre a jour avant le merge (voir `.claude/agents/deploy.template.md`).
+> Le tag officiel `vX.Y.Z` est un marqueur de release, jamais un declencheur de build — l'artefact installe est celui produit par `/publish` et deja valide en QUALIF.
 
 ## Rollback
 
@@ -95,8 +98,9 @@ En cas de probleme :
 **PROD** — `/deploy prod` execute systematiquement la Phase 6 du CDP (validation infra PROD +
 dispatch `deployer` + preparation marketing en parallele, meme tour), **sans distinction entre
 une commande directe et une confirmation GATE 4 en plein cycle CDP** — les deux cas suivent
-exactement le meme chemin. Voir `agents/cdp.template.md` Phase 6 pour le protocole complet
-(reponses asynchrones, GATE 4d, condition de publication) et
+exactement le meme chemin. Le `deployer` installe l'artefact deja publie par `/publish`
+(Phase 5) — aucun rebuild n'est declenche par `/deploy prod`. Voir `agents/cdp.template.md`
+Phase 6 pour le protocole complet (reponses asynchrones, GATE 4d, condition de publication) et
 `agents/marketing-release.template.md` pour l'agent marketing.
 
-Spec : `.claude/agents/deploy.template.md` (+ `.claude/agents/deploy.md` si présent)
+Spec : `.claude/agents/deploy.template.md` (+ `.claude/agents/deploy.md` si présent) — voir Tache DEPLOY QUALIF / DEPLOY PROD
