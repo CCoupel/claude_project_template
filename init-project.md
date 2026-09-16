@@ -115,10 +115,14 @@ fi
 KNOWN_COMMIT=$([ -f TEMPLATE_claude/.template-source.json ] && \
   cat TEMPLATE_claude/.template-source.json | jq -r '.commit // ""' || echo "")
 
-LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/$TEMPLATE_BRANCH --jq '.sha')
+# Reference = le commit du dernier TAG (pas le HEAD de branche) : un commit
+# non tagge est une version intermediaire non stabilisee, elle ne doit ni
+# etre proposee en mise a jour ni etre deployee.
+LATEST_TAG=$(gh api repos/$TEMPLATE_REPO/tags --jq '.[0].name // empty')
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/tags --jq '.[0].commit.sha // empty')
 
 if [ "$KNOWN_COMMIT" = "$LATEST_COMMIT" ]; then
-  echo "Template deja a jour ($LATEST_COMMIT)"
+  echo "Template deja a jour ($LATEST_TAG - $LATEST_COMMIT)"
   # Continuer quand meme (fichiers peuvent etre absents si gitignores)
 fi
 ```
@@ -126,12 +130,14 @@ fi
 #### 3. Fetcher TEMPLATE_claude/ depuis GitHub
 
 ```bash
-gh api repos/$TEMPLATE_REPO/git/trees/$TEMPLATE_BRANCH?recursive=1 \
+# Fetch au commit du tag resolu a l'etape precedente (pas la branche) : les
+# fichiers deployes viennent toujours d'une version stabilisee et taggee.
+gh api repos/$TEMPLATE_REPO/git/trees/$LATEST_COMMIT?recursive=1 \
   --jq '.tree[] | select(.type=="blob") | .path' \
   | grep -E '^TEMPLATE_claude/' \
   | while read FILE; do
       mkdir -p "$(dirname $FILE)"
-      gh api repos/$TEMPLATE_REPO/contents/$FILE \
+      gh api "repos/$TEMPLATE_REPO/contents/$FILE?ref=$LATEST_COMMIT" \
         --jq '.content' | base64 -d > "$FILE"
       echo "  ✓ $FILE"
     done
@@ -182,11 +188,12 @@ cat > TEMPLATE_claude/.template-source.json <<EOF
 {
   "repo": "$TEMPLATE_REPO",
   "branch": "$TEMPLATE_BRANCH",
+  "tag": "$LATEST_TAG",
   "commit": "$LATEST_COMMIT",
   "synced_at": "$TODAY"
 }
 EOF
-echo "✓ TEMPLATE_claude/.template-source.json mis a jour ($LATEST_COMMIT)"
+echo "✓ TEMPLATE_claude/.template-source.json mis a jour ($LATEST_TAG - $LATEST_COMMIT)"
 ```
 
 ---
@@ -1192,9 +1199,9 @@ Le fetcher depuis la racine du repo GitHub pour que les projets existants reçoi
 les mises à jour (Message de Fin, corrections de bugs, etc.) :
 
 ```bash
-gh api repos/$TEMPLATE_REPO/contents/init-project.md \
+gh api "repos/$TEMPLATE_REPO/contents/init-project.md?ref=$LATEST_COMMIT" \
   --jq '.content' | base64 -d > .claude/commands/init-project.md
-echo "  ✓ .claude/commands/init-project.md mis à jour (depuis racine repo)"
+echo "  ✓ .claude/commands/init-project.md mis à jour (depuis le tag $LATEST_TAG)"
 ```
 
 **Option A uniquement — Supprimer les reliquats :**
