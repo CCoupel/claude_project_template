@@ -179,291 +179,127 @@ Probleme : [compilation | tests | lint]"
 })
 ```
 
-## Tache PUBLISH QUALIF
+## Fichiers d'Environnement (mecanisme concret par tache × environnement)
 
-Mecanisme : **promotion** (voir `agents/infra.md` section 3) — reutilise tel quel le candidat
-produit par BUILD, zero rebuild. Mecanisme declare dans `.claude/project-config.json` ->
-`infrastructure.environments[].publish.mode = "promote"` pour QUALIF.
+La mecanique concrete de PUBLISH et DEPLOY (commandes exactes : docker/helm/vps/serverless...)
+ne vit plus dans ce fichier — elle est propre a chaque couple tache×environnement et vit dans
+`.claude/agents/environments/`, generes a l'init du projet depuis
+`TEMPLATE_claude/templates/environments/` selon le mecanisme choisi
+(`infrastructure.environments[].publish.mode` / `.deploy.mechanism` dans
+`.claude/project-config.json`) :
 
 ```
-/publish qualif
+.claude/agents/environments/
+├── publish.<env>.template.md   (+ compagnon publish.<env>.md si present — adaptations projet)
+└── deploy.<env>.template.md    (+ compagnon deploy.<env>.md si present)
+```
+
+`<env>` = nom de l'environnement (`infrastructure.environments[].name`) normalise : minuscules,
+espaces/underscores → tirets (ex. `PRE-PROD` → `pre-prod`). BUILD n'a pas de fichier
+d'environnement — il reste seul, agnostique (voir Tache BUILD ci-dessus).
+
+### Variables et secrets
+
+Deux niveaux, jamais commites en clair (voir `.claude/gitignore-for-projects` genere) :
+
+```
+.env                                         # globales — applicatif ET infra, communes a tous
+.claude/agents/environments/<env>.env        # specifiques a <env> — surchargent .env
+```
+
+Charger dans cet ordre, avant l'etape [2. MECANISME] (le specifique surcharge le global — un
+meme nom dans les deux fichiers, la valeur de `<env>.env` gagne) :
+
+```bash
+set -a
+[ -f .env ] && source .env
+[ -f ".claude/agents/environments/${ENV_LOWER}.env" ] && source ".claude/agents/environments/${ENV_LOWER}.env"
+set +a
+```
+
+Chaque fichier `.claude/agents/environments/{publish,deploy}.<env>.template.md` documente dans
+sa section "Variables attendues" les noms qu'il utilise (ex. `KUBE_CONTEXT`, `SSH_HOST`,
+`REGISTRY_USER`) — jamais les valeurs. Le compagnon committe `<env>.env.example` (genere a
+l'init, voir `init-project.md` section 3bis) liste ces memes noms avec des valeurs vides ; le
+`<env>.env` reel (valeurs completees par le projet, jamais commite) n'est jamais genere
+automatiquement.
+
+Si une variable attendue est absente au moment de l'executer : STOP, remonter a `main` — ne
+jamais deviner ou coder une valeur en dur.
+
+Avant chaque etape [2. MECANISME] des taches PUBLISH/DEPLOY ci-dessous : charger les variables
+(ci-dessus), lire le fichier d'environnement correspondant (+ son compagnon s'il existe, les
+adaptations projet prevalent) et executer sa procedure telle quelle. Les variables
+`$REPO_ROOT`, `$DIR_VERSION`, `$VERSION`, `$BUILD_DIR` etablies en Tache BUILD restent
+disponibles (meme session d'agent). Si le fichier de procedure attendu est absent, STOP et
+remonter a `main` — ne jamais improviser une procedure de remplacement.
+
+> Distinct de la procedure (toujours generee a l'init, jamais absente) : l'**artefact** qu'elle
+> cible (`deploy.target`/`publish.target`, ex. `docker-compose.qualif.yml`, chart Helm) peut ne
+> pas encore exister au premier deploiement sur un environnement — `/init-project` ne scaffold
+> que la procedure, jamais l'artefact. C'est le role de `infra` (Mode Validation, appele par le
+> CDP avant chaque PUBLISH/DEPLOY) de le creer si absent, avant que `deployer` n'execute la
+> procedure — `deployer` ne gere jamais lui-meme cette absence.
+
+## Tache PUBLISH <env>
+
+```
+/publish <env>
     |
     v
-[1. VERIFICATION] -- Un candidat BUILD existe pour cette version ?
-    |
+[1. VERIFICATION] -- Un candidat BUILD (ou une publication validee sur l'environnement
+    |                 precedent de la chaine) existe pour cette version ?
     v
-[2. PROMOTION] -- Copie/push du candidat vers l'emplacement QUALIF (dossier ou registre interne)
+[2. MECANISME] -- Lire et executer .claude/agents/environments/publish.<env>.template.md
     |
     v
 [3. NOTIFICATION] -- PUBLISH DONE
 ```
 
-```bash
-# 1. Verification
-test -d "$REPO_ROOT/build/candidate_v$DIR_VERSION" || { echo "Aucun candidat trouve — executer /build d'abord"; exit 1; }
+Le mecanisme (etape 2) determine tout le reste : mode `promote` (copie/push sans rebuild,
+generalement QUALIF) ou `rebuild-ci` (merge + tag officiel + rebuild deterministe via CI,
+generalement PROD — voir `agents/infra.md` section 3). C'est le fichier d'environnement qui
+porte la determination de version, la verification documentation, le protocole d'echec
+(classification CODE/FLAKY/CONFIG/INFRA pour `rebuild-ci`) et le rollback specifiques a ce
+mecanisme — ne rien dupliquer ici.
 
-# 2. Promotion — meme nommage de dossier que l'ancien emplacement PUBLISH, desormais
-# explicitement l'emplacement "rendu disponible pour QUALIF" (dossier non gitte, a la racine
-# du repo, SANS `a` dans son nom ; artefact AVEC `a`) :
-QUALIF_DIR="$REPO_ROOT/build/qualif_v$DIR_VERSION"
-mkdir -p "$QUALIF_DIR"
-cp "$BUILD_DIR/app-$VERSION.tar.gz" "$QUALIF_DIR/app-$VERSION.tar.gz"
-# ou (Docker, promotion = push de l'image deja construite en BUILD, pas de rebuild) :
-#   docker push registry/app:$VERSION
-# ou (depot interne) :
-#   git push origin develop:qualif
+**Hotfix** (voir Mode Teammates) : pour PUBLISH PROD specifiquement, le prerequis "publication
+validee sur l'environnement precedent" est leve — le candidat vient directement de BUILD.
 
-# 3. Notification
-echo "Publication QUALIF terminee - $VERSION -> $QUALIF_DIR/app-$VERSION.tar.gz"
-```
-
-Echec ici : verification a une ligne, pas de table de classification (pas de CI impliquee) —
-artefact candidat manquant -> `dev`/BUILD ; cible de copie/registre inaccessible -> `infra`.
-
-## Tache PUBLISH PROD
-
-Mecanisme : **rebuild deterministe** (voir `agents/infra.md` section 3) — merge vers `main` +
-tag officiel, qui declenche la CI. La CI reconstruit depuis exactement la meme source figee
-(le tag), en suivant l'unique pipeline — reproductible, mais recalcule, jamais un build ad hoc.
-Mecanisme declare dans `.claude/project-config.json` ->
-`infrastructure.environments[].publish.mode = "rebuild-ci"` pour PROD.
+## Tache DEPLOY <env>
 
 ```
-/publish prod
+/deploy <env>
     |
     v
-[1. VERIFICATION] -- Prerequis + publication QUALIF validee (sauf hotfix, voir Mode Teammates)
+[1. VERIFICATION] -- Une publication existe pour cette version sur <env> ?
     |
     v
-[1bis. DOCUMENTATION] -- Verification doc finalisee (CHANGELOG, README, docs API)
+[2. MECANISME] -- Lire et executer .claude/agents/environments/deploy.<env>.template.md
     |
     v
-[2. PROMOTION] -- Merge branche travail -> main, tag officiel vX.Y.Z
-    |
-    v
-[3. DECLENCHEMENT CI] -- Push du tag officiel : declenche le rebuild deterministe
-    |
-    v
-[4. NOTIFICATION] -- PUBLISH DONE
+[3. NOTIFICATION] -- DEPLOY DONE
 ```
 
-### Etapes Detaillees
+Aucun build, aucune publication ici — l'artefact installe est exactement celui rendu disponible
+par la derniere tache PUBLISH de cet environnement (principe BORE, jamais de rebuild ni de
+retag au moment du DEPLOY). Le fichier d'environnement porte l'installation, la verification du
+rollout/smoke tests et le rollback infra specifiques au mecanisme choisi (docker-compose, helm,
+vps, serverless...) — ne rien dupliquer ici.
+
+Pour DEPLOY PROD specifiquement, en cas de succes : creer les notes de release (ci-dessous),
+puis poursuivre vers l'Etape 5 (cloture milestone) et l'Etape 6 (nettoyage branche) —
+generiques, independantes du mecanisme, communes a tous les projets quel que soit le mecanisme
+de deploiement choisi.
+
+### Etape 4bis — Notes de release (apres installation PROD reussie)
 
 ```bash
-# 1. Verification
-# Prerequis confirmes par le CDP avant cet ordre. Une publication QUALIF (X.Y.Z.a) valide doit
-# exister — sauf hotfix, ou ce candidat vient directement de BUILD (pas de QUALIF).
-
-# 1bis. Determination de la version prod cible
-# X.Y.Z est fixe integralement par le milestone (regle complete : commands/context/COMMON.md
-# section 5.7, fichier distinct non accessible depuis cet agent). {VERSION_FILE} porte deja
-# ce X.Y.Z depuis l'ouverture du cycle — aucun calcul, on retire uniquement le compteur
-# de build "a" pour obtenir la version officielle.
-DEV_VERSION=$(cat {VERSION_FILE})       # ex: 1.4.0.3 — c'est l'artefact deja publie et valide
-VERSION=$(echo "$DEV_VERSION" | cut -d. -f1-3)   # X.Y.Z, ex: 1.4.0
-# Ecrire $VERSION dans {VERSION_FILE} avant le merge
-
-# 1ter. Verification documentation (avant merge)
-# En orchestration CDP : le doc-updater a deja fait le DOC FINALIZE (Phase 5) — verifier juste la reception du DONE.
-# En usage standalone (/publish prod hors CDP) : verifier manuellement que la doc est a jour, sinon STOP.
-grep -q "$DEV_VERSION" CHANGELOG.md || {
-  echo "CHANGELOG.md non mis a jour pour cette version — STOP, retour doc-updater avant de continuer."
-  exit 1
-}
-# README/docs concernes : verifier manuellement qu'ils refletent les changements de ce release.
-
-# 2. Promotion (sans supprimer la branche de travail) — la branche de travail est la branche
-# milestone (milestone/vX.Y.Z), qui a accueilli tout le cycle FEATURE/BUGFIX/REFACTOR ;
-# ce merge est le SEUL moment ou ce travail rejoint main.
-#
-# Securite : pousser d'abord l'etat local exact de la branche milestone — un commit local
-# peut exister depuis la derniere publication (ex: fix mineur post-QUALIF, suivi d'un nouveau
-# /build) sans avoir encore ete pousse (voir context/COMMON.md section 7.1). Garantit que le
-# rollback en cas d'echec (ci-dessous) dispose de l'etat exact merge, avant la suppression de
-# la branche distante en cas de succes (voir Tache DEPLOY PROD, Etape 6).
-git push origin milestone/vX.Y.Z
-git checkout main
-git merge --no-ff milestone/vX.Y.Z -m "Release v$VERSION"
-git push origin main
-
-# 3. Tag officiel — desormais LE declencheur du rebuild deterministe (voir agents/infra.md,
-# pattern CI/CD). Le pipeline CI est configure sur `tags: ['v*']` : ce push de tag lance le
-# job de build, qui reconstruit depuis ce commit fige et publie le resultat (registre / GitHub
-# Release). Plus de distinction candidat/officiel a gerer ici — PUBLISH QUALIF ne passe plus
-# par un tag ni par la CI, seul PUBLISH PROD la declenche.
-git tag -a "v$VERSION" -m "Release v$VERSION"
-git push origin "v$VERSION"
-
-sleep 5
-RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
-gh run watch "$RUN_ID" --exit-status
-CI_STATUS=$?
+gh release create "v$VERSION" --title "v$VERSION" --notes-file RELEASE_NOTES.md
 ```
 
-**CI_STATUS = 0 → continuer vers Notification.**
-
-**CI_STATUS ≠ 0 → executer le protocole d'echec ci-dessous.**
-
-#### Protocole d'echec PUBLISH PROD
-
-Le deployer ne corrige rien lui-même. Il identifie l'agent responsable et remonte à `main`.
-
-**Classifier :**
-
-```bash
-gh run view "$RUN_ID" --log-failed
-```
-
-| Catégorie | Indicateurs dans les logs | Build fiable ? | Agent responsable |
-|-----------|--------------------------|------------------------|-------------------|
-| **CODE** | Compilation échoue, tests régressent, lint | Non | `dev` |
-| **FLAKY** | Timeout réseau, service tiers, race condition | Oui (retry) | `qa` |
-| **CONFIG** | Secret manquant, variable absente, mauvais path | Oui | `infra` |
-| **INFRA** | Registry inaccessible, runner hors ligne, quota | Oui | `infra` |
-
-**Rapport à main :**
-
-```
-SendMessage({
-  to: "main",
-  content: "PUBLISH FAILED
-Environnement : PROD
-Version  : v[X.Y.Z]
-Catégorie: [CODE|FLAKY|CONFIG|INFRA]
-Run CI   : #[RUN_ID] — gh run view [RUN_ID] --log-failed"
-})
-```
-
-`main` analyse le rapport et décide du routing et de la suite. En cas d'echec, le merge/tag
-sont annules (voir Rollback PUBLISH PROD ci-dessous) — aucun artefact partiellement publié ne
-doit rester référençable.
-
-```bash
-# 4. Notification
-echo "Publication PROD terminee - v$VERSION (tag pousse, CI OK)"
-```
-
-## Tache DEPLOY QUALIF
-
-```
-/deploy qualif
-    |
-    v
-[1. VERIFICATION] -- Une publication existe pour cette version sur QUALIF ?
-    |
-    v
-[2. INSTALL] -- Installer l'artefact publie sur la plateforme QUALIF
-    |
-    v
-[3. SMOKE TESTS] -- Tests de base
-    |
-    v
-[4. NOTIFICATION] -- DEPLOY DONE
-```
-
-Aucun build ni publication ici — l'artefact `X.Y.Z.a` installe est exactement celui rendu
-disponible par la derniere tache PUBLISH QUALIF.
-
-```bash
-# 1. Verification
-test -f "$QUALIF_DIR/app-$VERSION.tar.gz" || { echo "Aucune publication QUALIF trouvee — executer /publish qualif d'abord"; exit 1; }
-
-# 2. Install — deploiement de l'artefact deja publie sur la plateforme QUALIF
-docker pull registry/app:$VERSION && docker-compose -f docker-compose.qualif.yml up -d
-# ou : rsync/scp de l'artefact vers le serveur qualif, puis restart du service
-
-# 3. Smoke tests
-curl -f https://qualif.example.com/health
-
-# 4. Notification
-echo "Deploiement QUALIF termine - $VERSION"
-```
-
-## Tache DEPLOY PROD
-
-```
-/deploy prod
-    |
-    v
-[1. VERIFICATION] -- Une publication PROD existe pour cette version ?
-    |
-    v
-[2. INSTALL] -- Installer sur PROD l'artefact publie par PUBLISH PROD
-    |
-    |-- SI OK ---> [3. RELEASE] -- Notes de release
-    |
-    |-- SI ECHEC -> [ROLLBACK] -- Rollback infra (voir section Rollback)
-    |
-    v
-[4. MONITORING] -- Surveillance post-deploy
-```
-
-Aucun build, aucun merge, aucun tag ici — tout cela a deja eu lieu dans PUBLISH PROD. DEPLOY
-PROD installe uniquement ce que la CI a produit et publie a cette occasion.
-
-### Etapes Detaillees PROD
-
-```bash
-# 1. Verification
-# Prerequis confirmes par le CDP avant cet ordre. Une publication PROD (tag v$VERSION, CI OK)
-# doit exister — DEPLOY PROD ne build jamais, ne merge jamais, ne tague jamais : il installe
-# l'artefact que PUBLISH PROD a deja rendu disponible.
-
-# 2. Installation sur PROD de l'artefact publie par PUBLISH PROD (registry/app:$VERSION)
-# BORE : jamais de rebuild ici, jamais de retag qui re-uploaderait un nouveau contenu.
-docker pull registry/app:$VERSION && docker-compose -f docker-compose.prod.yml up -d
-# ou (K8s) : kubectl set image deployment/app app=registry/app:$VERSION
-# ou (Helm) : helm upgrade --install app helm/app/ --set image.tag=$VERSION -f custom-values.yaml
-
-# 3. Verifier le rollout
-kubectl rollout status deployment/app --timeout=5m
-ROLLOUT_STATUS=$?
-```
-
-**ROLLOUT_STATUS = 0 → continuer vers Release notes.**
-
-**ROLLOUT_STATUS ≠ 0 → exécuter le protocole d'échec ci-dessous.**
-
----
-
-#### Protocole d'échec DEPLOY PROD
-
-Le deployer ne corrige rien lui-même. Il rollback l'infra, et remonte à `main`. La publication
-(tache PUBLISH PROD) ayant déjà réussi (CI verte), un échec ici est toujours un échec
-d'installation/rollout — jamais un échec de code ni de build.
-
-**Rollback infra :**
-
-```bash
-kubectl rollout undo deployment/app
-# ou
-docker-compose -f docker-compose.prod.yml up -d --force-recreate app:$PREVIOUS_VERSION
-```
-
-> Si la mauvaise version a ete promue (merge/tag errones), voir Rollback PUBLISH PROD
-> ci-dessous — DEPLOY PROD ne touche jamais lui-meme au merge/tag.
-
-**Rapport à main :**
-
-```
-SendMessage({
-  to: "main",
-  content: "DEPLOY FAILED
-Version  : v[X.Y.Z]
-Etape    : Installation PROD
-Rollback : rollout undo"
-})
-```
-
-`main` analyse le rapport et décide du routing et de la suite.
-
-```bash
-# 3bis. Si rollout OK : Release notes
-gh release create v1.2.0 --title "v1.2.0" --notes-file RELEASE_NOTES.md
-
-# 4. Monitoring post-deploy
-# Verifier logs, metriques, alertes
-```
+Puis surveillance post-deploy generique (logs, metriques, alertes — outillage propre au projet,
+non couvert ici).
 
 ### Etape 5 — Cloture du milestone (apres installation PROD reussie)
 
@@ -532,40 +368,27 @@ git push origin --delete milestone/vX.Y.Z
 
 ## Rollback
 
-Trois niveaux distincts selon l'étape en échec :
+Trois niveaux distincts selon l'étape en échec — la mécanique concrète de chacun vit désormais
+dans les fichiers d'environnement (§ "Fichiers d'Environnement" ci-dessus), pas ici :
 
 ### Rollback BUILD (échec de compilation/tests, local)
 
 Local, sans artefact publié nulle part — pas de rollback a proprement parler : corriger
 (agent responsable : `dev`), puis `/build` a nouveau.
 
-### Rollback PUBLISH PROD (échec de merge/tag/CI — jamais de rebuild)
+### Rollback PUBLISH <env>
 
-```bash
-# Le merge et le tag de la publication échouée sont annulés
-git checkout main
-git revert HEAD --no-edit
-git push origin main
-git tag -d v[X.Y.Z]
-git push origin --delete v[X.Y.Z]
-# Correction : agent responsable (voir Protocole d'échec PUBLISH PROD), puis /publish prod a nouveau
-```
+Voir la section "Rollback" de `.claude/agents/environments/publish.<env>.template.md` — pour le
+mécanisme `rebuild-ci` (typiquement PROD), annule le merge/tag ; pour `promote` (typiquement
+QUALIF), supprime le contenu déjà copié. Correction par l'agent responsable (voir "Echec" du
+même fichier), puis `/publish <env>` à nouveau.
 
-### Rollback DEPLOY (échec d'installation/rollout — jamais de rebuild ni de republication)
+### Rollback DEPLOY <env>
 
-```bash
-# Option 1 : rollback infra (le plus courant — l'artefact precedent est deja dans le registre)
-kubectl rollout undo deployment/app
-# ou
-docker-compose up -d --force-recreate app:v1.1.0
-
-# Option 2 : revert du merge/tag PROD (si la mauvaise version a ete promue — voir Rollback PUBLISH PROD)
-git checkout main
-git revert HEAD --no-edit
-git push origin main
-git tag -d v[X.Y.Z]
-git push origin --delete v[X.Y.Z]
-```
+Voir la section "Rollback" de `.claude/agents/environments/deploy.<env>.template.md` — rollback
+infra propre au mécanisme (`kubectl rollout undo`, `docker-compose up --force-recreate`,
+`helm rollback`...). Si la mauvaise version a été promue en PUBLISH (merge/tag erronés), voir
+Rollback PUBLISH ci-dessus plutôt que de corriger au niveau DEPLOY.
 
 ## Checklist Pre-Publication / Pre-Deploiement
 
@@ -594,8 +417,10 @@ git push origin --delete v[X.Y.Z]
 
 ## Configuration par Environnement
 
-Mecanisme publish/deploy lu depuis `.claude/project-config.json` ->
-`infrastructure.environments[]`. Exemple par defaut (2 environnements) :
+Mecanisme publish/deploy declare dans `.claude/project-config.json` ->
+`infrastructure.environments[]` ; procedure concrete correspondante dans
+`.claude/agents/environments/{publish,deploy}.<env>.template.md` (voir "Fichiers
+d'Environnement" ci-dessus). Exemple par defaut (2 environnements) :
 
 | Element | QUALIF | PROD |
 |---------|--------|------|

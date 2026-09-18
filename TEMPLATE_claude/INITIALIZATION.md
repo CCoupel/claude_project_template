@@ -484,6 +484,10 @@ Agents a generer :
 - dev-backend.template.md (Go)
 - dev-frontend.template.md (React)
 
+Fichiers d'environnement a generer :
+- publish.qualif.template.md (promote), deploy.qualif.template.md (docker-compose)
+- publish.prod.template.md (rebuild-ci), deploy.prod.template.md (docker-compose)
+
 Commandes disponibles :
 - /feature, /bugfix, /hotfix, /refactor
 - /review, /qa, /secu
@@ -525,6 +529,13 @@ sans jamais builder ni publier :
 ```
 
 Le deployer ne corrige jamais lui-même — il remonte les faits, `main` décide du routing.
+
+La mécanique concrète (commandes exactes) de PUBLISH et DEPLOY ne vit plus dans l'agent
+`deploy.md` — elle est générée à l'init, un fichier par tâche × environnement, dans
+`.claude/agents/environments/{publish,deploy}.<env>.template.md`, à partir de
+`TEMPLATE_claude/templates/environments/` selon le mécanisme choisi pour chaque environnement
+(`infrastructure.environments[].publish.mode` / `.deploy.mechanism`). `<env>` est le nom de
+l'environnement normalisé (minuscules, espaces/underscores → tirets).
 
 ### Séparation template / adaptations projet
 

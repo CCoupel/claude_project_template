@@ -54,6 +54,8 @@ TEMPLATE_claude/             # Racine de tous les composants template
     ├── dev-frontend-react.md
     ├── dev-frontend-vue.md
     ├── dev-firmware-esp32.md
+    ├── environments/         # Templates publish/deploy par mecanisme (promote, rebuild-ci,
+    │                         # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
     └── workflows/
         └── release-go-react.yml
 ```
@@ -71,6 +73,8 @@ Projet cible
 └── .claude/
     ├── commands/            # Générés depuis TEMPLATE_claude/commands/
     ├── agents/dev-*.md      # Générés selon la stack — trackés
+    ├── agents/environments/{publish,deploy}.<env>.md  # Générés selon publish/deploy
+    │                        # par environnement — trackés (voir infrastructure.environments[])
     ├── CLAUDE.md            # Généré depuis TEMPLATE_claude/CLAUDE_TEMPLATE.md
     ├── project-config.json  # Créé par /init-project
     └── memory/

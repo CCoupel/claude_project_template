@@ -84,6 +84,7 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/agents/*.template.md` | Agents template (jamais édités) | Non (gitignore) |
 | `.claude/agents/*.md` | Adaptations projet par agent | Oui |
 | `.claude/agents/dev-*.md` | Agents projet (stack-spécifique) | Oui |
+| `.claude/agents/environments/{publish,deploy}.<env>.md` | Fichiers publish/deploy par environnement (mécanisme spécifique, un par tâche × environnement) | Oui |
 | `.claude/{agents,commands}/context/*.template.md` | Contextes partagés template (jamais édités) | Non (gitignore) |
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
@@ -180,6 +181,8 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
     ├── dev-frontend-react.md
     ├── dev-frontend-vue.md
     ├── dev-firmware-esp32.md
+    ├── environments/             # Templates publish/deploy par mécanisme (promote, rebuild-ci,
+    │                             # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
     └── workflows/
         └── release-go-react.yml
 ```
@@ -205,7 +208,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) + vérification couverture des contrats |
 | `qa` | Exécution des tests et validation (unit/integration/E2E/perf) |
 | `infra` | Validation des procédures de déploiement + infra Docker/Helm/CI |
-| `deployer` | Build (compilation locale, agnostique à l'environnement) + Publication QUALIF/PROD (mécanisme propre à chacun) + Déploiement QUALIF/PROD — surveille activement la CI lors de PUBLISH PROD, rollback automatique sur échec, remonte les faits à main |
+| `deployer` | Build (compilation locale, agnostique à l'environnement) + Publication QUALIF/PROD (mécanisme propre à chacun, voir `.claude/agents/environments/`) + Déploiement QUALIF/PROD — surveille activement la CI lors de PUBLISH PROD, rollback automatique sur échec, remonte les faits à main |
 | `doc-updater` | Mise à jour CHANGELOG, README, documentation technique |
 | `security` | Audit de sécurité (SAST, dépendances, secrets) |
 | `pr-reviewer` | Validation des Pull Requests externes |
@@ -405,6 +408,10 @@ lui est propre — principe BORE, voir `agents/infra.md` section 3 :
   déterministe via la CI (même pipeline, même source figée). Le deployer surveille cette CI
   jusqu'à complétion et gère les échecs de façon autonome.
 
+La procédure concrète (commandes exactes) de chaque mécanisme vit dans
+`.claude/agents/environments/publish.<env>.md`, générés à `/init-project` depuis
+`TEMPLATE_claude/templates/environments/` selon `infrastructure.environments[].publish.mode`.
+
 **En cas d'échec de PUBLISH PROD (CI) :**
 
 Le deployer classe l'échec depuis les logs et remonte les faits, sans corriger lui-même :
@@ -423,7 +430,10 @@ sont annulés (rollback) — aucun artefact partiellement publié ne reste réf�
 
 Le merge vers `main` et le tag officiel `vX.Y.Z` ont désormais lieu dans `/publish prod`, qui
 déclenche le rebuild déterministe via CI — `/deploy prod` installe uniquement sur la plateforme
-PROD l'artefact que cette CI a produit et publié, sans jamais rebuilder ni republier.
+PROD l'artefact que cette CI a produit et publié, sans jamais rebuilder ni republier. Comme pour
+PUBLISH, la procédure d'installation propre au mécanisme (docker-compose, helm, vps...) vit dans
+`.claude/agents/environments/deploy.<env>.md`, générés depuis `TEMPLATE_claude/templates/environments/`
+selon `infrastructure.environments[].deploy.mechanism`.
 
 **En cas de succès du rollout :**
 - Création de la GitHub Release avec les notes

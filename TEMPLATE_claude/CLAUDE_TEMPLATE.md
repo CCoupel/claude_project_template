@@ -53,6 +53,10 @@
 > **permanent** = spawné au `/start-session`, reste en IDLE toute la session.  
 > **ponctuel** = spawné à la demande par la commande dédiée, fermé après DONE.
 
+> Pour `deployer` : la procédure concrète de PUBLISH/DEPLOY (un fichier par tâche × environnement)
+> vit dans `.claude/agents/environments/{publish,deploy}.<env>.md` — voir `agents/deploy.md`
+> section "Fichiers d'Environnement".
+
 ---
 
 ## Commandes Disponibles

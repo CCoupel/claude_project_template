@@ -230,6 +230,18 @@ environnement — voir Etape 8). Detecter et convertir automatiquement :
 ```bash
 OLD_DEPLOY=$(jq -r '.infrastructure.deploy // empty' .claude/project-config.json 2>/dev/null)
 HAS_ENVIRONMENTS=$(jq -e '.infrastructure.environments' .claude/project-config.json >/dev/null 2>&1 && echo yes || echo no)
+
+# Normaliser vers l'enum utilise par la generation des fichiers d'environnement (section
+# "3bis. Fichiers d'environnement") — l'ancien champ etait du texte libre (ex: "docker").
+case "$OLD_DEPLOY" in
+  docker|docker-compose) MECH=docker-compose ;;
+  kubernetes|k8s|helm)   MECH=kubernetes ;;
+  serverless)            MECH=serverless ;;
+  vps|bare-metal)        MECH=vps ;;
+  paas)                  MECH=paas ;;
+  cloud-run|cloudrun|app-engine) MECH=cloud-run ;;
+  *)                     MECH=docker-compose ;;  # repli par defaut, signale a l'utilisateur ci-dessous
+esac
 ```
 
 Si `OLD_DEPLOY` non vide ET `HAS_ENVIRONMENTS=no` → config au format precedent, informer et convertir :
@@ -242,7 +254,7 @@ environnement) / DEPLOY (installation) — voir TEMPLATE_claude/agents/deploy.md
 Conversion automatique proposee :
   QUALIF : publish.mode = promote      (reutilise l'artefact tel quel, zero rebuild)
   PROD   : publish.mode = rebuild-ci   (merge + tag officiel, rebuild deterministe via CI)
-  deploy.mechanism (les deux environnements) = "<OLD_DEPLOY>" (valeur reprise telle quelle)
+  deploy.mechanism (les deux environnements) = "<MECH>" (normalise depuis "<OLD_DEPLOY>")
 
 Convertir maintenant ? [O/n] — Non bloquant : repondre "n" laisse infrastructure.deploy en
 l'etat (les commandes /build, /publish <env>, /deploy <env> nouvellement synchronisees ne
@@ -252,7 +264,7 @@ fonctionneront pas correctement tant que la conversion n'est pas faite).
 Si confirme :
 
 ```bash
-jq --arg mech "$OLD_DEPLOY" '
+jq --arg mech "$MECH" '
   .infrastructure.environments = [
     { "name": "QUALIF", "order": 1,
       "publish": { "mode": "promote", "target": "build/qualif_v{X.Y.Z}/" },
@@ -264,9 +276,18 @@ jq --arg mech "$OLD_DEPLOY" '
 ' .claude/project-config.json > /tmp/project-config.json.tmp \
   && mv /tmp/project-config.json.tmp .claude/project-config.json
 
-echo "✓ infrastructure.environments genere depuis infrastructure.deploy=\"$OLD_DEPLOY\"."
+echo "✓ infrastructure.environments genere depuis infrastructure.deploy=\"$OLD_DEPLOY\" (mecanisme normalise : $MECH)."
 echo "  Verifier/ajuster manuellement les cibles (docker-compose.*.yml, chart Helm, pipeline CI) si besoin."
+
+# Generer les fichiers d'environnement correspondants (sinon agents/deploy.md reference des
+# fichiers inexistants) — meme logique que la section "3bis. Fichiers d'environnement"
+# ci-dessous, executee ici immediatement apres la conversion de schema.
 ```
+
+> Executer ensuite la generation des fichiers d'environnement (section "3bis. Fichiers
+> d'environnement" ci-dessous) pour ces deux environnements — indispensable, `agents/deploy.md`
+> reference desormais `.claude/agents/environments/{publish,deploy}.{qualif,prod}.template.md`
+> a chaque tache PUBLISH/DEPLOY.
 
 > Cette conversion ne devine que le mecanisme de deploiement (repris tel quel pour les deux
 > environnements) et le mecanisme de publication par defaut (`promote` QUALIF /
@@ -707,6 +728,11 @@ l'utilisateur de le personnaliser par environnement uniquement s'il le demande e
 > supplementaire (DEV, PRE-PROD...) est genere dans la config mais se publie/deploie
 > manuellement via `/publish <env>` et `/deploy <env>`, hors flux CDP automatise — le signaler
 > a l'utilisateur s'il en ajoute.
+>
+> Cette etape ne cree que la configuration et les procedures generiques (section 3bis) — jamais
+> les artefacts d'infra eux-memes (Dockerfile, `docker-compose.<env>.yml`, chart Helm...). Ceux-ci
+> sont scaffoldes a la demande par l'agent `infra`, au premier deploiement sur chaque
+> environnement (voir `agents/infra.md` section "Mode Validation", etape 0) — pas a l'init.
 
 ---
 
@@ -815,6 +841,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
 | `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question 9bis) ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question 9 pour chaque environnement, sauf personnalisation explicite |
+| Nom de fichier des environnements | `infrastructure.environments[].name` normalise : minuscules, espaces/underscores → tirets (ex. `PRE-PROD` → `pre-prod`) — utilise pour `.claude/agents/environments/{publish,deploy}.<nom>.template.md` (section 3bis) |
 
 ### 2. Agents dev-*
 
@@ -853,6 +880,98 @@ et remplacer les placeholders :
 | `{GO_VERSION}` | `1.22` |
 | `{NODE_VERSION}` | `20` |
 | `{MIN_BINARY_SIZE}` | `5242880` |
+
+### 3bis. Fichiers d'environnement (publish/deploy par environnement)
+
+Pour chaque entree d'`infrastructure.environments[]` (generee a l'Etape 8 ou par la migration
+de schema, voir section "Migration du schema `infrastructure`") : copier la source generique
+correspondante depuis `TEMPLATE_claude/templates/environments/` vers
+`.claude/agents/environments/{publish,deploy}.<env>.template.md`, ou `<env>` est le nom de
+l'environnement normalise (minuscules, espaces/underscores → tirets — ex. `PRE-PROD` →
+`pre-prod`).
+
+Selection de la source, par mecanisme (pas par nom d'environnement) :
+
+| Champ | Valeur | Source |
+|-------|--------|--------|
+| `publish.mode` | `promote` | `TEMPLATE_claude/templates/environments/publish-promote.md` |
+| `publish.mode` | `rebuild-ci` | `TEMPLATE_claude/templates/environments/publish-rebuild-ci.md` |
+| `deploy.mechanism` | `docker-compose` | `TEMPLATE_claude/templates/environments/deploy-docker-compose.md` |
+| `deploy.mechanism` | `kubernetes` ou `helm` | `TEMPLATE_claude/templates/environments/deploy-kubernetes-helm.md` |
+| `deploy.mechanism` | `serverless` | `TEMPLATE_claude/templates/environments/deploy-serverless.md` |
+| `deploy.mechanism` | `vps` | `TEMPLATE_claude/templates/environments/deploy-vps.md` |
+| `deploy.mechanism` | `paas` | `TEMPLATE_claude/templates/environments/deploy-paas.md` |
+| `deploy.mechanism` | `cloud-run` | `TEMPLATE_claude/templates/environments/deploy-cloud-run.md` |
+
+```bash
+mkdir -p .claude/agents/environments
+jq -c '.infrastructure.environments[]' .claude/project-config.json | while read -r ENV; do
+  NAME=$(echo "$ENV" | jq -r '.name')
+  ENV_LOWER=$(echo "$NAME" | tr '[:upper:] _' '[:lower:]--')
+  PUB_MODE=$(echo "$ENV" | jq -r '.publish.mode')
+  DEP_MECH=$(echo "$ENV" | jq -r '.deploy.mechanism')
+  PUB_TARGET=$(echo "$ENV" | jq -r '.publish.target // .publish.trigger // ""')
+  CI_PIPELINE=$(echo "$ENV" | jq -r '.publish.pipeline // ""')
+  DEP_TARGET=$(echo "$ENV" | jq -r '.deploy.target // ""')
+
+  case "$PUB_MODE" in
+    promote)     PUB_SRC="TEMPLATE_claude/templates/environments/publish-promote.md" ;;
+    rebuild-ci)  PUB_SRC="TEMPLATE_claude/templates/environments/publish-rebuild-ci.md" ;;
+  esac
+  case "$DEP_MECH" in
+    docker-compose)        DEP_SRC="TEMPLATE_claude/templates/environments/deploy-docker-compose.md" ;;
+    kubernetes|helm)       DEP_SRC="TEMPLATE_claude/templates/environments/deploy-kubernetes-helm.md" ;;
+    serverless)            DEP_SRC="TEMPLATE_claude/templates/environments/deploy-serverless.md" ;;
+    vps)                   DEP_SRC="TEMPLATE_claude/templates/environments/deploy-vps.md" ;;
+    paas)                  DEP_SRC="TEMPLATE_claude/templates/environments/deploy-paas.md" ;;
+    cloud-run)             DEP_SRC="TEMPLATE_claude/templates/environments/deploy-cloud-run.md" ;;
+  esac
+
+  sed -e "s|{ENV_NAME_LOWER}|${ENV_LOWER}|g" -e "s|{ENV_NAME}|${NAME}|g" \
+      -e "s|{PUBLISH_TARGET}|${PUB_TARGET}|g" -e "s|{CI_PIPELINE}|${CI_PIPELINE}|g" \
+      "$PUB_SRC" > ".claude/agents/environments/publish.${ENV_LOWER}.template.md"
+  sed -e "s|{ENV_NAME_LOWER}|${ENV_LOWER}|g" -e "s|{ENV_NAME}|${NAME}|g" \
+      -e "s|{PUBLISH_TARGET}|${PUB_TARGET}|g" -e "s|{DEPLOY_TARGET}|${DEP_TARGET}|g" \
+      "$DEP_SRC" > ".claude/agents/environments/deploy.${ENV_LOWER}.template.md"
+  echo "  ✓ fichiers d'environnement generes pour $NAME (publish: $PUB_MODE, deploy: $DEP_MECH)"
+
+  # Variables attendues (union publish + deploy) -> <env>.env.example, committe, valeurs vides.
+  # Le <env>.env reel (valeurs completees) n'est jamais genere automatiquement — voir
+  # agents/deploy.md section "Fichiers d'Environnement".
+  case "$PUB_MODE" in
+    promote)     PUB_VARS="REGISTRY_USER REGISTRY_PASSWORD" ;;
+    rebuild-ci)  PUB_VARS="" ;;  # secrets geres cote CI, pas dans .env local
+  esac
+  case "$DEP_MECH" in
+    docker-compose) DEP_VARS="REGISTRY_USER REGISTRY_PASSWORD SSH_KEY_PATH" ;;
+    kubernetes|helm) DEP_VARS="KUBE_CONTEXT KUBECONFIG" ;;
+    serverless)     DEP_VARS="AWS_PROFILE VERCEL_TOKEN NETLIFY_AUTH_TOKEN" ;;
+    vps)            DEP_VARS="SSH_KEY_PATH" ;;
+    paas)           DEP_VARS="HEROKU_API_KEY RAILWAY_TOKEN RENDER_API_KEY" ;;
+    cloud-run)      DEP_VARS="GCP_PROJECT GOOGLE_APPLICATION_CREDENTIALS" ;;
+  esac
+
+  ENV_EXAMPLE=".claude/agents/environments/${ENV_LOWER}.env.example"
+  {
+    echo "# Variables specifiques a $NAME — voir agents/deploy.md section \"Fichiers d'Environnement\"."
+    echo "# Copier en ${ENV_LOWER}.env (jamais commite) et completer les valeurs."
+    for v in $(echo "$PUB_VARS $DEP_VARS" | tr ' ' '\n' | sort -u); do
+      [ -n "$v" ] && echo "$v="
+    done
+  } > "$ENV_EXAMPLE"
+  echo "  ✓ $ENV_EXAMPLE genere"
+done
+```
+
+> Compagnons optionnels `publish.<env>.md` / `deploy.<env>.md` : jamais generes automatiquement,
+> crees manuellement par le projet pour ses propres adaptations (memes conventions que les
+> compagnons d'agents, voir § precedent).
+>
+> `<env>.env.example` est committe (noms de variables, valeurs vides) ; `<env>.env` (valeurs
+> reelles) est gitignore et n'est jamais cree automatiquement — le projet le cree manuellement
+> a partir du `.example`. Meme convention pour `.env`/`.env.example` a la racine (variables
+> globales, applicatif ET infra, communes a tous les environnements) — hors gestion de ce
+> template, deja existant ou a creer par le projet.
 
 ### 4. Application des placeholders dans les commandes et agents deployes
 
@@ -893,7 +1012,7 @@ COVERAGE_CMD_ESC=$(escape_sed "$COVERAGE_CMD")
 Appliquer la substitution sur les fichiers deployes (commandes + agents generiques + contextes partages) :
 
 ```bash
-for f in .claude/commands/*.md .claude/agents/*.template.md .claude/commands/context/*.template.md .claude/agents/context/*.template.md; do
+for f in .claude/commands/*.md .claude/agents/*.template.md .claude/commands/context/*.template.md .claude/agents/context/*.template.md .claude/agents/environments/*.template.md; do
   [[ -f "$f" ]] || continue
   name=$(basename "$f")
   [[ "$name" == "init-project.md" ]] && continue  # contient des {VAR} d'exemple — ne pas substituer
@@ -1093,6 +1212,39 @@ for f in .claude/agents/context/*.md .claude/commands/context/*.md; do
   mv "$f" "$dest"
   echo "  ✓ migration contexte : $(basename $f) → $(basename $dest)"
 done
+```
+
+#### Etape d1d — Vérification des fichiers d'environnement
+
+> ⚠ **SCOPE STRICT** : cette étape **crée uniquement les fichiers manquants** — comme
+> `dev-backend.template.md` (jamais resynchronisé automatiquement par l'option d, voir note
+> d3b), les fichiers `.claude/agents/environments/*.template.md` déjà présents ne sont **jamais**
+> modifiés ici, même si leur source `TEMPLATE_claude/templates/environments/` a changé. C'est un
+> filet de sécurité (éviter qu'`agents/deploy.md` référence un fichier inexistant), pas une
+> synchronisation complète — limitation assumée, à signaler dans le rapport si applicable.
+
+```bash
+if jq -e '.infrastructure.environments' .claude/project-config.json >/dev/null 2>&1; then
+  MISSING_ENV_FILES=()
+  jq -c '.infrastructure.environments[]' .claude/project-config.json | while read -r ENV; do
+    NAME=$(echo "$ENV" | jq -r '.name')
+    ENV_LOWER=$(echo "$NAME" | tr '[:upper:] _' '[:lower:]--')
+    for TASK in publish deploy; do
+      f=".claude/agents/environments/${TASK}.${ENV_LOWER}.template.md"
+      [[ -f "$f" ]] || MISSING_ENV_FILES+=("$TASK.$ENV_LOWER")
+    done
+  done
+fi
+```
+
+Si `MISSING_ENV_FILES[]` non vide → exécuter pour ces seules entrées manquantes la génération
+décrite en section "3bis. Fichiers d'environnement" (Génération de la Configuration), puis
+informer :
+
+```
+⚠ Fichiers d'environnement manquants générés : publish.qualif, deploy.qualif
+  (project-config.json déclare ces environnements mais les fichiers n'existaient pas encore —
+   vérifier/ajuster les cibles générées, voir "Fichiers d'Environnement" dans agents/deploy.md)
 ```
 
 #### Etape d2 — Calculer les noms deployes attendus

@@ -414,10 +414,13 @@ SendMessage({ to: "doc-updater", content: "
 ```
 SendMessage({ to: "infra", content: "
   Valide que la procedure de deploiement QUALIF est coherente avec l'infrastructure definie.
+  Si l'infrastructure pour QUALIF n'existe pas encore (premier deploiement sur cet
+  environnement), la creer avant de valider (voir infra.md Mode Validation etape 0).
   Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans _work/reports/infra-[timestamp].md
 " })
 ```
-- NOT VALIDATED → escalade utilisateur avec le rapport d'ecarts ← GATE 4b
+- NOT VALIDATED → escalade utilisateur avec le rapport d'ecarts ← GATE 4b (une infra absente et
+  creee par infra n'est jamais un NOT VALIDATED — seule une incoherence l'est, voir infra.md)
 
 **Si infra VALIDATED — dispatcher deployer + doc-updater dans le meme tour :**
 ```
@@ -520,10 +523,14 @@ Selon la reponse utilisateur :
 ```
 SendMessage({ to: "infra", content: "
   Valide que la procedure de deploiement PROD est coherente avec l'infrastructure definie.
+  Si l'infrastructure pour PROD n'existe pas encore (premier deploiement sur cet
+  environnement), la creer avant de valider (voir infra.md Mode Validation etape 0).
   Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans _work/reports/infra-[timestamp].md
 " })
 ```
-- NOT VALIDATED → escalade utilisateur avec le rapport d'ecarts ← GATE 4c (aucune correction ici — retour Phase DEV)
+- NOT VALIDATED → escalade utilisateur avec le rapport d'ecarts ← GATE 4c (aucune correction ici
+  — retour Phase DEV ; une infra absente et creee par infra n'est jamais un NOT VALIDATED, voir
+  infra.md)
 
 **Dispatch systematique — deploiement + preparation marketing (meme tour), quel que soit le
 type de workflow (y compris Hotfix — voir aussi section "Dispatch selon le Type de Workflow") :**

@@ -185,13 +185,29 @@ act --dry-run  # si act est installe
 
 Quand le CDP appelle en mode validation :
 
-1. Lire la procédure de déploiement (fichiers CI/CD, docker-compose, Helm)
+0. **Vérifier que l'infrastructure existe pour cet environnement** — `/init-project` ne
+   scaffold jamais les artefacts eux-mêmes (Dockerfile, `docker-compose.<env>.yml`, chart
+   Helm...), seulement la configuration (`infrastructure.environments[]`) et les procédures
+   génériques (`.claude/agents/environments/{publish,deploy}.<env>.template.md`). Au premier
+   déploiement sur un environnement donné, l'artefact cible (`deploy.target` /
+   `publish.target` dans `.claude/project-config.json`) n'existe donc généralement pas encore.
+   Si absent : passer en **Mode Modification** (voir Processus > Implémenter) pour le créer,
+   à partir du mécanisme déclaré (`deploy.mechanism`) et des patterns de cette section (Docker,
+   Helm, CI/CD) — puis poursuivre la validation normalement. Ne jamais escalader à l'utilisateur
+   pour une simple absence (attendu au premier déploiement) — seule une **incohérence** détectée
+   ensuite (étape 3-4) doit remonter en NOT VALIDATED.
+1. Lire la procédure de déploiement (fichiers CI/CD, docker-compose, Helm) — la mécanique
+   concrète propre à l'environnement est dans
+   `.claude/agents/environments/{publish,deploy}.<env>.template.md` (voir `agents/deploy.md`,
+   section "Fichiers d'Environnement"), pas dans `agents/deploy.md` lui-même
 2. Comparer avec l'infrastructure définie (Dockerfiles, charts, configs)
 3. Vérifier la cohérence : ports, images, variables d'environnement, secrets templates
-4. Vérifier que `publish.mode` déclaré pour cet environnement dans
-   `.claude/project-config.json` correspond à la configuration CI/registre réelle
+4. Vérifier que `publish.mode`/`deploy.mechanism` déclarés pour cet environnement dans
+   `.claude/project-config.json` correspondent à la fois à la configuration CI/registre réelle
    (`promote` → pas de déclencheur CI sur cet environnement ; `rebuild-ci` → pipeline CI
-   présent et déclenché par le tag officiel, voir section 3)
+   présent et déclenché par le tag officiel, voir section 3) et au fichier d'environnement
+   effectivement présent (`publish.<env>.template.md` / `deploy.<env>.template.md` généré
+   depuis la bonne source — un écart signale un mécanisme changé sans régénération)
 5. Écrire le rapport dans `_work/reports/infra-[YYYYMMDD-HHmmss].md`
 6. Envoyer la référence au CDP :
 
@@ -204,6 +220,10 @@ Format du rapport de validation :
 # Validation Infra — [QUALIF|PROD]
 
 ## Verdict : VALIDATED / NOT VALIDATED
+
+## Infrastructure initialisee (etape 0)
+[Omettre cette section si l'infra existait deja — sinon lister les fichiers crees]
+- [x] docker-compose.qualif.yml cree (premier deploiement sur cet environnement)
 
 ## Cohérences vérifiées
 - [x] Image Docker : [image:tag] correspond au registre CI
