@@ -1,6 +1,6 @@
 ---
 name: infra
-description: "Agent infrastructure. Gere Dockerfiles, Helm charts, docker-compose et pipelines CI/CD. Applique le principe BORE (meme image staging/prod). Ne modifie jamais le code applicatif. Appele par le CDP avant les agents DEV si la feature necessite des changements d'infrastructure."
+description: "Agent infrastructure. Gere Dockerfiles, Helm charts, docker-compose et pipelines CI/CD. Applique le principe BORE (promotion sans rebuild ou rebuild deterministe depuis la meme source figee, selon l'environnement). Ne modifie jamais le code applicatif. Appele par le CDP avant les agents DEV si la feature necessite des changements d'infrastructure."
 model: sonnet
 color: orange
 ---
@@ -103,7 +103,10 @@ Regles absolues :
 
 #### CI/CD (GitHub Actions)
 
-Pattern recommande pour release :
+Pattern recommande pour release : declenche exclusivement par le tag officiel `vX.Y.Z` que
+`deployer` pousse en Tache PUBLISH PROD (`agents/deploy.md`) — QUALIF ne passe ni par un tag ni
+par la CI (mecanisme `promote`, voir section 3 ci-dessous), donc aucun autre evenement ne doit
+declencher ce pipeline :
 ```yaml
 name: Release
 on:
@@ -135,17 +138,29 @@ jobs:
 
 ### 3. Principe BORE (Build Once, Run Everywhere)
 
-**Regle fondamentale** : la meme image Docker doit etre utilisee en staging ET en production.
+**Regle fondamentale** : aucun environnement ne construit un artefact ad hoc — chaque
+environnement declare dans `.claude/project-config.json` -> `infrastructure.environments[]`
+utilise l'un des deux mecanismes suivants pour PUBLISH (voir `agents/deploy.md`, Taches
+PUBLISH QUALIF / PUBLISH PROD), jamais une procedure bespoke :
+
+- **(a) Promotion (`publish.mode: "promote"`)** — reutilise tel quel l'artefact deja construit
+  par BUILD (build once, zero rebuild). Cas par defaut : QUALIF.
+- **(b) Rebuild deterministe (`publish.mode: "rebuild-ci"`)** — reconstruit depuis exactement
+  la meme source figee (le tag officiel) en suivant l'unique pipeline CI, identique a chaque
+  execution. Reproductible, mais recalcule — pas un artefact partage bit a bit avec QUALIF.
+  Cas par defaut : PROD.
 
 ```
-CI/CD build image → registre (ghcr.io) → staging (test) → prod (deploy)
+QUALIF (promote)         : BUILD (candidat local) → copie/push tel quel → QUALIF
+PROD   (rebuild-ci)      : tag officiel → CI/CD rebuild depuis CE commit fige → registre → PROD
                                                    ↑
-                               JAMAIS rebuilder ici
+                    Toujours la MEME procedure de build (celle de BUILD), jamais une variante
 ```
 
-- Ne jamais retagger une image staging pour la prod
-- Ne jamais builder localement pour la prod
-- La prod deploie toujours depuis le registre CI
+- Ne jamais retagger un artefact sans reconstruire depuis une source tracee
+- Ne jamais builder localement pour la prod — le rebuild deterministe passe toujours par la CI
+- Ne jamais utiliser une procedure de build differente de celle de BUILD, quel que soit
+  l'environnement
 
 ### 4. Validation
 
@@ -173,8 +188,12 @@ Quand le CDP appelle en mode validation :
 1. Lire la procédure de déploiement (fichiers CI/CD, docker-compose, Helm)
 2. Comparer avec l'infrastructure définie (Dockerfiles, charts, configs)
 3. Vérifier la cohérence : ports, images, variables d'environnement, secrets templates
-4. Écrire le rapport dans `_work/reports/infra-[YYYYMMDD-HHmmss].md`
-5. Envoyer la référence au CDP :
+4. Vérifier que `publish.mode` déclaré pour cet environnement dans
+   `.claude/project-config.json` correspond à la configuration CI/registre réelle
+   (`promote` → pas de déclencheur CI sur cet environnement ; `rebuild-ci` → pipeline CI
+   présent et déclenché par le tag officiel, voir section 3)
+5. Écrire le rapport dans `_work/reports/infra-[YYYYMMDD-HHmmss].md`
+6. Envoyer la référence au CDP :
 
 ```
 SendMessage({ to: "main", content: "INFRA DONE\nRapport : _work/reports/infra-[YYYYMMDD-HHmmss].md" })
@@ -201,7 +220,8 @@ Format du rapport de validation :
 ## Regles
 
 1. **Jamais de code applicatif** — uniquement infrastructure
-2. **BORE** — meme image staging et prod
+2. **BORE** — promotion sans rebuild ou rebuild deterministe depuis la meme source figee,
+   jamais un build ad hoc par environnement
 3. **Versions fixees** — pas de tags `latest` en prod
 4. **Secrets securises** — jamais en clair dans les fichiers commites
 5. **Resources limitees** — toujours definir requests/limits en K8s

@@ -217,6 +217,66 @@ HAS_OLD_SOURCE=$([ -f .claude/.template-source.json ] && echo "yes" || echo "no"
 
 ---
 
+## Migration du schema `infrastructure` (deploy → environments[])
+
+Independante de la migration de structure ci-dessus (v1/v2 → v3) — s'applique des que
+`HAS_CONFIG=yes`, quel que soit le chemin emprunte ensuite (Reinitialisation ou Migration
+v1/v2 → v3). Avant l'introduction du modele BUILD/PUBLISH/DEPLOY a 3 phases (voir
+`TEMPLATE_claude/agents/deploy.md`), `infrastructure` portait un seul mecanisme de deploiement
+(`infrastructure.deploy`, string) commun a tous les environnements. Il est remplace par
+`infrastructure.environments[]` (tableau ordonne, mecanisme publish/deploy propre a chaque
+environnement — voir Etape 8). Detecter et convertir automatiquement :
+
+```bash
+OLD_DEPLOY=$(jq -r '.infrastructure.deploy // empty' .claude/project-config.json 2>/dev/null)
+HAS_ENVIRONMENTS=$(jq -e '.infrastructure.environments' .claude/project-config.json >/dev/null 2>&1 && echo yes || echo no)
+```
+
+Si `OLD_DEPLOY` non vide ET `HAS_ENVIRONMENTS=no` → config au format precedent, informer et convertir :
+
+```
+Configuration de deploiement au format precedent detectee (infrastructure.deploy: "<OLD_DEPLOY>").
+Le nouveau modele separe BUILD (compilation) / PUBLISH (mise a disposition, mecanisme par
+environnement) / DEPLOY (installation) — voir TEMPLATE_claude/agents/deploy.md.
+
+Conversion automatique proposee :
+  QUALIF : publish.mode = promote      (reutilise l'artefact tel quel, zero rebuild)
+  PROD   : publish.mode = rebuild-ci   (merge + tag officiel, rebuild deterministe via CI)
+  deploy.mechanism (les deux environnements) = "<OLD_DEPLOY>" (valeur reprise telle quelle)
+
+Convertir maintenant ? [O/n] — Non bloquant : repondre "n" laisse infrastructure.deploy en
+l'etat (les commandes /build, /publish <env>, /deploy <env> nouvellement synchronisees ne
+fonctionneront pas correctement tant que la conversion n'est pas faite).
+```
+
+Si confirme :
+
+```bash
+jq --arg mech "$OLD_DEPLOY" '
+  .infrastructure.environments = [
+    { "name": "QUALIF", "order": 1,
+      "publish": { "mode": "promote", "target": "build/qualif_v{X.Y.Z}/" },
+      "deploy":  { "mechanism": $mech } },
+    { "name": "PROD", "order": 2,
+      "publish": { "mode": "rebuild-ci", "trigger": "git-tag", "pipeline": ".github/workflows/release.yml" },
+      "deploy":  { "mechanism": $mech } }
+  ] | del(.infrastructure.deploy)
+' .claude/project-config.json > /tmp/project-config.json.tmp \
+  && mv /tmp/project-config.json.tmp .claude/project-config.json
+
+echo "✓ infrastructure.environments genere depuis infrastructure.deploy=\"$OLD_DEPLOY\"."
+echo "  Verifier/ajuster manuellement les cibles (docker-compose.*.yml, chart Helm, pipeline CI) si besoin."
+```
+
+> Cette conversion ne devine que le mecanisme de deploiement (repris tel quel pour les deux
+> environnements) et le mecanisme de publication par defaut (`promote` QUALIF /
+> `rebuild-ci` PROD) — elle ne peut pas deviner des cibles specifiques (fichier
+> docker-compose different par environnement, chemin Helm...) : les signaler comme a
+> verifier manuellement dans le rapport de fin d'execution (Option d, Etape d8, ou message de
+> fin en flux Migration v1/v2 → v3).
+
+---
+
 ## Migration v1/v2 → v3
 
 Declenche si `project-config.json` existe mais `TEMPLATE_claude/` est absent.
@@ -357,7 +417,8 @@ Migration → v3 terminee.
 
   Fichiers PROJET preserves :
     ✓ .claude/CLAUDE.md
-    ✓ .claude/project-config.json
+    ✓ .claude/project-config.json (hors migration ponctuelle du schema `infrastructure`, voir
+      section "Migration du schema `infrastructure`" — appliquee avant cette etape si besoin)
     ✓ .claude/memory/
     ✓ .claude/agents/dev-*.md (si presents)
     ✓ .claude/agents/*.md et context/*.md compagnons (si presents)
@@ -612,17 +673,40 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 
 ---
 
-## Etape 8 : Deploiement
+## Etape 8 : Environnements et Deploiement
 
 ```
-9. Comment deploies-tu ton application ?
+9. Comment deploies-tu ton application ? (mecanisme d'installation par defaut)
    a) Docker / Docker Compose
-   b) Kubernetes
+   b) Kubernetes / Helm
    c) Serverless (AWS Lambda, Vercel, Netlify)
    d) VPS / Bare metal
    e) PaaS (Heroku, Railway, Render)
    f) Cloud Run / App Engine
+
+9bis. Quels environnements de release utilises-tu, dans l'ordre de promotion ?
+   a) QUALIF puis PROD (defaut)
+   b) DEV puis QUALIF puis PROD
+   c) QUALIF puis PRE-PROD puis PROD
+   d) Personnalise — lister les noms, dans l'ordre de promotion
 ```
+
+Chaque environnement declare dans `infrastructure.environments[]` recoit un mecanisme
+`publish.mode` :
+- **`promote`** (defaut pour tout environnement sauf le dernier) — reutilise tel quel
+  l'artefact du BUILD (ou de l'environnement precedent), zero rebuild.
+- **`rebuild-ci`** (defaut pour le dernier environnement de la chaine, generalement PROD) —
+  merge + tag officiel, declenche un rebuild deterministe via la CI choisie a l'Etape 7.
+
+Le mecanisme `deploy.mechanism` de chaque environnement reprend par defaut la reponse a la
+question 9 (docker-compose / helm / serverless / vps / paas / cloud-run) — proposer a
+l'utilisateur de le personnaliser par environnement uniquement s'il le demande explicitement.
+
+> Seule la chaine QUALIF -> PROD est cablee dans l'orchestration CDP (voir
+> `agents/cdp.template.md`, section "Points de Validation Utilisateur"). Un environnement
+> supplementaire (DEV, PRE-PROD...) est genere dans la config mais se publie/deploie
+> manuellement via `/publish <env>` et `/deploy <env>`, hors flux CDP automatise — le signaler
+> a l'utilisateur s'il en ajoute.
 
 ---
 
@@ -677,7 +761,20 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
   },
   "infrastructure": {
     "cicd": "github-actions",
-    "deploy": "docker"
+    "environments": [
+      {
+        "name": "QUALIF",
+        "order": 1,
+        "publish": { "mode": "promote", "target": "build/qualif_v{X.Y.Z}/" },
+        "deploy":  { "mechanism": "docker-compose", "target": "docker-compose.qualif.yml" }
+      },
+      {
+        "name": "PROD",
+        "order": 2,
+        "publish": { "mode": "rebuild-ci", "trigger": "git-tag", "pipeline": ".github/workflows/release.yml" },
+        "deploy":  { "mechanism": "docker-compose", "target": "docker-compose.prod.yml" }
+      }
+    ]
   },
   "testing": {
     "backend": ["go-test"],
@@ -717,6 +814,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
+| `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question 9bis) ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question 9 pour chaque environnement, sauf personnalisation explicite |
 
 ### 2. Agents dev-*
 
@@ -878,11 +976,11 @@ fi
 Projet "<PROJECT_NAME>" initialise avec succes !
 
 Configuration :
-- Backend  : <BACKEND>
-- Frontend : <FRONTEND>
-- Database : <DATABASE>
-- CI/CD    : <CICD>
-- Deploy   : <DEPLOY>
+- Backend      : <BACKEND>
+- Frontend     : <FRONTEND>
+- Database     : <DATABASE>
+- CI/CD        : <CICD>
+- Environnements : <ENVIRONMENTS>  (ex: QUALIF -> PROD)
 
 Agents generes :
 - .claude/agents/dev-backend.template.md
@@ -891,7 +989,7 @@ Agents generes :
 Commandes disponibles :
 - /feature, /bugfix, /hotfix, /refactor
 - /review, /qa, /secu
-- /deploy qualif, /deploy prod
+- /build, /publish qualif|prod, /deploy qualif|prod
 - /milestone new/status/close
 - /backlog, /marketing
 - /progression, /context-audit
@@ -1473,10 +1571,12 @@ Synchronisation terminee.
   CLAUDE.md bloc TEAMLEADER_PROTOCOL : mis à jour
   CLAUDE.md table Agents Disponibles : mis à jour (N lignes — documentation uniquement)
   Labels GitHub                     : vérifiés (PLANNING, EN COURS, EN REVIEW, EN QA, DONE)
+  Schema infrastructure             : [convertit vers environments[] | deja a jour | inchange (refuse)]
 
   Fichiers PROJET preserves (non touches) :
     ✓ CLAUDE.md (hors bloc TEAMLEADER_PROTOCOL et hors table Agents Disponibles)
-    ✓ .claude/project-config.json
+    ✓ .claude/project-config.json (hors migration ponctuelle du schema `infrastructure`, voir
+      section "Migration du schema `infrastructure`" — champs projet non touches sinon)
     ✓ .claude/memory/
     ✓ .claude/agents/dev-*.md   (jamais modifiés par la sync de la table Agents Disponibles)
 ```

@@ -371,11 +371,12 @@ gh api repos/{owner}/{repo}/milestones/<numero> \
   -f state="closed"
 ```
 
-### Etape 4bis — Nettoyage de la branche distante (complement a `agents/deploy.md` Etape 8)
+### Etape 4bis — Nettoyage de la branche distante (complement a `agents/deploy.md` Etape 6)
 
 Couvre le cas d'un milestone clos **sans** etre passe par `/deploy prod` (abandonne, ou issues
-reportees vers le suivant) — dans ce cas l'Etape 8 de `deploy.md` ne s'est jamais executee et
-la branche `milestone/<version>` distante, si elle existe encore, n'a jamais ete nettoyee.
+reportees vers le suivant) — dans ce cas l'Etape 6 de `deploy.md` (Tache DEPLOY PROD) ne s'est
+jamais executee et la branche `milestone/<version>` distante, si elle existe encore, n'a jamais
+ete nettoyee.
 
 ```bash
 git ls-remote --exit-code --heads origin milestone/<version>

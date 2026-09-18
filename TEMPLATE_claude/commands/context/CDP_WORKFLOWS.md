@@ -20,7 +20,7 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 | `/feature` | FEATURE | Complet | Rattache a un milestone (nouveau ou existant) — `X.Y.Z` fixe par son titre |
 | `/bugfix` | BUGFIX | Simplifie | Milestone actif -> aucun changement (commits normaux) ; sinon -> milestone `X.Y.Z+1` cree automatiquement |
 | `/hotfix` | HOTFIX | Accelere | Milestone actif -> integre a celui-ci (commit direct sur sa branche) ; sinon -> milestone `X.Y.Z+1` dedie cree automatiquement |
-| `/refactor` | REFACTOR | Leger | Rattache au milestone actif — aucun changement de version (`a` gere par `deployer` a la prochaine publication) |
+| `/refactor` | REFACTOR | Leger | Rattache au milestone actif — aucun changement de version (`a` gere par `deployer` au prochain BUILD) |
 
 ---
 
@@ -50,7 +50,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | Review | `code-reviewer` + `test-writer` (parallèle) |
 | QA | `qa` — par défaut en parallèle de Review (voir `QUALITY.md` section 12), dès `test-writer` DONE |
 | Doc | `doc-updater` |
-| Publish / Deploy QUALIF / PROD | `deployer` |
+| Build / Publish / Deploy QUALIF / PROD | `deployer` |
 
 ---
 
@@ -71,7 +71,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | Review | Oui | Oui | Rapide | Oui |
 | QA | Complet | Regression | Critique | Complet |
 | Doc | Oui | Si majeur | Post-mortem | Non |
-| Publish + Deploy QUALIF | Oui | Oui | Optionnel | Oui |
+| Build + Publish + Deploy QUALIF | Oui | Oui | Non — PROD uniquement, sans QUALIF | Oui |
 
 ---
 
@@ -538,27 +538,32 @@ SendMessage({ to: "doc-updater", content: "
 |-- Recevoir DONE + ref handoff
 |-- CDP valide la conformité
     |-- Non conforme -> renvoyer pour correction
-    |-- Conforme     -> Phase Publish + Deploy QUALIF
+    |-- Conforme     -> Phase Build + Publish + Deploy QUALIF
 ```
 
-### Phase Publish + Deploy QUALIF
+### Phase Build + Publish + Deploy QUALIF
+
+> Résumé — la mécanique complète (validation infra, dispatch parallèle avec doc-updater,
+> format du GATE 4) est documentée dans `agents/cdp.md` Phase 5, qui fait autorité ; ne pas
+> dupliquer ici au-delà de ce résumé pour éviter toute dérive entre les deux fichiers.
 
 ```
 // Dispatcher deployer — [branche] = branche milestone active (milestone/vX.Y.Z), commune a
-// FEATURE/BUGFIX/HOTFIX/REFACTOR. Un seul message : deployer enchaine PUBLISH (build + push
-// registre, incremente `a` lui-meme) puis DEPLOY QUALIF (installation, pas de rebuild) avant
-// de repondre.
+// FEATURE/BUGFIX/HOTFIX/REFACTOR. Un seul message : deployer enchaine BUILD (compilation,
+// incremente `a` lui-meme) puis PUBLISH QUALIF (mise a disposition, pas de rebuild) puis
+// DEPLOY QUALIF (installation) avant de repondre.
 SendMessage({ to: "deployer", content: "
-  Publie puis déploie en QUALIF.
+  Build puis publie puis déploie en QUALIF.
   Branche : [branche]
   Version : [X.Y.Z]
   Handoff doc : _work/handoff/doc-updater-[timestamp].md
 " })
 
-|-- Recevoir DONE + rapport de publication/déploiement
+|-- Recevoir DONE + rapport de build/publication/déploiement
 |-- CDP informe l'utilisateur : QUALIF déployée, scénarios de validation fournis
-|-- Deploy PROD : déclenché uniquement par commande explicite `/deploy prod` (installe l'artefact
-    déjà publié, aucun rebuild)
+|-- Publish + Deploy PROD : déclenché uniquement par commande explicite `/deploy prod` (voir
+    `agents/cdp.md` Phase 6 — publie via merge + tag officiel, rebuild déterministe via CI,
+    puis installe)
 ```
 
 ---
@@ -790,11 +795,25 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
     "review":       { "status": "completed", "report": "_work/reports/code-review-xxx.md" },
     "qa":           { "status": "in_progress", "report": null },
     "doc":          { "status": "pending" },
-    "deploy-qualif":{ "status": "pending" },
-    "deploy-prod":  { "status": "pending" }
+    "deploy-qualif":{ "status": "pending", "steps": {
+      "build":   { "status": "pending" },
+      "publish": { "status": "pending" },
+      "deploy":  { "status": "pending" }
+    }},
+    "deploy-prod":  { "status": "pending", "steps": {
+      "publish": { "status": "pending" },
+      "deploy":  { "status": "pending" }
+    }}
   }
 }
 ```
+
+> `deploy-qualif.steps` porte les 3 sous-etapes BUILD/PUBLISH/DEPLOY QUALIF ; `deploy-prod.steps`
+> n'en porte normalement que 2 (PUBLISH/DEPLOY — PROD republie l'artefact deja construit en
+> QUALIF, jamais un nouveau BUILD), sauf en Hotfix ou BUILD a lieu directement sous
+> `deploy-prod` (voir `agents/cdp.md` section "Dispatch selon le Type de Workflow"). Le niveau
+> de granularite `resume`/`skip` (section 11 ci-dessus, cf. `COMMON.md` section 12.2) reste la
+> phase globale `deploy` — ces sous-etapes sont informatives, pas des cibles de `resume`/`skip`.
 
 ### Règles de mise à jour
 

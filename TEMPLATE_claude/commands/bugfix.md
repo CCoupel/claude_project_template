@@ -54,6 +54,15 @@ Sinon -> workflow normal.
      `----+-----'
           v
        [DOC] --> CHANGELOG (Fixed)
+    |
+    v
+[BUILD] --> Compilation candidat
+    |
+    v
+[PUBLISH QUALIF] --> Mise a disposition QUALIF
+    |
+    v
+[DEPLOY QUALIF] --> Installation QUALIF (PROD sur /deploy prod)
 ```
 
 ## Etapes Detaillees
@@ -123,7 +132,7 @@ Mise a jour CHANGELOG.md :
 | Urgence | Normal | Critique (prod down) |
 | Tests | Complets | Critiques uniquement |
 | Review | Standard | Acceleree |
-| Deploy | Via workflow normal | Direct PROD |
+| Deploy | Via workflow normal (BUILD+PUBLISH+DEPLOY QUALIF puis PROD) | Direct PROD (BUILD+PUBLISH+DEPLOY PROD, sans QUALIF) |
 
 ## Prompt a transmettre au CDP
 

@@ -138,6 +138,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │   ├── review.md
 │   ├── qa.md
 │   ├── secu.md
+│   ├── build.md
 │   ├── publish.md
 │   ├── deploy.md
 │   ├── backlog.md
@@ -204,7 +205,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) + vérification couverture des contrats |
 | `qa` | Exécution des tests et validation (unit/integration/E2E/perf) |
 | `infra` | Validation des procédures de déploiement + infra Docker/Helm/CI |
-| `deployer` | Publication (build once, commune QUALIF/PROD) et Déploiement QUALIF/PROD — surveille la CI de publication activement, rollback automatique sur échec, remonte les faits à main |
+| `deployer` | Build (compilation locale, agnostique à l'environnement) + Publication QUALIF/PROD (mécanisme propre à chacun) + Déploiement QUALIF/PROD — surveille activement la CI lors de PUBLISH PROD, rollback automatique sur échec, remonte les faits à main |
 | `doc-updater` | Mise à jour CHANGELOG, README, documentation technique |
 | `security` | Audit de sécurité (SAST, dépendances, secrets) |
 | `pr-reviewer` | Validation des Pull Requests externes |
@@ -275,15 +276,15 @@ DOC (brouillon) ─────────────── CHANGELOG + docume
     ↓
 INFRA validation QUALIF ────── cohérence procédure/infrastructure
     ↓  [GATE 4b] escalade si écart détecté
-    ├──────────────────────────┐
-PUBLISH → DEPLOY QUALIF   DOC (finalize) ── release notes + résultats QA, sans attendre le déploiement
-    └──────────────────────────┘
-    ↓  PUBLISH incrémente `a` et build once (deployer) · GATE 4 attend les DEUX DONE
+    ├────────────────────────────────────────┐
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes + résultats QA, sans attendre le déploiement
+    └────────────────────────────────────────┘
+    ↓  BUILD incrémente `a` (compilation locale, agnostique à l'environnement) · GATE 4 attend les DEUX DONE
 [GATE 4] Validation manuelle ── CDP présente les scénarios à tester
-    ├─ OUI → issue fermée → INFRA validation PROD → DEPLOY PROD (∥ marketing-release systématique) → milestone si 100%
+    ├─ OUI → issue fermée → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) → milestone si 100%
     └─ NON → label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
-DEPLOY PROD ────────────────── merge → tag officiel (promotion, sans rebuild) → installe l'artefact déjà publié
+PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un rebuild déterministe via CI) → installe l'artefact publié par la CI
                                succès : release + milestone
                                échec  : rollback infra → rapport à main → routing agent
 ```
@@ -296,9 +297,14 @@ DEPLOY PROD ────────────────── merge → tag
 | 2 | Après plan | Valider le plan et les contrats API |
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
-| 4 | QUALIF **et** DOC (finalize) tous les deux DONE | OUI (issue fermée + deploy prod) ou NON (retour DEV ou PLAN) |
-| 4b | Procédure QUALIF incohérente | Corriger avant deploy |
-| 4c | Procédure PROD incohérente | Corriger avant deploy |
+| 4 | BUILD+PUBLISH+DEPLOY QUALIF **et** DOC (finalize) tous les deux DONE | OUI (issue fermée + publish/deploy prod) ou NON (retour DEV ou PLAN) |
+| 4b | Procédure QUALIF incohérente | Corriger avant build/publish/deploy |
+| 4c | Procédure PROD incohérente | Corriger avant publish/deploy |
+
+> **Limitation connue** : cette orchestration (Gates 4/4b/4c) n'est câblée que pour la chaîne
+> à 2 environnements QUALIF→PROD. Un environnement supplémentaire déclaré dans
+> `infrastructure.environments[]` (DEV, PRE-PROD...) se publie/déploie manuellement via
+> `/publish <env>` et `/deploy <env>`, hors flux CDP automatisé.
 
 **Cycles de correction** (max 3 avant escalade) :
 - REVIEW refuse → si QA tournait en parallèle, annulé/ignoré → DEV corrige → REVIEW seul (+ QA si toujours
@@ -321,9 +327,9 @@ ANALYSE ── cause racine
     ↓  label DONE
 DOC (brouillon) ── CHANGELOG (Fixed)
     ↓
-PUBLISH → DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
     ↓
-[GATE 4] OUI → issue fermée → DEPLOY PROD (∥ marketing-release systématique) ── installe l'artefact déjà publié
+[GATE 4] OUI → issue fermée → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) ── installe l'artefact publié par la CI
 ```
 
 ### Hotfix (urgence production)
@@ -333,7 +339,7 @@ DEV ── fix minimal uniquement
     ↓
 REVIEW rapide
     ↓
-PUBLISH → DEPLOY PROD direct (∥ marketing-release systématique) ── sans passage par QUALIF
+BUILD → PUBLISH PROD → DEPLOY PROD direct (∥ marketing-release systématique) ── sans passage par QUALIF
     ↓
 DOC ── post-mortem
 ```
@@ -350,7 +356,7 @@ DEV ── refactoring (comportement identique obligatoire)
     ↓
 DOC (brouillon) ── CHANGELOG (Changed)
     ↓
-PUBLISH → DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
 ```
 
 ### Contrats API (contract-first)
@@ -384,13 +390,22 @@ Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
 Si l'utilisateur rejette à GATE 4, le label `DONE` est retiré et l'issue repart vers
 `EN COURS` (correction dans le scope, retour DEV) ou `PLANNING` (scope invalide, retour PLAN).
 
-### Publication (build once) et suivi CI
+### Build (compilation locale, agnostique à l'environnement)
 
-`/publish` construit l'artefact une seule fois et le pousse vers le registre — commun à QUALIF
-et PROD (principe BORE : jamais de rebuild entre les deux). Le deployer surveille la CI de
-build jusqu'à complétion et gère les échecs de façon autonome.
+`/build` compile et teste une seule fois, sans dépendre d'un environnement cible, et produit un
+candidat local versionné (`build/candidate_vX.Y.Z/`) — aucune CI ni registre impliqués. Un échec
+ici est toujours un échec de code (compilation, tests, lint), remonté directement à `dev`.
 
-**En cas d'échec de publication :**
+### Publish (mise à disposition, par environnement)
+
+`/publish <env>` rend ce candidat disponible pour un environnement donné, selon le mécanisme qui
+lui est propre — principe BORE, voir `agents/infra.md` section 3 :
+- **QUALIF** — `promote` : copie/push du candidat tel quel, zéro rebuild, aucune CI impliquée.
+- **PROD** — `rebuild-ci` : merge vers `main` + tag officiel `vX.Y.Z`, qui déclenche un rebuild
+  déterministe via la CI (même pipeline, même source figée). Le deployer surveille cette CI
+  jusqu'à complétion et gère les échecs de façon autonome.
+
+**En cas d'échec de PUBLISH PROD (CI) :**
 
 Le deployer classe l'échec depuis les logs et remonte les faits, sans corriger lui-même :
 
@@ -401,22 +416,23 @@ Le deployer classe l'échec depuis les logs et remonte les faits, sans corriger 
 | `CONFIG` | La config CI est en cause, le code est sain | `infra` |
 | `INFRA` | L'infrastructure CI est en cause, le code est sain | `infra` |
 
-`main` décide du routing vers l'agent responsable. La branche de travail est toujours
-préservée pour la correction et la re-tentative.
+`main` décide du routing vers l'agent responsable. Le merge et le tag de la publication échouée
+sont annulés (rollback) — aucun artefact partiellement publié ne reste référençable.
 
-### Déploiement PROD (installation, sans rebuild)
+### Déploiement PROD (installation pure, sans build ni merge ni tag)
 
-`/deploy prod` merge et tag `vX.Y.Z` (promotion administrative, pas de nouveau build), puis
-installe sur la plateforme PROD l'artefact déjà publié et validé en QUALIF.
+Le merge vers `main` et le tag officiel `vX.Y.Z` ont désormais lieu dans `/publish prod`, qui
+déclenche le rebuild déterministe via CI — `/deploy prod` installe uniquement sur la plateforme
+PROD l'artefact que cette CI a produit et publié, sans jamais rebuilder ni republier.
 
 **En cas de succès du rollout :**
 - Création de la GitHub Release avec les notes
 - Vérification du milestone actif → clôture automatique si 100% des issues fermées
 
 **En cas d'échec du rollout :** rollback infra (`kubectl rollout undo`, réinstallation de la
-version précédente) — le build ayant déjà été validé en QUALIF, l'échec ici est toujours un
-échec d'installation, jamais un échec de code. Le deployer remonte les faits bruts à `main`,
-qui décide de la suite.
+version précédente) — la publication (`/publish prod`) ayant déjà réussi (CI verte), l'échec ici
+est toujours un échec d'installation, jamais un échec de code ni de build. Le deployer remonte
+les faits bruts à `main`, qui décide de la suite.
 
 ### Clôture de milestone
 
@@ -471,9 +487,9 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 
 | Commande | Description |
 |----------|-------------|
-| `/feature <desc>` | Nouvelle fonctionnalité — workflow complet avec PLAN, DEV parallèle, tests, publish, deploy |
+| `/feature <desc>` | Nouvelle fonctionnalité — workflow complet avec PLAN, DEV parallèle, tests, build, publish, deploy |
 | `/bugfix <desc>` | Correction de bug avec test de régression obligatoire |
-| `/hotfix <desc>` | Correctif urgent production — publish puis deploy direct sans attendre QUALIF |
+| `/hotfix <desc>` | Correctif urgent production — build, publish puis deploy direct (PROD uniquement, sans QUALIF) |
 | `/refactor <desc>` | Refactoring sans changement fonctionnel — QA avant et après |
 
 ### Backlog et Milestones
@@ -506,9 +522,11 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
 
 | Commande | Description |
 |----------|-------------|
-| `/publish` | Build + publication de la version candidate (registre/artefact) — commune à QUALIF et PROD, jamais d'argument d'environnement |
+| `/build` | Compilation/tests d'une version candidate — locale, agnostique à l'environnement |
+| `/publish qualif` | Mise à disposition du candidat pour QUALIF — promotion, zéro rebuild |
+| `/publish prod` | Mise à disposition du candidat pour PROD — merge + tag officiel, déclenche un rebuild déterministe via CI |
 | `/deploy qualif` | Installation en qualification de l'artefact déjà publié (avec validation infra préalable) |
-| `/deploy prod` | Installation en production de l'artefact déjà publié — sans rebuild (gate explicite requis) |
+| `/deploy prod` | Installation en production de l'artefact publié par la CI — sans build ni merge ni tag (gate explicite requis) |
 | `/marketing [version]` | Release notes depuis milestone + CHANGELOG GitHub |
 
 ---
@@ -522,9 +540,9 @@ Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les
         ↓
 /backlog #42                         Travailler une issue
         ↓
-/feature "#42 - Auth OAuth"          Workflow complet multi-agents (publish + deploy qualif inclus)
+/feature "#42 - Auth OAuth"          Workflow complet multi-agents (build + publish + deploy qualif inclus)
         ↓
-/deploy prod                         Installe l'artefact publié → proposition de clôture du milestone
+/deploy prod                         Publie (merge + tag → rebuild CI) puis installe en PROD → proposition de clôture du milestone
         ↓
 /marketing v1.2.0                    Release notes depuis le milestone clos
 ```

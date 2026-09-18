@@ -307,8 +307,21 @@ Une fois les reponses collectees, Claude genere :
   },
   "infrastructure": {
     "cicd": "github-actions",
-    "deploy": "docker",
-    "containerized": true
+    "containerized": true,
+    "environments": [
+      {
+        "name": "QUALIF",
+        "order": 1,
+        "publish": { "mode": "promote", "target": "build/qualif_v{X.Y.Z}/" },
+        "deploy":  { "mechanism": "docker-compose", "target": "docker-compose.qualif.yml" }
+      },
+      {
+        "name": "PROD",
+        "order": 2,
+        "publish": { "mode": "rebuild-ci", "trigger": "git-tag", "pipeline": ".github/workflows/release.yml" },
+        "deploy":  { "mechanism": "docker-compose", "target": "docker-compose.prod.yml" }
+      }
+    ]
   },
   "testing": {
     "backend": ["go-test"],
@@ -465,7 +478,7 @@ Backend : Go (server/)
 Frontend : React + TypeScript (web/)
 Database : PostgreSQL
 CI/CD : GitHub Actions
-Deploy : Docker
+Environnements : QUALIF -> PROD (docker-compose)
 
 Agents a generer :
 - dev-backend.template.md (Go)
@@ -474,7 +487,7 @@ Agents a generer :
 Commandes disponibles :
 - /feature, /bugfix, /hotfix, /refactor
 - /review, /qa, /secu
-- /publish, /deploy qualif, /deploy prod
+- /build, /publish qualif|prod, /deploy qualif|prod
 
 Confirmer et generer ? (o/n)
 ```
@@ -483,21 +496,29 @@ Confirmer et generer ? (o/n)
 
 Ces comportements sont natifs au template — aucune configuration requise.
 
-### Publication (build once) puis Déploiement (installation, sans rebuild)
+### Build (compilation) puis Publish (mise à disposition) puis Deploy (installation)
 
-`/publish` construit l'artefact une seule fois et le pousse vers le registre — commun à
-QUALIF et PROD (principe BORE, jamais de rebuild entre les deux). `/deploy qualif` et
-`/deploy prod` installent ensuite cet artefact déjà publié sur la plateforme cible :
+`/build` construit l'artefact candidat une seule fois, agnostique à l'environnement. `/publish
+<env>` le rend ensuite disponible pour un environnement donné, selon le mécanisme qui lui est
+propre (déclaré dans `infrastructure.environments[]`, voir `project-config.json`) — principe
+BORE, deux mécanismes valides : **promotion** (réutilise l'artefact tel quel, zéro rebuild —
+défaut QUALIF) ou **rebuild déterministe** (reconstruit depuis la même source figée via
+l'unique pipeline CI — défaut PROD). `/deploy <env>` installe enfin cet artefact déjà publié,
+sans jamais builder ni publier :
 
 ```
-/publish  : build → push registre → surveille CI de build (gh run watch)
+/build        : verification → increment version (a) → compilation → candidat local
+
+/publish qualif : verification candidat → copie/push tel quel (promote, zero rebuild)
+
+/publish prod : merge → tag officiel → declenche le rebuild deterministe via CI (gh run watch)
                         ↓
-              succès : artefact disponible pour /deploy
+              succès : artefact publié, disponible pour /deploy prod
               échec  :
                 ├── lire logs → classifier (CODE / FLAKY / CONFIG / INFRA)
                 └── rapport à main → main route vers l'agent responsable (dev/qa/infra)
 
-/deploy prod : merge → tag officiel (promotion, aucun rebuild) → installe l'artefact publié
+/deploy prod  : installe l'artefact publié par /publish prod → vérifie le rollout
                         ↓
               succès : release notes + milestone
               échec  : rollback infra (rollout undo) → rapport à main

@@ -42,7 +42,7 @@
 | `code-reviewer` | Revue de code | `.claude/agents/code-reviewer.template.md` | permanent |
 | `qa` | Exécution des tests et validation | `.claude/agents/qa.template.md` | permanent |
 | `doc-updater` | Documentation | `.claude/agents/doc-updater.template.md` | permanent |
-| `deployer` | Publication + Déploiement QUALIF/PROD | `.claude/agents/deploy.template.md` | permanent |
+| `deployer` | Build + Publication + Déploiement QUALIF/PROD | `.claude/agents/deploy.template.md` | permanent |
 | `security` | Audit sécurité | `.claude/agents/security.template.md` | ponctuel |
 | `infra` | Infrastructure (si configurée) | `.claude/agents/infra.template.md` | ponctuel |
 
@@ -66,7 +66,8 @@
 | `/bugfix <desc>` | Workflow correction de bug |
 | `/hotfix <desc>` | Correction urgente prod |
 | `/refactor <desc>` | Refactoring |
-| `/publish` | Build + publication (registre/artefact) — commune QUALIF/PROD |
+| `/build` | Compilation de la version candidate — agnostique à l'environnement |
+| `/publish qualif\|prod` | Mise à disposition pour un environnement (promotion ou rebuild déterministe via CI) |
 | `/deploy qualif\|prod` | Installation de l'artefact déjà publié |
 | `/review [scope]` | Revue de code |
 | `/qa [scope]` | Validation QA |

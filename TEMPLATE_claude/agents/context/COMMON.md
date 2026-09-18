@@ -214,7 +214,7 @@ Le milestone GitHub actif est la SEULE source de verite pour `X.Y.Z` — fixe de
 | `X` | Compatibilite des donnees (DB, fichiers). Fixe par le milestone |
 | `Y` | Compteur de milestone/livraison. Fixe par le milestone |
 | `Z` | Compteur de bugfix au sein de la ligne `X.Y`. Fixe par le milestone |
-| `a` | Compteur de build QUALIF, gere exclusivement par `deploy`. Les agents `dev-*` ne le touchent jamais. Jamais visible en prod |
+| `a` | Compteur de build, gere exclusivement par `deploy` (tache BUILD, agnostique a l'environnement). Les agents `dev-*` ne le touchent jamais. Jamais visible en prod |
 
 ---
 

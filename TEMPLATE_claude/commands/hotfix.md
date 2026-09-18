@@ -50,7 +50,13 @@ Sinon -> workflow normal.
 [TESTS CRITIQUES] --> Uniquement les tests essentiels
     |
     v
-[DEPLOY PROD] --> Deploiement direct
+[BUILD] --> Compilation candidat
+    |
+    v
+[PUBLISH PROD] --> Merge + tag officiel, rebuild deterministe via CI (sans QUALIF)
+    |
+    v
+[DEPLOY PROD] --> Installation directe
     |
     v
 [POST-MORTEM] --> Documentation de l'incident
@@ -100,7 +106,7 @@ Uniquement :
 
 **Pas de suite complete** - Sera fait apres.
 
-### 4. DEPLOY PROD
+### 4. BUILD + PUBLISH PROD + DEPLOY PROD
 
 Le fix est deja commite directement sur la branche du milestone actif (etape 1bis) — HOTFIX ne
 cree plus sa propre branche isolee, il rejoint `milestone/vX.Y.Z` comme FEATURE/BUGFIX/REFACTOR
@@ -118,9 +124,12 @@ cherry-pick propre entre commits valides et commits en cours). Si elles ne peuve
 finalisees a temps, l'urgence du hotfix force a les valider en priorite (Review + QA accelerees)
 avant de deployer — jamais de contournement.
 
-Deploiement, mecanique identique a `agents/deploy.md` Workflow PROD (push de la branche
-milestone, merge `--no-ff` vers `main`, tag `vX.Y.Z`, suivi CI, nettoyage remote de la branche
-a l'Etape 8 en cas de succes) — dispatcher `deployer` avec l'ordre PROD.
+Deploiement, mecanique identique a `agents/deploy.md` Taches PUBLISH PROD / DEPLOY PROD (build
+candidat, push de la branche milestone, merge `--no-ff` vers `main`, tag `vX.Y.Z`, suivi CI,
+nettoyage remote de la branche a l'Etape 6 en cas de succes) — dispatcher `deployer` avec
+l'ordre chaine BUILD puis PUBLISH PROD puis DEPLOY PROD, **sans passer par QUALIF** — seule
+exception ou PUBLISH PROD part directement d'un BUILD frais plutot que d'un artefact deja
+valide en QUALIF (voir `agents/deploy.md` Mode Teammates).
 
 **Preparation marketing — dispatch systematique en parallele, comme pour tout deploiement PROD**
 (voir `agents/cdp.template.md` Phase 6, meme mecanique GATE 4d / PUBLISH) : `CLEAR(marketing)`

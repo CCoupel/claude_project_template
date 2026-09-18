@@ -64,6 +64,10 @@ pertinence. Republier l'apercu Artifact sur le meme chemin de fichier (meme URL 
 
 ### Tache `PUBLISH`
 
+> A ne pas confondre avec les taches `PUBLISH QUALIF`/`PUBLISH PROD` de l'agent `deployer`
+> (`agents/deploy.md`) — celles-ci publient un artefact applicatif, cette tache-ci publie le
+> contenu marketing (site gh-pages), sans rapport avec le pipeline de release.
+
 Recue uniquement quand le deploiement PROD a reussi ET que l'utilisateur a valide la maquette
 (les deux conditions sont verifiees par le CDP, pas par toi). Commit + push des fichiers deja
 generes par `PREPARE` (site marketing sur `gh-pages`, release notes, etc.). Si le contexte a

@@ -68,7 +68,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `qa` | `qa` | Execution des tests et validation |
 | `security` | `security` | Audit securite |
 | `doc-updater` | `doc-updater` | Documentation |
-| `deployer` | `deploy` | Publication + Deploiement QUALIF/PROD |
+| `deployer` | `deploy` | Build + Publication + Deploiement QUALIF/PROD |
 | `infra` | `infra` | Validation infra + procedures deploy |
 | `marketing` | `marketing-release` | Communication de release |
 | `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
@@ -400,12 +400,15 @@ SendMessage({ to: "doc-updater", content: "
 **Apres reception :**
 - DONE →
   > `ISSUE_NUMS[]` non vide → label `DONE` sur toutes les issues, remove `EN QA`/`EN REVIEW`/`EN COURS`/`PLANNING`
-  Phase DEPLOY QUALIF (automatique)
+  Phase BUILD + PUBLISH QUALIF + DEPLOY QUALIF (automatique)
 - FAILED → renvoyer au doc-updater avec correction avant de continuer
 
-### Phase 5 — Deploiement QUALIF + Documentation Finalize (parallele)
+### Phase 5 — Build + Publish + Deploy QUALIF + Documentation Finalize (parallele)
 
-> Phase 5 remplace les anciennes Phases 5 (DOC) et 6 (QUALIF) — elles s'executent maintenant en parallele.
+> Phase 5 remplace les anciennes Phases 5 (DOC) et 6 (QUALIF) — elles s'executent maintenant en
+> parallele. Le deployer enchaine en interne BUILD (compilation, agnostique a l'environnement)
+> puis PUBLISH QUALIF (mise a disposition, mecanisme `promote`) puis DEPLOY QUALIF
+> (installation) — voir `agents/deploy.template.md`.
 
 **Validation infra (avant de lancer) :**
 ```
@@ -419,10 +422,10 @@ SendMessage({ to: "infra", content: "
 **Si infra VALIDATED — dispatcher deployer + doc-updater dans le meme tour :**
 ```
 SendMessage({ to: "deployer", content: "
-  Publie puis deploie en QUALIF depuis la branche [branche].
-  Incremente toi-meme `a` avant le build (voir ton propre protocole, deploy.template.md — Tache PUBLISH)
-  — n'attends pas de version fournie. Enchaine PUBLISH puis DEPLOY QUALIF sans attendre de
-  nouvel ordre.
+  Build puis publie puis deploie en QUALIF depuis la branche [branche].
+  Incremente toi-meme `a` avant le build (voir ton propre protocole, deploy.template.md — Tache BUILD)
+  — n'attends pas de version fournie. Enchaine BUILD puis PUBLISH QUALIF puis DEPLOY QUALIF
+  sans attendre de nouvel ordre.
   Retourne : DONE + version publiee/deployee [X.Y.Z.a] + statut des services + smoke tests OK/KO.
 " })
 
@@ -498,11 +501,15 @@ Selon la reponse utilisateur :
   - Après réception du nouveau plan : CLEAR(dev-*) + CLEAR(test-writer) — contexte obsolète
   - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater) avant redispatch
 
-### Phase 6 — Deploiement PROD (via confirmation GATE 4)
+### Phase 6 — Publish + Deploiement PROD (via confirmation GATE 4)
 
 > Cette phase s'execute pour toute invocation de `/deploy prod`, qu'elle survienne en
 > confirmation GATE 4 en plein cycle CDP ou en commande directe hors cycle — aucune
-> distinction, meme protocole dans les deux cas (voir `commands/deploy.template.md`).
+> distinction, meme protocole dans les deux cas (voir `commands/deploy.template.md`). Le
+> deployer enchaine en interne PUBLISH PROD (merge + tag officiel, rebuild deterministe via
+> CI) puis DEPLOY PROD (installation) — voir `agents/deploy.template.md`. Aucun BUILD ici :
+> l'artefact QUALIF deja valide est republie, jamais reconstruit ad hoc (exception : Hotfix,
+> voir "Dispatch selon le Type de Workflow").
 
 > **Principe absolu : PROD = zero modification.**
 > A ce stade, code, tests, documentation et contrats sont figes et valides.
@@ -523,9 +530,10 @@ type de workflow (y compris Hotfix — voir aussi section "Dispatch selon le Typ
 
 ```
 SendMessage({ to: "deployer", content: "
-  Deploie en PROD la version [X.Y.Z] — l'artefact [X.Y.Z.a] est deja publie et valide en QUALIF.
-  Workflow : merge → main → tag officiel vX.Y.Z (promotion, aucun rebuild) → installation de
-  l'artefact deja publie → verification du rollout.
+  Publie puis deploie en PROD la version [X.Y.Z] — l'artefact [X.Y.Z.a] est deja publie et
+  valide en QUALIF. Enchaine PUBLISH PROD (merge → main → tag officiel vX.Y.Z, declenche le
+  rebuild deterministe via CI) puis DEPLOY PROD (installation de l'artefact publie par la CI,
+  verification du rollout) sans attendre de nouvel ordre.
 " })
 
 CLEAR(marketing)
@@ -587,6 +595,9 @@ Informer l'utilisateur du resultat du deploiement (et de la publication marketin
 
 ## Dispatch selon le Type de Workflow
 
+> Rappel de notation : `QUALIF` ci-dessous designe la chaine complete BUILD → PUBLISH QUALIF →
+> DEPLOY QUALIF (Phase 5) ; `PROD` designe PUBLISH PROD → DEPLOY PROD (Phase 6).
+
 ### Feature
 
 ```
@@ -602,9 +613,12 @@ ROUTING → DEV → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] 
 ### Hotfix
 
 ```
-DEV (minimal) → REVIEW rapide → DEPLOY PROD direct → DOC (post-mortem apres PROD)
+DEV (minimal) → REVIEW rapide → BUILD → PUBLISH PROD → DEPLOY PROD direct → DOC (post-mortem apres PROD)
 ```
-> Exception au principe "PROD = zero modification" — acceptable uniquement pour les hotfixes critiques.
+> Exception au principe "PROD = zero modification" — acceptable uniquement pour les hotfixes
+> critiques. Seul cas ou PUBLISH PROD part directement d'un BUILD frais plutot que d'un
+> artefact deja valide en QUALIF — jamais de passage par QUALIF (voir `agents/deploy.template.md`,
+> Mode Teammates).
 
 ### Refactor
 
@@ -657,6 +671,12 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 4b  | Infra QUALIF invalide | "Procedure QUALIF incoherente avec l'infra. Voir rapport." |
 | GATE 4c  | Infra PROD invalide | Stop immediat — retour Phase DEV, aucune correction en PROD |
 | GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Voici la maquette de communication pour v[X.Y]. Validez-vous ?" |
+
+> **Limitation connue** : cette orchestration (Phases 5/6, GATE 4/4b/4c/4d) est cablee pour une
+> chaine fixe a 2 environnements (QUALIF puis PROD). Un environnement supplementaire declare
+> dans `infrastructure.environments[]` (DEV, PRE-PROD...) n'est pas integre au flux GATE
+> automatise — il se publie/deploie manuellement via `/publish <env>` et `/deploy <env>`, hors
+> orchestration CDP. Generaliser le GATE a une chaine a N environnements est un chantier separe.
 
 **Tout le reste est execute en autonomie** — QA validee → DOC → DEPLOY QUALIF sans interruption.
 

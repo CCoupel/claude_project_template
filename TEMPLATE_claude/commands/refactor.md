@@ -56,7 +56,13 @@ Sinon -> workflow normal.
     |           |
      `----+-----'
           v
-   Fin refactor (pas de DOC)
+[BUILD] --> Compilation candidat (pas de DOC)
+    |
+    v
+[PUBLISH QUALIF] --> Mise a disposition QUALIF
+    |
+    v
+[DEPLOY QUALIF] --> Installation QUALIF (PROD sur /deploy prod)
 ```
 
 ## Etapes Detaillees

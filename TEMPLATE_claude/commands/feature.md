@@ -53,7 +53,19 @@ Sinon -> workflow normal.
        [DOC] --> Documentation
     |
     v
-[DEPLOY] --> Deploiement QUALIF (PROD sur /deploy prod)
+[BUILD] --> Compilation candidat
+    |
+    v
+[PUBLISH QUALIF] --> Mise a disposition QUALIF
+    |
+    v
+[DEPLOY QUALIF] --> Installation QUALIF
+    |
+    v
+[PUBLISH PROD] --> Merge + tag officiel, rebuild deterministe via CI (sur /deploy prod)
+    |
+    v
+[DEPLOY PROD] --> Installation PROD
 ```
 
 ## Prompt a transmettre au CDP

@@ -148,7 +148,7 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 - `/milestone status` — Progression du milestone actif
 - `/review [scope] [mode]` — Revue de code
 - `/secu [scope]` — Audit securite
-- `/deploy qualif|prod` — Deployer
+- `/build`, `/publish qualif|prod`, `/deploy qualif|prod` — Deployer
 - `/context-audit [scope]` — Audit doc projet (doublons, refs cassées, optimisation contexte agents)
 - `/team-status` — État de la team et fermeture des agents inactifs
 - `/end-session` — Cloturer la session

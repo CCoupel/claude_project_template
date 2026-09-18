@@ -105,9 +105,9 @@ Format prod       : X.Y.Z   (le "a" n'est jamais publie en prod)
 | X | Compatibilite des donnees (DB, fichiers). Fixe par le titre du milestone. |
 | Y | Compteur de milestone/livraison. Fixe par le titre du milestone. |
 | Z | Compteur de bugfix au sein de la ligne `X.Y`. Fixe par le titre du milestone. |
-| a | Compteur de build QUALIF, gere exclusivement par `deploy`. Les agents `dev-*` ne le touchent jamais. Jamais visible en prod. |
+| a | Compteur de build, gere exclusivement par `deploy` (tache BUILD — agnostique a l'environnement). Les agents `dev-*` ne le touchent jamais. Jamais visible en prod. |
 
-`X.Y.Z` est fixe integralement par le titre du milestone GitHub actif — voir 5.7. Le milestone est la SEULE source de verite pour ces 3 segments ; aucun agent ne les recalcule ni ne les incremente au fil de l'eau. `a` est le seul segment qui bouge pendant le cycle : simple compteur de build, independant des commits dev, incremente uniquement par `deploy` a chaque build QUALIF.
+`X.Y.Z` est fixe integralement par le titre du milestone GitHub actif — voir 5.7. Le milestone est la SEULE source de verite pour ces 3 segments ; aucun agent ne les recalcule ni ne les incremente au fil de l'eau. `a` est le seul segment qui bouge pendant le cycle : simple compteur de build, independant des commits dev, incremente uniquement par `deploy` a chaque BUILD.
 
 ### 5.3 Cycle de Vie de la Version
 
@@ -115,10 +115,10 @@ Format prod       : X.Y.Z   (le "a" n'est jamais publie en prod)
 |-----------|-------|
 | Creation du milestone (`/milestone new vX.Y[.Z]`) | Le titre fixe `X.Y.Z` pour tout le cycle — logique complete de validation en 5.7 |
 | Ouverture du cycle (1er commit sur la branche rattachee au milestone) | `{VERSION_FILE}` -> `X.Y.Z.0` (version du milestone, `a=0`) |
-| Deploiement QUALIF (avant build) | `a+1` — a la charge de `deploy`, commit dedie `chore(version): Bump to X.Y.Z.a+1`. Seul declencheur de `a` : garantit un artefact unique par deploiement, meme sans nouveau commit dev entre deux deploiements. Le dossier non gitte `build/qualif_vX.Y.Z/` (sans `a`), toujours a la racine du repo — meme en monorepo, jamais sous un sous-repertoire backend — reste le meme entre deux builds ; c'est le nom de l'artefact a l'interieur (`app-X.Y.Z.a.tar.gz`) qui change (voir `deploy.template.md`) |
-| Promotion dev -> prod | `a` est supprime — la version livree est exactement `X.Y.Z`, telle que fixee par le milestone. Aucun calcul. |
+| BUILD (avant PUBLISH QUALIF) | `a+1` — a la charge de `deploy`, commit dedie `chore(version): Bump to X.Y.Z.a+1`. Seul declencheur de `a` : garantit un artefact unique par build, meme sans nouveau commit dev entre deux builds. Le dossier non gitte `build/candidate_vX.Y.Z/` (sans `a`), toujours a la racine du repo — meme en monorepo, jamais sous un sous-repertoire backend — reste le meme entre deux builds ; c'est le nom de l'artefact a l'interieur (`app-X.Y.Z.a.tar.gz`) qui change. PUBLISH QUALIF promeut ensuite ce candidat vers `build/qualif_vX.Y.Z/` sans le reconstruire (voir `deploy.template.md`) |
+| Promotion dev -> prod (`/publish prod`) | `a` est supprime — la version livree est exactement `X.Y.Z`, telle que fixee par le milestone. Aucun calcul. |
 
-> Les commits dev ordinaires (`feat`, `fix`, `refactor`...) ne touchent jamais `{VERSION_FILE}`. `a` s'incremente uniquement au fil des deploiements QUALIF — plusieurs commits dev peuvent donc s'accumuler sous le meme `a`, et `a` peut s'incrementer plusieurs fois sans aucun nouveau commit dev entre deux deploiements (ex: redeploiement suite a un correctif infra hors code). C'est le comportement attendu.
+> Les commits dev ordinaires (`feat`, `fix`, `refactor`...) ne touchent jamais `{VERSION_FILE}`. `a` s'incremente uniquement au fil des BUILD — plusieurs commits dev peuvent donc s'accumuler sous le meme `a`, et `a` peut s'incrementer plusieurs fois sans aucun nouveau commit dev entre deux builds (ex: rebuild suite a un correctif infra hors code). C'est le comportement attendu.
 
 ### 5.4 Regle d'Or — Tout Developpement Rattache a un Milestone
 
@@ -127,7 +127,7 @@ Format prod       : X.Y.Z   (le "a" n'est jamais publie en prod)
   rejoignent le milestone actif s'il existe (commit direct sur sa branche `milestone/vX.Y.Z`,
   aucune creation) — voir `commands/hotfix.md` et `context/CDP_WORKFLOWS.md` Phase Clarification
   etape 3c.
-- **Bug remonte pendant un milestone en cours** : le fix est integre normalement (commit sans toucher `{VERSION_FILE}`), `X.Y.Z` ne bouge pas. Le prochain deploiement QUALIF incremente `a` automatiquement.
+- **Bug remonte pendant un milestone en cours** : le fix est integre normalement (commit sans toucher `{VERSION_FILE}`), `X.Y.Z` ne bouge pas. Le prochain BUILD incremente `a` automatiquement.
 - **Bugfix/hotfix urgent solitaire, aucun milestone actif** : le milestone cible `X.Y.Z+1` (Z+1 par rapport a la derniere version prod livree) est cree automatiquement, sans intervention manuelle prealable — voir `commands/hotfix.md`.
 - **Aucune livraison partielle** : la branche milestone part toujours en bloc au deploiement PROD (urgence ou non) — pas de sous-branche par issue, donc pas de cherry-pick propre. Seules les issues **non commencees** (aucun commit) sont reportables sans impact vers le milestone suivant ; celles deja en chantier doivent etre finalisees et validees avant de shipper (voir `context/CDP_WORKFLOWS.md`, Regle "Aucune Livraison Partielle").
 - **Une version prod deja depassee n'est jamais repatchee** — le fix cible toujours la ligne prod courante, jamais une ancienne.
@@ -137,12 +137,12 @@ Format prod       : X.Y.Z   (le "a" n'est jamais publie en prod)
 ```
 Milestone v1.4.0 cree (X=1, Y=4, Z=0)
 1.4.0.0                                (ouverture du cycle)
-1.4.0.1                                (1er deploiement QUALIF — a+1 par deploy)
-1.4.0.2                                (redeploiement QUALIF apres correctif — a+1 par deploy)
+1.4.0.1                                (1er build — a+1 par deploy)
+1.4.0.2                                (rebuild apres correctif — a+1 par deploy)
 1.4.0                                  (promotion prod — a supprime, version livree = milestone exact)
 
 Milestone v1.4.1 cree (bugfix solitaire urgent, Z+1 auto)
-1.4.1.0 -> 1.4.1.1                     (1 deploiement QUALIF)
+1.4.1.0 -> 1.4.1.1                     (1 build)
 1.4.1                                  (promotion prod)
 
 Milestone v1.5.0 cree (nouvelle feature planifiee)
@@ -172,7 +172,7 @@ Le titre du milestone (`vX.Y.Z` ou `vX.Y.Z — <nom>`, cree par `/milestone new`
 **A l'ouverture du cycle** :
 - `{VERSION_FILE}` est positionne sur `X.Y.Z.0` (version du milestone, `a=0`).
 
-**A la promotion dev -> prod (`/deploy prod`)** :
+**A la promotion dev -> prod (`/publish prod`)** :
 - `a` est supprime de `{VERSION_FILE}`. La version livree est exactement `X.Y.Z` — aucun recalcul, aucune branche conditionnelle.
 
 **A la cloture du milestone (apres deploy PROD reussi)** :
@@ -217,15 +217,15 @@ perf:     Amelioration de performance
 > tierces, dépendances) — celles-ci ciblent `main` par convention GitHub, hors cycle milestone.
 > Cette exception inclut sa propre resynchronisation de la branche milestone active si besoin
 > (voir `agents/pr-reviewer.md` Phase D). Pour le cas normal (cycle milestone) — voir
-> `agents/deploy.md` Workflow PROD étape 2 pour la commande exacte (`git merge --no-ff`,
+> `agents/deploy.md` Tache PUBLISH PROD étape 2 pour la commande exacte (`git merge --no-ff`,
 > qui préserve l'historique detaillé de la branche milestone, condition necessaire au
-> nettoyage remote sans perte de `agents/deploy.md` Étape 8). Ne pas dupliquer cette
-> commande ici — la source unique de vérité est `agents/deploy.md`, pour éviter toute
-> nouvelle dérive entre les deux fichiers.
+> nettoyage remote sans perte de `agents/deploy.md` Tache DEPLOY PROD Étape 6). Ne pas
+> dupliquer cette commande ici — la source unique de vérité est `agents/deploy.md`, pour
+> éviter toute nouvelle dérive entre les deux fichiers.
 
 ### 6.4 Tag et Release
 
-> Seul `deployer` cree le tag de release — voir `agents/deploy.md` Workflow PROD étape 3
+> Seul `deployer` cree le tag de release — voir `agents/deploy.md` Tache PUBLISH PROD étape 3
 > pour la commande exacte. Ne pas dupliquer ici, pour la meme raison qu'en 6.3.
 
 ---
@@ -295,19 +295,19 @@ rm -f coverage.out coverage.html
 ### 9.1 Workflow Feature
 
 ```
-/feature -> CLARIFICATION -> PLAN -> DEV -> REVIEW -> QA -> DOC -> DEPLOY(QUALIF) -> DEPLOY(PROD)
+/feature -> CLARIFICATION -> PLAN -> DEV -> REVIEW -> QA -> DOC -> BUILD -> PUBLISH(QUALIF) -> DEPLOY(QUALIF) -> PUBLISH(PROD) -> DEPLOY(PROD)
 ```
 
 ### 9.2 Workflow Bugfix
 
 ```
-/bugfix -> CLARIFICATION -> ANALYSE -> DEV -> REVIEW -> QA -> DEPLOY(QUALIF)
+/bugfix -> CLARIFICATION -> ANALYSE -> DEV -> REVIEW -> QA -> BUILD -> PUBLISH(QUALIF) -> DEPLOY(QUALIF)
 ```
 
 ### 9.3 Workflow Hotfix (Urgence)
 
 ```
-/hotfix -> DEV -> QA -> DEPLOY(PROD)
+/hotfix -> DEV -> QA -> BUILD -> PUBLISH(PROD) -> DEPLOY(PROD)
 ```
 
 ---
