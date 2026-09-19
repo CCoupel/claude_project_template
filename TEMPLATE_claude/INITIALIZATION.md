@@ -537,6 +537,12 @@ La mécanique concrète (commandes exactes) de PUBLISH et DEPLOY ne vit plus dan
 (`infrastructure.environments[].publish.mode` / `.deploy.mechanism`). `<env>` est le nom de
 l'environnement normalisé (minuscules, espaces/underscores → tirets).
 
+Variables/secrets : deux niveaux (`.env` racine, global ; `.claude/agents/environments/<env>.env`,
+spécifique — jamais commités). `/init-project` génère un `.env.example` par niveau (noms de
+variables attendus selon le mécanisme, valeurs vides), enrichi d'une détection best-effort des
+noms déjà référencés dans les fichiers existants du projet (`docker-compose*.yml`, workflows
+CI) — jamais de valeur lue ni copiée, juste des noms à vérifier manuellement.
+
 ### Séparation template / adaptations projet
 
 **Commandes** (`*.md`) : directement invocables, gérées par sync, ne pas éditer, sans compagnon.

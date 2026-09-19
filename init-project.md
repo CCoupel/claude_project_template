@@ -903,6 +903,43 @@ Selection de la source, par mecanisme (pas par nom d'environnement) :
 | `deploy.mechanism` | `paas` | `TEMPLATE_claude/templates/environments/deploy-paas.md` |
 | `deploy.mechanism` | `cloud-run` | `TEMPLATE_claude/templates/environments/deploy-cloud-run.md` |
 
+Detection best-effort des variables deja referencees dans les fichiers existants du projet
+(noms uniquement — **aucune valeur n'est jamais lue ni copiee**, seuls les motifs `${VAR}` et
+`secrets.VAR` sont extraits) :
+
+```bash
+scan_var_names() {
+  [ "$#" -eq 0 ] && return
+  grep -ohE '\$\{[A-Za-z_][A-Za-z0-9_]*|\$[A-Za-z_][A-Za-z0-9_]*|secrets\.[A-Za-z_][A-Za-z0-9_]*' "$@" 2>/dev/null \
+    | sed -E 's/^\$\{?//; s/^secrets\.//' | sort -u
+}
+# Ajoute les noms absents a un .env.example existant (touch si absent), jamais de valeur,
+# jamais de ligne existante touchee. Ecrit un en-tete seulement si au moins un nom est ajoute.
+merge_env_example() {
+  local file="$1" header="$2"; shift 2
+  touch "$file"
+  local added=0
+  for v in "$@"; do
+    [ -n "$v" ] || continue
+    grep -q "^${v}=" "$file" 2>/dev/null && continue
+    if [ "$added" -eq 0 ]; then printf '\n%s\n' "$header" >> "$file"; fi
+    echo "${v}=" >> "$file"
+    added=$((added + 1))
+  done
+  echo "$added"
+}
+
+# Global (fichiers sans suffixe d'environnement) -> .env.example a la racine
+GLOBAL_FILES=$(ls docker-compose.yml docker-compose.yaml Dockerfile .github/workflows/*.y*ml 2>/dev/null)
+GLOBAL_VARS=$(scan_var_names $GLOBAL_FILES)
+if [ -n "$GLOBAL_VARS" ]; then
+  N=$(merge_env_example .env.example \
+    "# Variables detectees dans les fichiers existants du projet (docker-compose.yml, workflows...) — a verifier manuellement, aucune valeur lue ni copiee :" \
+    $GLOBAL_VARS)
+  [ "$N" -gt 0 ] && echo "  ✓ .env.example (racine) enrichi de $N variable(s) detectee(s) — a verifier manuellement"
+fi
+```
+
 ```bash
 mkdir -p .claude/agents/environments
 jq -c '.infrastructure.environments[]' .claude/project-config.json | while read -r ENV; do
@@ -960,6 +997,19 @@ jq -c '.infrastructure.environments[]' .claude/project-config.json | while read 
     done
   } > "$ENV_EXAMPLE"
   echo "  ✓ $ENV_EXAMPLE genere"
+
+  # Detection par environnement — fichiers dont le nom contient <env> (docker-compose.prod.yml,
+  # values-prod.yaml...), meme regles que la detection globale ci-dessus.
+  PER_ENV_FILES=$(find . -maxdepth 3 \( -iname "*${ENV_LOWER}*.yml" -o -iname "*${ENV_LOWER}*.yaml" \) \
+    -not -path "*/node_modules/*" -not -path "*/TEMPLATE_claude/*" -not -path "*/.git/*" \
+    -not -path "*/build/*" 2>/dev/null)
+  PER_ENV_VARS=$(scan_var_names $PER_ENV_FILES)
+  if [ -n "$PER_ENV_VARS" ]; then
+    N=$(merge_env_example "$ENV_EXAMPLE" \
+      "# Variables detectees dans les fichiers existants pour $NAME — a verifier manuellement, aucune valeur lue ni copiee :" \
+      $PER_ENV_VARS)
+    [ "$N" -gt 0 ] && echo "  ✓ $ENV_EXAMPLE enrichi de $N variable(s) detectee(s) pour $NAME"
+  fi
 done
 ```
 
@@ -970,8 +1020,10 @@ done
 > `<env>.env.example` est committe (noms de variables, valeurs vides) ; `<env>.env` (valeurs
 > reelles) est gitignore et n'est jamais cree automatiquement — le projet le cree manuellement
 > a partir du `.example`. Meme convention pour `.env`/`.env.example` a la racine (variables
-> globales, applicatif ET infra, communes a tous les environnements) — hors gestion de ce
-> template, deja existant ou a creer par le projet.
+> globales, applicatif ET infra, communes a tous les environnements) : `/init-project` le
+> cree/enrichit uniquement s'il detecte des variables referencees dans des fichiers existants
+> (ci-dessus) — jamais un fichier vide invente sans raison — et ne gere jamais `.env` (valeurs
+> reelles), a la charge du projet.
 
 ### 4. Application des placeholders dans les commandes et agents deployes
 
