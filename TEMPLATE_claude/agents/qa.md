@@ -159,9 +159,14 @@ npx cypress run                   # Cypress
 npx playwright test               # Playwright
 ```
 
-### 4b. Conformite a la Maquette (si le plan en contient une)
+### 4b. Conformite aux Maquettes (si le plan en contient une, ou si un composant a maquette est touche)
 
-Si le plan d'implementation reference une maquette (interface ou machine a etats), verifier que l'implementation livree correspond a ce qui a ete valide par l'utilisateur (etats/transitions couverts, elements d'interface conformes).
+Convention : `context/COMMON.md` section 14. Verifier la conformite de l'implementation livree a :
+- la maquette de la feature (validee par l'utilisateur) : etats/transitions couverts, elements d'interface conformes ;
+- **toutes les maquettes actives** (`docs/mockup/INDEX.md`) des composants touches, pas seulement celle de la feature — une regression sur une partie deja validee est un ecart ;
+- les **contraintes** de `docs/mockup/DECISIONS.md` pour ces composants (couleurs, tailles... deja arbitrees par l'utilisateur).
+
+Tout ecart = NOT VALIDATED, avec la maquette ou la contrainte concernee citee.
 
 ### 5. Tests de Performance (si scope `perf`)
 

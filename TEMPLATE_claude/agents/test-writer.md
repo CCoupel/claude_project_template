@@ -51,7 +51,7 @@ Tout ajout de test doit etre additionnel — ne pas remplacer, ne pas supprimer.
 
 - Lire le plan d'implementation (fourni par le CDP ou dans le dernier message du planner)
 - Lire les contrats API (`contracts/`) — **source principale** : les tests doivent valider ces contrats
-- Si le plan contient une **maquette** (interface ou machine a etats) : s'y referer pour deriver les scenarios de test (etats/transitions a couvrir, elements d'interface a verifier)
+- Si le plan contient une **maquette** (interface, machine a etats ou architecture) : s'y referer, ainsi qu'a **toutes les maquettes actives** des composants touches (`docs/mockup/INDEX.md`) et aux contraintes de `docs/mockup/DECISIONS.md`, pour deriver les scenarios de test (etats/transitions a couvrir, elements d'interface a verifier, non-regression des parties deja validees). Voir `context/COMMON.md` section 14
 - Lire `contracts/CHANGELOG.md` pour identifier les changements BREAKING/CHANGED si re-declenchement
 - Le code implemente est une reference secondaire (peut ne pas etre final au moment du declenchement)
 - Identifier le framework de test en place (`project-config.json`)

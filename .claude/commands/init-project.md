@@ -818,6 +818,9 @@ l'utilisateur de le personnaliser par environnement uniquement s'il le demande e
     "typecheck": "<TYPECHECK_CMD>",
     "coverage": "<COVERAGE_CMD>"
   },
+  "docs": {
+    "mockup_dir": "docs/mockup"
+  },
   "agents": {
     "idle_ttl_minutes": 15,
     "idle_warning_interval_minutes": 5
@@ -838,6 +841,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.audit` | Stack : `govulncheck ./...` / `npm audit` / `pip-audit` |
 | `commands.typecheck` | Frontend TS : `npm run typecheck` / `tsc --noEmit` — vide sinon |
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
+| `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/COMMON.md` §14) |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
 | `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question 9bis) ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question 9 pour chaque environnement, sauf personnalisation explicite |
@@ -1108,6 +1112,41 @@ echo "✓ CLAUDE.md généré"
 # .gitignore projet
 cp TEMPLATE_claude/gitignore-for-projects .gitignore
 ```
+
+#### Dossier des maquettes
+
+Creer le squelette du dossier des maquettes (idempotent — ne jamais ecraser un fichier existant ;
+egalement execute a la reinitialisation d'un projet existant qui n'a pas encore `docs.mockup_dir`
+ni `INDEX.md`) :
+
+```bash
+MOCKUP_DIR=$(jq -r '.docs.mockup_dir // "docs/mockup"' .claude/project-config.json)
+mkdir -p "$MOCKUP_DIR"
+
+[ -f "$MOCKUP_DIR/INDEX.md" ] || cat > "$MOCKUP_DIR/INDEX.md" <<'INDEX_EOF'
+# Index des maquettes
+
+> Tenu exclusivement par le CDP — convention : `context/COMMON.md` section 14.
+
+## Actives
+| Composant | Feature | Fichier | Version | Relation |
+|-----------|---------|---------|---------|----------|
+
+## Obsolètes
+| Fichier | Remplacée par | Version |
+|---------|---------------|---------|
+INDEX_EOF
+
+[ -f "$MOCKUP_DIR/DECISIONS.md" ] || cat > "$MOCKUP_DIR/DECISIONS.md" <<'DECISIONS_EOF'
+# Contraintes de conception
+
+> Contraintes durables issues des refus/corrections de l'utilisateur, par composant.
+> Le planner les respecte, QA les vérifie. Tenu par le CDP.
+DECISIONS_EOF
+```
+
+Si `docs.mockup_dir` est absent de `project-config.json` (projet existant), l'ajouter avec la valeur par defaut
+(migration additive, sans autre modification du fichier).
 
 #### Labels GitHub de suivi de phase
 

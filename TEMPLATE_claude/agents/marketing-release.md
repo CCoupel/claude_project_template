@@ -239,6 +239,9 @@ recuperer le contenu actuellement publie avant de produire quoi que ce soit, et 
 cette base plutot que regenerer le site depuis zero. L'utilisateur valide une evolution du
 site existant, pas une refonte.
 
+Cette maquette est **ephemere** (`context/COMMON.md` section 14.8) : systematique a chaque release, elle
+vit dans `_work/`, n'est jamais commitee dans `docs/mockup/` (reserve aux maquettes projet) ni indexee.
+
 Le contenu de reference est celui du **distant** (`origin`), jamais une copie locale
 potentiellement perimee :
 ```bash
