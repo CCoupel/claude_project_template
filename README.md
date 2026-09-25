@@ -493,6 +493,15 @@ prépare du contenu ; sans changement marquant (que des `fix`/`chore`/`refactor`
 milestone trouvé (repli sur `CHANGELOG.md`), il s'arrête immédiatement, sans solliciter
 l'utilisateur.
 
+**Initialisation du site** : un site marketing est la règle (`marketing.site: "auto"`). S'il n'en existe
+aucun (ni sur `gh-pages`, ni dans `MARKETING/`) et que le CDP n'a pas donné l'ordre `SANS SITE`
+(`marketing.site: false`), l'agent n'improvise pas : il **alerte le CDP** (`MARKETING BESOIN CADRAGE`)
+avec une **maquette proposée** (hypothèses à confirmer) et des **questions de cadrage** (public cible,
+proposition de valeur, identité, sections, visuels, appel à l'action, langues/URL). Le CDP les relaie à
+l'utilisateur (**GATE 4e**) ; « pas de site » enregistre `marketing.site: false`. Les réponses sont consignées
+dans `MARKETING/CADRAGE.md` et servent de référence aux releases suivantes. Le déploiement PROD n'est pas
+bloqué ; rien n'est publié tant que la maquette n'est pas validée.
+
 S'il y a lieu de publier, l'agent prépare le contenu (release notes, posts, site) **sans
 commit**, et le CDP relaie la maquette à l'utilisateur pour validation. La publication
 (commit + push sur `gh-pages`) n'est déclenchée que lorsque **les deux conditions sont

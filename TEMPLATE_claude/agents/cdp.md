@@ -585,6 +585,8 @@ SendMessage({ to: "deployer", content: "
 
 CLEAR(marketing)
 SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z]" })
+// Si `marketing.site == false` dans .claude/project-config.json (ordre direct de ne pas avoir de site) :
+// SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — SANS SITE" })
 ```
 
 Le CDP ne verifie rien en amont — ni l'existence d'un milestone, ni son contenu. C'est l'agent
@@ -598,6 +600,25 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
 
 **Reponse de `marketing` (asynchrone, n'attend pas `deployer`) :**
 - `MARKETING RIEN A PUBLIER` → `TaskStop(marketing)`, rien d'autre a faire, aucune sollicitation utilisateur.
+- `MARKETING BESOIN CADRAGE — rapport: _work/reports/marketing-cadrage-[timestamp].md` → aucun site marketing
+  n'existe et aucun ordre `SANS SITE` n'a ete donne : **initialisation du site** ← **GATE 4e** :
+  ```
+  Aucun site marketing n'existe pour ce projet — initialisation necessaire (v[X.Y.Z]).
+  Maquette proposee (hypotheses a confirmer) : [URL Artifact tiree du rapport]
+  Questions de cadrage : [liste du rapport, avec la valeur par defaut proposee pour chacune]
+
+  Repondez aux questions (ou « valeurs par defaut »), ou « pas de site » pour ne pas en avoir.
+  ```
+  - Reponses → `SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — cadrage : [reponses]" })` (pas de
+    `CLEAR`) ; marketing repond ensuite `MARKETING PRET` (maquette a jour → GATE 4d ci-dessous).
+  - « Pas de site » → enregistrer `"marketing": { "site": false }` dans `.claude/project-config.json` (ne plus
+    jamais proposer), puis `SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — SANS SITE" })`.
+  - Tant que l'utilisateur n'a pas repondu, rien n'est publie (`mockup_ok` reste faux) ; le deploiement PROD
+    n'est pas bloque.
+- `MARKETING BLOQUE — [raison]` → verification du site impossible (remote injoignable...) : ne rien publier,
+  informer l'utilisateur de la raison et proposer de relancer `PREPARE` une fois le probleme resolu ; si la
+  raison est « apercu Artifact impossible », presenter l'apercu local (`_work/marketing/preview.html`) au
+  GATE 4d a la place de l'URL.
 - `MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md` → lire le rapport, puis
   presenter a l'utilisateur ← **GATE 4d** :
   ```
@@ -728,6 +749,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 4b  | Infra QUALIF invalide | "Procedure QUALIF incoherente avec l'infra. Voir rapport." |
 | GATE 4c  | Infra PROD invalide | Stop immediat — retour Phase DEV, aucune correction en PROD |
 | GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Voici la maquette de communication pour v[X.Y]. Validez-vous ?" |
+| GATE 4e  | Aucun site marketing existant (`MARKETING BESOIN CADRAGE`) | "Aucun site marketing n'existe — initialisation : voici une maquette et des questions de cadrage." |
 
 > **Limitation connue** : cette orchestration (Phases 5/6, GATE 4/4b/4c/4d) est cablee pour une
 > chaine fixe a 2 environnements (QUALIF puis PROD). Un environnement supplementaire declare

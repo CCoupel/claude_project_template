@@ -49,6 +49,25 @@ resous le milestone et decides seul de la pertinence d'une publication.
      doc-updater. Sous-sections `Added`/`Changed`/`Breaking` non vides → continuer ; seulement
      `Fixed`/`Chore` (ou section absente) → rien a publier.
    - Rien a publier → `SendMessage({ to: "main", content: "MARKETING RIEN A PUBLIER" })`, repasser IDLE. Ne rien generer d'autre.
+2b. **Detecter le site marketing** (sauf si l'ordre du CDP est `PREPARE vX.Y.Z — SANS SITE` : ne
+   traiter alors aucun site, uniquement release notes/posts). Un site existe si l'un des deux est vrai :
+   ```bash
+   test -f MARKETING/index.html && echo "site: MARKETING/"          # local, fiable hors ligne
+   git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; RC=$?
+   # RC=0 : branche presente → git fetch origin gh-pages puis verifier
+   #        git ls-tree -r --name-only origin/gh-pages | grep -qE '(^|/)index\.html$'
+   # RC=2 : branche absente (le remote a repondu : elle n'existe pas)
+   # autre : remote injoignable (reseau, authentification) → INDETERMINE
+   ```
+   - **Site trouve** → mise a jour (etape 3), en lisant d'abord `MARKETING/CADRAGE.md` s'il existe (identite,
+     public, sections deja arbitres : ne pas les re-questionner).
+   - **Verification impossible** (remote injoignable, lecture de la page en echec) → **ne jamais conclure « pas
+     de site »** : envoyer `MARKETING BLOQUE — verification du site impossible : [raison]` au CDP et repasser
+     IDLE. Une fausse initialisation ecraserait ou dupliquerait un site existant.
+   - **Aucun site trouve de facon certaine** (pas de `MARKETING/index.html`, et `gh-pages` absente ou sans
+     `index.html`), et le CDP n'a pas donne l'ordre `SANS SITE` → c'est une **INITIALISATION du site.**
+     Ne rien generer d'autre : suivre la section "Initialisation du site" (Livrables, 4. Site Marketing),
+     envoyer `MARKETING BESOIN CADRAGE` au CDP et repasser IDLE.
 3. Produire les livrables (voir section Livrables) — **sans commit ni push**. Si un site
    marketing est concerne, publier systematiquement l'apercu Artifact (voir section Livrables
    4. Site Marketing → "Apercu de validation (Artifact)") — obligatoire, pas seulement si
@@ -57,10 +76,16 @@ resous le milestone et decides seul de la pertinence d'une publication.
    inline pour les posts/release notes, chemin du fichier + **URL de l'apercu Artifact** pour
    le site).
 5. `SendMessage({ to: "main", content: "MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md" })`, repasser IDLE.
+   (Cas initialisation du site : `MARKETING BESOIN CADRAGE` a l'etape 2b, avant tout livrable.)
 
 Si le CDP redispatche `PREPARE vX.Y.Z` avec des corrections (apres refus utilisateur au GATE 4d),
 reprendre directement a l'etape 3 en tenant compte des corrections — pas de nouveau check de
 pertinence. Republier l'apercu Artifact sur le meme chemin de fichier (meme URL mise a jour).
+
+Si le CDP redispatche `PREPARE vX.Y.Z — cadrage : [reponses]` (suite a `MARKETING BESOIN CADRAGE`),
+integrer les reponses, produire la maquette du site a jour (etape 3, sans repartir d'une page
+existante puisqu'il n'y en a pas) et repondre normalement `MARKETING PRET` (GATE 4d). Si des reponses
+restent indispensables, renvoyer un nouveau `MARKETING BESOIN CADRAGE` (questions restantes uniquement).
 
 ### Tache `PUBLISH`
 
@@ -229,18 +254,56 @@ Bonjour communaute,
 [Telecharger](...)  [Documentation](...)  [GitHub](...)
 ```
 
-### 4. Site Marketing (si applicable)
+### 4. Site Marketing
 
-Si le projet a un site marketing (`gh-pages` ou `MARKETING/`), generer ou mettre a jour
-le site avec la structure suivante. Le site est bilingue (FR/EN) avec un commutateur de langue.
+Le site marketing est **la regle, pas l'exception** : sauf ordre explicite du CDP (`SANS SITE`, issu de
+`marketing.site: false` dans `project-config.json`), un projet livre a un site. Detection : voir
+PREPARE etape 2b. Site existant (`gh-pages` ou `MARKETING/`) → le mettre a jour ; aucun site →
+**initialisation** (sous-section ci-dessous). Le site est bilingue (FR/EN) avec un commutateur de langue.
 
-**La maquette presentee au GATE 4d doit toujours partir de la page marketing existante** —
-recuperer le contenu actuellement publie avant de produire quoi que ce soit, et faire evoluer
-cette base plutot que regenerer le site depuis zero. L'utilisateur valide une evolution du
+**Site existant : la maquette presentee au GATE 4d doit toujours partir de la page marketing
+existante** — recuperer le contenu actuellement publie avant de produire quoi que ce soit, et faire
+evoluer cette base plutot que regenerer le site depuis zero. L'utilisateur valide une evolution du
 site existant, pas une refonte.
 
 Cette maquette est **ephemere** (`context/COMMON.md` section 14.8) : systematique a chaque release, elle
-vit dans `_work/`, n'est jamais commitee dans `docs/mockup/` (reserve aux maquettes projet) ni indexee.
+est l'apercu Artifact construit depuis `MARKETING/index.html` (fichier de travail non commite tant que
+`PUBLISH` n'a pas eu lieu) ; elle n'est jamais commitee dans `docs/mockup/` (reserve aux maquettes projet)
+ni indexee.
+
+#### Initialisation du site (aucun site existant)
+
+Declenchee quand PREPARE etape 2b ne trouve aucun site et que le CDP n'a pas dit `SANS SITE`. Tu ne
+generes pas le site « a l'aveugle » : tu **alertes le CDP** et tu lui fournis, dans un rapport
+`_work/reports/marketing-cadrage-[timestamp].md` :
+
+1. **Constat** : aucun site trouve (emplacements verifies : branche `gh-pages`, `MARKETING/`) → c'est une
+   initialisation, pas une mise a jour.
+2. **Maquette proposee** : apercu Artifact d'un site complet (sections obligatoires ci-dessous), construit
+   depuis ce que tu peux deduire du projet (`README.md`, `CHANGELOG.md`, description GitHub, milestone).
+   Tout ce qui est deduit et non confirme est marque **« hypothese a confirmer »** dans la maquette.
+   Version courante et badges « Nouveau » de cette release visibles (voir "Apercu de validation").
+3. **Questions de cadrage** — poser uniquement celles dont la reponse ne peut pas etre deduite, en
+   proposant a chaque fois ta valeur par defaut :
+   - **Site souhaite ?** (oui / non — non = ne plus jamais proposer de site pour ce projet)
+   - **Public cible** et **probleme principal** resolu
+   - **Proposition de valeur** en une phrase + 3 benefices cles
+   - **Identite** : nom affiche, logo, couleurs, ton (voir Regles de Ton), tutoiement/vouvoiement
+   - **Sections** : Problematiques, Solutions, Architecture (obligatoires) + souhaitees (demo, roadmap, FAQ,
+     contact, telechargement, tarifs...)
+   - **Visuels disponibles** (captures, logo, video) — sinon placeholders (voir "Placeholders images")
+   - **Appel a l'action principal** et liens (depot, releases, documentation)
+   - **Langues** (FR/EN par defaut) et **URL** (`gh-pages` par defaut, domaine personnalise ?)
+   - **References** : sites dont s'inspirer
+
+Puis :
+```
+SendMessage({ to: "main", content: "MARKETING BESOIN CADRAGE — rapport: _work/reports/marketing-cadrage-[timestamp].md" })
+```
+et repasser IDLE. Le CDP relaie a l'utilisateur (GATE 4e) et te renvoie
+`PREPARE vX.Y.Z — cadrage : [reponses]`. Les reponses validees sont consignees dans
+`MARKETING/CADRAGE.md` (public cible, proposition de valeur, identite, sections, liens) — commite avec le site
+au `PUBLISH` — et servent de reference aux releases suivantes (mise a jour, pas nouveau cadrage).
 
 Le contenu de reference est celui du **distant** (`origin`), jamais une copie locale
 potentiellement perimee :
@@ -255,6 +318,7 @@ lecture pour etre sur l'etat le plus recent.
 
 ```
 MARKETING/
+├── CADRAGE.md              # Cadrage valide a l'initialisation (public, valeur, identite, sections, liens) — lu a chaque PREPARE
 ├── index.html              # Page principale (FR par defaut)
 ├── assets/
 │   ├── style.css           # Styles communs
@@ -470,6 +534,11 @@ rendu**, pas seulement un resume texte :
    son etat — orange/bleu — tel que calcule par `badges.js`). Lister ces badges dans le rapport.
 5. Inclure l'URL de l'artifact dans le rapport `_work/reports/marketing-[timestamp].md` — c'est
    ce lien que le CDP relaie a l'utilisateur au GATE 4d pour la validation globale.
+
+**Repli si l'outil Artifact est indisponible ou refuse la publication** : ne jamais demander de
+validation sans apercu. Ecrire l'apercu dans un fichier HTML autonome `_work/marketing/preview.html`
+(ouvrable localement) et envoyer `MARKETING BLOQUE — apercu Artifact impossible : [raison] — apercu local :
+_work/marketing/preview.html` au CDP, qui le presente a l'utilisateur au GATE 4d (le GATE reste obligatoire).
 
 Cet apercu est un outil de validation uniquement — le fichier reel `MARKETING/index.html`
 (document complet, structure gh-pages) reste la seule source publiee lors de `PUBLISH`.
