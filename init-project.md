@@ -829,6 +829,9 @@ l'utilisateur de le personnaliser par environnement uniquement s'il le demande e
   "docs": {
     "mockup_dir": "docs/mockup"
   },
+  "marketing": {
+    "site": "auto"
+  },
   "agents": {
     "idle_ttl_minutes": 15,
     "idle_warning_interval_minutes": 5
@@ -849,6 +852,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.audit` | Stack : `govulncheck ./...` / `npm audit` / `pip-audit` |
 | `commands.typecheck` | Frontend TS : `npm run typecheck` / `tsc --noEmit` — vide sinon |
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
+| `marketing.site` | Defaut `"auto"` : un site marketing est attendu (`gh-pages` ou `MARKETING/`) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
 | `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/COMMON.md` §14) |
 | `commands.test_fast` | Boucle DEV : tests hors tag `slow`. Stack : `go test -short ./...` / `npx vitest run --exclude "**/*.slow.*"` / `pytest -m "not slow"` — vide sinon (les dev-* retombent sur `commands.test_targeted`) |
 | `commands.test_targeted` | Tests d'un sous-ensemble, `{TARGETS}` = fichiers ou dossiers. Stack : `go test {TARGETS}` / `npx vitest run {TARGETS}` / `pytest {TARGETS}` |
