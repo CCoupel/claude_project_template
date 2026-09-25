@@ -359,9 +359,9 @@ Si le site existe deja :
 - Ajouter la fonctionnalite majeure de la version dans la section Solutions
 - Ajouter une entree dans la section Releases/Changelog si elle existe
 - Verifier que les commandes de deploiement sont toujours valides
-- Si cette release introduit un **nouveau X** (nouvelle fonctionnalite majeure) : poser un
-  badge sur le nouvel element concerne (voir "Badges de nouveaute" ci-dessous) — jamais sur un
-  simple bump Y/Z
+- Si cette release introduit un **nouvel element** (nouvelle fonctionnalite — quel que soit le
+  chiffre bumpe : X, Y ou Z) : poser un badge sur cet element (voir "Badges de nouveaute"
+  ci-dessous) — jamais sur une simple amelioration ou correction d'un element existant
 
 #### Badges de nouveaute
 
@@ -369,20 +369,26 @@ Un element marquant du site (une carte fonctionnalite, ex. "RAFALE", "Roue de la
 porter un badge `Nouveau vX.Y.Z` qui vieillit avec les releases suivantes — **sans jamais etre
 republie pour cette seule raison**.
 
-**Regle de pose — une seule fois, jamais modifiee ensuite :**
-- Un badge est pose sur un element **uniquement** quand cet element apparait pour la premiere
-  fois a l'occasion d'un changement de **X** (nouvelle fonctionnalite majeure — ex. RAFALE en
-  `v8.0.0`, Roue de la Fortune en `v9.0.0`). La version inscrite dans le badge
+**Regle de pose — une seule fois par element, jamais modifiee ensuite :**
+- Un badge est pose sur un element **quand cet element apparait pour la premiere fois**, dans
+  n'importe quelle release qui introduit une nouvelle fonctionnalite : nouveau X (ex. RAFALE en
+  `v8.0.0`, Roue de la Fortune en `v9.0.0`) **comme nouveau Y** (ex. un nouvel element en `v8.1.0`
+  recoit `data-badge-version="v8.1.0"`). La version inscrite dans le badge
   (`data-badge-version`) est **figee** a cette version de premiere apparition et **n'est plus
-  jamais modifiee** ensuite, meme si l'element recoit plus tard de nouvelles ameliorations sous
-  le meme X (ex. RAFALE enrichi en `v8.1.0` : le badge reste `v8.0.0`).
-- Un bump de **Y** ou **Z** seul (pas de nouveau X) ne pose jamais de nouveau badge et ne
-  modifie aucun badge existant.
+  jamais modifiee** ensuite, meme si l'element recoit plus tard de nouvelles ameliorations
+  (ex. RAFALE enrichi en `v8.2.0` : le badge reste `v8.0.0`).
+- Une release sans nouvel element (corrections, ameliorations d'elements existants) ne pose aucun
+  badge et ne modifie aucun badge existant.
+- **Heritage du statut** : le statut d'un badge ne depend que du **X** de sa version. Un element
+  introduit en `v8.1.0` a donc **le meme statut que `v8.0.0`** : tant que le site est en X = 8, les
+  deux sont orange « Nouveau » ; des que le site passe en X = 9, les deux passent bleu ; en X = 10,
+  les deux sont retires. Aucun traitement particulier par Y/Z.
 
 **Regle de couleur — recalculee a l'affichage, jamais par republication dediee :**
 
-La couleur/visibilite depend uniquement de l'ecart entre le X fige du badge et le X de la
-version courante du site (`CURRENT_MAJOR`, dans le `<meta>` du header) :
+La couleur/visibilite depend uniquement de l'ecart entre le X du badge (extrait de sa version
+figee `vX.Y.Z` — Y et Z sont ignores) et le X de la version courante du site (`CURRENT_MAJOR`,
+dans le `<meta>` du header) :
 
 | Ecart (X courant − X du badge) | Etat |
 |---|---|
@@ -421,8 +427,9 @@ document.querySelectorAll('[data-badge-version]').forEach(el => {
 
 **Ce que l'agent fait a chaque republication reelle du site :**
 1. Mettre a jour `<meta name="current-major">` avec le X de la version deployee.
-2. Si cette release introduit un **nouveau X** : ajouter `data-badge-version="vX.0.0"` sur le
-   nouvel element concerne.
+2. Pour **chaque nouvel element** introduit par cette release (X, Y ou Z) : ajouter
+   `data-badge-version="v<version deployee sans a>"` (ex. `v8.1.0`) sur cet element. Plusieurs
+   elements nouveaux dans la meme release portent la meme version de badge.
 3. Ne **jamais** toucher aux `data-badge-version` des badges existants — le JS s'occupe seul de
    leur couleur/suppression a l'affichage, a partir du seul `CURRENT_MAJOR`.
 
@@ -458,7 +465,10 @@ rendu**, pas seulement un resume texte :
 3. Publier via l'outil Artifact (favicon a choisir une fois, jamais changer ensuite). Sur un
    re-PREPARE (corrections), republier sur le **meme chemin de fichier** pour mettre a jour la
    meme URL plutot que d'en creer une nouvelle.
-4. Inclure l'URL de l'artifact dans le rapport `_work/reports/marketing-[timestamp].md` — c'est
+4. L'apercu doit rendre **visible la version mise en evidence** : version courante dans le header,
+   section de la release, et **chaque badge « Nouveau » pose par cette release** (avec sa version et
+   son etat — orange/bleu — tel que calcule par `badges.js`). Lister ces badges dans le rapport.
+5. Inclure l'URL de l'artifact dans le rapport `_work/reports/marketing-[timestamp].md` — c'est
    ce lien que le CDP relaie a l'utilisateur au GATE 4d pour la validation globale.
 
 Cet apercu est un outil de validation uniquement — le fichier reel `MARKETING/index.html`

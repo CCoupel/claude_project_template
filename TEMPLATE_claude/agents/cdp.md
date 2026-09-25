@@ -604,6 +604,7 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
   Maquette de communication prete pour v[X.Y.Z] :
   [resume tire du rapport]
   [Apercu visuel complet (site) : URL Artifact tiree du rapport, si un site marketing est concerne]
+  [Version mise en evidence : v[X.Y.Z] — badges « Nouveau » poses par cette release : liste tiree du rapport]
 
   Valider et publier des que le deploiement sera confirme ? [O/n]
   ```
