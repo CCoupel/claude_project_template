@@ -206,6 +206,13 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   ```
 - Répéter jusqu'à validation explicite de l'utilisateur avant de lancer la Phase 2
 
+**Maquette au GATE 2** (convention : `context/COMMON.md` section 14) :
+- **Correction/refus** : reformuler les retours de l'utilisateur en **contraintes durables** et les ajouter à `docs/mockup/DECISIONS.md`, par composant (ex. « je ne veux pas cette couleur et fais plus gros » → « pas de bleu pour ce composant », « taille > 24px »). Le brouillon rejeté n'est pas conservé, seules les raisons le sont. Inclure ces contraintes dans la correction redispatchée au planner.
+- **Validation explicite** : copier le brouillon `_work/mockup/...` vers `docs/mockup/v<X.Y.Z>/<type>/<composant>__<feature>.<ext>`, le commiter sur la branche du milestone, puis mettre à jour `docs/mockup/INDEX.md` : ajouter la maquette à « Actives » ; si son en-tête porte `remplace`, déplacer les maquettes remplacées vers « Obsolètes » (avec la référence de la remplaçante) ; si elle porte `complete`, laisser les précédentes actives.
+- **Conflit** : si une autre maquette active du même milestone couvre le même composant, arbitrer avec l'utilisateur avant d'enregistrer.
+- **Projet sans maquette de référence** pour le composant : si le rapport du planner le signale, demander à l'utilisateur une capture d'écran de référence avant de relancer le planner.
+- Une maquette validée est immuable : toute évolution ultérieure passe par une nouvelle maquette (`complete`/`remplace`).
+
 **Cas BLOCKED** → le planner a détecté des ambiguïtés bloquantes ← GATE 1.5 :
 - Lire le rapport `_work/reports/plan-ambiguities-[timestamp].md`
 - Présenter les questions à l'utilisateur :

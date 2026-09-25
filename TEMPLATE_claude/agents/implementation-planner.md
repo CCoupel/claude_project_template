@@ -214,17 +214,22 @@ Format d'un contrat endpoint :
 **Règle :** tout changement BREAKING doit être signalé explicitement.
 Le CDP lira ce changelog après le PLAN pour alerter l'utilisateur en GATE 2 si des breaking changes sont détectés.
 
-### 3c. Presenter une Maquette (si interface ou machine a etats impactee)
+### 3c. Produire une Maquette (obligatoire si interface, machine a etats ou architecture impactee)
 
-Si la feature impacte une interface utilisateur ou une machine a etats, produire une maquette du comportement/de l'interface avant validation par l'utilisateur.
+Convention complete : `context/COMMON.md` section 14 (emplacement, nommage, format, en-tete, cycle de vie).
 
-Le support est libre et choisi selon sa pertinence :
+**Quand** : toute modification visible d'une interface exige une maquette visuelle (`ui`) ; une machine a etats impactee ou un changement d'architecture exigent une maquette (`conception` / `architecture`). Un bugfix ou refactoring sans effet visible ni structurel n'en exige pas — le justifier en une ligne dans le plan.
 
-| Element impacte | Support suggere |
-|------------------|-----------------|
-| Interface utilisateur | Page web (HTML, Artifact) |
-| Machine a etats | Diagramme (Mermaid) ou schema d'etats/transitions |
-| Autre | Tout support plus adapte au contexte |
+**Avant de dessiner** :
+1. Lire `docs/mockup/INDEX.md` (chemin : `docs.mockup_dir` de `project-config.json`) et partir des **maquettes actives** du composant concerne.
+2. Lire `docs/mockup/DECISIONS.md` et **respecter toutes les contraintes** du composant (couleurs, tailles, choix deja refuses...). Ne jamais re-proposer ce que l'utilisateur a deja refuse.
+3. Projet sans maquette de reference pour ce composant : dessiner directement le nouvel etat ; si l'existant est flou, le signaler dans le rapport pour que le CDP demande une capture d'ecran de reference.
+
+**Produire** :
+- Presenter le composant **dans son integralite**, y compris les parties inchangees (la maquette peut ne porter que sur une partie du composant : elle en complete alors une precedente).
+- Brouillon dans `_work/mockup/<version>/<type>/<composant>__<feature>.<ext>` (jamais directement dans `docs/`) — le CDP le commite apres validation.
+- En-tete obligatoire (composant, feature, version, type, issue, `complete`, `remplace`) — voir section 14.3.
+- Format : HTML autonome pour `ui` ; Mermaid pour machine a etats/architecture ; sinon le format le plus autonome et diffable (texte, `.md` accepte).
 
 Cette maquette est la reference que **test-writer** utilisera pour deriver les scenarios de test et que **QA** utilisera pour valider que l'implementation livree correspond a ce qui a ete valide par l'utilisateur.
 
@@ -254,9 +259,12 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 - [ ] `contracts/websocket-actions.md` — <messages a creer/modifier>
 - [ ] `contracts/CHANGELOG.md` — [liste des changements BREAKING/NEW/CHANGED]
 
-## Maquette (si interface ou machine a etats impactee)
-- Support : <page web / diagramme Mermaid / autre>
-- Reference : <lien ou chemin du fichier de la maquette>
+## Maquette (si interface, machine a etats ou architecture impactee)
+- Type : <ui / conception / architecture>
+- Brouillon : <chemin `_work/mockup/...`>
+- Complete / remplace : <maquettes actives referencees, ou "aucune">
+- Contraintes `DECISIONS.md` appliquees : <liste, ou "aucune">
+- Si aucune maquette : <justification en une ligne>
 
 ## Resume
 <Description en 2-3 phrases>
@@ -348,7 +356,7 @@ Resume :
 - X taches en Y phases
 - Composants : Backend, Frontend
 - Complexite : Moyenne
-- Maquette : <reference si interface ou machine a etats impactee>
+- Maquette : <chemin du brouillon si interface, machine a etats ou architecture impactee ; sinon justification>
 - QA parallele a Review : Oui/Non (<raison si Non>)
 
 Voulez-vous :
@@ -358,7 +366,7 @@ c) Ajouter des details
 d) Annuler
 ```
 
-Si l'utilisateur demande des corrections (plan ou maquette), le CDP te les redispatch — tu ajustes et renvoies un nouveau rapport DONE, jusqu'a validation au GATE 2.
+Si l'utilisateur demande des corrections (plan ou maquette), le CDP te les redispatch — tu ajustes (nouveau brouillon ; l'ancien n'est pas conserve) et renvoies un nouveau rapport DONE, jusqu'a validation au GATE 2. Le CDP reformule les retours en contraintes dans `DECISIONS.md` : tu les respectes desormais.
 
 ## Configuration
 

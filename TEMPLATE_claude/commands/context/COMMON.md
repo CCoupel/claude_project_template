@@ -443,6 +443,117 @@ Pour personnaliser le comportement d'une commande ou d'un agent au niveau de rè
 
 ---
 
+## 14. Maquettes
+
+Les maquettes font partie de la **définition du projet**. Une maquette validée est un livrable durable, conservé et versionné avec le code.
+
+### 14.1 Quand une maquette est obligatoire
+
+| Changement | Maquette |
+|------------|----------|
+| Toute modification visible d'une interface (ajout, retrait, changement d'aspect ou de comportement) | **Obligatoire** — maquette visuelle (`ui`) |
+| Machine à états impactée | Obligatoire (`conception`) |
+| Changement d'architecture (composants, flux, déploiement) | Obligatoire (`architecture`) |
+| Bugfix ou refactoring sans effet visible ni structurel | Aucune |
+
+Le planner tranche et justifie en une ligne quand il n'en produit pas.
+
+### 14.2 Emplacement et nommage
+
+Chemin configurable : `docs.mockup_dir` dans `project-config.json` (défaut `docs/mockup`).
+
+```
+docs/mockup/
+├── INDEX.md                                 # maquettes actives / obsolètes (tenu par le CDP)
+├── DECISIONS.md                             # contraintes de conception retenues (voir 14.5)
+└── v<X.Y.Z>/                                # milestone en développement
+    ├── ui/admin_nav_bar__compaction.html
+    ├── architecture/deploy_pipeline__build_publish_deploy.md
+    └── conception/session_state__reconnexion.md
+```
+
+- `v<X.Y.Z>` : le milestone en cours (`milestone/vX.Y.Z`). Un hotfix rattaché à un milestone y dépose ses maquettes. Si le milestone est renuméroté, le dossier suit (`git mv`).
+- `<type>` : `ui`, `architecture` ou `conception`.
+- Fichier : `<composant>__<feature>.<ext>` — **double underscore** entre composant et feature (chacun peut contenir des `_`). Pas de version dans le nom du fichier.
+
+### 14.3 Format
+
+| Type | Format |
+|------|--------|
+| `ui` | HTML autonome : CSS/JS inline, images en data-URI, aucune ressource externe (pas de CDN, pas de police distante) |
+| Machine à états, architecture | Mermaid (`.md` avec bloc ```` ```mermaid ````) |
+| Autre cas | Le format **le plus autonome, indépendant et diffable** possible. Pour toute maquette textuelle, le **`.md` est préféré**. Un format binaire est accepté dans tous les cas **s'il n'existe aucune autre solution** (le SVG, textuel, reste préférable à un binaire) |
+
+**Une maquette présente toujours le composant dans son intégralité**, y compris les parties inchangées. Elle peut néanmoins ne porter que sur une partie d'un composant : dans ce cas elle **complète** les maquettes actives du même composant (voir 14.4).
+
+**En-tête obligatoire** (commentaire HTML en tête de fichier, ou front-matter YAML pour `.md`) :
+
+```
+mockup:
+  composant: admin_nav_bar
+  feature: compaction
+  version: 11.0.1
+  type: ui
+  issue: "#123"
+  validee_le: 2026-09-25
+  complete: []                # maquettes complétées (chemins) — les deux restent actives
+  remplace: []                # maquettes remplacées (chemins) — les anciennes deviennent obsolètes
+```
+
+### 14.4 Cycle de vie et immuabilité
+
+1. **Brouillon** : produit par le planner dans `_work/mockup/` (non commité).
+2. **Validation** (GATE 2) : après accord explicite de l'utilisateur, le CDP copie la maquette à son emplacement définitif, la commite sur la branche du milestone et met à jour `INDEX.md`.
+3. **Immuable** : une maquette validée n'est **jamais modifiée**. Une évolution ultérieure crée une nouvelle maquette (dans le milestone courant) qui référence les précédentes via `complete` ou `remplace`.
+4. **Obsolescence** : quand une maquette en `remplace` une autre, le CDP déplace l'ancienne de la table « Actives » vers la table « Obsolètes » de `INDEX.md`, avec la référence de la remplaçante. Le fichier reste dans git.
+5. **Brouillons rejetés ou modifiés** : jamais conservés. Seules les **raisons** sont conservées (voir 14.5).
+
+**`INDEX.md`** (tenu exclusivement par le CDP) :
+
+```markdown
+## Actives
+| Composant | Feature | Fichier | Version | Relation |
+|-----------|---------|---------|---------|----------|
+| admin_nav_bar | compaction | v11.0.1/ui/admin_nav_bar__compaction.html | 11.0.1 | complète v10.2.0/ui/admin_nav_bar__base.html |
+
+## Obsolètes
+| Fichier | Remplacée par | Version |
+|---------|---------------|---------|
+```
+
+**Conflit intra-milestone** : si deux features du même milestone maquettent le même composant, le CDP le détecte à l'ajout dans `INDEX.md` et arbitre avec l'utilisateur avant d'enregistrer.
+
+### 14.5 Conservation des raisons de refus (`DECISIONS.md`)
+
+Quand l'utilisateur refuse ou fait modifier une maquette, le CDP **reformule ses retours en contraintes durables** (pas en historique de brouillons) et les ajoute à `DECISIONS.md`, par composant :
+
+```markdown
+## admin_nav_bar
+- Pas de bleu pour ce composant. _(v11.0.1, compaction)_
+- Taille de l'icône supérieure à 24px. _(v11.0.1, compaction)_
+```
+
+Exemple : retour « je ne veux pas cette couleur et fais plus gros » → contraintes « pas de bleu » et « taille > 24px ». Une contrainte levée ou remplacée par l'utilisateur est mise à jour, avec la date.
+
+### 14.6 Rôle de chaque agent
+
+| Agent | Règle |
+|-------|-------|
+| **planner** | Lit `INDEX.md` et `DECISIONS.md` **avant** de dessiner ; part des maquettes actives du composant comme base ; respecte toutes les contraintes de `DECISIONS.md` ; produit le brouillon dans `_work/mockup/` |
+| **CDP** | Présente au GATE 2 ; à la validation, commite, met à jour `INDEX.md` (actives/obsolètes) ; à chaque refus, met à jour `DECISIONS.md` ; arbitre les conflits |
+| **test-writer** | Dérive les scénarios de toutes les maquettes actives des composants touchés |
+| **qa** | Vérifie la conformité à **toutes** les maquettes actives des composants touchés et aux contraintes de `DECISIONS.md`, pas seulement à celle de la feature |
+
+### 14.7 Projets sans maquette de référence
+
+Un projet existant n'a pas de maquette pour ses composants. Le planner dessine directement le nouvel état. Si cela aide à cadrer l'existant, le CDP peut demander à l'utilisateur une **capture d'écran de référence** (ou une maquette de l'état actuel) avant de continuer.
+
+### 14.8 Maquettes marketing — éphémères
+
+Les maquettes marketing (GATE 4d) sont **distinctes** des maquettes projet : systématiques mais **éphémères**. Elles partent toujours de la page publiée en production, vivent dans `_work/` (non commitées, jamais dans `docs/mockup/`) et ne sont ni indexées ni versionnées. Le flag `mockup_ok` du GATE 4d est inchangé.
+
+---
+
 ## Usage
 
 **Dans les commandes et agents**, au lieu de repeter le contexte projet :

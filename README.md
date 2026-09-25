@@ -376,6 +376,31 @@ contracts/
 
 Le frontend consulte les contrats sans les modifier. Le CDP alerte l'utilisateur en GATE 2 si des changements **BREAKING** sont détectés.
 
+### Maquettes (définition du projet)
+
+Les maquettes font partie de la définition du projet : toute modification visible d'une interface exige une **maquette visuelle** ; les machines à états et changements d'architecture exigent une maquette de **conception** / **architecture**. Un bugfix ou refactoring sans effet visible n'en exige pas. Les maquettes validées sont conservées et versionnées avec le code :
+
+```
+docs/mockup/                          # configurable : docs.mockup_dir (project-config.json)
+├── INDEX.md                          # maquettes actives / obsolètes — tenu par le CDP
+├── DECISIONS.md                      # contraintes de conception issues des refus utilisateur
+└── v11.0.1/                          # milestone en développement
+    ├── ui/admin_nav_bar__compaction.html
+    ├── architecture/deploy_pipeline__build_publish_deploy.md
+    └── conception/session_state__reconnexion.md
+```
+
+- **Nommage** : `<type>/<composant>__<feature>.<ext>` (double underscore entre composant et feature).
+- **Format** : HTML autonome (CSS/JS inline, aucune ressource externe) pour l'UI, Mermaid pour états/architecture, sinon le format le plus autonome et diffable — `.md` préféré pour toute maquette textuelle ; binaire accepté s'il n'existe aucune autre solution.
+- **Composant en entier** : une maquette montre toujours le composant dans son intégralité, mais peut ne couvrir qu'une partie de sa définition — elle **complète** alors les maquettes actives (`complete`) ou en **remplace** (`remplace`) d'autres, qui passent en « Obsolètes » dans `INDEX.md`.
+- **Immuabilité** : une maquette validée n'est jamais modifiée ; toute évolution est une nouvelle maquette qui référence les précédentes. L'en-tête porte composant, feature, version, type, issue, date de validation, `complete`, `remplace`.
+- **Refus** : les brouillons rejetés ne sont pas conservés, mais leurs raisons le sont, reformulées en contraintes durables dans `DECISIONS.md` (ex. « pas de bleu pour ce composant », « taille > 24px »). Le planner les respecte, QA les vérifie.
+- **Cycle** : le planner lit `INDEX.md` + `DECISIONS.md`, part des maquettes actives du composant et dessine un brouillon dans `_work/mockup/` ; le CDP le présente au GATE 2, puis le commite et met à jour l'index à la validation. QA vérifie la conformité à **toutes** les maquettes actives des composants touchés.
+- **Projet sans maquette de référence** : le planner dessine directement le nouvel état ; le CDP peut demander une capture d'écran de référence.
+- **Marketing** : les maquettes marketing (GATE 4d) sont distinctes — systématiques mais éphémères (`_work/`, non commitées), toujours basées sur la page publiée en production.
+
+Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §14. `/init-project` crée le squelette (`INDEX.md`, `DECISIONS.md`) de façon idempotente, y compris sur un projet existant.
+
 ### Suivi des issues GitHub
 
 Le CDP met à jour les labels de l'issue associée (via plugin GitHub MCP) à chaque transition de phase :
@@ -467,7 +492,7 @@ l'utilisateur.
 S'il y a lieu de publier, l'agent prépare le contenu (release notes, posts, site) **sans
 commit**, et le CDP relaie la maquette à l'utilisateur pour validation. La publication
 (commit + push sur `gh-pages`) n'est déclenchée que lorsque **les deux conditions sont
-réunies** : maquette validée par l'utilisateur ET déploiement PROD confirmé réussi — dans
+réunies** : maquette (éphémère, voir « Maquettes ») validée par l'utilisateur ET déploiement PROD confirmé réussi — dans
 n'importe quel ordre. Si le déploiement échoue, rien n'est publié.
 
 ---

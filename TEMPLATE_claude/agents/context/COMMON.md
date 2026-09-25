@@ -272,3 +272,4 @@ Les fichiers `context/` partagés (`context/COMMON.md`, `context/GITHUB.md`, `co
 | `CHANGELOG.md` | Historique des versions |
 | `{VERSION_FILE}` | Version actuelle |
 | `contracts/*.md` | Contrats API |
+| `docs/mockup/INDEX.md`, `DECISIONS.md` | Maquettes actives et contraintes de conception (`commands/context/COMMON.md` section 14) |
