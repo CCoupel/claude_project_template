@@ -1,6 +1,6 @@
 ---
 name: deploy
-description: "Agent de build, publication et deploiement. BUILD : compile + teste une fois, agnostique a l'environnement, produit un artefact candidat local. PUBLISH <env> : rend cet artefact disponible pour un environnement donne, mecanisme propre a chaque environnement (QUALIF : copie/promote sans rebuild ; PROD : merge + tag officiel qui declenche un rebuild deterministe via CI). DEPLOY <env> : installe sur la plateforme cible l'artefact deja publie pour cet environnement, sans jamais rebuilder ni republier. Applique le principe BORE (voir agents/infra.md section 3)."
+description: "Agent de build, publication et deploiement. BUILD : compile une fois (les tests ne sont pas rejoues ici — deja valides par QA), agnostique a l'environnement, produit un artefact candidat local. PUBLISH <env> : rend cet artefact disponible pour un environnement donne, mecanisme propre a chaque environnement (QUALIF : copie/promote sans rebuild ; PROD : merge + tag officiel qui declenche un rebuild deterministe via CI). DEPLOY <env> : installe sur la plateforme cible l'artefact deja publie pour cet environnement, sans jamais rebuilder ni republier. Applique le principe BORE (voir agents/infra.md section 3)."
 model: sonnet
 color: red
 ---
@@ -73,8 +73,9 @@ Gerer également les mises à jour de labels d'issues GitHub lors des transition
 ## Prerequis
 
 ### Avant BUILD
-- [ ] Tests QA passes
+- [ ] Tests QA passes (suite feature + NR impactees — `context/COMMON.md` section 15)
 - [ ] Revue de code approuvee
+- [ ] Si `testing.full_regression_at == build` : NR complete VALIDATED (lancee par `qa` en parallele de la compilation — PUBLISH attend les deux)
 
 ### Avant PUBLISH (QUALIF ou PROD)
 - [ ] Un candidat (`/build`) existe pour la version a publier
@@ -108,7 +109,8 @@ Gerer également les mises à jour de labels d'issues GitHub lors des transition
 ```bash
 # 1. Verification
 git status  # Clean working directory
-npm test    # Tests passent
+# Aucun test ici : QA les a deja joues sur ce meme arbre git (context/COMMON.md 15.2, ledger
+# _work/tests-ledger.md). Le BUILD ne fait que compiler/packager.
 
 # 2. Increment de version (a+1) — a la charge de build, independamment des commits
 # dev (context/DEV_COMMON.md — table "qui incremente quoi"). Chaque build est une iteration
@@ -166,7 +168,7 @@ echo "Build termine - $VERSION -> $BUILD_DIR/app-$VERSION.tar.gz"
 ### Protocole d'echec BUILD
 
 Local, agnostique a l'environnement — pas de CI, pas de registre, pas de runner distant : le
-seul echec possible est un echec de code (compilation, tests, lint). Pas de classification a
+seul echec possible est un echec de code (compilation, packaging). Pas de classification a
 plusieurs categories ici (contrairement a PUBLISH PROD, voir plus bas) : tout echec BUILD route
 directement vers `dev`.
 
@@ -175,7 +177,7 @@ SendMessage({
   to: "main",
   content: "BUILD FAILED
 Version  : v[X.Y.Z.a]
-Probleme : [compilation | tests | lint]"
+Probleme : [compilation | packaging]"
 })
 ```
 
@@ -371,7 +373,7 @@ git push origin --delete milestone/vX.Y.Z
 Trois niveaux distincts selon l'étape en échec — la mécanique concrète de chacun vit désormais
 dans les fichiers d'environnement (§ "Fichiers d'Environnement" ci-dessus), pas ici :
 
-### Rollback BUILD (échec de compilation/tests, local)
+### Rollback BUILD (échec de compilation/packaging, local)
 
 Local, sans artefact publié nulle part — pas de rollback a proprement parler : corriger
 (agent responsable : `dev`), puis `/build` a nouveau.
@@ -395,8 +397,7 @@ Rollback PUBLISH ci-dessus plutôt que de corriger au niveau DEPLOY.
 ### BUILD
 
 - [ ] Branche milestone a jour avec main
-- [ ] Tests unitaires passent
-- [ ] Tests E2E passent
+- [ ] Tests deja valides par QA sur cet arbre git (verdict VALIDATED) — **non rejoues au BUILD**
 - [ ] Version incrementee (`a+1`, a la charge de build — voir Etapes Detaillees BUILD etape 2)
 - [ ] Build reussi → `build/candidate_v<X.Y.Z>/<artefact>-<X.Y.Z.a>.<ext>` **a la racine du repo** (dossier non gitte, SANS `a` dans son nom ; artefact AVEC `a` — emplacement impose, jamais sous un sous-repertoire backend/monorepo, ne pas deroger)
 - [ ] Variables d'environnement configurees
@@ -404,7 +405,7 @@ Rollback PUBLISH ci-dessus plutôt que de corriger au niveau DEPLOY.
 ### PUBLISH PROD
 
 - [ ] Publication (`X.Y.Z.a`) validee en QUALIF (sauf hotfix)
-- [ ] Tests de regression OK
+- [ ] NR complete VALIDATED (`testing.full_regression_at` — `qa`, scope `regression-full`)
 - [ ] Performance acceptable
 - [ ] Securite verifiee
 - [ ] Documentation prete

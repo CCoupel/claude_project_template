@@ -47,7 +47,7 @@ Sinon -> workflow normal.
 [FIX] --> Correction minimale
     |
     v
-[TESTS CRITIQUES] --> Uniquement les tests essentiels
+[TESTS CRITIQUES] --> Reproduction + tests `smoke`/`critical` (QA critique)
     |
     v
 [BUILD] --> Compilation candidat
@@ -99,12 +99,12 @@ gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
 
 ### 3. TESTS CRITIQUES
 
-Uniquement :
-- Test du scenario casse
-- Smoke tests de base
+Uniquement (joues par `qa`, en parallele de la revue rapide) :
+- Test de reproduction du scenario casse (ecrit par test-writer, statut `regression`)
+- Tests tagues `smoke` et `critical` de `tests/INDEX.md`
 - Build OK
 
-**Pas de suite complete** - Sera fait apres.
+**Pas de suite complete avant PROD** — la NR complete tourne apres le DEPLOY PROD (voir ci-dessous).
 
 ### 4. BUILD + PUBLISH PROD + DEPLOY PROD
 
@@ -181,7 +181,7 @@ Description du fix.
 
 ## Apres le Hotfix
 
-1. **Tests complets** en background
+1. **NR complete** en arriere-plan sur `main` (`qa`, scope `regression-full`, declenchee par le CDP apres le DEPLOY PROD) — un echec ouvre une issue
 2. **Revue de code** post-mortem
 3. **Communication** a l'equipe
 

@@ -233,6 +233,12 @@ Convention complete : `context/COMMON.md` section 14 (emplacement, nommage, form
 
 Cette maquette est la reference que **test-writer** utilisera pour deriver les scenarios de test et que **QA** utilisera pour valider que l'implementation livree correspond a ce qui a ete valide par l'utilisateur.
 
+### 3c-bis. Decider des Scopes de Tests Optionnels
+
+Renseigner `test_scopes` dans le plan (voir "Tests Requis") : `perf` seulement si un critere d'acceptation porte sur la
+performance (fixer les seuils dans le plan ; ils vont dans `testing.perf`), `security` seulement si une
+preoccupation de `security.concerns` est touchee. Par defaut : aucun. Sans mention, QA ne joue pas ces scopes.
+
 ### 3d. Evaluer la Parallelisation Review/QA
 
 Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-writer` a livre ses scripts), sans attendre le verdict de Review — voir `context/QUALITY.md` section 12 pour le mecanisme complet.
@@ -316,9 +322,13 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 > - infra : ajouter en Batch 0 (avant tout) si la feature necessite un changement infra
 
 ## Tests Requis
+> Plan de tests : `context/COMMON.md` section 15. Ces tests sont ecrits par test-writer (nature `feature`).
 - [ ] Tests unitaires : <description>
 - [ ] Tests integration : <description>
 - [ ] Tests E2E : <description>
+- Composants touches (cles de `testing.components`) : <liste — sert a selectionner les NR impactees>
+- Tests `smoke` / `critical` a prevoir : <scenarios ou "aucun">
+- `test_scopes` optionnels : <perf (si un critere d'acceptation porte sur la performance) | security (si une preoccupation de `security.concerns` est touchee) | aucun>
 
 ## Risques et Mitigations
 | Risque | Probabilite | Impact | Mitigation |

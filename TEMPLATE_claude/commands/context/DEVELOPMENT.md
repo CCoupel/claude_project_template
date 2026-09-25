@@ -85,8 +85,9 @@ Voir ordre par agent dans `context/PROJECT_CONTEXT.md`.
 ### Etape 5 : Verifications
 
 ```bash
-# Tests
-{TEST_CMD}
+# Tests — boucle rapide uniquement : tests feature de tes fichiers, hors tag `slow`
+# (`commands.test_fast`, sinon `commands.test_targeted` de project-config.json).
+# La suite complete ({TEST_CMD}) est jouee par QA, jamais ici (context/COMMON.md 15.2).
 ```
 
 Commit local uniquement — **pas de push**. Tous les agents (dev, review, qa) travaillent sur
@@ -120,7 +121,7 @@ deploiement QUALIF, jamais avant (voir `context/COMMON.md` section 7.1).
 |-------|--------|
 | Version first | Incrementer a AVANT tout code |
 | Scope strict | Chaque agent reste dans son domaine |
-| Tests | Chaque fonction publique = tests |
+| Tests | Tests unitaires internes pour la logique ajoutee ; specification = TEST-WRITER ; boucle rapide seulement |
 | Commits | Atomiques, 1 commit par tache logique |
 
 ---

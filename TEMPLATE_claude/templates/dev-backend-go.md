@@ -185,6 +185,6 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 - [ ] Implementation repository
 - [ ] Service avec logique metier
 - [ ] Handler HTTP/gRPC
-- [ ] Tests unitaires (coverage >80%)
+- [ ] Tests unitaires internes pour la logique ajoutee (boucle rapide `go test -short` sur les paquets touches ; suite complete = QA)
 - [ ] Tests integration si necessaire
 - [ ] Documentation des endpoints

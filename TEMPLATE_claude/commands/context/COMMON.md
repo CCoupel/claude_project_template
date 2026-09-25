@@ -295,19 +295,19 @@ rm -f coverage.out coverage.html
 ### 9.1 Workflow Feature
 
 ```
-/feature -> CLARIFICATION -> PLAN -> DEV -> REVIEW -> QA -> DOC -> BUILD -> PUBLISH(QUALIF) -> DEPLOY(QUALIF) -> PUBLISH(PROD) -> DEPLOY(PROD)
+/feature -> CLARIFICATION -> PLAN -> DEV -> [REVIEW ∥ QA] -> DOC -> [BUILD -> PUBLISH(QUALIF) -> DEPLOY(QUALIF)] ∥ NR complete -> PUBLISH(PROD) -> DEPLOY(PROD)
 ```
 
 ### 9.2 Workflow Bugfix
 
 ```
-/bugfix -> CLARIFICATION -> ANALYSE -> DEV -> REVIEW -> QA -> BUILD -> PUBLISH(QUALIF) -> DEPLOY(QUALIF)
+/bugfix -> CLARIFICATION -> ANALYSE -> TEST(reproduction) -> RED CHECK -> DEV -> [REVIEW ∥ QA] -> [BUILD -> PUBLISH(QUALIF) -> DEPLOY(QUALIF)] ∥ NR complete
 ```
 
 ### 9.3 Workflow Hotfix (Urgence)
 
 ```
-/hotfix -> DEV -> QA -> BUILD -> PUBLISH(PROD) -> DEPLOY(PROD)
+/hotfix -> TEST(reproduction) -> DEV -> [REVIEW rapide ∥ QA critique] -> BUILD -> PUBLISH(PROD) -> DEPLOY(PROD) -> NR complete (arriere-plan)
 ```
 
 ---
@@ -551,6 +551,115 @@ Un projet existant n'a pas de maquette pour ses composants. Le planner dessine d
 ### 14.8 Maquettes marketing — éphémères
 
 Les maquettes marketing (GATE 4d) sont **distinctes** des maquettes projet : systématiques mais **éphémères**. Elles partent toujours de la page publiée en production, vivent dans `_work/` (non commitées, jamais dans `docs/mockup/`) et ne sont ni indexées ni versionnées. Le flag `mockup_ok` du GATE 4d est inchangé.
+
+---
+
+## 15. Plan de Tests
+
+Objectif : **ne jamais exécuter deux fois le même test sur le même code sans raison**, et séparer
+les tests de la feature en cours des tests de non-régression (NR).
+
+### 15.1 Deux natures de tests, un index
+
+`tests/INDEX.md` (initialisé par `/init-project` ; le `test-writer` y ajoute ses tests, le CDP change les statuts) recense les tests de **spécification**
+écrits par le `test-writer`. Les fichiers restent où le framework les attend (ex. `*_test.go`
+colocalisés) — c'est l'index, pas l'arborescence, qui porte la distinction :
+
+```markdown
+| Fichier | Niveau | Composant | Feature | Statut | Tags |
+|---------|--------|-----------|---------|--------|------|
+| server/http_port_test.go | unit | http_server | #220 | regression | slow |
+```
+
+| Statut | Signification |
+|--------|---------------|
+| `feature` | Tests de la feature en cours (milestone en développement) |
+| `regression` | Tests de features déjà livrées — **promus** par le CDP au déploiement PROD du milestone. Un test de reproduction de bugfix naît directement `regression` |
+| `quarantaine` | Test en échec connu ou instable (raison + issue obligatoires). Il ne bloque pas le verdict mais reste listé dans chaque rapport QA |
+
+Tags : `smoke` (rapide, valide qu'une version démarre), `critical` (scénarios vitaux, utilisés en hotfix),
+`slow` (exclu de la boucle DEV rapide, toujours joué par QA).
+
+**Propriété de l'écriture** : le `test-writer` écrit les tests de spécification (contrats, critères
+d'acceptation, maquettes) et alimente l'index. Les `dev-*` n'écrivent que des tests unitaires
+**internes** (boîte blanche), dans des fichiers distincts, colocalisés avec le code, hors index.
+
+### 15.2 Qui lance quoi, quand
+
+| Étape | Agent | Ce qui est exécuté |
+|-------|-------|--------------------|
+| Boucle DEV | `dev-*` | build, lint, typecheck, puis uniquement les tests **feature** de leurs fichiers, hors tag `slow` (`commands.test_fast`, sinon `commands.test_targeted`) — **jamais** la suite complète |
+| RED CHECK (bugfix) | `qa` | Le seul test de reproduction, sur le code **non corrigé** : il doit échouer (15.5) |
+| QA — par cycle | `qa` | 1) suite **feature** complète (unit, integration, E2E, tags `slow` inclus) ; **si elle est KO → retour DEV immédiat, sans NR** ; 2) si OK, NR **impactées** (15.3) selon `testing.regression_at_qa` ; 3) conformité aux maquettes (§14) |
+| NR complète | `qa` | Toute la suite (`commands.test` + E2E automatisés), au moment fixé par `testing.full_regression_at` (15.4) |
+| BUILD | `deployer` | **Compilation seulement** (`commands.build`). Aucun test : ils ont déjà été joués par QA sur le même arbre |
+| DEPLOY | `deployer` | Tests `smoke` de l'index (à défaut, `curl /health`) |
+| GATE 4 | utilisateur | Procédures manuelles `tests/procedures/` (feature uniquement) |
+
+Une passe de tests complète n'est **jamais** lancée par un `dev-*` ni par le `deployer`.
+
+### 15.3 Sélection des NR impactées
+
+Le diff du milestone est mappé sur les composants (`testing.components`, clé = composant, valeur = globs de
+chemins source). Sont sélectionnés : (a) les tests `regression` de l'index dont le composant est touché,
+(b) les tests colocalisés des paquets/dossiers modifiés (résolus par `commands.test_targeted`, avec
+`{TARGETS}` remplacé par la liste de fichiers ou dossiers). Un changement de contrat BREAKING ou CHANGED
+sélectionne tous les tests des composants liés. Sans mapping ni `commands.test_targeted` : repli sur toute
+la NR unitaire.
+
+`testing.regression_at_qa` :
+- `gated` (**défaut**) : NR impactées seulement si la suite feature est OK ;
+- `parallel` : suite feature et NR impactées en même temps (plus rapide, plus d'exécutions perdues) ;
+- `none` : aucune NR en QA — la NR complète (15.4) est alors la seule protection.
+
+### 15.4 NR complète
+
+`testing.full_regression_at` :
+- `qualif` (**défaut**) : le CDP dispatche la NR complète à `qa` **en parallèle** de la chaîne
+  BUILD → PUBLISH QUALIF → DEPLOY QUALIF et de DOC finalize. **GATE 4 ne s'ouvre que lorsque les trois sont
+  terminés** et la NR VALIDATED : l'utilisateur n'est jamais invité à valider une QUALIF condamnée. NR KO → retour
+  DEV sans solliciter l'utilisateur (compte comme un cycle) ;
+- `build` : NR complète avant PUBLISH QUALIF, en parallèle de la compilation (PUBLISH attend les deux) ;
+- `prod` : une seule NR avant PUBLISH PROD (`/deploy prod` refusé tant qu'elle n'est pas VALIDATED).
+
+En **hotfix**, la NR complète tourne après le DEPLOY PROD, en arrière-plan sur `main` ; un échec ouvre une issue.
+
+### 15.5 Bugfix : test rouge vérifié
+
+Le `test-writer` livre le test de reproduction (statut `regression`) **avant** le DEV. Le CDP dispatche
+alors `qa` en `Scope : red-check` : ce seul test est exécuté sur le code non corrigé et **doit échouer**. S'il
+passe, il ne reproduit pas le bug : retour au `test-writer` (hors comptage de cycles). Après le fix, QA relance
+ce test (doit passer) puis les NR du composant.
+
+### 15.6 Journal d'exécution (réutilisation par arbre git)
+
+`_work/tests-ledger.md` (append-only, non tracké) : `<tree-hash> | <scope> | <verdict> | <date>`, avec
+`tree-hash = git rev-parse HEAD^{tree}` (working tree propre). Avant d'exécuter un scope, `qa` cherche une ligne
+VALIDATED pour le même arbre et le même scope : si elle existe, il **réutilise** le résultat (ex. redispatch après
+un REVIEW REJECTED sans changement de code, ou NR complète déjà VALIDATED pour le mode `prod`).
+
+### 15.7 Classement des échecs et métriques
+
+Chaque test en échec du rapport QA reçoit une **nature** :
+
+| Nature | Critère |
+|--------|---------|
+| `feature` | test au statut `feature` |
+| `regression` | test au statut `regression` sur du code modifié par la feature |
+| `quarantaine` | test déjà en quarantaine (n'impacte pas le verdict) |
+| `environnement` | échec lié à la machine (port occupé, réseau, outil absent) — à confirmer par relance |
+| `flaky` | passe à la relance — **une relance maximum**, puis passage en `quarantaine` dans l'index |
+
+À chaque verdict QA, le CDP ajoute une ligne à `tests/METRICS.md` : date, milestone, feature, cycle, verdict,
+nombre d'échecs par nature. Ce journal donne le **taux réel de retours dus à la régression** et permet de choisir
+`regression_at_qa` et `full_regression_at` avec des chiffres.
+
+### 15.8 Scopes optionnels
+
+Le planner fixe `test_scopes` dans le plan : `perf` si un critère d'acceptation porte sur la performance
+(seuils dans `testing.perf`), `security` si une préoccupation de `security.concerns` est touchée
+(`commands.audit`). Sans mention, ces scopes ne sont pas joués. `lint` et `typecheck` sont joués par les
+`dev-*` (boucle DEV) ; `audit` une fois par milestone, par QA, avant la NR complète.
 
 ---
 

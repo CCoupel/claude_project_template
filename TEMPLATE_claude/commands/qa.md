@@ -32,17 +32,20 @@ Sinon -> workflow normal.
 
 | Scope | Description |
 |-------|-------------|
-| (vide) | Suite complete de tests |
-| `unit` | Tests unitaires uniquement |
-| `integration` | Tests integration uniquement |
-| `e2e` | Tests end-to-end uniquement |
-| `coverage` | Rapport de couverture |
-| `quick` | Smoke tests rapides |
+| (vide) / `feature` | Suite feature du milestone, puis NR impactees selon `testing.regression_at_qa` (comportement du cycle CDP) |
+| `full` | NR complete (scope `regression-full`) — toute la suite |
+| `red-check` | Uniquement le test de reproduction d'un bugfix, sur le code non corrige (doit echouer) |
+| `unit` / `integration` / `e2e` | Un seul niveau |
+| `coverage` | Rapport de couverture (`commands.coverage`) |
+| `quick` | Tests tagues `smoke` de `tests/INDEX.md` |
+
+Plan de tests : `context/COMMON.md` section 15.
 
 ## Exemples
 
 ```
-/qa                  # Tests complets
+/qa                  # Suite feature + NR impactees
+/qa full             # NR complete
 /qa unit             # Tests unitaires
 /qa e2e              # Tests E2E
 /qa coverage         # Avec rapport couverture
@@ -54,16 +57,16 @@ Sinon -> workflow normal.
 Le rapport QA inclut :
 - Resultats des tests par categorie
 - Couverture de code
-- Tests en echec avec details
+- Tests en echec avec details, classes par nature (feature / regression / quarantaine / environnement / flaky)
 - Tests lents identifies
-- Verdict final (PRET / NON PRET)
+- Verdict final (VALIDATED / VALIDATED WITH RESERVATIONS / NOT VALIDATED)
 
 ## Seuils de Qualite
 
 | Metrique | Minimum | Ideal |
 |----------|---------|-------|
 | Tests unitaires | 100% pass | 100% pass |
-| Couverture | 70% | >85% |
+| Couverture | `testing.coverage_min` (defaut 70%) | >85% |
 | Build | Success | Success |
 
 **Contexte Qualite :** Voir `context/QUALITY.md`

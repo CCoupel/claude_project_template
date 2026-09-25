@@ -84,7 +84,7 @@ Ce fichier centralise les patterns partages par les commandes `/code-review`, `/
 | Critere | VALIDATED | RESERVATIONS | NOT VALIDATED |
 |---------|-----------|--------------|---------------|
 | Tests | 100% pass | 1-2 non-critiques KO | >2 KO ou critiques KO |
-| Coverage | > 70% | 60-70% | < 60% |
+| Coverage | > `testing.coverage_min` (defaut 70%) | 10 pts sous le seuil | < seuil - 10 pts |
 | Build | OK | OK | KO |
 
 ---
@@ -94,12 +94,16 @@ Ce fichier centralise les patterns partages par les commandes `/code-review`, `/
 ### Tests Unitaires
 
 ```bash
-# Tous les tests
+# Tous les tests (NR complete — scope regression-full, jouee par QA)
 {TEST_CMD}
 
 # Avec couverture
 {COVERAGE_CMD}
 ```
+
+Boucle DEV rapide (`commands.test_fast`) et tests cibles (`commands.test_targeted`, `{TARGETS}` = fichiers ou
+dossiers) : voir `context/COMMON.md` section 15. Un scope deja VALIDATED sur le meme arbre git n'est pas rejoue
+(`_work/tests-ledger.md`).
 
 ---
 
@@ -202,7 +206,7 @@ Ce fichier centralise les patterns partages par les commandes `/code-review`, `/
 2. **Plan** : Creer plan de corrections/ameliorations
 3. **Validation utilisateur** : Confirmer le plan
 4. **Developpement** : Appliquer les corrections
-5. **QA** : Valider les changements
+5. **QA** : Valider les changements (scope `feature` puis NR impactees — `context/COMMON.md` 15)
 6. **Documentation** : Mettre a jour si necessaire
 
 ---
@@ -266,4 +270,5 @@ Dans les commandes Qualite, referencer ce fichier :
 - Tests : section 7
 - Rapports : sections 8-9
 - Dispatch Review/QA (parallelisation) : section 12
+- Plan de tests (natures feature/NR, index, scopes QA, NR complete) : `context/COMMON.md` section 15
 ```

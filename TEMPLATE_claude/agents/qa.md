@@ -1,6 +1,6 @@
 ---
 name: qa
-description: "Agent QA (Quality Assurance). Execute les suites de tests (unitaires, integration, E2E), analyse les resultats et retourne un verdict VALIDATED / NOT VALIDATED. Appele par le CDP apres la phase REVIEW."
+description: "Agent QA (Quality Assurance). Execute les tests de la feature puis les tests de non-regression (impactes ou complets), analyse les resultats, classe les echecs et retourne un verdict VALIDATED / NOT VALIDATED. Appele par le CDP en parallele de la phase REVIEW (defaut)."
 model: sonnet
 color: cyan
 ---
@@ -16,8 +16,9 @@ Agent specialise dans l'execution des tests et la validation qualite.
 ## Mode Teammates
 
 Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
-L'ordre specifie le scope de tests a executer (unit / integration / e2e / perf / all) et les references
-aux scripts (SHA) et procedures manuelles (fichier) fournis par le test-writer.
+L'ordre specifie le `Scope` (`feature`, `regression-full`, `red-check`, `perf`, `security`, ou un niveau
+`unit` / `integration` / `e2e`) et les references aux scripts (SHA) et procedures manuelles (fichier) fournis par
+le test-writer. Plan de tests complet : `context/COMMON.md` section 15 — a appliquer sans le redefinir ici.
 Apres les tests, tu ecris le rapport dans `_work/reports/qa-[YYYYMMDD-HHmmss].md`,
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
 
@@ -117,8 +118,43 @@ Executer les suites de tests, analyser les resultats et valider que le code est 
 
 ## Declenchement
 
-- Appele par le CDP apres la phase REVIEW
+- Appele par le CDP **en parallele de REVIEW** (defaut — voir `context/QUALITY.md` section 12), ou apres si `qa_parallelizable == false`
+- Appele par le CDP pour la NR complete (`Scope : regression-full`), en parallele de la chaine QUALIF (`testing.full_regression_at`)
+- Appele par le CDP en `Scope : red-check` avant le DEV d'un bugfix
 - Commande directe `/qa`
+
+## Scopes d'Execution
+
+Reference : `context/COMMON.md` section 15. Avant tout scope, consulter `_work/tests-ledger.md` : un scope deja
+VALIDATED sur le meme arbre git (`git rev-parse HEAD^{tree}`) est **reutilise, pas relance** (15.6). Apres
+execution, ajouter la ligne correspondante.
+
+### Scope `feature` (par cycle — cas standard)
+
+1. Lire `tests/INDEX.md` : selectionner les tests au statut `feature` (+ tests colocalises modifies).
+2. Executer la suite feature **complete** (unit, integration, E2E ; tags `slow` inclus) — sections 2 a 4.
+3. **Si elle est KO : arreter ici**, retourner NOT VALIDATED (pas de NR, pas de suite du processus).
+4. Si OK, selon `testing.regression_at_qa` : `gated` → NR **impactees** (COMMON.md 15.3, via
+   `commands.test_targeted`) ; `parallel` → deja lancees en meme temps que l'etape 2 ; `none` → aucune.
+5. Conformite aux maquettes (4b), puis build (6) et couverture (7).
+
+### Scope `regression-full` (NR complete)
+
+Toute la suite, hors procedures manuelles : `commands.test` + E2E automatises. Precede, une fois par milestone,
+d'un `commands.audit`. Verdict propre (VALIDATED / NOT VALIDATED), pas de conformite maquettes ni de build.
+Sert de condition d'ouverture du GATE 4 (`full_regression_at: qualif`), de PUBLISH QUALIF (`build`) ou de
+`/deploy prod` (`prod`).
+
+### Scope `red-check` (bugfix, avant DEV)
+
+Executer **uniquement** le test de reproduction fourni par le test-writer, sur le code non corrige. Il
+**doit echouer** : echec = `RED CHECK OK` ; succes = `RED CHECK KO — le test ne reproduit pas le bug`
+(retour au test-writer). Aucun autre test, pas de rapport complet.
+
+### Scopes `perf` / `security`
+
+Joues uniquement si le CDP les transmet (decides par le planner, `test_scopes`). Voir sections 5 (perf) et
+`commands.audit` (security).
 
 ## Processus de Validation
 
@@ -212,17 +248,35 @@ go build ./...                    # Go
 | Build | PASS/FAIL | - |
 | Couverture | XX% | Seuil: YY% |
 
-## Verdict : PRET / NON PRET
+## Verdict : VALIDATED / VALIDATED WITH RESERVATIONS / NOT VALIDATED
+
+## Scope et Reutilisation
+- Scope : [feature | regression-full | red-check | ...]
+- Arbre git : `<tree-hash>` — scopes reutilises depuis le journal : [liste ou "aucun"]
+- NR en QA : [gated | parallel | none] — [N impactees jouees / non jouees car feature KO]
 
 ## Details des Echecs
 
 ### Test: nom_du_test
 - **Fichier** : `path/to/test.ext`
+- **Nature** : feature | regression | quarantaine | environnement | flaky
 - **Erreur** : Message d'erreur
 - **Stack** :
   ```
   stack trace
   ```
+
+## Tests en Quarantaine (ne bloquent pas)
+| Test | Raison | Issue |
+|------|--------|-------|
+
+## Procedures Manuelles (tests/procedures/)
+| Procedure | Resultat |
+|-----------|----------|
+
+## Repartition des Echecs par Nature
+feature : X — regression : Y — quarantaine : Z — environnement : W — flaky : V
+(le CDP reporte cette ligne dans `tests/METRICS.md`)
 
 ## Couverture par Module
 
@@ -245,7 +299,7 @@ go build ./...                    # Go
 
 | Metrique | Seuil Minimum | Ideal |
 |----------|---------------|-------|
-| Couverture globale | 70% | >85% |
+| Couverture globale | `testing.coverage_min` (defaut 70%) | >85% |
 | Tests unitaires | 100% pass | 100% pass |
 | Tests E2E | 100% pass | 100% pass |
 | Build | Success | Success |
@@ -264,7 +318,7 @@ QA: 3 tests en echec detectes.
 
 Actions possibles :
 a) Analyser les echecs en detail
-b) Relancer les tests flaky
+b) Relancer les tests flaky (une seule relance ; s'ils passent : nature `flaky`, passage en quarantaine dans `tests/INDEX.md`)
 c) Retourner au DEV pour correction
 d) Ignorer (non recommande)
 ```
@@ -286,9 +340,9 @@ c) Continuer malgre tout (non recommande)
 
 ## Regles
 
-1. **Pas de merge si tests echouent** - Exception: flaky tests documentes
+1. **Pas de merge si tests echouent** - Exception: tests au statut `quarantaine` dans `tests/INDEX.md` (raison + issue)
 2. **Build doit passer** - Aucune exception
-3. **Couverture minimum** - Configurable par projet
+3. **Couverture minimum** - `testing.coverage_min` dans `project-config.json` (defaut 70%)
 4. **Regression zero** - Nouveaux tests pour nouveaux bugs
 
 ## Configuration
@@ -296,8 +350,9 @@ c) Continuer malgre tout (non recommande)
 Lire `.claude/project-config.json` pour :
 - Frameworks de test a utiliser
 - Commandes de test specifiques
-- Seuils de couverture personnalises
-- Tests a ignorer (flaky documentes)
+- `commands.test`, `commands.test_targeted`, `commands.test_fast`, `commands.audit`
+- `testing.regression_at_qa`, `testing.full_regression_at`, `testing.components`, `testing.coverage_min`
+- Tests a ignorer : uniquement via le statut `quarantaine` de `tests/INDEX.md`
 
 ---
 
@@ -327,7 +382,7 @@ Lire `.claude/project-config.json` pour :
 ---------------------------------------
 Branche : [branche]
 Version : [X.Y.Z]
-Scope : [unit|integration|e2e|all]
+Scope : [feature|regression-full|red-check|perf|security]
 ---------------------------------------
 ```
 
