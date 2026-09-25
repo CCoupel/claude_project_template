@@ -223,11 +223,12 @@ Le milestone GitHub actif est la SEULE source de verite pour `X.Y.Z` — fixe de
 ### Workflow Standard
 
 ```
-PLAN -> [validation] -> DEV -> [REVIEW ∥ TEST-WRITER] -> QA -> [validation] -> DOC -> DEPLOY -> [validation]
+PLAN -> [validation] -> DEV (TEST-WRITER en Batch 1) -> [REVIEW ∥ QA] -> DOC -> [DEPLOY QUALIF ∥ DOC finalize ∥ NR complete] -> [validation] -> PROD
 ```
 
 **[validation] = Points de validation utilisateur obligatoires**
-**[REVIEW ∥ TEST-WRITER] = executes en parallele apres DEV**
+**[REVIEW ∥ QA] = executes en parallele apres DEV** (repli sequentiel si `qa_parallelizable == false`, voir `context/QUALITY.md` section 12)
+**Plan de tests** : `context/COMMON.md` section 15
 
 ### Transmission de Contexte
 

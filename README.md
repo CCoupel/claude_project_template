@@ -279,10 +279,10 @@ DOC (brouillon) ─────────────── CHANGELOG + docume
     ↓
 INFRA validation QUALIF ────── cohérence procédure/infrastructure
     ↓  [GATE 4b] escalade si écart détecté
-    ├────────────────────────────────────────┐
-BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes + résultats QA, sans attendre le déploiement
-    └────────────────────────────────────────┘
-    ↓  BUILD incrémente `a` (compilation locale, agnostique à l'environnement) · GATE 4 attend les DEUX DONE
+    ├────────────────────────────────────────┬──────────────────────────────┐
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes   NR complète (QA) ── toute la suite
+    └────────────────────────────────────────┴──────────────────────────────┘
+    ↓  BUILD = compilation seule, incrémente `a` (aucun test rejoué) · GATE 4 attend les TROIS (NR KO → retour DEV sans solliciter l'utilisateur)
 [GATE 4] Validation manuelle ── CDP présente les scénarios à tester
     ├─ OUI → issue fermée → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) → milestone si 100%
     └─ NON → label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
@@ -320,17 +320,19 @@ PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un reb
 ```
 ANALYSE ── cause racine
     ↓  label EN COURS
+TEST-WRITER ── test de reproduction (statut `regression`)
+    ↓
+RED CHECK ── QA joue ce seul test sur le code non corrigé : il doit ÉCHOUER (sinon retour TEST-WRITER)
+    ↓
+DEV ── fix minimal
+    ↓  label EN REVIEW (+ EN QA si qa_parallelizable)
     ├──────────────────────────┐
-  DEV ── fix minimal       TEST-WRITER ── test de régression depuis la spec du bug
-    └──────────────────────────┘
-    ↓  label EN REVIEW (+ EN QA si qa_parallelizable, dès TEST-WRITER DONE)
-    ├──────────────────────────┐
-  REVIEW                     QA ── démarre dès TEST-WRITER DONE, sans attendre REVIEW (défaut)
+  REVIEW                     QA ── reproduction (vert) + NR du composant, en parallèle de REVIEW (défaut)
     └──────────────────────────┘
     ↓  label DONE
 DOC (brouillon) ── CHANGELOG (Fixed)
     ↓
-BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ── GATE 4 attend les trois
     ↓
 [GATE 4] OUI → issue fermée → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) ── installe l'artefact publié par la CI
 ```
@@ -338,28 +340,30 @@ BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 atte
 ### Hotfix (urgence production)
 
 ```
+TEST-WRITER ── test de reproduction
+    ↓
 DEV ── fix minimal uniquement
     ↓
-REVIEW rapide
+REVIEW rapide ∥ QA critique ── reproduction + tests `smoke`/`critical` + build
     ↓
 BUILD → PUBLISH PROD → DEPLOY PROD direct (∥ marketing-release systématique) ── sans passage par QUALIF
     ↓
-DOC ── post-mortem
+NR complète en arrière-plan sur `main` (échec → issue) ∥ DOC ── post-mortem
 ```
 
 ### Refactor
 
 ```
-QA (avant) ── capture l'état actuel des tests
+QA (avant) ── NR du composant : capture l'état actuel des tests
     ↓
 DEV ── refactoring (comportement identique obligatoire)
     ├──────────────────┐
-  REVIEW          QA (après) ── vérifie la non-régression, en parallèle de REVIEW (défaut)
+  REVIEW          QA (après) ── NR du composant, non-régression, en parallèle de REVIEW (défaut)
     └──────────────────┘
     ↓
 DOC (brouillon) ── CHANGELOG (Changed)
     ↓
-BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ── GATE 4 attend les deux
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ── GATE 4 attend les trois
 ```
 
 ### Contrats API (contract-first)
@@ -502,6 +506,21 @@ n'importe quel ordre. Si le déploiement échoue, rien n'est publié.
 Le `test-writer` est déclenché **en parallèle du DEV**, depuis le plan et les contrats API — pas depuis le code livré. Les tests définissent le comportement attendu ; le développeur implémente pour les faire passer.
 
 **Règle de non-régression** : les tests existants sont immuables. Seul un changement `BREAKING` ou `CHANGED` documenté dans `contracts/CHANGELOG.md` autorise leur mise à jour. Le `code-reviewer` vérifie que les tests couvrent bien tous les contrats.
+
+### Plan de tests (feature / non-régression)
+
+Objectif : **ne jamais rejouer le même test sur le même code sans raison**, et séparer les tests de la feature en cours des tests de non-régression (NR). Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §15.
+
+- **Index `tests/INDEX.md`** : une ligne par test de spécification (fichier, niveau, composant, feature, statut, tags). Statuts : `feature` (milestone en cours), `regression` (features livrées — promus par le CDP au déploiement PROD ; un test de reproduction de bugfix naît `regression`), `quarantaine` (échec connu ou instable, raison + issue — ne bloque pas le verdict). Tags : `smoke`, `critical`, `slow`. Les fichiers restent où le framework les attend ; l'index porte la distinction.
+- **Propriété** : le `test-writer` écrit les tests de spécification (contrats, critères, maquettes) ; les `dev-*` n'écrivent que des tests unitaires internes et ne lancent que la **boucle rapide** (build, lint, typecheck, tests feature de leurs fichiers — jamais la suite complète).
+- **QA par cycle** : suite **feature** d'abord (KO → retour DEV immédiat, sans NR) ; si OK, NR **impactées** par le diff (`testing.components`) — `testing.regression_at_qa` = `gated` (défaut) \| `parallel` \| `none`.
+- **NR complète** (`qa`, scope `regression-full`) — `testing.full_regression_at` : `qualif` (défaut : en parallèle de BUILD → PUBLISH → DEPLOY QUALIF et de DOC finalize ; **GATE 4 ne s'ouvre qu'une fois la NR VALIDATED**, un échec renvoie en DEV sans solliciter l'utilisateur), `build` (avant PUBLISH QUALIF) ou `prod` (une fois avant PUBLISH PROD). En hotfix : après le DEPLOY PROD, en arrière-plan.
+- **BUILD ne rejoue aucun test** : `deployer` compile seulement, QA a déjà validé le même arbre git. Un journal `_work/tests-ledger.md` (tree-hash + scope) évite de relancer un scope déjà VALIDATED sur un arbre inchangé.
+- **Bugfix** : le test de reproduction est écrit **avant** le DEV et vérifié **rouge** par QA (`red-check`) sur le code non corrigé.
+- **Échecs classés** par nature (`feature` / `regression` / `quarantaine` / `environnement` / `flaky` — une relance maximum, puis quarantaine) ; le CDP consigne chaque verdict dans `tests/METRICS.md` pour mesurer le taux réel de retours dus à la régression.
+- **Scopes optionnels** : `perf` et `security` ne sont joués que si le planner les a demandés (`test_scopes`) ; smoke post-deploy via `commands.smoke` (à défaut `curl /health`).
+
+Réglages dans `project-config.json` : `testing.components`, `testing.regression_at_qa`, `testing.full_regression_at`, `testing.coverage_min`, `commands.test_fast`, `commands.test_targeted`, `commands.smoke`. `/init-project` crée `tests/INDEX.md` et `tests/METRICS.md` (idempotent).
 
 ---
 

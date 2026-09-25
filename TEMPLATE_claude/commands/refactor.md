@@ -71,11 +71,11 @@ Sinon -> workflow normal.
 
 **Obligatoire avant tout changement :**
 - Identifier tous les fichiers concernes
-- Verifier la couverture de tests existante
+- Verifier la couverture de tests existante : tests `regression` du composant dans `tests/INDEX.md` (NR du composant jouee par `qa` avant le refactoring)
 - Comprendre le comportement actuel
 - Lister les dependances
 
-**Si couverture insuffisante** : Ecrire les tests AVANT le refactoring.
+**Si couverture insuffisante** : le test-writer ecrit les tests AVANT le refactoring (statut `regression`) ; ils ne changent plus pendant le refactoring (comportement identique).
 
 ### 2. PLAN (optionnel)
 

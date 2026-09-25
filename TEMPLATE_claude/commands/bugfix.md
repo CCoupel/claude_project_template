@@ -43,13 +43,16 @@ Sinon -> workflow normal.
 [PLAN] --> Plan de correction (si complexe)
     |
     v
+[TEST-WRITER] --> test de reproduction (statut `regression`)
+    |
+    v
+[RED CHECK] --> qa : le test doit ECHOUER sur le code non corrige
+    |
+    v
 [DEV] --> Implementation du fix
     |           |
     v           v
-[REVIEW]   [TEST-WRITER] --> test de regression (en parallele)
-    |           |
-    |           v
-    |         [QA] --> demarre des TEST-WRITER termine, en parallele de REVIEW (defaut)
+[REVIEW]     [QA] --> reproduction (vert) + NR du composant, en parallele de REVIEW (defaut)
     |           |
      `----+-----'
           v
@@ -87,12 +90,12 @@ Pour les bugs complexes uniquement :
 - Eviter les changements non lies au bug
 - Ajouter des commentaires si logique complexe
 
-### 4. TEST-WRITER (parallele avec REVIEW)
+### 4. TEST-WRITER puis RED CHECK (avant le DEV)
 
-**Obligatoire** : Test de non-regression ecrit par test-writer
-- Script qui reproduit le bug avant le fix (red) et passe apres (green)
+**Obligatoire** : test de reproduction ecrit par test-writer, **avant** le fix
+- Script qui reproduit le bug (red avant le fix, green apres), enregistre au statut `regression` dans `tests/INDEX.md`
 - Procedure manuelle dans `tests/procedures/` pour que QA valide le scenario
-- Execute en parallele avec le code-reviewer — independants l'un de l'autre
+- **RED CHECK** : QA execute ce seul test sur le code non corrige (`Scope : red-check`) — il doit echouer. S'il passe, il ne reproduit pas le bug : retour au test-writer (hors comptage de cycles)
 
 ### 5. REVIEW
 
@@ -102,7 +105,7 @@ Pour les bugs complexes uniquement :
 
 ### 6. QA
 
-- Execution de tous les tests
+- Test de reproduction (doit maintenant passer), puis NR impactees du composant (`context/COMMON.md` section 15)
 - Verification specifique du scenario du bug
 - Build OK
 - Par defaut, demarre des que TEST-WRITER a livre ses scripts — en parallele de REVIEW, sans attendre son
@@ -130,7 +133,7 @@ Mise a jour CHANGELOG.md :
 | Aspect | /bugfix | /hotfix |
 |--------|---------|---------|
 | Urgence | Normal | Critique (prod down) |
-| Tests | Complets | Critiques uniquement |
+| Tests | Reproduction (red check) + NR du composant ; NR complete en parallele de QUALIF | Reproduction + `smoke`/`critical` ; NR complete apres PROD |
 | Review | Standard | Acceleree |
 | Deploy | Via workflow normal (BUILD+PUBLISH+DEPLOY QUALIF puis PROD) | Direct PROD (BUILD+PUBLISH+DEPLOY PROD, sans QUALIF) |
 

@@ -116,7 +116,7 @@ Apres votre travail, le rapport retourne a l'orchestrateur (CDP) qui decide :
 
 | Votre Verdict | Action Orchestrateur |
 |---------------|---------------------|
-| APPROVED / VALIDATED | Lance l'agent suivant (QA apres REVIEW, DOC apres QA) |
+| APPROVED / VALIDATED | Lance l'agent suivant (DOC apres REVIEW **et** QA — QA tourne en parallele de REVIEW par defaut, voir `context/QUALITY.md` section 12) |
 | WITH RESERVATIONS | Continue mais note les reserves pour suivi |
 | REJECTED / NOT VALIDATED | Relance le DEV agent avec votre rapport d'erreurs |
 
@@ -153,12 +153,12 @@ Un bon rapport de validation :
 ### Code-Reviewer (REVIEW)
 - Focus : Qualite du code, securite, architecture, duplication
 - Verifications : OWASP, patterns, performance, tests
-- Position : APRES DEV, AVANT QA
+- Position : APRES DEV, en parallele de QA (defaut)
 
 ### QA
 - Focus : Fonctionnement, tests, build, couverture
-- Verifications : Tests unitaires, E2E, build, regression
-- Position : APRES REVIEW, AVANT DOC
+- Verifications : suite feature puis NR impactees (unit, integration, E2E), conformite maquettes, build ; NR complete a part (`context/COMMON.md` section 15)
+- Position : APRES DEV, en parallele de REVIEW (defaut) ; avant DOC
 
 ---
 

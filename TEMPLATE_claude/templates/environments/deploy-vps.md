@@ -24,7 +24,9 @@ scp -i "$SSH_KEY_PATH" "{PUBLISH_TARGET}/app-$VERSION.tar.gz" {DEPLOY_TARGET}/
 ssh -i "$SSH_KEY_PATH" {DEPLOY_TARGET%%:*} "cd ${DEPLOY_TARGET#*:} && tar -xzf app-$VERSION.tar.gz && systemctl restart app"
 
 # 3. Verification post-deploy
-curl -f "https://{ENV_NAME_LOWER}.example.com/health"
+# Smoke : commande du projet (tests tag `smoke` de tests/INDEX.md), sinon simple /health
+SMOKE_CMD=$(jq -r '.commands.smoke // empty' .claude/project-config.json)
+if [ -n "$SMOKE_CMD" ]; then bash -c "$SMOKE_CMD"; else curl -f "https://{ENV_NAME_LOWER}.example.com/health"; fi
 
 # 4. Notification
 echo "Deploiement {ENV_NAME} termine - $VERSION"

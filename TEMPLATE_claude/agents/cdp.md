@@ -266,6 +266,8 @@ SendMessage({ to: "[agent]", content: "
   Handoff planner : _work/handoff/planner-[timestamp].md
   Contrats API : contracts/
   Commits atomiques.
+  Tests : boucle rapide seulement (build + lint + typecheck + tests feature de tes fichiers,
+  `commands.test_fast`) — jamais la suite complete (voir context/COMMON.md 15.2).
   Reponse : DONE/FAILED + fichiers modifies + SHA commit.
 " })
 ```
@@ -277,10 +279,17 @@ SendMessage({ to: "test-writer", content: "
   Handoff planner : _work/handoff/planner-[timestamp].md
   Contrats API : contracts/ — les tests DOIVENT valider la conformite aux contrats.
   Source : plan + contrats uniquement (le code n'est pas encore final).
-  Produire : scripts de tests (unit/integration/E2E) + procedures manuelles tests/procedures/.
+  Produire : scripts de tests (unit/integration/E2E) + procedures manuelles tests/procedures/
+  + une ligne par fichier de test dans tests/INDEX.md (statut `feature`, tags smoke/critical/slow).
+  Scopes optionnels du plan (`test_scopes`) : [perf|security|aucun].
   Ne pas modifier les tests existants sauf changement documente dans contracts/CHANGELOG.md.
 " })
 ```
+
+**Bugfix — RED CHECK avant DEV :** le test-writer est dispatche **avant** les dev-* pour livrer le test de
+reproduction (statut `regression`). Des son DONE, dispatcher `qa` en `Scope : red-check` (ce seul test, sur
+le code non corrige — il doit **echouer**). `RED CHECK KO` (le test passe) → retour au test-writer, sans
+compter de cycle. `RED CHECK OK` → lancer le DEV. Voir `context/COMMON.md` 15.5.
 
 **Après DEV parallèle — Résolution des conflits de merge**
 
@@ -342,8 +351,10 @@ SendMessage({ to: "qa", content: "
   Execute les tests sur la branche [branche].
   Scripts de tests : commites par test-writer (SHA [sha]).
   Procedures manuelles : tests/procedures/[feature].md.
-  Scope : [unit|integration|e2e|all]
-  Retourne : verdict VALIDATED / NOT VALIDATED + rapport detaille.
+  Scope : feature (suite feature d'abord — KO = retour immediat ; puis NR impactees selon
+  `testing.regression_at_qa`). Scopes optionnels : [perf|security|aucun] (`test_scopes` du plan).
+  Plan de tests : context/COMMON.md section 15. Reutilise _work/tests-ledger.md si l'arbre est inchange.
+  Retourne : verdict VALIDATED / NOT VALIDATED + rapport detaille (echecs classes par nature).
 " })
 ```
 
@@ -384,6 +395,9 @@ SUBAGENT_NAMES[] = []
     dispatcher `qa` maintenant (meme message ci-dessus), attendre son DONE
 
 **Verdict `qa` (parallele ou sequentiel) :**
+- Dans tous les cas : ajouter une ligne a `tests/METRICS.md` (date, milestone, feature, cycle, verdict,
+  echecs par nature — repris du rapport QA) ; ajouter en `quarantaine` dans `tests/INDEX.md` (raison + issue)
+  les tests que QA a classes `flaky`.
 - VALIDATED / VALIDATED WITH RESERVATIONS → Phase 4 (Documentation Draft)
 - NOT VALIDATED → cycle++
   > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
@@ -429,14 +443,23 @@ SendMessage({ to: "infra", content: "
 - NOT VALIDATED → escalade utilisateur avec le rapport d'ecarts ← GATE 4b (une infra absente et
   creee par infra n'est jamais un NOT VALIDATED — seule une incoherence l'est, voir infra.md)
 
-**Si infra VALIDATED — dispatcher deployer + doc-updater dans le meme tour :**
+**Si infra VALIDATED — dispatcher deployer + doc-updater (+ NR complete) dans le meme tour :**
 ```
 SendMessage({ to: "deployer", content: "
   Build puis publie puis deploie en QUALIF depuis la branche [branche].
   Incremente toi-meme `a` avant le build (voir ton propre protocole, deploy.template.md — Tache BUILD)
   — n'attends pas de version fournie. Enchaine BUILD puis PUBLISH QUALIF puis DEPLOY QUALIF
-  sans attendre de nouvel ordre.
+  sans attendre de nouvel ordre. Ne rejoue aucun test au BUILD (deja valides par QA).
+  [Si `testing.full_regression_at == build` : apres BUILD, attends mon message `NR VALIDATED`
+  avant PUBLISH QUALIF.]
   Retourne : DONE + version publiee/deployee [X.Y.Z.a] + statut des services + smoke tests OK/KO.
+" })
+
+[Si `testing.full_regression_at` est `qualif` (defaut) ou `build`]
+SendMessage({ to: "qa", content: "
+  Scope : regression-full sur la branche [branche] (NR complete, precedee de `commands.audit` une
+  fois par milestone). Reutilise _work/tests-ledger.md si l'arbre est inchange.
+  Retourne : VALIDATED / NOT VALIDATED + rapport detaille (echecs classes par nature).
 " })
 
 SendMessage({ to: "doc-updater", content: "
@@ -448,9 +471,15 @@ SendMessage({ to: "doc-updater", content: "
 " })
 ```
 
-**GATE 4 — s'ouvre uniquement quand les DEUX sont termines :**
+**GATE 4 — s'ouvre uniquement quand TOUT est termine :**
 
-Attendre DONE de deployer ET DONE de doc-updater avant de presenter a l'utilisateur.
+Attendre DONE de deployer ET DONE de doc-updater ET (si `testing.full_regression_at` est `qualif` ou `build`)
+le verdict VALIDATED de la NR complete avant de presenter a l'utilisateur. L'utilisateur n'est jamais invite
+a valider une QUALIF dont la NR est KO ou pas encore terminee.
+
+**NR complete NOT VALIDATED** → ne pas ouvrir le GATE 4, ne pas solliciter l'utilisateur : cycle++
+(`tests/METRICS.md`), retour Phase DEV avec le rapport (echecs de nature `regression`), puis REVIEW + QA et
+nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour lever son attente.
 
 ```markdown
 ## QUALIF deployee + Documentation prete — Validation manuelle requise avant PROD
@@ -539,6 +568,10 @@ SendMessage({ to: "infra", content: "
   — retour Phase DEV ; une infra absente et creee par infra n'est jamais un NOT VALIDATED, voir
   infra.md)
 
+**Mode `testing.full_regression_at == prod`** : avant ce dispatch, verifier dans `_work/tests-ledger.md` une NR
+complete VALIDATED pour l'arbre courant ; sinon dispatcher `qa` (`Scope : regression-full`) et **refuser
+`/deploy prod`** tant qu'elle n'est pas VALIDATED.
+
 **Dispatch systematique — deploiement + preparation marketing (meme tour), quel que soit le
 type de workflow (y compris Hotfix — voir aussi section "Dispatch selon le Type de Workflow") :**
 
@@ -605,6 +638,10 @@ mcp__plugin_github_github__issue_read — lister les issues ouvertes du mileston
   Le milestone reste ouvert jusqu'a leur livraison.
   ```
 
+**Apres DEPLOY PROD reussi — promotion des tests** : dans `tests/INDEX.md`, passer de `feature` a
+`regression` tous les tests du milestone deploye (`context/COMMON.md` 15.1) et commiter (`test(index): promote
+vX.Y.Z tests to regression`).
+
 Informer l'utilisateur du resultat du deploiement (et de la publication marketing si applicable).
 
 ## Dispatch selon le Type de Workflow
@@ -615,20 +652,22 @@ Informer l'utilisateur du resultat du deploiement (et de la publication marketin
 ### Feature
 
 ```
-PLAN (arbre exec) → DEV (batches) → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
+PLAN (arbre exec) → DEV (batches, test-writer en Batch 1) → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize ∥ NR complete] → GATE 4 → PROD
 ```
 
 ### Bugfix
 
 ```
-ROUTING → DEV → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
+ROUTING → TEST-WRITER (reproduction) → RED CHECK → DEV → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize ∥ NR complete] → GATE 4 → PROD
 ```
 
 ### Hotfix
 
 ```
-DEV (minimal) → REVIEW rapide → BUILD → PUBLISH PROD → DEPLOY PROD direct → DOC (post-mortem apres PROD)
+TEST-WRITER (reproduction) → DEV (minimal) → [REVIEW rapide ∥ QA critique] → BUILD → PUBLISH PROD → DEPLOY PROD direct → [NR complete en arriere-plan ∥ DOC post-mortem]
 ```
+> QA critique = test de reproduction + tests `smoke` et `critical` de `tests/INDEX.md` + build. La NR complete
+> tourne apres le deploiement, sur `main` ; un echec ouvre une issue (`context/COMMON.md` 15.4).
 > Exception au principe "PROD = zero modification" — acceptable uniquement pour les hotfixes
 > critiques. Seul cas ou PUBLISH PROD part directement d'un BUILD frais plutot que d'un
 > artefact deja valide en QUALIF — jamais de passage par QUALIF (voir `agents/deploy.template.md`,
@@ -637,7 +676,7 @@ DEV (minimal) → REVIEW rapide → BUILD → PUBLISH PROD → DEPLOY PROD direc
 ### Refactor
 
 ```
-QA (avant) → DEV (arbre exec) → [REVIEW ∥ QA apres] → DOC draft → [QUALIF ∥ DOC finalize] → GATE 4 → PROD
+QA (avant : NR du composant) → DEV (arbre exec) → [REVIEW ∥ QA apres : NR du composant] → DOC draft → [QUALIF ∥ DOC finalize ∥ NR complete] → GATE 4 → PROD
 ```
 
 ### Securite
@@ -666,8 +705,11 @@ Si REVIEW = REFUSE    → cycle++
 
 Si QA = NOT VALIDATED → cycle++
   → SendMessage(dev-*, "Corriger : [erreurs]")       ← pas de CLEAR (contexte précieux)
-  → CLEAR(code-reviewer) + CLEAR(qa) puis redispatch REVIEW + QA
+  → CLEAR(code-reviewer) + CLEAR(qa) puis redispatch REVIEW + QA (QA rejoue d'abord les tests en echec,
+    puis la suite feature ; jamais la NR complete a chaque cycle)
   → CLEAR(test-writer) si régression de couverture, sinon pas de CLEAR
+
+Si NR complete = NOT VALIDATED (Phase 5) → cycle++, meme traitement, sans solliciter l'utilisateur
 
 Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ```
@@ -681,7 +723,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 2   | Plan valide par CDP | "Validez-vous ce plan et ces contrats API ?" |
 | GATE 2b  | Conflit merge non resolvable | "Conflits detectes entre backend et frontend. Action requise." |
 | GATE 3   | 3 cycles atteints | "3 cycles echoues. Continuer ou abandonner ?" |
-| GATE 4   | QUALIF DONE + DOC finalize DONE | Commande explicite `/deploy prod` — tout est fige, PROD = zero modification |
+| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | Commande explicite `/deploy prod` — tout est fige, PROD = zero modification |
 | GATE 4b  | Infra QUALIF invalide | "Procedure QUALIF incoherente avec l'infra. Voir rapport." |
 | GATE 4c  | Infra PROD invalide | Stop immediat — retour Phase DEV, aucune correction en PROD |
 | GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Voici la maquette de communication pour v[X.Y]. Validez-vous ?" |

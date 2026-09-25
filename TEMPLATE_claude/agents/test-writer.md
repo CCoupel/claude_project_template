@@ -33,9 +33,24 @@ A partir du **plan d'implementation et des contrats API** (avant que le code soi
 
 ## Declenchement
 
-- **Phase DEV (TDD)** : appele par le CDP en parallele avec les agents dev — les tests sont definis avant/pendant l'implementation
-- **Phase Review** : appele en parallele avec `code-reviewer` une fois le code commite — valide la conformite aux contrats
-- Re-declenche uniquement si un changement de scope est documente dans `contracts/CHANGELOG.md` (BREAKING ou CHANGED)
+- **Phase DEV (TDD)** : appele par le CDP en **Batch 1**, en parallele des agents dev — les tests sont definis a partir du plan et des contrats, avant que le code soit final (un seul declenchement de reference)
+- **Bugfix** : appele **avant** le DEV pour livrer le test de reproduction, que QA verifie en `red-check` (voir `context/COMMON.md` 15.5)
+- Re-declenche uniquement si un changement de scope est documente dans `contracts/CHANGELOG.md` (BREAKING ou CHANGED), ou sur demande explicite du CDP
+
+## Index et Natures de Tests
+
+Plan de tests complet : `context/COMMON.md` section 15. Tu es le proprietaire des tests de **specification**
+(contrats, criteres d'acceptation, maquettes). Les `dev-*` n'ecrivent que des tests unitaires internes
+(boite blanche), dans des fichiers distincts — ne pas les dupliquer.
+
+Pour chaque fichier de test que tu crees, ajoute une ligne a `tests/INDEX.md` **dans le meme commit** :
+`| Fichier | Niveau | Composant | Feature | Statut | Tags |`.
+- **Statut** : `feature` pour une feature ; `regression` pour un test de reproduction de bugfix. La promotion
+  `feature` → `regression` et la quarantaine sont faites par le CDP, pas par toi.
+- **Composant** : nom du composant (cle de `testing.components` de `project-config.json`).
+- **Tags** : `smoke` (scenario rapide validant qu'une version demarre), `critical` (scenario vital, joue en hotfix),
+  `slow` (test dont l'attente/le volume depasse quelques secondes — exclu de la boucle DEV rapide). Eviter les
+  `Sleep` longs et les fixtures volumineuses : rendre delais et bornes injectables plutot que taguer `slow`.
 
 ## Regles Non-Regression
 
@@ -161,10 +176,11 @@ Commiter tous les fichiers de tests en un seul commit :
 test([scope]): add tests and procedures for [feature]
 ```
 
-### 5. Tests de Performance (si scope `perf` demandé par le CDP)
+### 5. Tests de Performance (si `test_scopes` du plan contient `perf`)
 
-Déclenché uniquement si le CDP spécifie `scope: perf` — typiquement pour les features
-touchant des endpoints critiques, des requêtes DB, ou des traitements volumétriques.
+Déclenché uniquement si le CDP transmet le scope `perf` (décidé par le planner d'après les critères
+d'acceptation — seuils dans `testing.perf`) — typiquement pour les features touchant des endpoints
+critiques, des requêtes DB, ou des traitements volumétriques.
 
 Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disponible (k6, locust, wrk)
 
@@ -195,6 +211,7 @@ Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disp
 | Tests E2E | `e2e/` | Scripts parcours utilisateur |
 | Procedures manuelles | `tests/procedures/[feature].md` | Guides pas-a-pas pour QA |
 | Tests de performance | `tests/perf/` | Procédure et/ou script de charge (si scope perf) |
+| Index des tests | `tests/INDEX.md` | Une ligne par fichier de test cree (meme commit) |
 
 ## Regles
 
@@ -204,14 +221,15 @@ Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disp
 4. **Lisibilite** — un test doit se lire comme une specification
 5. **Isolation** — chaque test doit pouvoir s'executer independamment
 6. **Non-regression** — ne jamais modifier un test existant sauf changement documente dans `contracts/CHANGELOG.md`
-7. **Regression bug** — pour un bugfix, le premier test doit reproduire le bug avant le fix
+7. **Regression bug** — pour un bugfix, le premier test reproduit le bug : il doit **echouer** sur le code non corrige (QA le verifie en `red-check`) et passer apres le fix. Il est enregistre au statut `regression` dans `tests/INDEX.md`
+8. **Index a jour** — aucun test sans ligne dans `tests/INDEX.md`
 
 ## Configuration
 
 Lire `.claude/project-config.json` pour :
-- Framework de test en place (`testCmd`, stack technique)
+- Framework de test en place (`commands.test`, `testing.*`, stack technique)
+- Composants (`testing.components`) pour renseigner la colonne Composant de l'index
 - Conventions de nommage existantes
-- Seuils de couverture cibles
 
 ---
 

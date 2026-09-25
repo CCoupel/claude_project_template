@@ -27,7 +27,9 @@ docker pull "{PUBLISH_TARGET}:$VERSION" && docker-compose -f {DEPLOY_TARGET} up 
 # restart du service via docker-compose
 
 # 3. Smoke tests
-curl -f "https://{ENV_NAME_LOWER}.example.com/health"
+# Smoke : commande du projet (tests tag `smoke` de tests/INDEX.md), sinon simple /health
+SMOKE_CMD=$(jq -r '.commands.smoke // empty' .claude/project-config.json)
+if [ -n "$SMOKE_CMD" ]; then bash -c "$SMOKE_CMD"; else curl -f "https://{ENV_NAME_LOWER}.example.com/health"; fi
 
 # 4. Notification
 echo "Deploiement {ENV_NAME} termine - $VERSION"

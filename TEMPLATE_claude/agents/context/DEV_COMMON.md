@@ -110,9 +110,9 @@ Si vous devez modifier un contrat, documentez-le dans votre summary :
 | Verification | Description |
 |--------------|-------------|
 | Build | Le projet compile sans erreur |
-| Tests | Tous les tests passent |
+| Tests | Boucle rapide : tests **feature** de tes fichiers (`commands.test_fast`, sinon `commands.test_targeted`) — jamais la suite complete (QA la joue une fois par arbre, `context/COMMON.md` 15.2) |
 | Version | La version correspond au fichier de config |
-| Lint | Pas d'erreurs de linting |
+| Lint / typecheck | Pas d'erreurs de linting (`commands.lint`) ni de typage (`commands.typecheck`) |
 
 ### Validation Serveur (si applicable)
 
@@ -138,7 +138,7 @@ Apres le build, verifier que le serveur demarre correctement :
 - **Naming** : Respecter les conventions du langage utilise
 - **Error handling** : Toujours gerer les erreurs, ne jamais les ignorer
 - **Thread-safety** : Proteger l'etat partage (mutex, locks, etc.)
-- **Tests** : Chaque fonction publique doit avoir des tests
+- **Tests** : tests unitaires **internes** (boite blanche) pour la logique que tu ajoutes, dans des fichiers distincts colocalises avec le code, hors `tests/INDEX.md`. Les tests de specification (contrats, criteres d'acceptation, maquettes) sont ecrits par TEST-WRITER — ne pas les dupliquer
 
 ### Documentation du Code
 
@@ -156,8 +156,8 @@ Apres le build, verifier que le serveur demarre correctement :
 | Deployer | DEPLOY agent |
 | Incrementer y (version minor) | PLAN agent |
 | Incrementer a (version de build) | DEPLOY agent |
-| Executer les tests E2E | QA agent |
-| Ecrire les scenarios E2E | TEST-WRITER agent |
+| Executer les tests E2E et la suite complete | QA agent |
+| Ecrire les scenarios E2E et les tests de specification | TEST-WRITER agent |
 
 ---
 

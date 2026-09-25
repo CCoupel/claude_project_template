@@ -57,7 +57,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 ## 3. Workflow Standard CDP
 
 ```
-[INIT] -> [CLARIFICATION] -> [PLAN/ANALYSE] -> [DEV] -> [REVIEW] -> [QA] -> [DOC] -> [DEPLOY] -> [FIN]
+[INIT] -> [CLARIFICATION] -> [PLAN/ANALYSE] -> [DEV] -> [REVIEW ∥ QA] -> [DOC] -> [DEPLOY QUALIF ∥ NR complete] -> [FIN]
 ```
 
 ### Variantes par type
@@ -69,7 +69,8 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | Plan | Oui | Souvent | Non | Rarement |
 | Dev | Complet | Cible | Minimal | Structure |
 | Review | Oui | Oui | Rapide | Oui |
-| QA | Complet | Regression | Critique | Complet |
+| QA | Feature + NR impactees | Reproduction (red check) + NR du composant | Critique (reproduction + smoke/critical) | NR du composant avant/apres |
+| NR complete (`testing.full_regression_at`) | En parallele de QUALIF, condition du GATE 4 | Idem | Apres PROD, en arriere-plan | Idem feature |
 | Doc | Oui | Si majeur | Post-mortem | Non |
 | Build + Publish + Deploy QUALIF | Oui | Oui | Non — PROD uniquement, sans QUALIF | Oui |
 
@@ -483,8 +484,10 @@ SendMessage({ to: "qa", content: "
   Execute les tests sur [branche].
   Scripts de tests : SHA [sha] (commités par test-writer).
   Procédures manuelles : tests/procedures/[feature].md
+  Scope : feature (suite feature d'abord ; KO = retour immédiat ; puis NR impactées selon
+  `testing.regression_at_qa`) — plan de tests : context/COMMON.md section 15.
   Rapport code-reviewer : _work/reports/code-reviewer-[timestamp].md (si déjà disponible)
-  Retourne : VALIDATED / NOT VALIDATED + rapport.
+  Retourne : VALIDATED / NOT VALIDATED + rapport (échecs classés par nature).
 " })
 
 **Si `qa` répond `QA NEED SUBAGENTS`** (scopes de tests independants, volume suffisant pour
@@ -543,8 +546,9 @@ SendMessage({ to: "doc-updater", content: "
 
 ### Phase Build + Publish + Deploy QUALIF
 
-> Résumé — la mécanique complète (validation infra, dispatch parallèle avec doc-updater,
-> format du GATE 4) est documentée dans `agents/cdp.md` Phase 5, qui fait autorité ; ne pas
+> Résumé — la mécanique complète (validation infra, dispatch parallèle avec doc-updater et NR complète
+> (`qa`, scope `regression-full`, `testing.full_regression_at`), format du GATE 4 — ouvert seulement
+> quand QUALIF, DOC finalize et NR complète sont terminés) est documentée dans `agents/cdp.md` Phase 5, qui fait autorité ; ne pas
 > dupliquer ici au-delà de ce résumé pour éviter toute dérive entre les deux fichiers.
 
 ```
@@ -631,7 +635,7 @@ SendMessage({ to: "deployer", content: "
 
 - Scope minimal obligatoire
 - Pas de refactoring
-- Test non-regression OBLIGATOIRE
+- Test de reproduction OBLIGATOIRE, ecrit par test-writer avant le DEV, statut `regression`, verifie rouge par QA (`red-check`, context/COMMON.md 15.5)
 - Doc si majeur
 - QUALIF obligatoire
 
@@ -639,7 +643,7 @@ SendMessage({ to: "deployer", content: "
 
 - Fix minimal UNIQUEMENT
 - Pas de refactoring
-- Test critique obligatoire
+- Test de reproduction + tests `smoke`/`critical` obligatoires (QA critique) ; NR complete apres PROD, en arriere-plan
 - QUALIF optionnel si urgent
 - Post-mortem requis
 - Rejoint la branche du milestone actif (ou un milestone dedie cree automatiquement si aucun
