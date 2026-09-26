@@ -43,8 +43,15 @@ Plan de tests complet : `context/COMMON.md` section 15. Tu es le proprietaire de
 (contrats, criteres d'acceptation, maquettes). Les `dev-*` n'ecrivent que des tests unitaires internes
 (boite blanche), dans des fichiers distincts — ne pas les dupliquer.
 
-Pour chaque fichier de test que tu crees, ajoute une ligne a `tests/INDEX.md` **dans le meme commit** :
-`| Fichier | Niveau | Composant | Feature | Statut | Tags |`.
+Tu ranges les tests de specification en **lots** : `<racine-famille>/<theme>/<lot>/<fichier>`
+(`tests/integration/`, `e2e/` ou `tests/e2e/`, `tests/procedures/`) — `<theme>` = domaine fonctionnel,
+`<lot>` = sous-ensemble coherent, **max `testing.lot_max_tests` cas de test (defaut 50)** : au-dela, scinder le lot.
+Un scenario `smoke`/`critical` isole a son propre lot. Le chemin porte l'identite (famille, theme, lot) ;
+les tests unitaires restent colocalises avec le code, hors arborescence. Convention : `context/COMMON.md` 15.1.
+
+Pour chaque **lot** que tu crees, ajoute une ligne a `tests/INDEX.md` **dans le meme commit** (chemin du dossier,
+termine par `/`) : `| Chemin | Niveau | Composant | Feature | Statut | Tags |`. Une ligne fichier n'existe que
+pour une exception (ex. quarantaine), posee par le teamleader.
 - **Statut** : `feature` pour une feature ; `regression` pour un test de reproduction de bugfix. La promotion
   `feature` → `regression` et la quarantaine sont faites par le teamleader, pas par toi.
 - **Composant** : nom du composant (cle de `testing.components` de `project-config.json`).
@@ -100,8 +107,8 @@ tests/unit/test_[module].py
 - Couvrir les flux complets (ex : appel API → base → reponse)
 
 ```
-tests/integration/test_[feature].go
-tests/integration/[feature].test.ts
+tests/integration/[theme]/[lot]/[feature]_test.go
+tests/integration/[theme]/[lot]/[feature].test.ts
 ```
 
 #### Tests E2E
@@ -111,13 +118,13 @@ tests/integration/[feature].test.ts
 - Utiliser le framework E2E en place (Cypress, Playwright, etc.)
 
 ```
-e2e/[feature].cy.ts
-e2e/[feature].spec.ts
+e2e/[theme]/[lot]/[feature].cy.ts
+e2e/[theme]/[lot]/[feature].spec.ts
 ```
 
 ### 3. Procedures de Tests Manuelles
 
-Creer un fichier par feature dans `tests/procedures/` :
+Creer un fichier par feature dans `tests/procedures/[theme]/[lot]/` :
 
 ```
 tests/procedures/[feature-name].md
@@ -207,11 +214,11 @@ Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disp
 | Type | Localisation | Description |
 |------|-------------|-------------|
 | Tests unitaires | `[src]/[module]/*_test.[ext]` | Scripts automatises par composant |
-| Tests integration | `tests/integration/` | Scripts de flux complets |
-| Tests E2E | `e2e/` | Scripts parcours utilisateur |
-| Procedures manuelles | `tests/procedures/[feature].md` | Guides pas-a-pas pour QA |
+| Tests integration | `tests/integration/[theme]/[lot]/` | Scripts de flux complets (lots <= `testing.lot_max_tests`) |
+| Tests E2E | `e2e/[theme]/[lot]/` | Scripts parcours utilisateur (lots <= `testing.lot_max_tests`) |
+| Procedures manuelles | `tests/procedures/[theme]/[lot]/[feature].md` | Guides pas-a-pas pour QA |
 | Tests de performance | `tests/perf/` | Procédure et/ou script de charge (si scope perf) |
-| Index des tests | `tests/INDEX.md` | Une ligne par fichier de test cree (meme commit) |
+| Index des tests | `tests/INDEX.md` | Une ligne par lot cree (meme commit) |
 
 ## Regles
 
@@ -221,8 +228,9 @@ Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disp
 4. **Lisibilite** — un test doit se lire comme une specification
 5. **Isolation** — chaque test doit pouvoir s'executer independamment
 6. **Non-regression** — ne jamais modifier un test existant sauf changement documente dans `contracts/CHANGELOG.md`
-7. **Regression bug** — pour un bugfix, le premier test reproduit le bug : il doit **echouer** sur le code non corrige (QA le verifie en `red-check`) et passer apres le fix. Il est enregistre au statut `regression` dans `tests/INDEX.md`
-8. **Index a jour** — aucun test sans ligne dans `tests/INDEX.md`
+7. **Regression bug** — pour un bugfix, le premier test reproduit le bug : il doit **echouer** sur le code non corrige (QA le verifie en `red-check`) et passer apres le fix. Son lot est enregistre au statut `regression` dans `tests/INDEX.md`
+8. **Index a jour** — aucun lot sans ligne dans `tests/INDEX.md`
+9. **Lots bornes** — jamais plus de `testing.lot_max_tests` cas par lot (defaut 50) : QA remonte l'avancement lot par lot
 
 ## Configuration
 

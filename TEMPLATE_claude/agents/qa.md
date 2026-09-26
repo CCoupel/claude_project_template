@@ -75,8 +75,9 @@ SendMessage({ to: "sub-qa-unit", content: "
    si liste, sinon ignorer) depuis le checkout principal vers le worktree.
 3. Executer les tests du scope assigne dans ce worktree.
 4. Nettoyer : git worktree remove .claude/worktrees/sub-qa-unit
-5. Retourner : verdict VALIDATED / NOT VALIDATED + rapport.
-Rapport : _work/reports/qa-unit-[timestamp].md
+5. Ecrire le verdict (VALIDATED / NOT VALIDATED) et les echecs dans le rapport ci-dessous — pas dans le message.
+Rapport attendu : _work/reports/qa-unit-[timestamp].md
+Retour : `DONE` + chemin du rapport uniquement ; jalons `EN COURS` (fin de lot) vers moi, pas vers main.
 " })
 ```
 
@@ -88,6 +89,7 @@ Rapport : _work/reports/qa-unit-[timestamp].md
 
 ### 3. Recevoir et consolider
 
+Recevoir les jalons des sous-QA et les agreger en un seul jalon `QA EN COURS` pour le teamleader (`TEAMMATES_PROTOCOL.md` section 6).
 Attendre tous les sous-QA (`DONE` ou `BLOQUE`) avant de conclure — jamais fail-fast :
 - **Verdict final** = NOT VALIDATED si au moins un scope est NOT VALIDATED (rollup identique a
   la logique existante — voir "Gestion des Echecs" ci-dessous), sinon VALIDATED (ou VALIDATED
@@ -131,8 +133,10 @@ execution, ajouter la ligne correspondante.
 
 ### Scope `feature` (par cycle — cas standard)
 
-1. Lire `tests/INDEX.md` : selectionner les tests au statut `feature` (+ tests colocalises modifies).
-2. Executer la suite feature **complete** (unit, integration, E2E ; tags `slow` inclus) — sections 2 a 4.
+1. Lire `tests/INDEX.md` : selectionner les lots au statut `feature` (+ tests colocalises modifies). Lot sans
+   ligne d'index = `feature` (repli). Etablir la liste ordonnee des lots (unit → integration → e2e).
+2. Executer la suite feature **complete** (unit, integration, E2E ; tags `slow` inclus) — sections 2 a 4 —
+   **lot par lot** avec un jalon `QA EN COURS — lot i/N …` a chaque fin de lot (voir « Progression par lot »).
 3. **Si elle est KO : arreter ici**, retourner NOT VALIDATED (pas de NR, pas de suite du processus).
 4. Si OK, selon `testing.regression_at_qa` : `gated` → NR **impactees** (COMMON.md 15.3, via
    `commands.test_targeted`) ; `parallel` → deja lancees en meme temps que l'etape 2 ; `none` → aucune.
@@ -165,6 +169,20 @@ Joues uniquement si le teamleader les transmet (decides par le planner, `test_sc
 # Installer les dependances si necessaire
 # Preparer les donnees de test
 ```
+
+### 1b. Progression par lot (OBLIGATOIRE des que la suite compte plusieurs lots)
+
+Ne jamais lancer une nature entiere en un seul appel opaque (`go test ./...`, `npx playwright test`) : decouper en
+lots (`tests/<famille>/<theme>/<lot>/`, paquets pour les unitaires) et executer chaque lot via
+`commands.test_targeted` (`{TARGETS}` = dossier du lot). A la fin de **chaque lot**, envoyer au teamleader :
+
+```
+SendMessage({ to: "main", content: "QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 tests, 2 KO" })
+```
+
+Nommer les KO des qu'ils apparaissent (lot, test). Sous ~100 tests au total : un seul lot, pas de jalon intermediaire.
+Un lot deja VALIDATED sur le meme arbre git (`_work/tests-ledger.md`) n'est pas rejoue. Sans ordre d'arret du
+teamleader, tous les lots sont joues et le rapport liste tous les echecs. Convention : `context/COMMON.md` 15.9.
 
 ### 2. Tests Unitaires
 
@@ -318,7 +336,7 @@ QA: 3 tests en echec detectes.
 
 Actions possibles :
 a) Analyser les echecs en detail
-b) Relancer les tests flaky (une seule relance ; s'ils passent : nature `flaky`, passage en quarantaine dans `tests/INDEX.md`)
+b) Relancer les tests flaky (une seule relance ; s'ils passent : nature `flaky`, passage en quarantaine dans `tests/INDEX.md`, ligne fichier au sein du lot)
 c) Retourner au DEV pour correction
 d) Ignorer (non recommande)
 ```

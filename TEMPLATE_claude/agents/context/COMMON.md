@@ -136,7 +136,7 @@ Action requise : [ce dont j'ai besoin]
 > **REGLE** : Jamais de contenu de code, de diff, ni d'extraits de fichiers dans les messages SendMessage.
 > Les messages vers le teamleader sont des metadonnees (statut, fichiers, SHA), pas des rapports techniques.
 
-### Notifications Intermediaires (workflows longs uniquement)
+### Notifications Intermediaires (OBLIGATOIRES des que la tache compte plusieurs unites — voir `TEAMMATES_PROTOCOL.md` 4b)
 
 ```
 [NOM-AGENT] EN COURS — X% — [etape courante en < 10 mots]

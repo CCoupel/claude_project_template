@@ -101,7 +101,7 @@ gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
 
 Uniquement (joues par `qa`, en parallele de la revue rapide) :
 - Test de reproduction du scenario casse (ecrit par test-writer, statut `regression`)
-- Tests tagues `smoke` et `critical` de `tests/INDEX.md`
+- Lots tagues `smoke` et `critical` de `tests/INDEX.md`
 - Build OK
 
 **Pas de suite complete avant PROD** — la NR complete tourne apres le DEPLOY PROD (voir ci-dessous).

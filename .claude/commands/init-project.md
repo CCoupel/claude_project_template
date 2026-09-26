@@ -810,6 +810,7 @@ l'utilisateur de le personnaliser par environnement uniquement s'il le demande e
     "regression_at_qa": "gated",
     "full_regression_at": "qualif",
     "coverage_min": 70,
+    "lot_max_tests": 50,
     "perf": { "p95_ms": 200, "p99_ms": 500, "error_rate_max": 0.001 }
   },
   "security": {
@@ -861,6 +862,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `testing.regression_at_qa` | Defaut `gated` (`gated` \| `parallel` \| `none`) — `context/COMMON.md` 15.3 |
 | `testing.full_regression_at` | Defaut `qualif` (`qualif` \| `build` \| `prod`) — `context/COMMON.md` 15.4 |
 | `testing.coverage_min` | Defaut `70` (seuil minimal de couverture, en %) |
+| `testing.lot_max_tests` | Defaut `50` (nombre max de cas de test par lot ; QA execute et rapporte lot par lot) |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
 | `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question 9bis) ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question 9 pour chaque environnement, sauf personnalisation explicite |
@@ -1178,12 +1180,14 @@ mkdir -p tests
 [ -f tests/INDEX.md ] || cat > tests/INDEX.md <<'TESTS_INDEX_EOF'
 # Index des tests
 
-> Tests de specification ecrits par le test-writer ; statuts tenus par le CDP.
+> Tests de specification ecrits par le test-writer, ranges en lots `<famille>/<theme>/<lot>/` ; statuts tenus par le CDP.
+> Le chemin porte l'identite ; cet index ne porte que l'etat : une ligne par lot (chemin termine par `/`),
+> plus des lignes fichier pour les exceptions (quarantaine). Lot sans ligne = `feature`.
 > Convention : `context/COMMON.md` section 15. Statuts : `feature` | `regression` | `quarantaine`.
 > Tags : `smoke`, `critical`, `slow`.
 
-| Fichier | Niveau | Composant | Feature | Statut | Tags |
-|---------|--------|-----------|---------|--------|------|
+| Chemin | Niveau | Composant | Feature | Statut | Tags |
+|--------|--------|-----------|---------|--------|------|
 TESTS_INDEX_EOF
 
 [ -f tests/METRICS.md ] || cat > tests/METRICS.md <<'TESTS_METRICS_EOF'
@@ -1196,7 +1200,7 @@ TESTS_INDEX_EOF
 TESTS_METRICS_EOF
 ```
 
-Si `testing.regression_at_qa`, `testing.full_regression_at` ou `testing.coverage_min` sont absents de
+Si `testing.regression_at_qa`, `testing.full_regression_at`, `testing.coverage_min` ou `testing.lot_max_tests` sont absents de
 `project-config.json` (projet existant), les ajouter avec leurs valeurs par defaut (migration additive).
 
 #### Labels GitHub de suivi de phase

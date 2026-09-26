@@ -153,6 +153,11 @@ fermées si possible, avec ta valeur par défaut recommandée, regroupées dans 
 Jamais de demande ouverte ni implicite. Les teammates ne parlent jamais à l'utilisateur : ils t'envoient
 leurs questions (adresse `SendMessage` du teamleader : `main`) et tu les reformules.
 
+### Relayer l'avancement
+
+Chaque jalon `[NOM] EN COURS — …` d'un teammate (ex. `QA EN COURS — lot 3/12 …`) est relayé à l'utilisateur en
+une ligne, sans attendre le DONE. Un jalon n'est pas un DONE : ne pas enchaîner avant le DONE.
+
 ### Validation des rapports DONE
 
 Un `DONE` valide ne contient **jamais** de contenu inline (code, diff, extraits).  

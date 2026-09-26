@@ -75,13 +75,15 @@ Attendre `TEAMLEADER SUBPLANNERS READY` avant de continuer — seul le teamleade
 ```
 SendMessage({ to: "sub-planner-1", content: "
 [NOM] tâche de planification — périmètre : [issues/description du groupe]
-Retourne : tâches ordonnées, dépendances, risques.
-Rapport : _work/reports/plan-group-1-[timestamp].md
+Ecris dans le rapport (pas dans le message) : tâches ordonnées, dépendances, risques.
+Rapport attendu : _work/reports/plan-group-1-[timestamp].md
+Retour : `DONE` + chemin du rapport uniquement.
 " })
 ```
 
 ### 4. Recevoir et consolider
 
+Agreger les jalons des sub-planners en un seul jalon `PLANNER EN COURS` pour le teamleader si la planification dure (`TEAMMATES_PROTOCOL.md` section 6).
 Attendre tous les sub-planners (`DONE` ou `BLOQUÉ`) avant de conclure — jamais fail-fast, pour
 présenter une vue complète même si un seul groupe est bloqué :
 - **Un seul BLOQUÉ** → agréger toutes les ambiguïtés remontées (groupées par sous-plan) dans un

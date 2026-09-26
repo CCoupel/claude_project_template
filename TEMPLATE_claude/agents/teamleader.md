@@ -51,6 +51,12 @@ planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
 test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 ```
 
+### Relayer l'avancement
+
+Chaque jalon `[NOM] EN COURS — …` reçu d'un teammate (ex. `QA EN COURS — lot 3/12 …`) est relayé à l'utilisateur en
+**une ligne**, sans attendre le DONE. Un jalon n'est pas un DONE : ne pas enchaîner l'étape suivante avant le DONE.
+Si un jalon signale des échecs, les nommer dans le relais. Voir `TEAMMATES_PROTOCOL.md` 4b.
+
 ### Validation des rapports DONE
 
 Un `DONE` valide référence uniquement des fichiers (`_work/reports/`, `_work/handoff/`, SHA).
