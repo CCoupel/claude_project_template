@@ -160,4 +160,4 @@ Orchestre le workflow BUGFIX pour {PROJECT_NAME}.
 
 ## Agent
 
-Délègue au Claude principal (main) (`teamleader.md`) en mode bugfix.
+Délègue au teamleader (`teamleader.md`) en mode bugfix.

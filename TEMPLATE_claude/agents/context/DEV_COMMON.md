@@ -20,7 +20,7 @@ Reference complete (cycle de vie detaille, exemple, regle du milestone) : `comma
 
 | Qui | Incremente | Quand |
 |-----|------------|-------|
-| **CDP** | Ecriture initiale `X.Y.Z.0` (depuis le titre du milestone) | Phase Init (Git) — creation de la branche, avant meme l'appel a PLAN |
+| **teamleader** | Ecriture initiale `X.Y.Z.0` (depuis le titre du milestone) | Phase Init (Git) — creation de la branche, avant meme l'appel a PLAN |
 | **DEV** | — (jamais) | — |
 | **DEPLOY** | `a` (`a+1`) | Avant chaque BUILD — commit dedie, garantit un artefact unique par build |
 | **DEPLOY** | `a` (suppression) | Promotion dev -> prod — version livree = `X.Y.Z` exact du milestone |

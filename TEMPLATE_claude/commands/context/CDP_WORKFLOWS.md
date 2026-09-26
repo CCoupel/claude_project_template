@@ -344,7 +344,7 @@ SendMessage({ to: "planner", content: "
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "planner" comme
 coordinateur — jamais "main") → mémoriser SUBPLANNER_NAMES[]
-SendMessage({ to: "planner", content: "CDP SUBPLANNERS READY\nNoms : [liste]" })
+SendMessage({ to: "planner", content: "TEAMLEADER SUBPLANNERS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-planners ensuite — le planner les gère en direct (P2P)
 jusqu'à son rapport final. Ils restent actifs pendant toute la Phase Plan (y compris pendant la
@@ -442,7 +442,7 @@ dimension du Checklist — voir `code-reviewer.md` section "Délégation à des 
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "code-reviewer" comme
 coordinateur — jamais "main") → mémoriser SUBREVIEWER_NAMES[]
-SendMessage({ to: "code-reviewer", content: "CDP SUBREVIEWERS READY\nNoms : [liste]" })
+SendMessage({ to: "code-reviewer", content: "TEAMLEADER SUBREVIEWERS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-reviewers ensuite — code-reviewer les gère en direct (P2P).
 Son rapport `DONE` final inclut la liste "Sub-reviewers a fermer" → **étape 1, toujours avant tout
@@ -495,7 +495,7 @@ justifier la delegation — voir `qa.md` section "Délégation à des Sous-QA") 
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "qa" comme coordinateur
 — jamais "main") → mémoriser SUBAGENT_NAMES[]
-SendMessage({ to: "qa", content: "CDP SUBAGENTS READY\nNoms : [liste]" })
+SendMessage({ to: "qa", content: "TEAMLEADER SUBAGENTS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-qa ensuite — `qa` les gère en direct (P2P), chacun isolant
 son execution via un `git worktree` gere en `Bash` (jamais via `isolation` de l'outil `Agent`).

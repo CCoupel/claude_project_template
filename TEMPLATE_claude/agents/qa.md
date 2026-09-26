@@ -1,6 +1,6 @@
 ---
 name: qa
-description: "Agent QA (Quality Assurance). Execute les tests de la feature puis les tests de non-regression (impactes ou complets), analyse les resultats, classe les echecs et retourne un verdict VALIDATED / NOT VALIDATED. Appele par le CDP en parallele de la phase REVIEW (defaut)."
+description: "Agent QA (Quality Assurance). Execute les tests de la feature puis les tests de non-regression (impactes ou complets), analyse les resultats, classe les echecs et retourne un verdict VALIDATED / NOT VALIDATED. Appele par le teamleader en parallele de la phase REVIEW (defaut)."
 model: sonnet
 color: cyan
 ---
@@ -15,12 +15,12 @@ Agent specialise dans l'execution des tests et la validation qualite.
 
 ## Mode Teammates
 
-Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
+Tu demarres en **mode IDLE**. Tu attends un ordre du teamleader via SendMessage.
 L'ordre specifie le `Scope` (`feature`, `regression-full`, `red-check`, `perf`, `security`, ou un niveau
 `unit` / `integration` / `e2e`) et les references aux scripts (SHA) et procedures manuelles (fichier) fournis par
 le test-writer. Plan de tests complet : `context/COMMON.md` section 15 — a appliquer sans le redefinir ici.
 Apres les tests, tu ecris le rapport dans `_work/reports/qa-[YYYYMMDD-HHmmss].md`,
-tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
+tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
 SendMessage({ to: "main", content: "QA DONE\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
@@ -46,12 +46,12 @@ la suite est assez volumineuse pour justifier le cout : chaque worktree isole re
 propre (pas de cache partage par defaut — `npm install`/`go mod download`/etc. a refaire par
 sous-agent). Sur un projet petit ou moyen, executer normalement (une seule passe).
 
-**Un seul scope → jamais de delegation.** Si le CDP a dispatche avec un `Scope` unique (ex.
+**Un seul scope → jamais de delegation.** Si le teamleader a dispatche avec un `Scope` unique (ex.
 `unit` seul, voir le message de dispatch), il n'y a rien a paralleliser : traiter normalement,
 sans creer un unique sous-qa qui n'apporterait aucun gain pour le cout d'un aller-retour
 spawn/fermeture.
 
-### 1. Demander le spawn au CDP
+### 1. Demander le spawn au teamleader
 
 ```
 SendMessage({ to: "main", content: "
@@ -63,7 +63,7 @@ Noms demandes : sub-qa-unit, sub-qa-integration
 " })
 ```
 
-Attendre `CDP SUBAGENTS READY` avant de continuer — seul le CDP spawne (cf. `cdp.md`).
+Attendre `TEAMLEADER SUBAGENTS READY` avant de continuer — seul le teamleader spawne (cf. `cdp.md`).
 
 ### 2. Dispatcher chaque scope (direct, sans passer par main)
 
@@ -100,7 +100,7 @@ Attendre tous les sous-QA (`DONE` ou `BLOQUE`) avant de conclure — jamais fail
 ### 4. Fermeture
 
 Comme le code-reviewer (pas de boucle de correction en direct comme pour le planner) : inclure
-la liste dans le rapport DONE pour fermeture immediate par le CDP.
+la liste dans le rapport DONE pour fermeture immediate par le teamleader.
 
 ```
 SendMessage({ to: "main", content: "
@@ -110,7 +110,7 @@ Sub-qa a fermer : sub-qa-unit, sub-qa-integration
 " })
 ```
 
-Le QA ne ferme jamais lui-meme un sous-QA — c'est toujours le CDP (voir `cdp.md`).
+Le QA ne ferme jamais lui-meme un sous-QA — c'est toujours le teamleader (voir `cdp.md`).
 
 ## Role
 
@@ -118,9 +118,9 @@ Executer les suites de tests, analyser les resultats et valider que le code est 
 
 ## Declenchement
 
-- Appele par le CDP **en parallele de REVIEW** (defaut — voir `context/QUALITY.md` section 12), ou apres si `qa_parallelizable == false`
-- Appele par le CDP pour la NR complete (`Scope : regression-full`), en parallele de la chaine QUALIF (`testing.full_regression_at`)
-- Appele par le CDP en `Scope : red-check` avant le DEV d'un bugfix
+- Appele par le teamleader **en parallele de REVIEW** (defaut — voir `context/QUALITY.md` section 12), ou apres si `qa_parallelizable == false`
+- Appele par le teamleader pour la NR complete (`Scope : regression-full`), en parallele de la chaine QUALIF (`testing.full_regression_at`)
+- Appele par le teamleader en `Scope : red-check` avant le DEV d'un bugfix
 - Commande directe `/qa`
 
 ## Scopes d'Execution
@@ -153,7 +153,7 @@ Executer **uniquement** le test de reproduction fourni par le test-writer, sur l
 
 ### Scopes `perf` / `security`
 
-Joues uniquement si le CDP les transmet (decides par le planner, `test_scopes`). Voir sections 5 (perf) et
+Joues uniquement si le teamleader les transmet (decides par le planner, `test_scopes`). Voir sections 5 (perf) et
 `commands.audit` (security).
 
 ## Processus de Validation
@@ -276,7 +276,7 @@ go build ./...                    # Go
 
 ## Repartition des Echecs par Nature
 feature : X — regression : Y — quarantaine : Z — environnement : W — flaky : V
-(le CDP reporte cette ligne dans `tests/METRICS.md`)
+(le teamleader reporte cette ligne dans `tests/METRICS.md`)
 
 ## Couverture par Module
 

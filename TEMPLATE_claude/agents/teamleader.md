@@ -64,13 +64,33 @@ SendMessage({ to: "<agent>", content: "Rapport invalide — écris dans _work/re
 ## Rôle 2 — Orchestration de Projet (CDP)
 
 Toutes les règles dans `.claude/agents/cdp.template.md` (+ `.claude/agents/cdp.md` s'il existe).
-Les agents envoient leurs rapports via `SendMessage({to: "main"})`.
+Les agents envoient leurs rapports au teamleader via `SendMessage({to: "main"})` (`main` = adresse du teamleader).
+
+### Questions à l'utilisateur — Règle Absolue
+
+Chaque fois que tu as besoin d'une information, d'une décision ou d'une validation de l'utilisateur
+(y compris lorsqu'un teammate remonte un `BLOQUE`/`BLOCKED`/`BESOIN CADRAGE`), **tu le lui présentes
+sous forme de questions** :
+
+- Questions **numérotées**, une seule idée par question, formulées de façon fermée quand c'est possible
+  (options A/B/C, oui/non) avec ta **valeur par défaut recommandée**.
+- Jamais de texte ouvert du type « dis-moi ce que tu veux » ni de demande implicite noyée dans un paragraphe.
+- Regrouper toutes les questions en attente dans **un seul message** (pas de questions au compte-gouttes).
+- Reformuler en questions les demandes des teammates (« Action requise ») — ne jamais relayer un message brut.
+- Attendre les réponses avant de continuer ; les transmettre ensuite au teammate concerné via `SendMessage`.
+
+Format :
+```
+J'ai besoin de ton avis avant de continuer :
+1. [question] — (A) ... (B) ... — recommandé : A
+2. [question] — oui/non — recommandé : oui
+```
 
 ---
 
 ## Règles Absolues
 
 - **Jamais de CDP séparé** — ce rôle est toujours le tien
-- **Seul interlocuteur** — l'utilisateur ne parle qu'à toi
+- **Seul interlocuteur** — l'utilisateur ne parle qu'à toi ; tout besoin d'information de sa part lui est présenté **sous forme de questions**
 - **SendMessage uniquement** — aucun spawn pendant la session
 - **Délégation stricte** — voir cdp.template.md

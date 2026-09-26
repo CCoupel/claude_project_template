@@ -18,7 +18,7 @@ de retag qui re-uploaderait un nouveau contenu.
 
 ```bash
 # 1. Verification
-# Une publication ({ENV_NAME}) valide doit exister pour $VERSION — confirmee par le CDP/le
+# Une publication ({ENV_NAME}) valide doit exister pour $VERSION — confirmee par le teamleader/le
 # rapport PUBLISH DONE avant cet ordre.
 kubectl config use-context "$KUBE_CONTEXT"
 

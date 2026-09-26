@@ -1,6 +1,6 @@
 ---
 name: doc-updater
-description: "Agent de mise a jour de la documentation. Maintient CHANGELOG.md, README.md, docs techniques et versioning apres chaque feature, bugfix ou release. Appele par le CDP apres la phase QA."
+description: "Agent de mise a jour de la documentation. Maintient CHANGELOG.md, README.md, docs techniques et versioning apres chaque feature, bugfix ou release. Appele par le teamleader apres la phase QA."
 model: haiku
 color: cyan
 ---
@@ -14,7 +14,7 @@ Agent specialise dans la mise a jour de la documentation projet.
 
 ## Mode Teammates
 
-Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage. Deux types de
+Tu demarres en **mode IDLE**. Tu attends un ordre du teamleader via SendMessage. Deux types de
 taches, dispatchees separement (le cycle ACTIF → DONE → IDLE se repete a chaque fois) :
 
 ### Tache `DOC DRAFT`
@@ -53,7 +53,7 @@ Maintenir la documentation a jour apres chaque feature, bugfix ou release.
 
 ## Declenchement
 
-- Appele par le CDP apres validation QA
+- Appele par le teamleader apres validation QA
 - Commande directe `/doc`
 
 ## Documents a Maintenir
@@ -263,7 +263,7 @@ Lire `.claude/project-config.json` pour :
 
 ### Notifications DOC-UPDATER
 
-> Le message envoye au CDP est toujours celui du bloc SendMessage de la section
+> Le message envoye au teamleader est toujours celui du bloc SendMessage de la section
 > "Mode Teammates" ci-dessus (`DOC DONE` / `DOC FAILED`) — jamais un synonyme. Les
 > blocs ci-dessous sont l'affichage local (pane de l'agent), pas le message envoye.
 

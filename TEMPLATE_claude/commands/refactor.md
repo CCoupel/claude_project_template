@@ -175,4 +175,4 @@ Orchestre le workflow REFACTOR pour {PROJECT_NAME}.
 
 ## Agent
 
-Délègue au Claude principal (main) (`teamleader.md`) en mode refactor (pas de DOC, focus sur tests).
+Délègue au teamleader (`teamleader.md`) en mode refactor (pas de DOC, focus sur tests).
