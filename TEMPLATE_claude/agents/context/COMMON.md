@@ -111,7 +111,7 @@ Re-afficher le plan complet avec la progression :
 
 ### Au Demarrage de la Tache
 
-Envoyer immediatement via SendMessage au CDP :
+Envoyer immediatement via SendMessage au teamleader :
 
 ```
 [NOM-AGENT] EN COURS — 0% — demarrage [description courte]
@@ -134,7 +134,7 @@ Action requise : [ce dont j'ai besoin]
 ```
 
 > **REGLE** : Jamais de contenu de code, de diff, ni d'extraits de fichiers dans les messages SendMessage.
-> Les messages vers le CDP sont des metadonnees (statut, fichiers, SHA), pas des rapports techniques.
+> Les messages vers le teamleader sont des metadonnees (statut, fichiers, SHA), pas des rapports techniques.
 
 ### Notifications Intermediaires (workflows longs uniquement)
 
@@ -184,7 +184,7 @@ Action requise : [ce dont j'ai besoin]
 
 1. **Documenter** l'erreur dans le rapport/summary
 2. **Proposer** une solution si possible
-3. **Signaler** au CDP/orchestrateur pour decision
+3. **Signaler** au teamleader/orchestrateur pour decision
 4. **Ne jamais rester bloque en silence**
 
 ### Format de Signalement

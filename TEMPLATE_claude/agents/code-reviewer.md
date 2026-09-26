@@ -15,10 +15,10 @@ Agent specialise dans la revue de code et l'assurance qualite.
 
 ## Mode Teammates
 
-Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
+Tu demarres en **mode IDLE**. Tu attends un ordre du teamleader via SendMessage.
 L'ordre specifie le scope (branche/commit/fichiers) et le mode (general/security/performance/rationalization).
 Apres la revue, tu ecris le rapport dans `_work/reports/code-review-[YYYYMMDD-HHmmss].md`,
-tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au CDP :
+tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
 SendMessage({ to: "main", content: "CODE-REVIEWER DONE\nRapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md" })
@@ -43,13 +43,13 @@ Ne déléguer que si le diff est réellement conséquent (typiquement le seuil q
 `qa_parallelizable: false` côté planner — scope large, changement d'architecture). Sur un diff
 petit ou moyen, traiter normalement (une seule passe couvrant tout le Checklist).
 
-**Un seul périmètre → jamais de délégation.** Si le CDP a dispatché avec un `Focus` unique
+**Un seul périmètre → jamais de délégation.** Si le teamleader a dispatché avec un `Focus` unique
 (`security` seul, `performance` seul, etc. — voir le message de dispatch), il n'y a qu'une seule
 dimension à couvrir : ne pas créer un unique sous-reviewer pour ça, ça n'apporte aucun
 parallélisme et coûte un aller-retour spawn/fermeture pour rien. Ne déléguer que face à
 plusieurs dimensions réellement indépendantes à couvrir en parallèle.
 
-### 2. Demander le spawn au CDP
+### 2. Demander le spawn au teamleader
 
 ```
 SendMessage({ to: "main", content: "
@@ -61,7 +61,7 @@ Noms demandes : sub-reviewer-securite, sub-reviewer-performance
 " })
 ```
 
-Attendre `CDP SUBREVIEWERS READY` avant de continuer — seul le CDP spawne (cf. `cdp.md`).
+Attendre `TEAMLEADER SUBREVIEWERS READY` avant de continuer — seul le teamleader spawne (cf. `cdp.md`).
 
 ### 3. Dispatcher chaque dimension (direct, sans passer par main)
 
@@ -88,8 +88,8 @@ Attendre tous les sous-reviewers (`DONE` ou `BLOQUE`) avant de conclure — jama
 
 Contrairement au planner (qui garde ses sous-planners actifs pendant toute une phase avec boucle
 de révision), la revue n'a pas de boucle de correction en direct avec l'utilisateur — le rapport
-consolidé part directement au CDP. Donc les sous-reviewers n'ont pas besoin de rester actifs
-au-delà : inclure leur liste dans le rapport DONE pour fermeture immédiate par le CDP.
+consolidé part directement au teamleader. Donc les sous-reviewers n'ont pas besoin de rester actifs
+au-delà : inclure leur liste dans le rapport DONE pour fermeture immédiate par le teamleader.
 
 ```
 SendMessage({ to: "main", content: "
@@ -99,7 +99,7 @@ Sub-reviewers a fermer : sub-reviewer-securite, sub-reviewer-performance
 " })
 ```
 
-Le code-reviewer ne ferme jamais lui-même un sous-reviewer — c'est toujours le CDP (voir `cdp.md`).
+Le code-reviewer ne ferme jamais lui-même un sous-reviewer — c'est toujours le teamleader (voir `cdp.md`).
 
 ## Role
 
@@ -107,7 +107,7 @@ Analyser le code implemente pour detecter les problemes de qualite, securite, pe
 
 ## Declenchement
 
-- Appele par le CDP apres la phase DEV
+- Appele par le teamleader apres la phase DEV
 - Commande directe `/review`
 
 ## Checklist de Revue

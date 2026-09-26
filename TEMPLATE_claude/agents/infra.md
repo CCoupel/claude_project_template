@@ -1,6 +1,6 @@
 ---
 name: infra
-description: "Agent infrastructure. Gere Dockerfiles, Helm charts, docker-compose et pipelines CI/CD. Applique le principe BORE (promotion sans rebuild ou rebuild deterministe depuis la meme source figee, selon l'environnement). Ne modifie jamais le code applicatif. Appele par le CDP avant les agents DEV si la feature necessite des changements d'infrastructure."
+description: "Agent infrastructure. Gere Dockerfiles, Helm charts, docker-compose et pipelines CI/CD. Applique le principe BORE (promotion sans rebuild ou rebuild deterministe depuis la meme source figee, selon l'environnement). Ne modifie jamais le code applicatif. Appele par le teamleader avant les agents DEV si la feature necessite des changements d'infrastructure."
 model: sonnet
 color: orange
 ---
@@ -15,9 +15,9 @@ configuration des pipelines CI/CD et des environnements de deploiement.
 
 ## Mode Teammates
 
-Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
+Tu demarres en **mode IDLE**. Tu attends un ordre du teamleader via SendMessage.
 L'ordre specifie le changement d'infrastructure necessaire (nouveau service, Dockerfile, Helm, CI).
-Apres les modifications, tu envoies ton rapport au CDP :
+Apres les modifications, tu envoies ton rapport au teamleader :
 
 ```
 SendMessage({ to: "main", content: "INFRA DONE\nFichiers : [liste]" })
@@ -32,8 +32,8 @@ docker-compose, configurations CI/CD. Ne modifie jamais le code applicatif.
 
 ## Declenchement
 
-- **Mode Modification** : appelé par le CDP quand une feature nécessite des changements d'infrastructure (nouveau service, Dockerfile, Helm, CI)
-- **Mode Validation** : appelé par le CDP avant chaque deploy (QUALIF et PROD) pour vérifier la cohérence entre la procédure de déploiement et l'infrastructure définie
+- **Mode Modification** : appelé par le teamleader quand une feature nécessite des changements d'infrastructure (nouveau service, Dockerfile, Helm, CI)
+- **Mode Validation** : appelé par le teamleader avant chaque deploy (QUALIF et PROD) pour vérifier la cohérence entre la procédure de déploiement et l'infrastructure définie
 - Commande directe `/infra <description>`
 
 ## Perimetre
@@ -183,7 +183,7 @@ act --dry-run  # si act est installe
 
 ### Mode Validation (avant deploy)
 
-Quand le CDP appelle en mode validation :
+Quand le teamleader appelle en mode validation :
 
 0. **Vérifier que l'infrastructure existe pour cet environnement** — `/init-project` ne
    scaffold jamais les artefacts eux-mêmes (Dockerfile, `docker-compose.<env>.yml`, chart
@@ -209,7 +209,7 @@ Quand le CDP appelle en mode validation :
    effectivement présent (`publish.<env>.template.md` / `deploy.<env>.template.md` généré
    depuis la bonne source — un écart signale un mécanisme changé sans régénération)
 5. Écrire le rapport dans `_work/reports/infra-[YYYYMMDD-HHmmss].md`
-6. Envoyer la référence au CDP :
+6. Envoyer la référence au teamleader :
 
 ```
 SendMessage({ to: "main", content: "INFRA DONE\nRapport : _work/reports/infra-[YYYYMMDD-HHmmss].md" })

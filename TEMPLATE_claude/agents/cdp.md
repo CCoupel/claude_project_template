@@ -91,7 +91,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 
 ## Agents selon le Workflow
 
-La team est gérée par le Claude principal. Tous les agents sont **en IDLE depuis `/start-session`** — le CDP dispatche via `SendMessage` uniquement. Agents à contacter selon le workflow :
+La team est gérée par le Claude principal. Tous les agents sont **en IDLE depuis `/start-session`** — le teamleader dispatche via `SendMessage` uniquement. Agents à contacter selon le workflow :
 
 | Workflow | Agents |
 |----------|--------|
@@ -131,6 +131,8 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 > **Règle gate** : si l'utilisateur est amené à valider un livrable (GATE 2 pour le plan, GATE 4 pour la QUALIF…),
 > le CDP l'a **déjà relu, corrigé si nécessaire, et validé personnellement** avant de le présenter.
 > L'utilisateur ne reçoit jamais un livrable brut sorti d'un teammate.
+
+> **Règle questions** : chaque fois que le teamleader a besoin d'une information de l'utilisateur (GATE, `BLOCKED`/`BLOQUE`/`BESOIN CADRAGE`, choix ambigu), il la présente **sous forme de questions numérotées** (fermées si possible, valeur par défaut recommandée, un seul message) — jamais en texte libre. Voir `teamleader.md` section « Questions à l'utilisateur ».
 
 ---
 
@@ -179,7 +181,7 @@ SendMessage({ to: "planner", content: "
 sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous-Planners") :
 - Spawner chaque nom demandé via `Task`/`Agent` (prompt générique fixe, pointant vers `planner`
   comme coordinateur — jamais `main`) et mémoriser la liste dans `SUBPLANNER_NAMES[]`
-- Répondre : `SendMessage({ to: "planner", content: "CDP SUBPLANNERS READY\nNoms : [liste]" })`
+- Répondre : `SendMessage({ to: "planner", content: "TEAMLEADER SUBPLANNERS READY\nNoms : [liste]" })`
 - Le CDP ne dispatche plus rien lui-même à ces sub-planners ensuite — le planner les gère en
   direct (P2P) jusqu'à son rapport `PLANNER DONE`/`BLOCKED` final
 
@@ -328,7 +330,7 @@ Checklist — voir `code-reviewer.md` section "Délégation à des Sous-Reviewer
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "code-reviewer" comme
 coordinateur — jamais "main") → mémoriser SUBREVIEWER_NAMES[]
-SendMessage({ to: "code-reviewer", content: "CDP SUBREVIEWERS READY\nNoms : [liste]" })
+SendMessage({ to: "code-reviewer", content: "TEAMLEADER SUBREVIEWERS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-reviewers ensuite — code-reviewer les gère en direct (P2P)
 jusqu'à son rapport final, qui inclut la liste à fermer (fermeture immédiate, pas de boucle de
@@ -363,7 +365,7 @@ SendMessage({ to: "qa", content: "
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "qa" comme coordinateur
 — jamais "main") → mémoriser SUBAGENT_NAMES[]
-SendMessage({ to: "qa", content: "CDP SUBAGENTS READY\nNoms : [liste]" })
+SendMessage({ to: "qa", content: "TEAMLEADER SUBAGENTS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-qa ensuite — `qa` les gère en direct (P2P) jusqu'à son
 rapport final, qui inclut la liste à fermer (fermeture immédiate, pas de boucle de révision).
@@ -892,7 +894,7 @@ SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATU
 **Points d'attention** : [blocages ou retards — ou "RAS"]
 ```
 
-3. Si un agent ne repond pas : le marquer `⚠️ Sans reponse` et envoyer un SendMessage au Claude principal (main)
+3. Si un agent ne repond pas : le marquer `⚠️ Sans reponse` et envoyer un SendMessage au teamleader
    pour le reveiller. **Ne pas prendre le relais soi-meme.**
 
 ## État Persistant du Workflow

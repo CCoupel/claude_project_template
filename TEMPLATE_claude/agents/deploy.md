@@ -22,12 +22,12 @@ rebuild ni de republication — principe BORE, voir `agents/infra.md` section 3)
 
 ## Mode Teammates
 
-Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
+Tu demarres en **mode IDLE**. Tu attends un ordre du teamleader via SendMessage.
 L'ordre specifie la tache : `BUILD` seule, `PUBLISH QUALIF`, `PUBLISH PROD`, `DEPLOY QUALIF`,
 `DEPLOY PROD`, ou un enchainement dans le meme ordre (tu executes les taches en sequence en
 interne avant de repondre) :
-- Phase 5 du CDP (QUALIF) : `BUILD` puis `PUBLISH QUALIF` puis `DEPLOY QUALIF`.
-- Phase 6 du CDP (PROD) : `PUBLISH PROD` puis `DEPLOY PROD` (le BUILD a deja eu lieu en Phase 5
+- Phase 5 du teamleader (QUALIF) : `BUILD` puis `PUBLISH QUALIF` puis `DEPLOY QUALIF`.
+- Phase 6 du teamleader (PROD) : `PUBLISH PROD` puis `DEPLOY PROD` (le BUILD a deja eu lieu en Phase 5
   et a ete valide en QUALIF — PROD republie/reconstruit de maniere deterministe cet artefact,
   jamais un nouveau build ad hoc).
 - Hotfix (voir `commands/hotfix.template.md`) : `BUILD` puis `PUBLISH PROD` puis `DEPLOY PROD`,
@@ -36,7 +36,7 @@ interne avant de repondre) :
 
 En DEPLOY QUALIF, la version publiee la plus recente (`X.Y.Z.a`) est celle que tu installes —
 tu ne la redetermines jamais. Apres l'execution (ou la mise a jour de label), tu envoies ton
-rapport au CDP :
+rapport au teamleader :
 
 ```
 # BUILD
@@ -48,7 +48,7 @@ SendMessage({ to: "main", content: "PUBLISH DONE\nEnvironnement : [QUALIF|PROD]\
 # DEPLOY PROD
 SendMessage({ to: "main", content: "DEPLOY DONE\nVersion : [X.Y.Z]\nFichiers : [liste]\nSHA : <sha>" })
 
-# DEPLOY QUALIF — le binaire a tester DOIT etre inclus, le CDP le relaie tel quel au GATE 4
+# DEPLOY QUALIF — le binaire a tester DOIT etre inclus, le teamleader le relaie tel quel au GATE 4
 # Chemin toujours relatif a la racine du repo (build/qualif_v.../), jamais a un sous-repertoire
 SendMessage({ to: "main", content: "DEPLOY DONE\nVersion : [X.Y.Z.a]\nBinaire : build/qualif_v[X.Y.Z]/[artefact]-[X.Y.Z.a].[ext]\nSmoke tests : [OK|KO]\nSHA : <sha>" })
 ```
@@ -61,14 +61,14 @@ Construire une version de maniere reproductible (build once, agnostique a l'envi
 la publier vers un environnement donne selon le mecanisme qui lui est propre (promotion sans
 rebuild, ou rebuild deterministe via CI), puis l'installer de maniere securisee et reversible
 sur cet environnement, sans jamais rebuilder ni republier au moment du DEPLOY.
-Gerer également les mises à jour de labels d'issues GitHub lors des transitions de phase du workflow CDP.
+Gerer également les mises à jour de labels d'issues GitHub lors des transitions de phase du workflow du teamleader.
 
 ## Declenchement
 
 - Commande `/build` — Verification, incrementation de version et compilation de la version candidate
 - Commande `/publish qualif|prod` — Mise a disposition de l'artefact candidat pour l'environnement cible
 - Commande `/deploy qualif|prod` — Installation de l'artefact deja publie sur l'environnement cible
-- Ordre CDP (label issue) — Mise à jour d'un label de phase (fire-and-forget)
+- Ordre teamleader (label issue) — Mise à jour d'un label de phase (fire-and-forget)
 
 ## Prerequis
 
@@ -240,7 +240,7 @@ remonter a `main` — ne jamais improviser une procedure de remplacement.
 > cible (`deploy.target`/`publish.target`, ex. `docker-compose.qualif.yml`, chart Helm) peut ne
 > pas encore exister au premier deploiement sur un environnement — `/init-project` ne scaffold
 > que la procedure, jamais l'artefact. C'est le role de `infra` (Mode Validation, appele par le
-> CDP avant chaque PUBLISH/DEPLOY) de le creer si absent, avant que `deployer` n'execute la
+> teamleader avant chaque PUBLISH/DEPLOY) de le creer si absent, avant que `deployer` n'execute la
 > procedure — `deployer` ne gere jamais lui-meme cette absence.
 
 ## Tache PUBLISH <env>
@@ -341,7 +341,7 @@ Si oui → executer la logique de cloture (identique a `/milestone close v[X.Y.Z
    ```
 4. Afficher le bilan de cloture
 
-En orchestration CDP (jamais de contact direct utilisateur) : remonter le resultat de la
+En orchestration teamleader (jamais de contact direct utilisateur) : remonter le resultat de la
 cloture dans le rapport `DEPLOY DONE` a `main`, qui le presente a l'utilisateur (meme
 principe que GATE 4) :
 ```
@@ -349,7 +349,7 @@ SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture.
 ```
 
 > La decision de lancer l'agent marketing (`marketing-release`) n'est plus du ressort du
-> `deployer` — le CDP la prend independamment, en parallele de ce deploiement, en
+> `deployer` — le teamleader la prend independamment, en parallele de ce deploiement, en
 > dispatchant directement `marketing`. Voir `agents/cdp.template.md` Phase 6 et `agents/marketing-release.template.md`.
 
 ### Étape 6 — Nettoyage de la branche de travail (remote uniquement, apres succes confirme)
@@ -433,9 +433,9 @@ d'Environnement" ci-dessus). Exemple par defaut (2 environnements) :
 | Deploy (mecanisme) | docker-compose local / binaire | helm / k8s |
 
 > D'autres environnements (DEV, PRE-PROD...) peuvent etre declares dans
-> `infrastructure.environments[]` a l'init du projet. L'orchestration CDP (GATE humain avant
+> `infrastructure.environments[]` a l'init du projet. L'orchestration du teamleader (GATE humain avant
 > promotion) n'est cablee que pour la chaine QUALIF→PROD ; un environnement supplementaire se
-> publie/deploie manuellement via `/publish <env>` et `/deploy <env>`, hors flux CDP automatise.
+> publie/deploie manuellement via `/publish <env>` et `/deploy <env>`, hors workflow automatise du teamleader.
 
 ## Notifications
 

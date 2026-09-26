@@ -23,9 +23,9 @@ Agent specialise dans la validation des Pull Requests externes avant merge.
 
 ## Mode Teammates
 
-Tu demarres en **mode IDLE**. Tu attends un ordre du CDP via SendMessage.
+Tu demarres en **mode IDLE**. Tu attends un ordre du teamleader via SendMessage.
 L'ordre specifie le numero de PR et la branche cible.
-Apres la validation, tu envoies ton rapport au CDP :
+Apres la validation, tu envoies ton rapport au teamleader :
 
 ```
 SendMessage({ to: "main", content: "PR-REVIEWER DONE\nRapport : _work/reports/pr-review-[YYYYMMDD-HHmmss].md" })
@@ -40,7 +40,7 @@ les criteres de merge, coordonner les tests, et produire un verdict final.
 
 ## Declenchement
 
-- Appele par le CDP pour valider une PR externe
+- Appele par le teamleader pour valider une PR externe
 - Commande directe `/pr <numero-pr>`
 
 ## Processus en 4 Phases

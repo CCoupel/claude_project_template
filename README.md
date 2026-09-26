@@ -222,6 +222,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 - **Handoff** : chaque agent écrit `_work/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant ou l'agent le transmet directement si le CDP l'autorise
 - **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
 - **Teammates persistants** : tous les agents sont spawned au `/start-session` et restent en IDLE — le teamleader n'utilise que `SendMessage` pendant la session, jamais de nouveau spawn
+- **Teamleader = interlocuteur unique** : les teammates s'adressent toujours au teamleader (adresse `SendMessage` : `main`) — jamais à un « CDP » distinct. Quand le teamleader a besoin d'une information de l'utilisateur, il la présente **toujours sous forme de questions numérotées** (options fermées, valeur par défaut recommandée)
 
 ### Délégation à des sous-agents temporaires
 

@@ -19,7 +19,7 @@ repo secrets), jamais dans ces fichiers `.env` locaux.
 
 ```bash
 # 1. Verification
-# Prerequis confirmes par le CDP avant cet ordre. Une publication validee sur l'environnement
+# Prerequis confirmes par le teamleader avant cet ordre. Une publication validee sur l'environnement
 # precedent de la chaine doit exister — sauf hotfix, ou ce candidat vient directement de BUILD.
 
 # 1bis. Determination de la version cible
@@ -31,8 +31,8 @@ VERSION=$(echo "$DEV_VERSION" | cut -d. -f1-3)   # X.Y.Z, ex: 1.4.0
 # Ecrire $VERSION dans {VERSION_FILE} avant le merge
 
 # 1ter. Verification documentation (avant merge)
-# En orchestration CDP : le doc-updater a deja fait le DOC FINALIZE — verifier juste la reception du DONE.
-# En usage standalone (hors CDP) : verifier manuellement que la doc est a jour, sinon STOP.
+# En orchestration teamleader : le doc-updater a deja fait le DOC FINALIZE — verifier juste la reception du DONE.
+# En usage standalone (hors teamleader) : verifier manuellement que la doc est a jour, sinon STOP.
 grep -q "$DEV_VERSION" CHANGELOG.md || {
   echo "CHANGELOG.md non mis a jour pour cette version — STOP, retour doc-updater avant de continuer."
   exit 1
