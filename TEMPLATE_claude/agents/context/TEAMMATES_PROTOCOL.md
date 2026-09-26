@@ -85,8 +85,28 @@ le format sans le confronter à la table de dispatch.
 - Confirmer chaque tâche reçue par ACTIF avant d'agir
 - Jamais de communication directe avec l'utilisateur — tout via le teamleader
 - Rester en IDLE après DONE — ne pas fermer ce pane
-- Signaler les jalons en cours de route (EN COURS étape N/M)
+- Signaler les jalons en cours de route (EN COURS étape N/M) — voir section 4b
 - Si la tâche référence un handoff (`_work/handoff/...`) ou un rapport (`_work/reports/...`) → lire le fichier avant de commencer
+
+---
+
+## 4b. Jalons de progression (anti effet tunnel)
+
+Une tâche qui se découpe en plusieurs unités (lots de tests, modules, fichiers, étapes) **ne reste jamais
+silencieuse jusqu'au DONE** : à la fin de chaque unité, envoyer un jalon au teamleader :
+
+```
+SendMessage({ to: "main", content: "[NOM] EN COURS — <unité> i/N (<nom>) — <mesure>, <anomalies>" })
+```
+
+Exemple QA : `QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 tests, 2 KO`.
+
+- Un jalon = une ligne, métadonnées uniquement (pas de contenu inline, cf. section 3) ; les anomalies sont nommées
+  dès qu'elles apparaissent.
+- Obligatoire dès que la tâche compte plus d'une unité significative (ex. QA : plus d'un lot). Sous ce seuil, ACTIF puis DONE suffisent.
+- Le teamleader relaie chaque jalon à l'utilisateur en **une ligne** (`teamleader.md`). Un jalon n'est pas un DONE :
+  l'agent reste ACTIF jusqu'au DONE.
+- Tout mot-clé de jalon propre à un agent est documenté à l'identique dans `<agent>.md` ET `cdp.md` (règle de la section 3).
 
 ---
 
@@ -130,3 +150,18 @@ une variante minimale du protocole standard : ils rapportent `ACTIF`/`DONE`/`BLO
 qui les a fait spawner (pas à `main`), et ne spawnent jamais rien eux-mêmes. Ils ne ferment
 jamais leur propre process — seul le teamleader les ferme (`TaskStop`), jamais l'agent coordinateur ni
 eux-mêmes.
+
+### Communication coordinateur ↔ sous-agents — mêmes règles que vers le teamleader
+
+L'échange direct (planner/code-reviewer/qa ↔ leurs sous-agents) reste **fichier-first** pour économiser les tokens :
+
+- **Ordre (coordinateur → sous-agent)** : périmètre + **chemin du rapport attendu** (`_work/reports/<agent>-<scope>-<timestamp>.md`)
+  + références des fichiers à lire (plan, handoff, contrats). Pas de contenu copié dans le message.
+- **Retour (sous-agent → coordinateur)** : le contenu (problèmes, verdict, tâches, risques) est **écrit dans le rapport** ;
+  le message ne contient que `[NOM] DONE` + le chemin du rapport (+ SHA si applicable), ou `BLOQUE` + raison en une ligne.
+  Jamais de contenu inline — le coordinateur lit le fichier lui-même.
+- **Handoff** : un sous-agent qui produit un handoff l'écrit dans `_work/handoff/<sous-agent>-<timestamp>.md` et le référence
+  dans son `DONE` ; seul le coordinateur le lit (le teamleader ne voit que le rapport consolidé).
+- **Jalons** : un sous-agent envoie ses jalons `EN COURS` (format section 4b) à son **coordinateur**, pas au teamleader.
+  Le coordinateur les agrège en **un seul jalon** pour le teamleader (ex. `QA EN COURS — sub-qa 2/3 terminés (unit OK, integration en cours) — 412/612 tests, 2 KO`).
+- Aucun autre échange direct entre teammates n'est autorisé : toute autre demande passe par le teamleader.

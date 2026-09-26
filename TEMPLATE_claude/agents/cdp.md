@@ -282,7 +282,7 @@ SendMessage({ to: "test-writer", content: "
   Contrats API : contracts/ — les tests DOIVENT valider la conformite aux contrats.
   Source : plan + contrats uniquement (le code n'est pas encore final).
   Produire : scripts de tests (unit/integration/E2E) + procedures manuelles tests/procedures/
-  + une ligne par fichier de test dans tests/INDEX.md (statut `feature`, tags smoke/critical/slow).
+  Range en lots tests/<famille>/<theme>/<lot>/ (max testing.lot_max_tests, defaut 50) + une ligne par lot dans tests/INDEX.md (statut `feature`, tags smoke/critical/slow).
   Scopes optionnels du plan (`test_scopes`) : [perf|security|aucun].
   Ne pas modifier les tests existants sauf changement documente dans contracts/CHANGELOG.md.
 " })
@@ -398,8 +398,10 @@ SUBAGENT_NAMES[] = []
 
 **Verdict `qa` (parallele ou sequentiel) :**
 - Dans tous les cas : ajouter une ligne a `tests/METRICS.md` (date, milestone, feature, cycle, verdict,
-  echecs par nature — repris du rapport QA) ; ajouter en `quarantaine` dans `tests/INDEX.md` (raison + issue)
+  echecs par nature — repris du rapport QA) ; ajouter en `quarantaine` dans `tests/INDEX.md` (ligne fichier au sein du lot, raison + issue)
   les tests que QA a classes `flaky`.
+- Pendant l'execution de `qa` : relayer a l'utilisateur chaque jalon `QA EN COURS — lot i/N …` en **une ligne**
+  (`context/COMMON.md` 15.9) ; arreter le run seulement si l'utilisateur le demande.
 - VALIDATED / VALIDATED WITH RESERVATIONS → Phase 4 (Documentation Draft)
 - NOT VALIDATED → cycle++
   > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues
@@ -663,7 +665,7 @@ mcp__plugin_github_github__issue_read — lister les issues ouvertes du mileston
   ```
 
 **Apres DEPLOY PROD reussi — promotion des tests** : dans `tests/INDEX.md`, passer de `feature` a
-`regression` tous les tests du milestone deploye (`context/COMMON.md` 15.1) et commiter (`test(index): promote
+`regression` tous les lots du milestone deploye (`context/COMMON.md` 15.1 ; creer la ligne d'un lot qui n'en aurait pas) et commiter (`test(index): promote
 vX.Y.Z tests to regression`).
 
 Informer l'utilisateur du resultat du deploiement (et de la publication marketing si applicable).

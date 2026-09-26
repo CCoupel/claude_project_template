@@ -37,7 +37,7 @@ Sinon -> workflow normal.
 | `red-check` | Uniquement le test de reproduction d'un bugfix, sur le code non corrige (doit echouer) |
 | `unit` / `integration` / `e2e` | Un seul niveau |
 | `coverage` | Rapport de couverture (`commands.coverage`) |
-| `quick` | Tests tagues `smoke` de `tests/INDEX.md` |
+| `quick` | Lots tagues `smoke` de `tests/INDEX.md` |
 
 Plan de tests : `context/COMMON.md` section 15.
 

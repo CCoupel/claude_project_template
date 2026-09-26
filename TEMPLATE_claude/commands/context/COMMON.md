@@ -559,17 +559,39 @@ Les maquettes marketing (GATE 4d) sont **distinctes** des maquettes projet : sys
 Objectif : **ne jamais exécuter deux fois le même test sur le même code sans raison**, et séparer
 les tests de la feature en cours des tests de non-régression (NR).
 
-### 15.1 Deux natures de tests, un index
+### 15.1 Deux natures de tests : l'arborescence porte l'identité, l'index porte l'état
 
-`tests/INDEX.md` (initialisé par `/init-project` ; le `test-writer` y ajoute ses tests, le CDP change les statuts) recense les tests de **spécification**
-écrits par le `test-writer`. Les fichiers restent où le framework les attend (ex. `*_test.go`
-colocalisés) — c'est l'index, pas l'arborescence, qui porte la distinction :
+**Arborescence (identité stable)** — les tests de **spécification** écrits par le `test-writer` sont rangés en
+`<racine-famille>/<theme>/<lot>/<fichier>` :
+
+| Niveau | `<famille>` (racine) | `<theme>` | `<lot>` |
+|--------|----------------------|-----------|---------|
+| Intégration | `tests/integration/` | domaine fonctionnel (`auth`, `paiement`, `export`…) | sous-ensemble cohérent du thème (`login`, `refresh-token`…) |
+| E2E | `e2e/` (ou `tests/e2e/` — la racine imposée par le framework) | idem | idem |
+| Procédures manuelles | `tests/procedures/` | idem | idem |
+
+- `<theme>` et `<lot>` : kebab-case, noms parlants — le chemin se lit comme une documentation.
+- **Un lot = au plus `testing.lot_max_tests` cas de test (défaut 50)**. Au-delà, le `test-writer` scinde le lot
+  (`login` → `login-nominal`, `login-erreurs`). Un scénario `smoke` ou `critical` isolé va dans son propre lot.
+- **Tests unitaires** : restent colocalisés avec le code (`*_test.go`, `*.test.ts`…) — hors arborescence
+  ci-dessus. Leur « lot » est le paquet ou le dossier source.
+
+**Index (état qui change)** — `tests/INDEX.md` (initialisé par `/init-project` ; le `test-writer` y ajoute ses lots,
+le CDP change les statuts) ne porte **que ce que le chemin ne peut pas dire** : statut, tags, composant, feature.
+Une ligne par **lot** (chemin se terminant par `/`) ; une ligne **fichier** n'existe que pour une exception
+(ex. un test en `quarantaine` au sein d'un lot) et prime sur la ligne du lot :
 
 ```markdown
-| Fichier | Niveau | Composant | Feature | Statut | Tags |
-|---------|--------|-----------|---------|--------|------|
-| server/http_port_test.go | unit | http_server | #220 | regression | slow |
+| Chemin | Niveau | Composant | Feature | Statut | Tags |
+|--------|--------|-----------|---------|--------|------|
+| tests/integration/auth/login/ | integration | auth | #220 | regression | critical |
+| e2e/paiement/checkout/ | e2e | billing | #231 | feature | smoke |
+| tests/integration/auth/login/expired_token_test.go | integration | auth | #220 | quarantaine | |
 ```
+
+**Repli sans index** (projet initialisé avant cette convention, ou lot absent) : un lot sans ligne est traité au
+statut `feature` (il est donc rejoué à chaque cycle — sens sûr) et le CDP crée sa ligne à la première promotion.
+Les anciennes lignes « une par fichier » restent valides (le chemin peut être un fichier).
 
 | Statut | Signification |
 |--------|---------------|
@@ -581,7 +603,7 @@ Tags : `smoke` (rapide, valide qu'une version démarre), `critical` (scénarios 
 `slow` (exclu de la boucle DEV rapide, toujours joué par QA).
 
 **Propriété de l'écriture** : le `test-writer` écrit les tests de spécification (contrats, critères
-d'acceptation, maquettes) et alimente l'index. Les `dev-*` n'écrivent que des tests unitaires
+d'acceptation, maquettes), les range par lot et alimente l'index (une ligne par lot). Les `dev-*` n'écrivent que des tests unitaires
 **internes** (boîte blanche), dans des fichiers distincts, colocalisés avec le code, hors index.
 
 ### 15.2 Qui lance quoi, quand
@@ -601,7 +623,7 @@ Une passe de tests complète n'est **jamais** lancée par un `dev-*` ni par le `
 ### 15.3 Sélection des NR impactées
 
 Le diff du milestone est mappé sur les composants (`testing.components`, clé = composant, valeur = globs de
-chemins source). Sont sélectionnés : (a) les tests `regression` de l'index dont le composant est touché,
+chemins source). Sont sélectionnés : (a) les lots (et tests) `regression` de l'index dont le composant est touché,
 (b) les tests colocalisés des paquets/dossiers modifiés (résolus par `commands.test_targeted`, avec
 `{TARGETS}` remplacé par la liste de fichiers ou dossiers). Un changement de contrat BREAKING ou CHANGED
 sélectionne tous les tests des composants liés. Sans mapping ni `commands.test_targeted` : repli sur toute
@@ -634,7 +656,7 @@ ce test (doit passer) puis les NR du composant.
 ### 15.6 Journal d'exécution (réutilisation par arbre git)
 
 `_work/tests-ledger.md` (append-only, non tracké) : `<tree-hash> | <scope> | <verdict> | <date>`, avec
-`tree-hash = git rev-parse HEAD^{tree}` (working tree propre). Avant d'exécuter un scope, `qa` cherche une ligne
+`tree-hash = git rev-parse HEAD^{tree}` (working tree propre) ; le `<scope>` peut désigner un lot (`feature:integration/auth/login`). Avant d'exécuter un scope, `qa` cherche une ligne
 VALIDATED pour le même arbre et le même scope : si elle existe, il **réutilise** le résultat (ex. redispatch après
 un REVIEW REJECTED sans changement de code, ou NR complète déjà VALIDATED pour le mode `prod`).
 
@@ -660,6 +682,23 @@ Le planner fixe `test_scopes` dans le plan : `perf` si un critère d'acceptation
 (seuils dans `testing.perf`), `security` si une préoccupation de `security.concerns` est touchée
 (`commands.audit`). Sans mention, ces scopes ne sont pas joués. `lint` et `typecheck` sont joués par les
 `dev-*` (boucle DEV) ; `audit` une fois par milestone, par QA, avant la NR complète.
+
+### 15.9 Exécution par lot et progression
+
+QA n'exécute jamais une famille de tests en un seul appel opaque quand elle compte plusieurs lots : il exécute
+**lot par lot** (`commands.test_targeted`, `{TARGETS}` = le dossier du lot ; ordre : unitaires → intégration → E2E),
+et **envoie un jalon au teamleader à la fin de chaque lot** :
+
+```
+QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 tests, 2 KO
+```
+
+- Format : `lot i/N (<famille>/<theme>/<lot>)`, tests exécutés / total, nombre de KO cumulés. Les KO sont nommés
+  dans le jalon dès qu'ils apparaissent (pas d'attente de la fin de suite).
+- **Plancher** : sous ~100 tests au total, un seul lot (pas de découpage — le coût de démarrage dépasserait le gain).
+- Le teamleader relaie chaque jalon à l'utilisateur en **une ligne** ; il peut ordonner l'arrêt du run si l'utilisateur
+  le demande. Sans ordre d'arrêt, tous les lots sont joués : le rapport liste tous les échecs d'un coup.
+- Le journal (15.6) est tenu **par lot** : un lot VALIDATED sur le même arbre git n'est pas rejoué.
 
 ---
 

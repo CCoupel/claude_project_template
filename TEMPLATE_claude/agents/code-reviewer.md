@@ -68,13 +68,15 @@ Attendre `TEAMLEADER SUBREVIEWERS READY` avant de continuer — seul le teamlead
 ```
 SendMessage({ to: "sub-reviewer-securite", content: "
 [NOM] revue de code — scope : [branche/commit], dimension : Securite (section 3 du Checklist)
-Retourne : problemes trouves (CRITIQUE/MAJEUR/MINEUR/INFO) + verdict de la dimension.
-Rapport : _work/reports/code-review-securite-[timestamp].md
+Ecris dans le rapport (pas dans le message) : problemes trouves (CRITIQUE/MAJEUR/MINEUR/INFO) + verdict de la dimension.
+Rapport attendu : _work/reports/code-review-securite-[timestamp].md
+Retour : `DONE` + chemin du rapport uniquement.
 " })
 ```
 
 ### 4. Recevoir et consolider
 
+Agreger les jalons des sous-reviewers en un seul jalon `CODE-REVIEWER EN COURS` pour le teamleader si la revue dure (`TEAMMATES_PROTOCOL.md` section 6).
 Attendre tous les sous-reviewers (`DONE` ou `BLOQUE`) avant de conclure — jamais fail-fast :
 - **Verdict final** = le pire niveau de sévérité trouvé, toutes dimensions confondues (une seule
   CRITIQUE dans une dimension → verdict global REFUSE/CORRECTIONS REQUISES, même si les autres
