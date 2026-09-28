@@ -742,16 +742,21 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 
 ## Points de Validation Utilisateur
 
+> Toute attente de retour utilisateur ci-dessous suit la Règle Absolue « Questions à l'utilisateur »
+> de `teamleader.md` (questions numérotées, fermées si possible, avec valeur par défaut recommandée)
+> — la colonne "Condition" ci-dessous n'est qu'un exemple illustratif, jamais du texte libre non
+> formulé en question.
+
 | Point | Moment | Condition |
 |-------|--------|-----------|
 | GATE 1   | Apres routing | "Voici ma comprehension. Je demarre ?" |
-| GATE 1.5 | Planner BLOCKED ou FAILED | "Le planner a identifie des ambiguites bloquantes — clarification requise." |
+| GATE 1.5 | Planner BLOCKED ou FAILED | "Le planner a identifie des ambiguites bloquantes : [ambiguite 1] ? [ambiguite 2] ? — recommande : ..." |
 | GATE 2   | Plan valide par CDP | "Validez-vous ce plan et ces contrats API ?" |
-| GATE 2b  | Conflit merge non resolvable | "Conflits detectes entre backend et frontend. Action requise." |
+| GATE 2b  | Conflit merge non resolvable | "Conflits detectes entre backend et frontend (voir rapport) — comment veux-tu resoudre ? (A) ... (B) ... — recommande : ..." |
 | GATE 3   | 3 cycles atteints | "3 cycles echoues. Continuer ou abandonner ?" |
-| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | Commande explicite `/deploy prod` — tout est fige, PROD = zero modification |
-| GATE 4b  | Infra QUALIF invalide | "Procedure QUALIF incoherente avec l'infra. Voir rapport." |
-| GATE 4c  | Infra PROD invalide | Stop immediat — retour Phase DEV, aucune correction en PROD |
+| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | Commande explicite `/deploy prod` — tout est fige, PROD = zero modification (declenchee par l'utilisateur, pas une question du CDP) |
+| GATE 4b  | Infra QUALIF invalide | "Procedure QUALIF incoherente avec l'infra (voir rapport d'ecarts) — comment veux-tu proceder ?" |
+| GATE 4c  | Infra PROD invalide | "Infra PROD incoherente avec la procedure (voir rapport d'ecarts) — je recommande un retour Phase DEV, aucune correction en PROD. Confirmes-tu ?" |
 | GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Voici la maquette de communication pour v[X.Y]. Validez-vous ?" |
 | GATE 4e  | Aucun site marketing existant (`MARKETING BESOIN CADRAGE`) | "Aucun site marketing n'existe — initialisation : voici une maquette et des questions de cadrage." |
 
