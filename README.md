@@ -89,6 +89,13 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
 
+> **Après un `git clone`/`git pull`** sur un projet déjà initialisé, les fichiers gitignorés
+> ci-dessus (`TEMPLATE_claude/`, commandes, agents template) sont absents jusqu'au prochain
+> `/init-project` — c'est manuel, géré au niveau de l'ouverture de projet (ex. le launcher).
+> `project-config.json.template_version` (tracké git) retient la version exacte du template
+> utilisée : `/init-project` la détecte et propose de **réinstaller à l'identique** (pas de mise
+> à jour forcée) plutôt que de refaire une migration v1/v2 → v3.
+
 ### Séparation template / projet
 
 **Commandes** : déployées en `*.md`, directement invocables (`/feature`, `/bugfix`...).
