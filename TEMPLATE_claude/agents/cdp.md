@@ -132,7 +132,7 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 > le CDP l'a **déjà relu, corrigé si nécessaire, et validé personnellement** avant de le présenter.
 > L'utilisateur ne reçoit jamais un livrable brut sorti d'un teammate.
 
-> **Règle questions** : chaque fois que le teamleader a besoin d'une information de l'utilisateur (GATE, `BLOCKED`/`BLOQUE`/`BESOIN CADRAGE`, choix ambigu), il la présente **sous forme de questions numérotées** (fermées si possible, valeur par défaut recommandée, un seul message) — jamais en texte libre. Voir `teamleader.md` section « Questions à l'utilisateur ».
+> **Règle questions** : chaque fois que le teamleader a besoin d'une information de l'utilisateur (GATE, `BLOCKED`/`BLOQUE`/`BESOIN CADRAGE`, choix ambigu), il la présente **via l'outil `AskUserQuestion`** (fermée si possible — 2 à 4 options avec description détaillée par option, valeur par défaut marquée "(Recommandé)", "Autre" géré automatiquement par l'outil) — jamais en texte libre listant des lettres dans le chat. Voir `teamleader.md` section « Questions à l'utilisateur ».
 
 ---
 
@@ -743,22 +743,23 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 ## Points de Validation Utilisateur
 
 > Toute attente de retour utilisateur ci-dessous suit la Règle Absolue « Questions à l'utilisateur »
-> de `teamleader.md` (questions numérotées, fermées si possible, avec valeur par défaut recommandée)
-> — la colonne "Condition" ci-dessous n'est qu'un exemple illustratif, jamais du texte libre non
-> formulé en question.
+> de `teamleader.md` : posée via l'outil `AskUserQuestion` (2 à 4 options avec description détaillée
+> par option, défaut marqué "(Recommandé)", "Autre" géré automatiquement) — la colonne "Condition"
+> n'est qu'un exemple illustratif du contenu de la question et de ses options, jamais du texte libre
+> non formulé en question.
 
-| Point | Moment | Condition |
+| Point | Moment | Question (options — description) |
 |-------|--------|-----------|
-| GATE 1   | Apres routing | "Voici ma comprehension. Je demarre ?" |
-| GATE 1.5 | Planner BLOCKED ou FAILED | "Le planner a identifie des ambiguites bloquantes : [ambiguite 1] ? [ambiguite 2] ? — recommande : ..." |
-| GATE 2   | Plan valide par CDP | "Validez-vous ce plan et ces contrats API ?" |
-| GATE 2b  | Conflit merge non resolvable | "Conflits detectes entre backend et frontend (voir rapport) — comment veux-tu resoudre ? (A) ... (B) ... — recommande : ..." |
-| GATE 3   | 3 cycles atteints | "3 cycles echoues. Continuer ou abandonner ?" |
-| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | Commande explicite `/deploy prod` — tout est fige, PROD = zero modification (declenchee par l'utilisateur, pas une question du CDP) |
-| GATE 4b  | Infra QUALIF invalide | "Procedure QUALIF incoherente avec l'infra (voir rapport d'ecarts) — comment veux-tu proceder ?" |
-| GATE 4c  | Infra PROD invalide | "Infra PROD incoherente avec la procedure (voir rapport d'ecarts) — je recommande un retour Phase DEV, aucune correction en PROD. Confirmes-tu ?" |
-| GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Voici la maquette de communication pour v[X.Y]. Validez-vous ?" |
-| GATE 4e  | Aucun site marketing existant (`MARKETING BESOIN CADRAGE`) | "Aucun site marketing n'existe — initialisation : voici une maquette et des questions de cadrage." |
+| GATE 1   | Apres routing | "Je demarre ?" — Oui, demarrer (Recommandé) : je lance l'execution selon ma comprehension ci-dessus / Non : je precise d'abord un point de ma comprehension |
+| GATE 1.5 | Planner BLOCKED ou FAILED | "Comment lever cette ambiguite bloquante ?" — une `AskUserQuestion` par ambiguite identifiee (option par interpretation possible + description de son impact sur le plan) |
+| GATE 2   | Plan valide par CDP | "Valides-tu ce plan et ces contrats API ?" — Oui, valider (Recommandé) : le DEV demarre sur cette base / Non : je revois le plan avant de redemander validation |
+| GATE 2b  | Conflit merge non resolvable | "Comment resoudre ce conflit backend/frontend ?" — une option par strategie de resolution proposee, description = ce qui change concretement pour chaque camp |
+| GATE 3   | 3 cycles atteints | "3 cycles ont echoue sans validation QA — comment continuer ?" — Continuer (Recommandé) : un cycle supplementaire, meme scope / Abandonner : retour au CDP pour redefinir le scope |
+| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | Commande explicite `/deploy prod` — tout est fige, PROD = zero modification (declenchee par l'utilisateur, pas une question du CDP, donc hors `AskUserQuestion`) |
+| GATE 4b  | Infra QUALIF invalide | "Comment proceder face a cette incoherence infra/procedure QUALIF (voir rapport) ?" — une option par correction possible, description = ce qu'elle implique |
+| GATE 4c  | Infra PROD invalide | "Infra PROD incoherente avec la procedure (voir rapport) — confirmes-tu le retour en Phase DEV ?" — Oui, retour Phase DEV (Recommandé) : aucune correction en PROD, on repart du DEV / Non : je veux d'abord voir le detail de l'ecart |
+| GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Valides-tu cette maquette de communication pour v[X.Y] ?" — Oui, valider (Recommandé) : publication telle quelle / Non : je precise les ajustements attendus |
+| GATE 4e  | Aucun site marketing existant (`MARKETING BESOIN CADRAGE`) | "Aucun site marketing n'existe — comment veux-tu l'initialiser ?" — questions de cadrage (public cible, ton, structure) presentees avec la maquette proposee |
 
 > **Limitation connue** : cette orchestration (Phases 5/6, GATE 4/4b/4c/4d) est cablee pour une
 > chaine fixe a 2 environnements (QUALIF puis PROD). Un environnement supplementaire declare
