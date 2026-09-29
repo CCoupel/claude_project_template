@@ -126,7 +126,7 @@ else
 fi
 ```
 
-#### 2. Verifier si une mise a jour est disponible
+#### 2. Verifier si une mise a jour est disponible, et determiner la cible du fetch
 
 ```bash
 KNOWN_COMMIT=$([ -f TEMPLATE_claude/.template-source.json ] && \
@@ -142,19 +142,27 @@ if [ "$KNOWN_COMMIT" = "$LATEST_COMMIT" ]; then
   echo "Template deja a jour ($LATEST_TAG - $LATEST_COMMIT)"
   # Continuer quand meme (fichiers peuvent etre absents si gitignores)
 fi
+
+# FETCH_TAG/FETCH_COMMIT = cible reellement fetchee par l'etape 3 ci-dessous. Par defaut
+# la derniere version taggee (init, sync/option d). La section "Reinstallation des fichiers
+# template" (fichiers manquants sur un projet deja v3) peut les faire pointer a la place vers
+# le commit fige dans project-config.json.template_version, pour restaurer a l'identique sans
+# upgrade implicite.
+FETCH_TAG="$LATEST_TAG"
+FETCH_COMMIT="$LATEST_COMMIT"
 ```
 
 #### 3. Fetcher TEMPLATE_claude/ depuis GitHub
 
 ```bash
-# Fetch au commit du tag resolu a l'etape precedente (pas la branche) : les
+# Fetch au commit cible resolu a l'etape precedente (pas la branche) : les
 # fichiers deployes viennent toujours d'une version stabilisee et taggee.
-gh api repos/$TEMPLATE_REPO/git/trees/$LATEST_COMMIT?recursive=1 \
+gh api repos/$TEMPLATE_REPO/git/trees/$FETCH_COMMIT?recursive=1 \
   --jq '.tree[] | select(.type=="blob") | .path' \
   | grep -E '^TEMPLATE_claude/' \
   | while read FILE; do
       mkdir -p "$(dirname $FILE)"
-      gh api "repos/$TEMPLATE_REPO/contents/$FILE?ref=$LATEST_COMMIT" \
+      gh api "repos/$TEMPLATE_REPO/contents/$FILE?ref=$FETCH_COMMIT" \
         --jq '.content' | base64 -d > "$FILE"
       echo "  ✓ $FILE"
     done
@@ -197,7 +205,7 @@ for src in TEMPLATE_claude/commands/context/*.md; do
 done
 ```
 
-#### 5. Mettre a jour TEMPLATE_claude/.template-source.json
+#### 5. Mettre a jour TEMPLATE_claude/.template-source.json et project-config.json
 
 ```bash
 TODAY=$(date +%Y-%m-%d)
@@ -205,12 +213,25 @@ cat > TEMPLATE_claude/.template-source.json <<EOF
 {
   "repo": "$TEMPLATE_REPO",
   "branch": "$TEMPLATE_BRANCH",
-  "tag": "$LATEST_TAG",
-  "commit": "$LATEST_COMMIT",
+  "tag": "$FETCH_TAG",
+  "commit": "$FETCH_COMMIT",
   "synced_at": "$TODAY"
 }
 EOF
-echo "✓ TEMPLATE_claude/.template-source.json mis a jour ($LATEST_TAG - $LATEST_COMMIT)"
+echo "✓ TEMPLATE_claude/.template-source.json mis a jour ($FETCH_TAG - $FETCH_COMMIT)"
+
+# Copie durable (trackee git) — TEMPLATE_claude/.template-source.json ci-dessus est gitignore
+# avec le reste de TEMPLATE_claude/ et disparait sur un clone frais ; project-config.json est
+# le seul endroit ou cette info survit. Ne s'applique qu'a une mise a jour d'un projet deja
+# initialise — a la premiere initialisation, le champ est deja inclus a la creation du fichier
+# (section "Generation de la Configuration").
+if [ -f .claude/project-config.json ]; then
+  jq --arg tag "$FETCH_TAG" --arg commit "$FETCH_COMMIT" \
+    '.template_version = { "tag": $tag, "commit": $commit }' \
+    .claude/project-config.json > /tmp/project-config.json.tmp \
+    && mv /tmp/project-config.json.tmp .claude/project-config.json
+  echo "✓ project-config.json : template_version mis a jour ($FETCH_TAG - $FETCH_COMMIT)"
+fi
 ```
 
 ---
@@ -223,14 +244,70 @@ echo "✓ TEMPLATE_claude/.template-source.json mis a jour ($LATEST_TAG - $LATES
 HAS_CONFIG=$([ -f .claude/project-config.json ] && echo "yes" || echo "no")
 HAS_TEMPLATE_DIR=$([ -d TEMPLATE_claude ] && echo "yes" || echo "no")
 HAS_OLD_SOURCE=$([ -f .claude/.template-source.json ] && echo "yes" || echo "no")
+HAS_TEMPLATE_VERSION=$([ "$HAS_CONFIG" = "yes" ] && \
+  jq -e '.template_version.commit' .claude/project-config.json >/dev/null 2>&1 && \
+  echo "yes" || echo "no")
 ```
 
-| `project-config.json` | `TEMPLATE_claude/` | `.claude/.template-source.json` | Diagnostic |
-|-----------------------|--------------------|--------------------------------|------------|
-| absent | absent | absent | Nouveau projet → flux normal |
-| present | present | - | Projet v3 → Reinitialisation |
-| present | absent | present | **Projet v2 → Migration v3** |
-| present | absent | absent | **Projet v1 → Migration v3** |
+| `project-config.json` | `TEMPLATE_claude/` | `template_version` (dans `project-config.json`) | `.claude/.template-source.json` | Diagnostic |
+|-----------------------|--------------------|--------------------------------------------------|--------------------------------|------------|
+| absent | absent | - | absent | Nouveau projet → flux normal |
+| present | present | - | - | Projet v3 → Reinitialisation |
+| present | absent | present | - | **Projet v3, fichiers template manquants (clone frais) → Reinstallation a l'identique** (voir section dediee) |
+| present | absent | absent | present | **Projet v2 → Migration v3** |
+| present | absent | absent | absent | **Projet v1 → Migration v3** |
+
+> Le cas "fichiers manquants" (ligne 3) n'est **pas** une migration : le projet est deja en
+> architecture v3, seuls les fichiers gitignores (`TEMPLATE_claude/`, commandes/agents deployes)
+> sont absents — situation normale apres un `git clone`/`git pull` sur un projet deja initialise.
+> Le distinguer de la migration v1/v2 evite de rejouer inutilement tout le flux de conversion de
+> schema sur un projet qui n'en a pas besoin.
+
+---
+
+## Reinstallation des fichiers template (projet v3, fichiers manquants)
+
+Declenche quand `HAS_CONFIG=yes`, `HAS_TEMPLATE_DIR=no` et `HAS_TEMPLATE_VERSION=yes` (voir
+tableau de detection ci-dessus) — typiquement apres un `git clone`/`git pull` d'un projet deja
+initialise en v3, dont `TEMPLATE_claude/` et les commandes/agents deployes sont gitignores.
+
+```bash
+PINNED_TAG=$(jq -r '.template_version.tag' .claude/project-config.json)
+PINNED_COMMIT=$(jq -r '.template_version.commit' .claude/project-config.json)
+
+# Resoudre la derniere version disponible (etape 2 de la procedure de fetch ci-dessus,
+# sans encore fixer FETCH_TAG/FETCH_COMMIT)
+LATEST_TAG=$(gh api repos/$TEMPLATE_REPO/tags --jq '.[0].name // empty')
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/tags --jq '.[0].commit.sha // empty')
+```
+
+Si `PINNED_COMMIT = LATEST_COMMIT` → aucun choix reel a proposer (reinstaller a l'identique
+*est* la derniere version) : fixer directement `FETCH_TAG=$PINNED_TAG`, `FETCH_COMMIT=$PINNED_COMMIT`
+et enchainer sur les etapes 3-5 de la procedure de fetch, sans poser de question.
+
+Sinon :
+
+```
+AskUserQuestion : "Les fichiers template (TEMPLATE_claude/, commandes, agents) sont absents de
+ce clone — ils sont gitignores et ne se recuperent pas avec git. Comment les restaurer ?"
+- Reinstaller a partir des templates <PINNED_TAG> (Recommande) — restaure exactement la version
+  deja utilisee par ce projet (celle enregistree dans project-config.json), aucun changement de
+  comportement, rien a revoir avant de continuer a travailler
+- Profiter pour mettre a jour les templates vers <LATEST_TAG> (derniere version) — equivalent a
+  une synchronisation complete (option "Appliquer les mises a jour detectees"), peut introduire
+  des changements de comportement a relire avant de continuer
+```
+
+- **Reinstaller a l'identique** → `FETCH_TAG=$PINNED_TAG`, `FETCH_COMMIT=$PINNED_COMMIT`, puis
+  etapes 3-5 de la procedure de fetch. `template_version` dans `project-config.json` ne change
+  pas (deja a cette valeur).
+- **Mettre a jour** → `FETCH_TAG=$LATEST_TAG`, `FETCH_COMMIT=$LATEST_COMMIT`, puis etapes 3-5 —
+  strictement equivalent a une reinitialisation normale (Option d), `template_version` est mis
+  a jour vers la nouvelle version.
+
+Dans les deux cas, enchainer ensuite sur le deploiement standard (etape 4 de la procedure de
+fetch) et la detection de doublons/conflits (d5b/d5c) si des fichiers compagnons `*.md` existent
+deja localement (customisations projet preservees, jamais ecrasees).
 
 ---
 
@@ -791,6 +868,7 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
   "version": "0.1.0",
   "initialized_at": "<TIMESTAMP>",
   "initialized_from": "analysis|manual|workshop",
+  "template_version": { "tag": "<LATEST_TAG>", "commit": "<LATEST_COMMIT>" },
   "src_dir": "<SRC_DIR>",
   "version_file": "<VERSION_FILE>",
   "stack": {
@@ -860,6 +938,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 
 | Champ | Derivation |
 |-------|-----------|
+| `template_version` | `{tag, commit}` du template effectivement deploye (`$LATEST_TAG`/`$LATEST_COMMIT` resolus en section "Fetch du Template depuis GitHub"). Ecrit/mis a jour a **chaque** fetch (init, sync, reinstallation) — seule copie durable (trackee git) de cette info, `TEMPLATE_claude/.template-source.json` etant gitignore avec le reste de `TEMPLATE_claude/`. Sert a detecter et reinstaller a l'identique si les fichiers template disparaissent (clone frais) sans forcer une mise a jour — voir section "Reinstallation des fichiers template" |
 | `team_name` | `<PROJECT_NAME>-team` (minuscules, tirets) |
 | `org` | `git remote get-url origin` → extraire l'organisation GitHub |
 | `project` | `git remote get-url origin` → extraire le nom du repo (sans `.git`) |
