@@ -9,6 +9,15 @@ Initialisation interactive du projet pour configurer l'environnement Claude Code
 - **Automatique** : Si `.claude/project-config.json` n'existe pas au demarrage
 - **Manuel** : Commande `/init-project` pour reinitialiser ou modifier
 
+## Convention d'interaction
+
+Toute sollicitation de l'utilisateur ci-dessous est formulee comme une **question numerotee** :
+fermee avec choix lettres (a/b/c...) et une option **(recommande)** quand un defaut raisonnable
+existe, toujours accompagnee d'une **possibilite de precision libre** (option "Autre — preciser"
+ou remarque additionnelle) — jamais de texte ouvert type "dis-moi ce que tu veux". Les questions
+de decouverte du workshop (Option a) restent en texte libre par nature (elles visent a faire
+emerger une reponse originale), mais chacune reste une question explicite et unique.
+
 ## Workflow d'Initialisation
 
 ```
@@ -256,9 +265,12 @@ Conversion automatique proposee :
   PROD   : publish.mode = rebuild-ci   (merge + tag officiel, rebuild deterministe via CI)
   deploy.mechanism (les deux environnements) = "<MECH>" (normalise depuis "<OLD_DEPLOY>")
 
-Convertir maintenant ? [O/n] — Non bloquant : repondre "n" laisse infrastructure.deploy en
-l'etat (les commandes /build, /publish <env>, /deploy <env> nouvellement synchronisees ne
-fonctionneront pas correctement tant que la conversion n'est pas faite).
+Convertir maintenant ?
+a) Oui, convertir automatiquement (recommande)
+b) Non, laisser en l'etat pour l'instant — /build, /publish <env>, /deploy <env>
+   nouvellement synchronisees ne fonctionneront pas correctement tant que la conversion
+   n'est pas faite
+(Tu peux aussi preciser une contrainte particuliere sur les cibles a adapter.)
 ```
 
 Si confirme :
@@ -312,7 +324,10 @@ Architecture v3 (cible) :
   TEMPLATE_claude/ a la racine — fetche depuis GitHub, gitignore
   .claude/ contient uniquement les fichiers PROJET
 
-Migration requise. Continuer ? [O/n]
+Migration requise. Continuer ?
+a) Oui, migrer maintenant (recommande)
+b) Non, annuler l'initialisation
+(Tu peux aussi preciser une remarque avant de confirmer.)
 ```
 
 ### Etape M1 — Fetch de TEMPLATE_claude/ depuis GitHub
@@ -505,6 +520,7 @@ Voulez-vous :
 a) Initialiser avec cette configuration (recommande)
 b) Initialiser manuellement (questionnaire complet)
 c) Annuler
+d) Autre — preciser (ex : corriger une technologie mal detectee)
 ```
 
 **Si projet vide :**
@@ -520,6 +536,7 @@ a) Workshop de cadrage (recommande)
 b) Questionnaire rapide
    → Questions directes sur la stack technique
 c) Annuler
+d) Autre — preciser
 ```
 
 ### Option a : Workshop de Cadrage
@@ -600,6 +617,7 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
    g) Ruby (Rails)
    h) Rust (Actix/Axum)
    i) Aucun backend
+   j) Autre — preciser
 ```
 
 ---
@@ -616,6 +634,7 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
    f) Svelte / SvelteKit
    g) HTML/CSS/JS vanilla
    h) Aucun frontend
+   i) Autre — preciser
 ```
 
 ---
@@ -630,6 +649,7 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
    d) Android natif (Kotlin)
    e) Capacitor/Ionic
    f) Pas de mobile
+   g) Autre — preciser
 ```
 
 ---
@@ -644,6 +664,7 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
    d) Arduino (AVR)
    e) STM32
    f) Pas de firmware
+   g) Autre — preciser
 ```
 
 ---
@@ -690,6 +711,7 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
    e) Azure DevOps
    f) Bitbucket Pipelines
    g) Aucun
+   h) Autre — preciser
 ```
 
 ---
@@ -704,6 +726,7 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
    d) VPS / Bare metal
    e) PaaS (Heroku, Railway, Render)
    f) Cloud Run / App Engine
+   g) Autre — preciser
 
 9bis. Quels environnements de release utilises-tu, dans l'ordre de promotion ?
    a) QUALIF puis PROD (defaut)
@@ -739,10 +762,11 @@ l'utilisateur de le personnaliser par environnement uniquement s'il le demande e
 ## Etape 9 : Tests
 
 ```
-10. Quels frameworks de tests utilises-tu ?
-    Tests unitaires backend: ___
-    Tests unitaires frontend: ___
-    Tests E2E: ___
+10. Quels frameworks de tests utilises-tu ? (propositions par defaut selon la stack choisie
+    aux etapes 2/3 — preciser si different)
+    a) Tests unitaires backend : [defaut deduit, ex. `go test` pour Go, Jest/Vitest pour Node]
+    b) Tests unitaires frontend : [defaut deduit, ex. Vitest/Jest pour React/Vue]
+    c) Tests E2E : Playwright (recommande)
 ```
 
 ---
@@ -757,6 +781,7 @@ l'utilisateur de le personnaliser par environnement uniquement s'il le demande e
     [ ] Paiements (PCI-DSS)
     [ ] Multi-tenant
     [ ] Aucun aspect particulier
+    [ ] Autre — preciser
 ```
 
 ---
@@ -1301,8 +1326,9 @@ Voulez-vous :
 a) Reconfigurer completement (ecrase la config)
 b) Modifier certains parametres
 c) Re-analyser le code (detecter les changements)
-d) Appliquer les mises a jour detectees
+d) Appliquer les mises a jour detectees (recommande si seuls des [+]/[~]/[!] sont listes)
 e) Annuler
+f) Autre — preciser
 ```
 
 ### Option d : Appliquer les mises a jour detectees
@@ -1533,9 +1559,10 @@ Synchronisation depuis github.com/<repo>
   Reliquats  : N  ← a supprimer
 
 Actions :
-  [A] Tout appliquer (nouveaux + modifies) et supprimer les reliquats
+  [A] Tout appliquer (nouveaux + modifies) et supprimer les reliquats (recommande)
   [B] Appliquer uniquement les nouveaux et modifies (garder les reliquats)
   [C] Annuler
+  [D] Autre — preciser
 ```
 
 #### Etape d5 — Appliquer selon le choix
@@ -1683,7 +1710,7 @@ Analyse doublons template/projet :
 **Actions proposées :**
 
 ```
-  [N] Nettoyer automatiquement (supprimer IDENTIQUES, retirer les règles couvertes des DERIVE-TEMPLATE/MIXTE)
+  [N] Nettoyer automatiquement (supprimer IDENTIQUES, retirer les règles couvertes des DERIVE-TEMPLATE/MIXTE) — recommandé
   [I] Inspecter fichier par fichier
   [S] Ignorer — continuer sans modification
 ```
@@ -1710,7 +1737,7 @@ Pour chaque fichier non-PROPRE, afficher le diff annoté et proposer l'action :
 
   [↓] Section "Règle X" — couverte par le template mis à jour → retirer ?
 
-  [R] Retirer les redondances  [C] Conserver tel quel  [E] Editer manuellement
+  [R] Retirer les redondances (recommandé)  [C] Conserver tel quel  [E] Editer manuellement
 ```
 
 > Le système fonctionne correctement quelle que soit l'action choisie.
