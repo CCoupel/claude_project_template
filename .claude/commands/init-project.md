@@ -11,12 +11,20 @@ Initialisation interactive du projet pour configurer l'environnement Claude Code
 
 ## Convention d'interaction
 
-Toute sollicitation de l'utilisateur ci-dessous est formulee comme une **question numerotee** :
-fermee avec choix lettres (a/b/c...) et une option **(recommande)** quand un defaut raisonnable
-existe, toujours accompagnee d'une **possibilite de precision libre** (option "Autre — preciser"
-ou remarque additionnelle) — jamais de texte ouvert type "dis-moi ce que tu veux". Les questions
-de decouverte du workshop (Option a) restent en texte libre par nature (elles visent a faire
-emerger une reponse originale), mais chacune reste une question explicite et unique.
+Toute sollicitation de l'utilisateur ci-dessous est posee avec l'outil **`AskUserQuestion`** —
+jamais du texte brut listant des lettres dans le chat :
+
+- **2 a 4 options** (contrainte de l'outil), chacune avec un **label court** ET une **description**
+  qui explique la consequence/le contexte du choix — jamais juste un mot.
+- Une option marquee **"(Recommande)"** dans son libelle quand un defaut raisonnable existe.
+- Jamais d'option "Autre" ajoutee manuellement : l'outil la propose deja automatiquement en saisie
+  libre. Quand une liste naturelle depasse 4 reponses (ex. choix d'une techno), ne garder que les
+  3-4 plus frequentes en options explicites et laisser "Autre" couvrir le reste.
+- Checklist a choix multiples → `multiSelect: true` (toujours dans la limite de 4 options ; au-dela,
+  scinder en plusieurs questions du meme appel — jusqu'a 4 questions groupees par appel).
+- Les questions de decouverte du workshop (Option a, phases 1-6) restent des questions ouvertes en
+  texte libre par nature (elles visent a faire emerger une reponse originale) — forcer des options
+  fermees leur ferait perdre leur but.
 
 ## Workflow d'Initialisation
 
@@ -265,12 +273,12 @@ Conversion automatique proposee :
   PROD   : publish.mode = rebuild-ci   (merge + tag officiel, rebuild deterministe via CI)
   deploy.mechanism (les deux environnements) = "<MECH>" (normalise depuis "<OLD_DEPLOY>")
 
-Convertir maintenant ?
-a) Oui, convertir automatiquement (recommande)
-b) Non, laisser en l'etat pour l'instant — /build, /publish <env>, /deploy <env>
-   nouvellement synchronisees ne fonctionneront pas correctement tant que la conversion
-   n'est pas faite
-(Tu peux aussi preciser une contrainte particuliere sur les cibles a adapter.)
+AskUserQuestion : "Convertir maintenant vers le nouveau modele ?"
+- Oui, convertir automatiquement (Recommande) — applique QUALIF=promote / PROD=rebuild-ci /
+  deploy.mechanism="<MECH>" ; /build, /publish, /deploy fonctionnent immediatement apres
+- Non, laisser en l'etat — infrastructure.deploy reste tel quel ; /build, /publish <env>,
+  /deploy <env> nouvellement synchronisees ne fonctionneront pas correctement tant que la
+  conversion n'est pas faite
 ```
 
 Si confirme :
@@ -324,10 +332,11 @@ Architecture v3 (cible) :
   TEMPLATE_claude/ a la racine — fetche depuis GitHub, gitignore
   .claude/ contient uniquement les fichiers PROJET
 
-Migration requise. Continuer ?
-a) Oui, migrer maintenant (recommande)
-b) Non, annuler l'initialisation
-(Tu peux aussi preciser une remarque avant de confirmer.)
+AskUserQuestion : "Migration vers l'architecture v3 requise — continuer ?"
+- Oui, migrer maintenant (Recommande) — deplace les fichiers template vers TEMPLATE_claude/
+  gitignore ; .claude/ ne garde que les fichiers projet
+- Non, annuler l'initialisation — le projet reste sur l'architecture v1/v2, aucune commande
+  synchronisee depuis TEMPLATE_claude/ ne sera disponible
 ```
 
 ### Etape M1 — Fetch de TEMPLATE_claude/ depuis GitHub
@@ -516,11 +525,12 @@ Technologies detectees :
 - CI/CD : GitHub Actions (.github/workflows/)
 - Tests : Vitest, Playwright
 
-Voulez-vous :
-a) Initialiser avec cette configuration (recommande)
-b) Initialiser manuellement (questionnaire complet)
-c) Annuler
-d) Autre — preciser (ex : corriger une technologie mal detectee)
+AskUserQuestion : "Comment veux-tu initialiser le projet ?"
+- Initialiser avec cette configuration (Recommande) — utilise directement les technologies
+  detectees ci-dessus, aucune question supplementaire
+- Initialiser manuellement — reprend chaque technologie via le questionnaire complet (etapes
+  2 a 10), utile si une detection est incorrecte ou incomplete
+- Annuler — n'initialise rien, quitte /init-project
 ```
 
 **Si projet vide :**
@@ -530,13 +540,12 @@ Ce projet ne contient pas encore de code.
 
 Comment souhaitez-vous initialiser le projet ?
 
-a) Workshop de cadrage (recommande)
-   → Entretien guide pour definir vision, objectifs, stack et contraintes
-   → Genere un CLAUDE.md complet et project-config.json
-b) Questionnaire rapide
-   → Questions directes sur la stack technique
-c) Annuler
-d) Autre — preciser
+AskUserQuestion : "Comment souhaites-tu initialiser le projet ?"
+- Workshop de cadrage (Recommande) — entretien guide en 6 phases pour definir vision,
+  objectifs, stack et contraintes ; genere un CLAUDE.md complet et project-config.json
+- Questionnaire rapide — questions directes sur la stack technique uniquement, sans phase de
+  cadrage produit
+- Annuler — n'initialise rien, quitte /init-project
 ```
 
 ### Option a : Workshop de Cadrage
@@ -607,17 +616,13 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 2 : Stack Backend
 
 ```
-3. Quelle technologie backend utilises-tu ?
-   a) Go
-   b) Node.js (JavaScript/TypeScript)
-   c) Python (FastAPI/Django/Flask)
-   d) Java / Kotlin (Spring)
-   e) C# / .NET
-   f) PHP (Laravel/Symfony)
-   g) Ruby (Rails)
-   h) Rust (Actix/Axum)
-   i) Aucun backend
-   j) Autre — preciser
+AskUserQuestion : "Quelle technologie backend utilises-tu ?"
+- Node.js (JavaScript/TypeScript) — Express, Fastify, NestJS... genere les agents et templates
+  dev-backend-node
+- Python (FastAPI/Django/Flask) — genere les agents et templates dev-backend-python
+- Go — genere les agents et templates dev-backend-go
+- Aucun backend — projet frontend/mobile/firmware seul, pas d'agent dev-backend genere
+(Autre technologie — Java/Kotlin, C#/.NET, PHP, Ruby, Rust... — saisie libre via "Autre")
 ```
 
 ---
@@ -625,16 +630,14 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 3 : Stack Frontend
 
 ```
-4. Quelle technologie frontend utilises-tu ?
-   a) React (Vite/CRA)
-   b) React (Next.js)
-   c) Vue.js (Vite)
-   d) Vue.js (Nuxt)
-   e) Angular
-   f) Svelte / SvelteKit
-   g) HTML/CSS/JS vanilla
-   h) Aucun frontend
-   i) Autre — preciser
+AskUserQuestion : "Quelle technologie frontend utilises-tu ?"
+- React (Vite/CRA) — SPA classique, genere les agents et templates dev-frontend-react
+- React (Next.js) — SSR/routing integre, genere les agents et templates dev-frontend-react
+  (variante Next.js)
+- Vue.js (Vite ou Nuxt — preciser lequel via "Autre" si besoin) — genere les agents et
+  templates dev-frontend-vue
+- Aucun frontend — backend/API seul ou mobile/firmware seul, pas d'agent dev-frontend genere
+(Autre technologie — Angular, Svelte/SvelteKit, HTML/CSS/JS vanilla... — saisie libre via "Autre")
 ```
 
 ---
@@ -642,14 +645,12 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 4 : Mobile (optionnel)
 
 ```
-5. As-tu une application mobile ?
-   a) React Native
-   b) Flutter
-   c) iOS natif (Swift/SwiftUI)
-   d) Android natif (Kotlin)
-   e) Capacitor/Ionic
-   f) Pas de mobile
-   g) Autre — preciser
+AskUserQuestion : "As-tu une application mobile ?"
+- React Native — partage du code avec le frontend React eventuel
+- Flutter — stack Dart independante, cross-platform
+- Natif (iOS Swift/SwiftUI ou Android Kotlin — preciser lequel via "Autre" si besoin)
+- Pas de mobile — aucun agent mobile genere
+(Autre techno — Capacitor/Ionic... — saisie libre via "Autre")
 ```
 
 ---
@@ -657,14 +658,11 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 5 : Firmware/Hardware (optionnel)
 
 ```
-6. As-tu du code firmware ou embarque ?
-   a) ESP32 (Arduino/PlatformIO)
-   b) ESP8266
-   c) Raspberry Pi
-   d) Arduino (AVR)
-   e) STM32
-   f) Pas de firmware
-   g) Autre — preciser
+AskUserQuestion : "As-tu du code firmware ou embarque ?"
+- ESP32 (Arduino/PlatformIO) — genere l'agent dev-firmware-esp32
+- Raspberry Pi — carte complete, souvent Linux embarque plutot que firmware bas niveau
+- Pas de firmware — aucun agent firmware genere
+(Autre carte/microcontroleur — ESP8266, Arduino AVR, STM32... — saisie libre via "Autre")
 ```
 
 ---
@@ -672,13 +670,11 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 5b : Plugin (optionnel)
 
 ```
-6b. Ton projet inclut-il un plugin pour une plateforme existante ?
-    a) VS Code Extension
-    b) Obsidian Plugin
-    c) WordPress Plugin
-    d) Browser Extension (Chrome/Firefox)
-    e) Plugin applicatif maison (preciser la plateforme)
-    f) Pas de plugin
+AskUserQuestion : "Ton projet inclut-il un plugin pour une plateforme existante ?"
+- VS Code Extension — genere les agents/templates plugin cibles VS Code
+- Browser Extension (Chrome/Firefox) — genere les agents/templates plugin navigateur
+- Pas de plugin — aucun agent plugin genere
+(Autre plateforme — Obsidian, WordPress, plugin applicatif maison... — preciser via "Autre")
 ```
 
 ---
@@ -686,16 +682,13 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 6 : Base de Donnees
 
 ```
-7. Quelle base de donnees utilises-tu ?
-   a) PostgreSQL
-   b) MySQL / MariaDB
-   c) MongoDB
-   d) SQLite
-   e) Redis
-   f) Firebase / Firestore
-   g) Supabase
-   h) Plusieurs (preciser)
-   i) Aucune
+AskUserQuestion : "Quelle base de donnees utilises-tu ?"
+- PostgreSQL — relationnel, choix par defaut pour la plupart des stacks backend generees
+- MySQL / MariaDB — relationnel, alternative a PostgreSQL
+- MongoDB — document, pour un modele de donnees non relationnel
+- Aucune — pas de persistance geree par le template
+(Autre — SQLite, Redis, Firebase/Firestore, Supabase, ou plusieurs bases combinees —
+preciser via "Autre")
 ```
 
 ---
@@ -703,15 +696,11 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 7 : CI/CD
 
 ```
-8. Quel systeme CI/CD utilises-tu ?
-   a) GitHub Actions
-   b) GitLab CI
-   c) Jenkins
-   d) CircleCI
-   e) Azure DevOps
-   f) Bitbucket Pipelines
-   g) Aucun
-   h) Autre — preciser
+AskUserQuestion : "Quel systeme CI/CD utilises-tu ?"
+- GitHub Actions — genere le workflow release-*.yml adapte a la stack (backend+frontend)
+- GitLab CI — equivalent GitLab du workflow de release
+- Aucun — pas de pipeline CI/CD genere, /build et /publish resteront manuels
+(Autre — Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines... — preciser via "Autre")
 ```
 
 ---
@@ -719,20 +708,22 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 ## Etape 8 : Environnements et Deploiement
 
 ```
-9. Comment deploies-tu ton application ? (mecanisme d'installation par defaut)
-   a) Docker / Docker Compose
-   b) Kubernetes / Helm
-   c) Serverless (AWS Lambda, Vercel, Netlify)
-   d) VPS / Bare metal
-   e) PaaS (Heroku, Railway, Render)
-   f) Cloud Run / App Engine
-   g) Autre — preciser
+AskUserQuestion : "Comment deploies-tu ton application ?" (mecanisme d'installation par defaut)
+- Docker / Docker Compose — genere le template environments/docker-compose
+- Kubernetes / Helm — genere le template environments/kubernetes-helm
+- Serverless (AWS Lambda, Vercel, Netlify) — genere le template environments/serverless
+- VPS / Bare metal — genere le template environments/vps
+(Autre mecanisme — PaaS type Heroku/Railway/Render, Cloud Run/App Engine... — preciser via
+"Autre")
 
-9bis. Quels environnements de release utilises-tu, dans l'ordre de promotion ?
-   a) QUALIF puis PROD (defaut)
-   b) DEV puis QUALIF puis PROD
-   c) QUALIF puis PRE-PROD puis PROD
-   d) Personnalise — lister les noms, dans l'ordre de promotion
+AskUserQuestion : "Quels environnements de release utilises-tu, dans l'ordre de promotion ?"
+- QUALIF puis PROD (Recommande) — chaine standard, seule cablee dans l'orchestration CDP
+  automatisee (GATE 1 a 4)
+- DEV puis QUALIF puis PROD — ajoute un environnement DEV manuel (hors flux CDP automatise)
+  avant QUALIF
+- QUALIF puis PRE-PROD puis PROD — ajoute un environnement PRE-PROD manuel (hors flux CDP
+  automatise) entre QUALIF et PROD
+(Autre chaine personnalisee — lister les noms dans l'ordre de promotion — via "Autre")
 ```
 
 Chaque environnement declare dans `infrastructure.environments[]` recoit un mecanisme
@@ -774,14 +765,14 @@ l'utilisateur de le personnaliser par environnement uniquement s'il le demande e
 ## Etape 10 : Securite
 
 ```
-11. Quels aspects securite sont importants ?
-    [ ] Authentification utilisateurs
-    [ ] API publique
-    [ ] Donnees sensibles (RGPD, sante, finance)
-    [ ] Paiements (PCI-DSS)
-    [ ] Multi-tenant
-    [ ] Aucun aspect particulier
-    [ ] Autre — preciser
+AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants pour ce projet ?"
+- Authentification utilisateurs — active les checks de gestion de session/mots de passe pour
+  l'agent security
+- Donnees sensibles (RGPD, sante, finance) — active les checks de protection des donnees
+  personnelles/sensibles
+- Paiements (PCI-DSS) — active les checks specifiques au traitement de paiements
+- Aucun aspect particulier — n'active aucun check securite specifique (base uniquement)
+(Autre aspect — API publique, multi-tenant... — preciser via "Autre" ; plusieurs choix possibles)
 ```
 
 ---
@@ -1322,13 +1313,15 @@ Changements disponibles :
 
   → Aucun changement detecte            ← afficher si tout est INCHANGE
 
-Voulez-vous :
-a) Reconfigurer completement (ecrase la config)
-b) Modifier certains parametres
-c) Re-analyser le code (detecter les changements)
-d) Appliquer les mises a jour detectees (recommande si seuls des [+]/[~]/[!] sont listes)
-e) Annuler
-f) Autre — preciser
+AskUserQuestion : "Le projet est deja initialise — que veux-tu faire ?"
+- Appliquer les mises a jour detectees (Recommande si seuls des [+]/[~]/[!] sont listes) —
+  synchronise commandes/agents/contextes depuis TEMPLATE_claude/, conserve project-config.json
+- Reconfigurer completement — relance tout le questionnaire/workshop, ecrase project-config.json
+  existant
+- Re-analyser le code — relance la detection automatique de stack pour rafraichir le diagnostic
+  avant de choisir
+- Annuler — ne modifie rien
+(Pour modifier un seul parametre precis sans tout reconfigurer — preciser via "Autre")
 ```
 
 ### Option d : Appliquer les mises a jour detectees
@@ -1558,11 +1551,12 @@ Synchronisation depuis github.com/<repo>
   Inchanges  : N
   Reliquats  : N  ← a supprimer
 
-Actions :
-  [A] Tout appliquer (nouveaux + modifies) et supprimer les reliquats (recommande)
-  [B] Appliquer uniquement les nouveaux et modifies (garder les reliquats)
-  [C] Annuler
-  [D] Autre — preciser
+AskUserQuestion : "Comment appliquer cette synchronisation ?"
+- Tout appliquer et supprimer les reliquats (Recommande) — deploie nouveaux/modifies, supprime
+  les fichiers reliquats listes ci-dessus
+- Appliquer uniquement les nouveaux et modifies — deploie sans toucher aux reliquats (a nettoyer
+  manuellement plus tard)
+- Annuler — ne deploie rien, la synchronisation s'arrete ici
 ```
 
 #### Etape d5 — Appliquer selon le choix
@@ -1710,9 +1704,11 @@ Analyse doublons template/projet :
 **Actions proposées :**
 
 ```
-  [N] Nettoyer automatiquement (supprimer IDENTIQUES, retirer les règles couvertes des DERIVE-TEMPLATE/MIXTE) — recommandé
-  [I] Inspecter fichier par fichier
-  [S] Ignorer — continuer sans modification
+AskUserQuestion : "Comment traiter les doublons détectés entre template et fichiers projet ?"
+- Nettoyer automatiquement (Recommandé) — supprime les fichiers IDENTIQUES, retire les règles
+  couvertes des fichiers DERIVE-TEMPLATE/MIXTE, conserve le reste tel quel
+- Inspecter fichier par fichier — décide au cas par cas, fichier par fichier (voir Option I)
+- Ignorer — continue sans rien modifier, les doublons resteront signalés à la prochaine sync
 ```
 
 **Option N — Nettoyage automatique :**
@@ -1737,7 +1733,12 @@ Pour chaque fichier non-PROPRE, afficher le diff annoté et proposer l'action :
 
   [↓] Section "Règle X" — couverte par le template mis à jour → retirer ?
 
-  [R] Retirer les redondances (recommandé)  [C] Conserver tel quel  [E] Editer manuellement
+AskUserQuestion : "Cette section est couverte par le template mis à jour — que faire ?"
+- Retirer les redondances (Recommandé) — supprime la section du compagnon, le template
+  s'applique seul désormais
+- Conserver tel quel — garde la section dans le compagnon malgré le recouvrement (sera
+  re-signalée aux prochaines sync)
+- Éditer manuellement — n'applique rien automatiquement, ouvre le fichier pour édition
 ```
 
 > Le système fonctionne correctement quelle que soit l'action choisie.
@@ -1787,10 +1788,11 @@ Si aucun conflit → passer directement à l'étape d5d, sans afficher de rappor
   Template  (nouveau)  : "build/qualif_v<X.Y.Z>/"
   Compagnon (projet)   : "build/qualif/<X.Y.Z>/"
 
-  Lequel fait foi pour ce projet ?
-  [T] Le template — adapter/retirer la règle du compagnon
-  [P] Le compagnon — dérogation projet assumée, conserver telle quelle
-  [E] Éditer manuellement
+AskUserQuestion : "Lequel fait foi pour ce projet ?"
+- Le template (nouveau) — adapte/retire la règle du compagnon, le template s'applique seul
+- Le compagnon (projet) — dérogation projet assumée, conserve la règle telle quelle (sera
+  re-signalée en CONFLIT aux prochaines sync, c'est attendu)
+- Éditer manuellement — n'applique rien automatiquement, ouvre le fichier pour édition
 ```
 
 - **[T]** : retirer ou réécrire la règle du compagnon pour qu'elle ne contredise plus le
