@@ -382,18 +382,8 @@ fi
 
 ### 8.2 Labels standards
 
-| Label | Usage |
-|-------|-------|
-| `feature`, `enhancement` | Nouvelle fonctionnalite → `/feature` |
-| `bug`, `fix`, `defect` | Bug → `/bugfix` |
-| `hotfix`, `urgent`, `critical` | Correctif urgent → `/hotfix` |
-| `refactor`, `tech-debt` | Refactoring → `/refactor` |
-| `security`, `vulnerability` | Securite → `/secu` |
-| `breaking` | Rupture de compatibilite de donnees → impacte `X` |
-| `roadmap` | Visible sur le site marketing |
-| `in progress` | En cours de traitement |
-
-> **Mapping labels → segment de version** (utilise par `/milestone new`) : voir `commands/context/GITHUB.md` section 8.3.
+Labels de type, labels de phase (statuts) et mapping vers le segment de version : voir
+`commands/context/GITHUB.md` sections 8.2 et 8.3 (**source unique**, non recopiee ici).
 
 ### 8.3 Format des commits avec issue
 
@@ -406,61 +396,5 @@ fix(scope): Description (#38)
 
 ## 9. Gestion des Labels de Phase
 
-Le deployer utilise ces commandes pour mettre à jour les labels d'issue
-lors des transitions de phase du workflow du teamleader.
-
-### 9.1 Transition vers `EN COURS` (DEV démarré)
-
-```bash
-gh issue edit <numero> --add-label "EN COURS" --remove-label "EN REVIEW,EN QA,DONE"
-```
-
-### 9.2 Transition vers `EN REVIEW` (REVIEW en cours)
-
-```bash
-gh issue edit <numero> --add-label "EN REVIEW" --remove-label "EN COURS,EN QA,DONE"
-```
-
-### 9.3 Transition vers `EN QA` (QA en cours)
-
-```bash
-gh issue edit <numero> --add-label "EN QA" --remove-label "EN COURS,EN REVIEW,DONE"
-```
-
-### 9.4 Transition vers `DONE` (QA validée)
-
-```bash
-gh issue edit <numero> --add-label "DONE" --remove-label "EN COURS,EN REVIEW,EN QA"
-```
-
-### 9.5 Rejet à GATE 4 (validation utilisateur refusée)
-
-Le label `DONE` est retiré. La destination dépend de la nature de la correction
-(cf. `cdp.template.md`, GATE 4 — Cas A / Cas B) :
-
-```bash
-# Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV
-gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
-
-# Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1
-gh issue edit <numero> --add-label "PLANNING" --remove-label "DONE"
-```
-
-### 9.6 Fermeture (validation utilisateur à GATE 4)
-
-L'issue porte déjà le label `DONE` — la fermeture suffit, aucun changement de label.
-
-```bash
-gh issue comment <numero> --body "✅ Validé — QA OK — documentation mise à jour"
-gh issue close <numero>
-```
-
-### 9.7 Création des labels (si absents du repo)
-
-```bash
-gh label create "PLANNING"  --color "c5def5" --description "Planification en cours"
-gh label create "EN COURS"  --color "0075ca" --description "En cours de developpement"
-gh label create "EN REVIEW" --color "e4e669" --description "En cours de revue"
-gh label create "EN QA"     --color "d93f0b" --description "En cours de validation QA"
-gh label create "DONE"      --color "0e8a16" --description "Implementation validee (QA OK)"
-```
+Transitions de statut (`PLANNING` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE` → fermeture ; `BLOQUE` et `ABANDONNE`), responsabilites
+et commandes `gh` : voir `commands/context/GITHUB.md` sections 8.2 et 9 (**source unique**, non recopiee ici).

@@ -415,20 +415,22 @@ Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §14. `/init
 
 ### Suivi des issues GitHub
 
-Le CDP met à jour les labels de l'issue associée (via plugin GitHub MCP) à chaque transition de phase :
+Le CDP met à jour les labels de l'issue associée (via plugin GitHub MCP) à chaque transition de phase.
+Un seul label de phase à la fois (sauf `EN REVIEW` + `EN QA` pendant la parallélisation Review/QA ; `BLOQUE` se superpose à la phase) :
 
-| Label | Moment |
-|-------|--------|
-| `PLANNING` | Phase 1 — plan en cours |
-| `EN COURS` | GATE 2 validé — DEV + TEST-WRITER démarrés |
-| `EN REVIEW` | Phase 3 — REVIEW en cours |
-| `EN QA` | Phase 3 — QA en cours (dès TEST-WRITER DONE si parallèle au défaut, sinon après REVIEW) |
-| `DONE` | QA validée |
-| *(issue fermée)* | GATE 4 — utilisateur confirme que l'implémentation est conforme |
+| Statut | Signification | Posé par | Posé quand |
+|--------|---------------|----------|------------|
+| `PLANNING` | Plan en cours | CDP | Phase 1 ; ou rejet GATE 4 hors scope (Cas B) |
+| `EN COURS` | Développement en cours | CDP | GATE 2 validé ; cycle correctif (REVIEW refuse / QA échoue) ; rejet GATE 4 dans le scope (Cas A) |
+| `EN REVIEW` | Revue en cours | CDP | Phase 3 — REVIEW démarrée |
+| `EN QA` | QA en cours | CDP | Phase 3 — dès TEST-WRITER DONE si parallèle au REVIEW (défaut), sinon après REVIEW |
+| `DONE` | QA validée, en attente de l'utilisateur | CDP | QA validée |
+| `BLOQUE` | Avancement impossible — s'ajoute à la phase courante (conservée) | CDP | Blocage constaté (cause en commentaire) ; retiré à la levée du blocage |
+| `ABANDONNE` | Ne sera pas traitée (terminal) | CDP | Sur décision de l'utilisateur uniquement ; l'issue est fermée `not planned` |
+| *(issue fermée)* | Livré | CDP | GATE 4 — l'utilisateur confirme la conformité |
 
-Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
-Si l'utilisateur rejette à GATE 4, le label `DONE` est retiré et l'issue repart vers
-`EN COURS` (correction dans le scope, retour DEV) ou `PLANNING` (scope invalide, retour PLAN).
+Définition de référence (transitions, labels retirés, commandes `gh`) :
+`TEMPLATE_claude/commands/context/GITHUB.md` §8.2 et §9 — les autres fichiers y renvoient sans la recopier.
 
 ### Build (compilation locale, agnostique à l'environnement)
 
