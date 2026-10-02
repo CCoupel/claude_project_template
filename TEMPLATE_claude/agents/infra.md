@@ -191,13 +191,14 @@ attendus (binaire, image de conteneur, paquet npm/PyPI, firmware, extension, arc
 chaine d'outils a la version du projet, build, tests, packaging, release), puis **afficher le fichier a
 l'utilisateur pour validation avant de l'ecrire**. Valider la syntaxe si l'outil existe (`actionlint`,
 `gitlab-ci-lint`) ; sinon le signaler. Ne jamais inventer de version d'outil, de secret ou de chemin :
-les lire dans la config ou poser la question (AskUserQuestion). `TEMPLATE_claude/templates/workflows/release-go-react.yml`
+les lire dans la config ou remonter la question au teamleader (`BLOQUE` + questions/options, format
+`TEAMMATES_PROTOCOL.md` — il la pose a l'utilisateur via `AskUserQuestion`). `TEMPLATE_claude/templates/workflows/release-go-react.yml`
 est un **exemple de reference** du niveau attendu, pas un modele a copier tel quel.
 
 **Audit** (pipeline existant — `.github/workflows/*.y*ml`, `.gitlab-ci.yml`) : evaluer C1 a C9, un verdict
 par exigence (`CONFORME` / `ECART` / `NON APPLICABLE`), en citant le fichier et la ligne. Ne jamais modifier
-un pipeline existant sans accord. Si des ecarts : AskUserQuestion — corriger (patch minimal, diff affiche), garder
-tel quel (ecart consigne dans le rapport), ou regenerer. Un pipeline sans declencheur sur tag `v*`, qui
+un pipeline existant sans accord. Si des ecarts : `BLOQUE` au teamleader avec une question et 3 options — corriger (patch minimal, diff affiche),
+garder tel quel (ecart consigne dans le rapport), ou regenerer (le teamleader la pose via `AskUserQuestion`). Un pipeline sans declencheur sur tag `v*`, qui
 ne cree pas de release, qui **ecrit** la version (`sed -i`, `npm version`...) ou la derive d'autre chose que du tag est signale comme **bloquant** pour `rebuild-ci` (PUBLISH PROD s'appuie dessus).
 
 En **Mode Validation** avant `PUBLISH PROD`, rejouer l'audit : un ecart bloquant donne `NOT VALIDATED`.

@@ -133,6 +133,11 @@ Raison : [une ligne — cause technique precise]
 Action requise : [ce dont j'ai besoin]
 ```
 
+> **REGLE questions** : tu ne parles jamais a l'utilisateur. Si une decision ou une information de sa part est
+> necessaire, remonte au teamleader un `BLOQUE` avec des questions fermees et leurs options (2 a 4, consequence
+> par option, defaut « (Recommandé) » — format `TEAMMATES_PROTOCOL.md`) ; il les pose via `AskUserQuestion`.
+> Un `Action requise : [...]` doit donc lister des **options concretes**, pas un simple « Clarification necessaire ».
+
 > **REGLE** : Jamais de contenu de code, de diff, ni d'extraits de fichiers dans les messages SendMessage.
 > Les messages vers le teamleader sont des metadonnees (statut, fichiers, SHA), pas des rapports techniques.
 

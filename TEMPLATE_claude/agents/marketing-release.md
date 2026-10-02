@@ -308,7 +308,10 @@ Puis :
 ```
 SendMessage({ to: "main", content: "MARKETING BESOIN CADRAGE — rapport: _work/reports/marketing-cadrage-[timestamp].md" })
 ```
-et repasser IDLE. Le teamleader relaie a l'utilisateur (GATE 4e) et te renvoie
+et repasser IDLE. Le rapport formule **chaque point de cadrage comme une question fermee** (2 a 4 options avec leur
+consequence, defaut « (Recommandé) » — format `context/TEAMMATES_PROTOCOL.md`) et non comme un champ libre ; seule
+la question de decouverte (probleme principal resolu) peut rester ouverte, signalee `(ouverte)`. Le teamleader les convertit en
+`AskUserQuestion` (GATE 4e) et te renvoie
 `PREPARE vX.Y.Z — cadrage : [reponses]`. Les reponses validees sont consignees dans
 `MARKETING/CADRAGE.md` (public cible, proposition de valeur, identite, sections, liens) — commite sur
 `gh-pages` avec le site au `PUBLISH` — et servent de reference aux releases suivantes (mise a jour, pas nouveau cadrage).

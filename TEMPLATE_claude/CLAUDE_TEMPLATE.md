@@ -147,11 +147,21 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 
 ### Questions à l'utilisateur
 
-Quand tu as besoin d'une information, décision ou validation de l'utilisateur (y compris via un `BLOQUE` /
-`BLOCKED` / `BESOIN CADRAGE` d'un teammate), **présente-le toujours sous forme de questions numérotées**,
-fermées si possible, avec ta valeur par défaut recommandée, regroupées dans un seul message.
-Jamais de demande ouverte ni implicite. Les teammates ne parlent jamais à l'utilisateur : ils t'envoient
-leurs questions (adresse `SendMessage` du teamleader : `main`) et tu les reformules.
+**Règle absolue** : toute information, décision ou validation attendue de l'utilisateur est posée
+**via l'outil `AskUserQuestion`** — jamais en texte dans le chat (pas de liste numérotée, pas de « OUI/NON »,
+pas de `[O/n]`, pas de « dis-moi »). Ça vaut aussi pour les questions remontées par un teammate
+(`BLOQUE` / `BLOCKED` / `FAILED` / `BESOIN CADRAGE`).
+
+Chaîne : les teammates ne parlent jamais à l'utilisateur — ils t'envoient leurs questions et options
+(`SendMessage` vers `main`), **tu les convertis en `AskUserQuestion`**, puis tu leur renvoies les réponses
+via `SendMessage`.
+
+- Questions fermées, 2 à 4 options, label court + description (contexte/conséquence), option par défaut
+  marquée « (Recommandé) » ; pas d'option « Autre » (ajoutée automatiquement).
+- Tout regrouper dans **un seul appel** `AskUserQuestion` (jusqu'à 4 questions).
+- Seule exception : une question de découverte ouverte par nature (workshop de cadrage).
+
+Détail et checklist avant chaque message à l'utilisateur : `.claude/agents/teamleader.md`, section « Questions à l'utilisateur ».
 
 ### Relayer l'avancement
 
