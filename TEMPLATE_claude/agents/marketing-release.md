@@ -50,25 +50,26 @@ resous le milestone et decides seul de la pertinence d'une publication.
      `Fixed`/`Chore` (ou section absente) → rien a publier.
    - Rien a publier → `SendMessage({ to: "main", content: "MARKETING RIEN A PUBLIER" })`, repasser IDLE. Ne rien generer d'autre.
 2b. **Detecter le site marketing** (sauf si l'ordre du teamleader est `PREPARE vX.Y.Z — SANS SITE` : ne
-   traiter alors aucun site, uniquement release notes/posts). Un site existe si l'un des deux est vrai :
+   traiter alors aucun site, uniquement release notes/posts). **Le site vit uniquement sur la branche
+   `gh-pages`** (voir "Emplacement du site" ci-dessous) — il n'y a pas d'autre emplacement a tester :
    ```bash
-   test -f MARKETING/index.html && echo "site: MARKETING/"          # local, fiable hors ligne
    git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; RC=$?
    # RC=0 : branche presente → git fetch origin gh-pages puis verifier
    #        git ls-tree -r --name-only origin/gh-pages | grep -qE '(^|/)index\.html$'
    # RC=2 : branche absente (le remote a repondu : elle n'existe pas)
    # autre : remote injoignable (reseau, authentification) → INDETERMINE
    ```
+   Si `gh-pages` existe, preparer le worktree `MARKETING/` (voir "Emplacement du site") avant de continuer.
    - **Site trouve** → mise a jour (etape 3), en lisant d'abord `MARKETING/CADRAGE.md` s'il existe (identite,
      public, sections deja arbitres : ne pas les re-questionner).
    - **Verification impossible** (remote injoignable, lecture de la page en echec) → **ne jamais conclure « pas
      de site »** : envoyer `MARKETING BLOQUE — verification du site impossible : [raison]` au teamleader et repasser
      IDLE. Une fausse initialisation ecraserait ou dupliquerait un site existant.
-   - **Aucun site trouve de facon certaine** (pas de `MARKETING/index.html`, et `gh-pages` absente ou sans
-     `index.html`), et le teamleader n'a pas donne l'ordre `SANS SITE` → c'est une **INITIALISATION du site.**
+   - **Aucun site trouve de facon certaine** (`gh-pages` absente ou sans `index.html`), et le teamleader n'a pas donne l'ordre `SANS SITE` → c'est une **INITIALISATION du site.**
      Ne rien generer d'autre : suivre la section "Initialisation du site" (Livrables, 4. Site Marketing),
      envoyer `MARKETING BESOIN CADRAGE` au teamleader et repasser IDLE.
-3. Produire les livrables (voir section Livrables) — **sans commit ni push**. Si un site
+3. Produire les livrables (voir section Livrables) — **sans commit ni push** (le site s'ecrit dans le
+   worktree `MARKETING/`, les release notes/posts dans `docs/releases/`). Si un site
    marketing est concerne, publier systematiquement l'apercu Artifact (voir section Livrables
    4. Site Marketing → "Apercu de validation (Artifact)") — obligatoire, pas seulement si
    demande.
@@ -91,12 +92,18 @@ restent indispensables, renvoyer un nouveau `MARKETING BESOIN CADRAGE` (question
 
 > A ne pas confondre avec les taches `PUBLISH QUALIF`/`PUBLISH PROD` de l'agent `deployer`
 > (`agents/deploy.md`) — celles-ci publient un artefact applicatif, cette tache-ci publie le
-> contenu marketing (site gh-pages), sans rapport avec le pipeline de release.
+> contenu marketing (site sur `gh-pages`), sans rapport avec le pipeline de release.
 
 Recue uniquement quand le deploiement PROD a reussi ET que l'utilisateur a valide la maquette
-(les deux conditions sont verifiees par le teamleader, pas par toi). Commit + push des fichiers deja
-generes par `PREPARE` (site marketing sur `gh-pages`, release notes, etc.). Si le contexte a
-ete perdu entre-temps, `git status`/`git diff` sur les repertoires concernes suffit a retrouver
+(les deux conditions sont verifiees par le teamleader, pas par toi). Deux commits distincts, jamais melanges :
+- **Site** : commit + push **depuis le worktree `MARKETING/`**, donc directement sur `gh-pages`
+  (`git -C MARKETING add -A && git -C MARKETING commit -m "docs(site): vX.Y.Z" && git -C MARKETING push origin gh-pages`).
+- **Release notes et posts** : restent sur la branche de code, dans `docs/releases/` — ils ne font pas
+  partie du site. Commit sur la branche de code courante, sans `MARKETING/`.
+
+**Ne jamais commiter `MARKETING/` sur la branche de code** (`main`, `milestone/*`, `hotfix/*`) : c'est le
+worktree de `gh-pages`, pas un dossier de la branche de code. Si le contexte a ete perdu entre-temps,
+`git -C MARKETING status`/`git -C MARKETING diff` (site) et `git status` (release notes) suffisent a retrouver
 ce qui doit etre commite — rien n'est perdu puisque `PREPARE` n'a jamais committe.
 
 ```
@@ -258,7 +265,7 @@ Bonjour communaute,
 
 Le site marketing est **la regle, pas l'exception** : sauf ordre explicite du teamleader (`SANS SITE`, issu de
 `marketing.site: false` dans `project-config.json`), un projet livre a un site. Detection : voir
-PREPARE etape 2b. Site existant (`gh-pages` ou `MARKETING/`) → le mettre a jour ; aucun site →
+PREPARE etape 2b. Site existant (branche `gh-pages`) → le mettre a jour ; aucun site →
 **initialisation** (sous-section ci-dessous). Le site est bilingue (FR/EN) avec un commutateur de langue.
 
 **Site existant : la maquette presentee au GATE 4d doit toujours partir de la page marketing
@@ -267,8 +274,8 @@ evoluer cette base plutot que regenerer le site depuis zero. L'utilisateur valid
 site existant, pas une refonte.
 
 Cette maquette est **ephemere** (`context/COMMON.md` section 14.8) : systematique a chaque release, elle
-est l'apercu Artifact construit depuis `MARKETING/index.html` (fichier de travail non commite tant que
-`PUBLISH` n'a pas eu lieu) ; elle n'est jamais commitee dans `docs/mockup/` (reserve aux maquettes projet)
+est l'apercu Artifact construit depuis `MARKETING/index.html` (fichier du worktree `gh-pages`, modifie mais
+non commite tant que `PUBLISH` n'a pas eu lieu) ; elle n'est jamais commitee dans `docs/mockup/` (reserve aux maquettes projet)
 ni indexee.
 
 #### Initialisation du site (aucun site existant)
@@ -277,7 +284,7 @@ Declenchee quand PREPARE etape 2b ne trouve aucun site et que le teamleader n'a 
 generes pas le site « a l'aveugle » : tu **alertes le teamleader** et tu lui fournis, dans un rapport
 `_work/reports/marketing-cadrage-[timestamp].md` :
 
-1. **Constat** : aucun site trouve (emplacements verifies : branche `gh-pages`, `MARKETING/`) → c'est une
+1. **Constat** : aucun site trouve (emplacement verifie : branche `gh-pages`) → c'est une
    initialisation, pas une mise a jour.
 2. **Maquette proposee** : apercu Artifact d'un site complet (sections obligatoires ci-dessous), construit
    depuis ce que tu peux deduire du projet (`README.md`, `CHANGELOG.md`, description GitHub, milestone).
@@ -293,7 +300,8 @@ generes pas le site « a l'aveugle » : tu **alertes le teamleader** et tu lui f
      contact, telechargement, tarifs...)
    - **Visuels disponibles** (captures, logo, video) — sinon placeholders (voir "Placeholders images")
    - **Appel a l'action principal** et liens (depot, releases, documentation)
-   - **Langues** (FR/EN par defaut) et **URL** (`gh-pages` par defaut, domaine personnalise ?)
+   - **Langues** (FR/EN par defaut) et **URL** (branche `gh-pages` — emplacement non negociable ; seule la
+     question du domaine personnalise se pose)
    - **References** : sites dont s'inspirer
 
 Puis :
@@ -302,8 +310,8 @@ SendMessage({ to: "main", content: "MARKETING BESOIN CADRAGE — rapport: _work/
 ```
 et repasser IDLE. Le teamleader relaie a l'utilisateur (GATE 4e) et te renvoie
 `PREPARE vX.Y.Z — cadrage : [reponses]`. Les reponses validees sont consignees dans
-`MARKETING/CADRAGE.md` (public cible, proposition de valeur, identite, sections, liens) — commite avec le site
-au `PUBLISH` — et servent de reference aux releases suivantes (mise a jour, pas nouveau cadrage).
+`MARKETING/CADRAGE.md` (public cible, proposition de valeur, identite, sections, liens) — commite sur
+`gh-pages` avec le site au `PUBLISH` — et servent de reference aux releases suivantes (mise a jour, pas nouveau cadrage).
 
 Le contenu de reference est celui du **distant** (`origin`), jamais une copie locale
 potentiellement perimee :
@@ -311,13 +319,42 @@ potentiellement perimee :
 git fetch origin gh-pages
 git show origin/gh-pages:index.html   # ou le chemin equivalent si structure differente
 ```
-Si le site vit dans `MARKETING/` sur la branche courante, `git pull origin <branche>` avant
-lecture pour etre sur l'etat le plus recent.
+Dans le worktree `MARKETING/`, `git -C MARKETING pull --ff-only origin gh-pages` avant lecture pour etre
+sur l'etat le plus recent.
+
+#### Emplacement du site — `MARKETING/` = worktree de `gh-pages`
+
+**Regle : le site vit uniquement sur la branche `gh-pages`. Il n'est jamais commite sur la branche de code
+(`main`, `milestone/*`, `hotfix/*`).** `MARKETING/` n'est pas un dossier de la branche de code ni une
+publication de `main` : c'est le **worktree git de `gh-pages`**, ignore par la branche de code
+(`.gitignore`). Ses chemins (`MARKETING/index.html`, `MARKETING/CADRAGE.md`) sont la racine de `gh-pages`.
+
+Cycle de vie, avant `PREPARE` (etape 2b) :
+```bash
+if [ ! -e MARKETING/.git ]; then
+  git fetch origin gh-pages 2>/dev/null
+  if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+    git worktree add MARKETING gh-pages 2>/dev/null \
+      || git worktree add -B gh-pages MARKETING origin/gh-pages   # branche locale absente
+  else
+    git worktree add --orphan -b gh-pages MARKETING              # initialisation : gh-pages n'existe pas encore
+  fi
+fi
+git check-ignore -q MARKETING/ || echo "MARKETING/" >> .git/info/exclude   # garde-fou local si .gitignore pas a jour
+git -C MARKETING pull --ff-only origin gh-pages 2>/dev/null || true
+```
+- `MARKETING/` suivi par la branche de code (`git ls-files MARKETING | head -1` non vide) → **ne rien
+  commiter** : envoyer `MARKETING BLOQUE — MARKETING/ est suivi sur la branche de code (doublon avec gh-pages) :
+  lancer /init-project (migration) ou git rm -r --cached MARKETING/` au teamleader.
+- `PREPARE` ecrit dans le worktree sans commiter ; `PUBLISH` commit + push depuis le worktree (voir tache `PUBLISH`).
+- **Ne jamais commiter `MARKETING/` sur la branche de code.**
 
 #### Structure du site
 
+Racine de `gh-pages`, vue via le worktree `MARKETING/` :
+
 ```
-MARKETING/
+MARKETING/                  # = racine de gh-pages
 ├── CADRAGE.md              # Cadrage valide a l'initialisation (public, valeur, identite, sections, liens) — lu a chaque PREPARE
 ├── index.html              # Page principale (FR par defaut)
 ├── assets/
@@ -541,7 +578,7 @@ validation sans apercu. Ecrire l'apercu dans un fichier HTML autonome `_work/mar
 _work/marketing/preview.html` au teamleader, qui le presente a l'utilisateur au GATE 4d (le GATE reste obligatoire).
 
 Cet apercu est un outil de validation uniquement — le fichier reel `MARKETING/index.html`
-(document complet, structure gh-pages) reste la seule source publiee lors de `PUBLISH`.
+(document complet, racine de `gh-pages`) reste la seule source publiee lors de `PUBLISH`.
 
 ## Regles de Ton
 

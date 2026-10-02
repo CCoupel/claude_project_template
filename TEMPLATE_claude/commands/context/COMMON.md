@@ -550,7 +550,7 @@ Un projet existant n'a pas de maquette pour ses composants. Le planner dessine d
 
 ### 14.8 Maquettes marketing — éphémères
 
-Les maquettes marketing (GATE 4d) sont **distinctes** des maquettes projet : systématiques mais **éphémères**. Elles partent toujours de la page publiée en production (ou, à l'initialisation d'un site sans page existante, d'une proposition à cadrer avec l'utilisateur), prennent la forme d'un aperçu Artifact construit depuis `MARKETING/index.html` (non commité tant que `PUBLISH` n'a pas eu lieu), ne sont jamais dans `docs/mockup/` et ne sont ni indexées ni versionnées. Le flag `mockup_ok` du GATE 4d est inchangé.
+Les maquettes marketing (GATE 4d) sont **distinctes** des maquettes projet : systématiques mais **éphémères**. Elles partent toujours de la page publiée en production (ou, à l'initialisation d'un site sans page existante, d'une proposition à cadrer avec l'utilisateur), prennent la forme d'un aperçu Artifact construit depuis `MARKETING/index.html` (worktree de `gh-pages`, non commité tant que `PUBLISH` n'a pas eu lieu), ne sont jamais dans `docs/mockup/` et ne sont ni indexées ni versionnées. Le flag `mockup_ok` du GATE 4d est inchangé.
 
 ---
 
