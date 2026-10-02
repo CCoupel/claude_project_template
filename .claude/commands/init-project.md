@@ -819,8 +819,8 @@ preciser via "Autre")
 
 ```
 AskUserQuestion : "Quel systeme CI/CD utilises-tu ?"
-- GitHub Actions — genere le workflow release-*.yml adapte a la stack (backend+frontend)
-- GitLab CI — equivalent GitLab du workflow de release
+- GitHub Actions — audite le workflow de release existant, sinon le genere selon la stack et les livrables
+- GitLab CI — meme demarche avec `.gitlab-ci.yml`
 - Aucun — pas de pipeline CI/CD genere, /build et /publish resteront manuels
 (Autre — Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines... — preciser via "Autre")
 ```
@@ -1025,13 +1025,27 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 
 ### 3. Workflow CI/CD
 
-Copier depuis `TEMPLATE_claude/templates/workflows/` vers `.github/workflows/release.yml`
-et remplacer les placeholders :
+Le pipeline de release n'est plus copie d'un modele : il est **audite s'il existe, genere sinon**, selon le
+contrat de `TEMPLATE_claude/agents/infra.md` section 3bis (exigences C1 a C9). Si l'utilisateur a repondu
+« Aucun » a l'Etape 7, ne rien faire.
 
-| Stack | Template |
-|-------|----------|
-| Go + React/Vue | `TEMPLATE_claude/templates/workflows/release-go-react.yml` |
-| Autres | Generer un workflow minimal adapte |
+1. **Detecter** : `.github/workflows/*.y*ml`, `.gitlab-ci.yml`.
+2. **Pipeline existant → audit** : evaluer C1-C9 (verdict `CONFORME` / `ECART` / `NON APPLICABLE`, fichier et ligne
+   cites), afficher le tableau, puis AskUserQuestion :
+   - Corriger les ecarts (Recommande) — patch minimal, diff affiche et valide avant ecriture
+   - Garder tel quel — ecarts consignes dans le rapport final (un ecart C1/C5 reste signale comme bloquant
+     pour le mode `rebuild-ci`)
+   - Regenerer — remplace le pipeline apres sauvegarde (`.bak`)
+   Ne jamais ecraser ni modifier sans reponse.
+3. **Aucun pipeline → generation** : composer le pipeline a partir de `project-config.json` (stack, livrables,
+   `version_file`, `commands.*`) en suivant le contrat, l'afficher, le faire valider (AskUserQuestion :
+   Ecrire / Modifier / Annuler), l'ecrire a `infrastructure.environments[].publish.pipeline`
+   (par defaut `.github/workflows/release.yml`), puis le valider syntaxiquement (`actionlint` si present).
+   `TEMPLATE_claude/templates/workflows/release-go-react.yml` sert de **reference de niveau**, pas de modele.
+4. Les evolutions ulterieures (nouveau livrable, changement de stack) passent par l'agent `infra`
+   (Mode Modification) ; son Mode Validation rejoue l'audit avant `PUBLISH PROD`.
+
+Placeholders de l'exemple de reference (informatif) :
 
 | Placeholder | Exemple |
 |-------------|---------|
@@ -1461,6 +1475,12 @@ AskUserQuestion : "Le projet est deja initialise — que veux-tu faire ?"
 
 > Le fetch GitHub a deja ete effectue au pre-menu — `TEMPLATE_claude/` est a jour.
 > Cette option calcule le diff precis et deploie les changements dans `.claude/`.
+
+#### Etape d1c — Audit du pipeline CI/CD de release
+
+Appliquer l'etape "3. Workflow CI/CD" (sections Generation de la Configuration) en mode audit : detecter le
+pipeline, evaluer C1-C9 (`agents/infra.md` section 3bis), proposer corrections ou generation si absent. Ne rien
+modifier sans reponse de l'utilisateur ; ne pas re-poser l'Etape 7 si le systeme CI/CD est deja connu.
 
 #### Etape d1a — Site marketing : worktree `gh-pages`
 

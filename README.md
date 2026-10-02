@@ -191,7 +191,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
     ├── environments/             # Templates publish/deploy par mécanisme (promote, rebuild-ci,
     │                             # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
     └── workflows/
-        └── release-go-react.yml
+        └── release-go-react.yml  # exemple de référence (le pipeline est audité/généré par infra)
 ```
 
 ---
@@ -784,7 +784,11 @@ Mettre à jour `TEMPLATE_claude/.template-source.json` dans votre fork :
 1. Créer `TEMPLATE_claude/templates/dev-backend-rust.md`
 2. Référencer dans `init-project.md` section "Agents dev-*"
 
-### Ajouter un template de workflow CI/CD
+### Pipeline CI/CD de release
 
-1. Créer `TEMPLATE_claude/templates/workflows/release-node-react.yml`
-2. Référencer dans `init-project.md` section "Workflow CI/CD"
+Pas de modèle à ajouter par stack : le pipeline est **audité s'il existe, généré sinon** par `/init-project`
+(puis maintenu par l'agent `infra`) selon le contrat de `TEMPLATE_claude/agents/infra.md` §3bis (déclencheur
+tag `v*`, cohérence des versions, build identique à `commands.build`, livrables `<artefact>-<X.Y.Z>`,
+Release créée avec les notes du changelog, permissions minimales, pas de secret en clair, pas de déploiement).
+Le pipeline généré est montré à l'utilisateur avant écriture ; un pipeline existant n'est jamais modifié sans
+accord. `release-go-react.yml` n'est qu'un exemple de référence.

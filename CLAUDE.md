@@ -57,7 +57,7 @@ TEMPLATE_claude/             # Racine de tous les composants template
     ├── environments/         # Templates publish/deploy par mecanisme (promote, rebuild-ci,
     │                         # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
     └── workflows/
-        └── release-go-react.yml
+        └── release-go-react.yml  # exemple de référence (le pipeline est audité/généré par infra)
 ```
 
 ### Comment un projet cible consomme ce template
@@ -103,10 +103,11 @@ Ils sont copiés tels quels dans `.claude/` — le dossier `TEMPLATE_claude/` su
 1. Créer `TEMPLATE_claude/templates/dev-backend-rust.md` (suivre le format existant)
 2. Référencer dans `TEMPLATE_claude/commands/init-project.md` section "Génération des agents"
 
-### Ajouter un template de workflow CI/CD
+### Pipeline CI/CD de release
 
-1. Créer `TEMPLATE_claude/templates/workflows/release-node-react.yml`
-2. Référencer dans `TEMPLATE_claude/commands/init-project.md` section "Génerer le Workflow CI/CD"
+Pas de modèle par stack : `/init-project` audite le pipeline existant ou le génère, selon le contrat
+`TEMPLATE_claude/agents/infra.md` §3bis (C1-C9). Faire évoluer le contrat = modifier cette section.
+`templates/workflows/release-go-react.yml` reste un exemple de référence.
 
 ### Placeholders dans les templates
 

@@ -162,6 +162,46 @@ PROD   (rebuild-ci)      : tag officiel → CI/CD rebuild depuis CE commit fige 
 - Ne jamais utiliser une procedure de build differente de celle de BUILD, quel que soit
   l'environnement
 
+### 3bis. Pipeline CI/CD de release — generation et audit
+
+Le pipeline de release n'est **pas copie d'un modele** : il est produit (ou audite s'il existe) par
+`infra` a partir de ce que le projet declare. Cette section est le **contrat** ; elle est appliquee par
+`/init-project` (init, reinitialisation) et par `infra` (Mode Modification / Mode Validation).
+
+**Entrees** : `.claude/project-config.json` (stack backend/frontend/firmware/plugin, `version_file`,
+`commands.{build,test,lint,audit}`, `infrastructure.environments[]` dont `publish.pipeline`), systeme CI/CD
+choisi (GitHub Actions → `.github/workflows/release.yml` ; GitLab CI → `.gitlab-ci.yml`), livrables
+attendus (binaire, image de conteneur, paquet npm/PyPI, firmware, extension, archive...).
+
+**Contrat — tout pipeline de release (genere ou existant) doit :**
+
+| # | Exigence |
+|---|----------|
+| C1 | Se declencher sur le tag SemVer `v*` (rebuild deterministe depuis le commit fige du tag — BORE (b)) |
+| C2 | Verifier la coherence de version : tag = `version_file` (et manifestes : `package.json`, etc.) ; echec sinon |
+| C3 | Utiliser la **meme procedure de build** que `commands.build` (jamais une variante) et rejouer les controles bloquants (`commands.test`, `commands.lint`) avant de publier |
+| C4 | Produire un livrable par type declare, nomme `<artefact>-<X.Y.Z>.<ext>` (+ somme de controle) |
+| C5 | Creer la GitHub Release (ou GitLab Release) du tag avec les notes extraites de `CHANGELOG.md`/milestone et les livrables en pieces jointes |
+| C6 | Permissions minimales (ex. GitHub : `contents: write` seulement si necessaire), versions d'actions epinglees |
+| C7 | Aucun secret en clair : `secrets.*` / variables CI uniquement ; noms alignes sur `.env.example` |
+| C8 | Ne pas deployer : le pipeline s'arrete a la publication des livrables (le deploiement reste `deploy`) |
+| C9 | Chemin = `infrastructure.environments[].publish.pipeline` pour l'environnement en `rebuild-ci` |
+
+**Generation** (aucun pipeline existant) : composer les jobs selon la stack et les livrables (setup de la
+chaine d'outils a la version du projet, build, tests, packaging, release), puis **afficher le fichier a
+l'utilisateur pour validation avant de l'ecrire**. Valider la syntaxe si l'outil existe (`actionlint`,
+`gitlab-ci-lint`) ; sinon le signaler. Ne jamais inventer de version d'outil, de secret ou de chemin :
+les lire dans la config ou poser la question (AskUserQuestion). `TEMPLATE_claude/templates/workflows/release-go-react.yml`
+est un **exemple de reference** du niveau attendu, pas un modele a copier tel quel.
+
+**Audit** (pipeline existant — `.github/workflows/*.y*ml`, `.gitlab-ci.yml`) : evaluer C1 a C9, un verdict
+par exigence (`CONFORME` / `ECART` / `NON APPLICABLE`), en citant le fichier et la ligne. Ne jamais modifier
+un pipeline existant sans accord. Si des ecarts : AskUserQuestion — corriger (patch minimal, diff affiche), garder
+tel quel (ecart consigne dans le rapport), ou regenerer. Un pipeline sans declencheur sur tag `v*` ou qui
+ne cree pas de release est signale comme **bloquant** pour `rebuild-ci` (PUBLISH PROD s'appuie dessus).
+
+En **Mode Validation** avant `PUBLISH PROD`, rejouer l'audit : un ecart bloquant donne `NOT VALIDATED`.
+
 ### 4. Validation
 
 Apres chaque changement d'infrastructure :
