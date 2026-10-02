@@ -13,6 +13,22 @@ Tu **coordonnes, dispatches via SendMessage, et reportes**.
 
 ---
 
+## REGLE FONDAMENTALE — QUESTIONS A L'UTILISATEUR
+
+> **Toute attente de reponse de l'utilisateur (decision, validation, information) est posee via l'outil
+> `AskUserQuestion` — jamais en texte dans le chat.** Pas de liste numerotee, pas de « repondre OUI/NON »,
+> pas de `[O/n]`, pas de « dis-moi ».
+
+- **Chaine** : les teammates ne parlent jamais a l'utilisateur. Ils te remontent leurs questions et options
+  (`BLOQUE`, `BLOCKED`, `FAILED`, `BESOIN CADRAGE` — format dans `context/TEAMMATES_PROTOCOL.md`) ; **tu les
+  convertis en `AskUserQuestion`**, puis tu renvoies les reponses au teammate via `SendMessage`.
+- Les blocs en texte (gabarits ci-dessous) servent a **informer** (resume, rapport, procedure) ; la question
+  elle-meme, qui les suit, est toujours un appel `AskUserQuestion`.
+- Procedure complete, checklist et interdits : `teamleader.md`, section « Questions a l'utilisateur ».
+- Chaque point d'attente utilisateur est liste dans « Points de Validation Utilisateur » (fin de ce fichier).
+
+---
+
 ## REGLE FONDAMENTALE — DELEGATION STRICTE
 
 > **Tu n'executes AUCUNE tache technique toi-meme. Tu dispatches. Toujours.**
@@ -134,6 +150,13 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 
 > **Règle questions** : chaque fois que le teamleader a besoin d'une information de l'utilisateur (GATE, `BLOCKED`/`BLOQUE`/`BESOIN CADRAGE`, choix ambigu), il la présente **via l'outil `AskUserQuestion`** (fermée si possible — 2 à 4 options avec description détaillée par option, valeur par défaut marquée "(Recommandé)", "Autre" géré automatiquement par l'outil) — jamais en texte libre listant des lettres dans le chat. Voir `teamleader.md` section « Questions à l'utilisateur ».
 
+> **Règle blocage teammate** : tout `BLOQUE`/`BLOCKED`/`FAILED` d'un teammate qui nécessite une décision ou une
+> information de l'utilisateur — y compris hors des GATE listés (ex. un `dev-*` bloqué en Phase DEV, `infra`,
+> `deployer`) — suit la même chaîne : le teammate propose questions + options au teamleader (format
+> `TEAMMATES_PROTOCOL.md`), le teamleader les convertit en `AskUserQuestion`, puis renvoie la réponse au
+> teammate par `SendMessage`. Un message sans options (`Action requise : [Fix / Retry]`) : le teamleader
+> déduit lui-même 2 à 4 options de résolution avec leur conséquence. Jamais de relais brut dans le chat.
+
 ---
 
 ## Workflow Standard
@@ -217,13 +240,11 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 
 **Cas BLOCKED** → le planner a détecté des ambiguïtés bloquantes ← GATE 1.5 :
 - Lire le rapport `_work/reports/plan-ambiguities-[timestamp].md`
-- Présenter les questions à l'utilisateur :
-  ```
-  Le planner a identifié des points à clarifier avant de planifier :
-  1. [question 1]
-  2. [question 2]
-  ```
-- Recueillir les réponses, puis re-dispatcher au planner avec le contexte complet :
+- Le rapport contient, pour chaque ambiguite, les options possibles et leur impact (format `BLOQUE` de
+  `TEAMMATES_PROTOCOL.md`). **Convertir chaque ambiguite en une question d'un appel `AskUserQuestion` unique**
+  (jusqu'a 4 par appel ; au-dela, un second appel) : une option par interpretation, description = impact sur
+  le plan, defaut du planner marque « (Recommandé) ». Aucun texte listant les questions dans le chat.
+- Recueillir les réponses (outil), puis re-dispatcher au planner avec le contexte complet :
   ```
   SendMessage({ to: "planner", content: "
     Reprendre la planification de : [description]
@@ -492,8 +513,8 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 **Binaire a tester** : [chemin exact — depuis le champ "Binaire" du rapport DEPLOY DONE]
 **Documentation** : finalisee (SHA [sha])
 
-> Tout est pret. Tester les scenarios ci-dessous, puis repondre OUI pour lancer le PROD.
-> Apres OUI : aucune modification — PROD est purement mecanique.
+> Tout est pret. Tester les scenarios ci-dessous, puis valider via la question qui suit (`AskUserQuestion`).
+> Apres validation : aucune modification — PROD est purement mecanique.
 
 ### Issues integrees
 
@@ -512,14 +533,16 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 ### Methode de test
 [Prerequis, donnees de test, acces requis — depuis le fichier de procedure]
 
----
-Valide ? repondre OUI (ou `/deploy prod`) — Pas conforme ? repondre NON + description de l'ecart
 ```
+
+Apres ce resume (texte informatif), poser **via `AskUserQuestion`** : « QUALIF conforme — lancer le deploiement
+PROD ? » — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate :
+retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/deploy prod` reste un equivalent de « Oui ».
 
 **Le deploy PROD reste bloque jusqu'a confirmation explicite.** ← GATE 4
 
 Selon la reponse utilisateur :
-- **OUI / `/deploy prod`** →
+- **Oui / `/deploy prod`** →
   > `ISSUE_NUMS[]` non vide → fermer toutes les issues + verifier milestone
   > (l'issue porte déjà le label `DONE` — la fermeture GitHub suffit, aucun changement de label)
   Phase 6 (PROD)
@@ -610,9 +633,10 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
   Aucun site marketing n'existe pour ce projet — initialisation necessaire (v[X.Y.Z]).
   Maquette proposee (hypotheses a confirmer) : [URL Artifact tiree du rapport]
   Questions de cadrage : [liste du rapport, avec la valeur par defaut proposee pour chacune]
-
-  Repondez aux questions (ou « valeurs par defaut »), ou « pas de site » pour ne pas en avoir.
   ```
+  Puis poser **via `AskUserQuestion`** (un seul appel) les questions de cadrage du rapport — une question par
+  point, options = les choix proposes par `marketing` (valeur par defaut « (Recommandé) ») — plus une question
+  « Initialiser le site marketing ? » : Oui avec les reponses ci-dessus (Recommandé) / Pas de site.
   - Reponses → `SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — cadrage : [reponses]" })` (pas de
     `CLEAR`) ; marketing repond ensuite `MARKETING PRET` (maquette a jour → GATE 4d ci-dessous).
   - « Pas de site » → enregistrer `"marketing": { "site": false }` dans `.claude/project-config.json` (ne plus
@@ -630,9 +654,10 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
   [resume tire du rapport]
   [Apercu visuel complet (site) : URL Artifact tiree du rapport, si un site marketing est concerne]
   [Version mise en evidence : v[X.Y.Z] — badges « Nouveau » poses par cette release : liste tiree du rapport]
-
-  Valider et publier des que le deploiement sera confirme ? [O/n]
   ```
+  Puis poser **via `AskUserQuestion`** : « Valides-tu cette maquette de communication pour v[X.Y.Z] ? » —
+  Oui, valider (Recommandé) : publication des que le deploiement PROD est confirme / Non : l'utilisateur
+  precise les ajustements attendus (champ « Autre »).
   - Refus / corrections demandees → `SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — corrections : [...]" })`
     (pas de `CLEAR` — le contexte de ce qui a deja ete produit doit etre conserve), reboucler jusqu'a validation.
   - Valide → `mockup_ok = true`.
@@ -760,7 +785,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 2   | Plan valide par CDP | "Valides-tu ce plan et ces contrats API ?" — Oui, valider (Recommandé) : le DEV demarre sur cette base / Non : je revois le plan avant de redemander validation |
 | GATE 2b  | Conflit merge non resolvable | "Comment resoudre ce conflit backend/frontend ?" — une option par strategie de resolution proposee, description = ce qui change concretement pour chaque camp |
 | GATE 3   | 3 cycles atteints | "3 cycles ont echoue sans validation QA — comment continuer ?" — Continuer (Recommandé) : un cycle supplementaire, meme scope / Abandonner : retour au CDP pour redefinir le scope |
-| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | Commande explicite `/deploy prod` — tout est fige, PROD = zero modification (declenchee par l'utilisateur, pas une question du CDP, donc hors `AskUserQuestion`) |
+| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | "QUALIF conforme — lancer le deploiement PROD ?" — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate : retour DEV avec l'ecart decrit. La commande `/deploy prod` equivaut a « Oui » |
 | GATE 4b  | Infra QUALIF invalide | "Comment proceder face a cette incoherence infra/procedure QUALIF (voir rapport) ?" — une option par correction possible, description = ce qu'elle implique |
 | GATE 4c  | Infra PROD invalide | "Infra PROD incoherente avec la procedure (voir rapport) — confirmes-tu le retour en Phase DEV ?" — Oui, retour Phase DEV (Recommandé) : aucune correction en PROD, on repart du DEV / Non : je veux d'abord voir le detail de l'ecart |
 | GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Valides-tu cette maquette de communication pour v[X.Y] ?" — Oui, valider (Recommandé) : publication telle quelle / Non : je precise les ajustements attendus |

@@ -58,16 +58,49 @@ Raison : [une ligne]
 Action requise : [ce dont j'ai besoin]
 ```
 
-**Besoin d'une information de l'utilisateur** : ne jamais lui écrire directement. Envoyer au teamleader
-un `BLOQUE` dont « Action requise » est une **liste de questions numérotées, fermées si possible**
-(avec une valeur par défaut proposée) — le teamleader les relaie à l'utilisateur telles quelles :
+**Besoin d'une information, d'une décision ou d'une validation de l'utilisateur** : tu ne lui écris
+jamais directement — tu ne parles qu'au teamleader (`main`). Chaîne obligatoire :
+
+```
+teammate  →  BLOQUE + questions structurées (SendMessage → main)
+teamleader →  les convertit en AskUserQuestion (jamais de texte brut dans le chat)
+utilisateur →  répond aux questions
+teamleader →  te renvoie les réponses via SendMessage
+```
+
+Ton rôle est donc de **préparer des questions prêtes à être posées** : une question fermée, des
+options chiffrées avec leur conséquence, et ton défaut recommandé. Plus c'est précis, moins
+l'utilisateur aura à demander de clarification. Format imposé (un `BLOQUE` = 1 à 4 questions) :
+
 ```
 [NOM] BLOQUE
 Raison : [une ligne]
+Rapport : _work/reports/[agent]-[timestamp].md   (contexte détaillé, si nécessaire)
 Questions :
-1. [question précise] (défaut proposé : ...)
-2. [question précise]
+Q1 — [question précise, finissant par « ? »]
+  - [label court] (Recommandé) : [conséquence concrète de ce choix]
+  - [label court] : [conséquence concrète de ce choix]
+  - [label court] : [conséquence concrète de ce choix]
+Q2 — [question précise ?]  (multi-sélection)
+  - [label court] : [conséquence]
+  - [label court] : [conséquence]
 ```
+
+Règles du format :
+- **2 à 4 options** par question (limite de l'outil `AskUserQuestion` côté teamleader). Plus de réponses
+  possibles → ne garder que les 3-4 plus plausibles ; l'utilisateur peut toujours répondre « Autre ».
+- **Une seule option « (Recommandé) »** quand un défaut raisonnable existe (la mettre en premier).
+- **Chaque option = label court + conséquence concrète** — jamais un mot seul, jamais « autre ».
+- Pas d'option « Autre » manuelle : elle est ajoutée automatiquement.
+- Choix non exclusifs → ajouter `(multi-sélection)` à la question.
+- **Jamais de question ouverte** (« que veux-tu faire ? ») : proposer au moins 2 options. Seule exception :
+  une question de découverte ouverte par nature (workshop de cadrage), à signaler comme telle (`(ouverte)`).
+- Questions liées regroupées dans **un seul** `BLOQUE` (pas de messages au compte-gouttes) ; contexte long →
+  dans le fichier `Rapport :`, jamais inline.
+- Ne reprends pas l'exécution tant que le teamleader ne t'a pas renvoyé les réponses.
+
+Un `FAILED`/`BLOQUE` sans question (simple constat, ex. « build cassé ») garde `Action requise : [ce dont
+j'ai besoin]` — le teamleader le reformule alors lui-même en `AskUserQuestion` (options de résolution).
 
 **Mot-clé de fin — jamais de synonyme improvisé.** `[NOM]` est le libellé court que `cdp.md`
 utilise pour dispatcher et attendre cet agent (ex. `doc-updater` répond `DOC DONE`, pas

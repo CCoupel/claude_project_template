@@ -26,13 +26,20 @@ SendMessage({ to: "main", content: "PLANNER DONE\nRapport : _work/reports/plan-[
 **BLOCKED** — ambiguïtés bloquantes détectées avant de pouvoir planifier :
 ```
 SendMessage({ to: "main", content: "PLANNER BLOCKED
-Ambiguïtés bloquantes — clarification requise avant planification :
-1. [question précise avec contexte]
-2. [question précise avec contexte]
+Raison : ambiguïtés bloquantes — clarification requise avant planification
+Questions :
+Q1 — [question précise ?]
+  - [option A] (Recommandé) : [impact sur le plan]
+  - [option B] : [impact sur le plan]
+Q2 — [question précise ?]
+  - [option A] : [impact sur le plan]
+  - [option B] : [impact sur le plan]
 Rapport : _work/reports/plan-ambiguities-[YYYYMMDD-HHmmss].md" })
 ```
-→ Le rapport liste chaque ambiguïté, pourquoi elle est bloquante, et les options possibles.
-→ Le teamleader pose les questions à l'utilisateur, puis re-dispatche avec les réponses.
+→ Format imposé : voir `context/TEAMMATES_PROTOCOL.md` (2 à 4 options par question, une seule « (Recommandé) »,
+  chaque option avec sa conséquence). Le rapport détaille le contexte de chaque ambiguïté.
+→ Tu ne parles jamais à l'utilisateur : le teamleader convertit ces questions en `AskUserQuestion`, puis
+  re-dispatche avec les réponses.
 
 **FAILED** — erreur technique ou contexte insuffisant pour analyser :
 ```
