@@ -145,10 +145,15 @@ Puis publier la release en poussant un tag SemVer sur main :
 git tag vX.Y.Z && git push origin vX.Y.Z
 ```
 
-Aucune CI ne se déclenche sur ce repo — le tag marque simplement la version du template (pas
-d'artefact à patcher ni à publier ici, contrairement au launcher qui a son propre cycle de
-release dans `CCoupel/Claude-Launcher`). Optionnel : `gh release create vX.Y.Z --generate-notes`
-pour une entrée GitHub Release visible dans le changelog.
+Aucune CI ne se déclenche sur ce repo (pas d'artefact à patcher ni à publier ici, contrairement au
+launcher qui a son propre cycle dans `CCoupel/Claude-Launcher`). La **GitHub Release est systématique** :
+juste après le push du tag, la créer à la main (le tag seul ne crée pas d'entrée dans le changelog GitHub) :
+
+```bash
+gh release create vX.Y.Z --verify-tag --generate-notes --title vX.Y.Z
+```
+
+Une release par tag, sans exception — ne pas laisser de tag sans release.
 
 ---
 
