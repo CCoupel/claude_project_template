@@ -45,6 +45,10 @@ TEMPLATE_claude/
 # .claude/agents/dev-frontend.md
 # .claude/agents/dev-firmware.md
 
+# Site marketing : MARKETING/ est le WORKTREE git de la branche gh-pages (git worktree add MARKETING gh-pages).
+# Le site n'est gere que sur gh-pages — jamais commite sur la branche de code (main, milestone/*, hotfix).
+MARKETING/
+
 # Dossier de travail inter-agents (rapports et handoffs temporaires)
 _work/
 

@@ -651,6 +651,11 @@ deploy_ok == true ET mockup_ok == true
   → TaskStop(marketing)
 ```
 
+> **Emplacement du site** : le site marketing vit uniquement sur la branche `gh-pages`. `MARKETING/` en est le
+> worktree git (commit + push depuis ce worktree) — jamais un dossier commite sur la branche de code
+> (`main`, `milestone/*`, `hotfix/*`). Les release notes et posts restent sur la branche de code, dans
+> `docs/releases/`. Le CDP ne commite jamais `MARKETING/` lui-meme.
+
 Apres rollout PROD OK — verifier le milestone via GitHub MCP :
 ```
 mcp__plugin_github_github__issue_read — lister les issues ouvertes du milestone actif
