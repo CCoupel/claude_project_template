@@ -178,7 +178,7 @@ attendus (binaire, image de conteneur, paquet npm/PyPI, firmware, extension, arc
 | # | Exigence |
 |---|----------|
 | C1 | Se declencher sur le tag SemVer `v*` (rebuild deterministe depuis le commit fige du tag — BORE (b)) |
-| C2 | Verifier la coherence de version : tag = `version_file` (et manifestes : `package.json`, etc.) ; echec sinon |
+| C2 | **Le tag `vX.Y.Z` fait foi** pour la version : la valeur est extraite du tag (jamais calculee en CI — ni `git describe`, ni numero de run, ni date) et son format SemVer est verifie. Le pipeline **verifie sans jamais modifier** que `version_file` et le manifeste de chaque composant (`package.json`, `pyproject.toml`, `Cargo.toml`, firmware, `manifest.json`...) sont egaux a cette valeur ; echec bloquant avant tout build. Nom des livrables, tags d'image et titre de la Release derivent de cette seule valeur |
 | C3 | Utiliser la **meme procedure de build** que `commands.build` (jamais une variante) et rejouer les controles bloquants (`commands.test`, `commands.lint`) avant de publier |
 | C4 | Produire un livrable par type declare, nomme `<artefact>-<X.Y.Z>.<ext>` (+ somme de controle) |
 | C5 | Creer la GitHub Release (ou GitLab Release) du tag avec les notes extraites de `CHANGELOG.md`/milestone et les livrables en pieces jointes |
@@ -197,8 +197,8 @@ est un **exemple de reference** du niveau attendu, pas un modele a copier tel qu
 **Audit** (pipeline existant — `.github/workflows/*.y*ml`, `.gitlab-ci.yml`) : evaluer C1 a C9, un verdict
 par exigence (`CONFORME` / `ECART` / `NON APPLICABLE`), en citant le fichier et la ligne. Ne jamais modifier
 un pipeline existant sans accord. Si des ecarts : AskUserQuestion — corriger (patch minimal, diff affiche), garder
-tel quel (ecart consigne dans le rapport), ou regenerer. Un pipeline sans declencheur sur tag `v*` ou qui
-ne cree pas de release est signale comme **bloquant** pour `rebuild-ci` (PUBLISH PROD s'appuie dessus).
+tel quel (ecart consigne dans le rapport), ou regenerer. Un pipeline sans declencheur sur tag `v*`, qui
+ne cree pas de release, qui **ecrit** la version (`sed -i`, `npm version`...) ou la derive d'autre chose que du tag est signale comme **bloquant** pour `rebuild-ci` (PUBLISH PROD s'appuie dessus).
 
 En **Mode Validation** avant `PUBLISH PROD`, rejouer l'audit : un ecart bloquant donne `NOT VALIDATED`.
 
