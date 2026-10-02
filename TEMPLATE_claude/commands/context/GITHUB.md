@@ -405,17 +405,17 @@ fi
 | `EN REVIEW` | Revue de code en cours | CDP (MCP) | Phase 3 — REVIEW + TEST-WRITER demarres | Verdict REVIEW (OK → `EN QA` seul ; refus → `EN COURS`) |
 | `EN QA` | Validation QA en cours | CDP (MCP) | Phase 3 — des TEST-WRITER DONE si parallele au REVIEW (defaut), sinon apres REVIEW | QA valide (→ `DONE`) ou echec (→ `EN COURS`) |
 | `DONE` | Implementation validee (QA OK), en attente de validation utilisateur | CDP (MCP) | QA valide | Rejet GATE 4 (→ `EN COURS` ou `PLANNING`) |
-| `BLOQUÉ` | Avancement impossible (dependance externe, decision ou information en attente) — **s'ajoute** a la phase courante, qui est conservee pour la reprise | CDP (MCP), sur decision de l'utilisateur ou constat d'un blocage | Blocage constate, avec un commentaire precisant la cause | Blocage leve (la phase courante reprend) ou abandon |
-| `ABANDONNÉ` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (MCP), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
+| `BLOQUE` | Avancement impossible (dependance externe, decision ou information en attente) — **s'ajoute** a la phase courante, qui est conservee pour la reprise | CDP (MCP), sur decision de l'utilisateur ou constat d'un blocage | Blocage constate, avec un commentaire precisant la cause | Blocage leve (la phase courante reprend) ou abandon |
+| `ABANDONNE` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (MCP), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
 | — (issue fermee) | Livre et valide | CDP (MCP) | Validation utilisateur a GATE 4 (l'issue porte deja `DONE`) | Reouverture manuelle |
 
 Regles :
 - Les labels de phase (`PLANNING` → `DONE`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
   simultanes pendant la fenetre de parallelisation Review/QA par defaut (voir `QUALITY.md` section 12) —
   les deux coexistent tant que REVIEW n'a pas rendu son verdict.
-- `BLOQUÉ` est un **modificateur** : il coexiste avec le label de phase en cours et n'est jamais retire par une
+- `BLOQUE` est un **modificateur** : il coexiste avec le label de phase en cours et n'est jamais retire par une
   transition de phase — seule la levée du blocage le retire.
-- `ABANDONNÉ` est **terminal** : il remplace tous les labels de phase (et `BLOQUÉ`) et ferme l'issue (`not planned`).
+- `ABANDONNE` est **terminal** : il remplace tous les labels de phase (et `BLOQUE`) et ferme l'issue (`not planned`).
 - Chaque transition de phase pose le nouveau label **et retire les autres labels de phase** (commandes en section 9).
 - Rejet a GATE 4 : le label `DONE` est retire et l'issue repart vers :
   - `EN COURS` — correction dans le scope (bug, regression, precision) → retour Phase DEV (Cas A)
@@ -502,31 +502,31 @@ gh issue comment <numero> --body "✅ Validé — QA OK — documentation mise �
 gh issue close <numero>
 ```
 
-### 9.7 Blocage et déblocage (`BLOQUÉ`)
+### 9.7 Blocage et déblocage (`BLOQUE`)
 
-La phase courante est conservée : seul `BLOQUÉ` est ajouté ou retiré.
+La phase courante est conservée : seul `BLOQUE` est ajouté ou retiré.
 
 ```bash
 # Blocage — toujours documenter la cause
 gh issue comment <numero> --body "⛔ Bloqué — <cause : dépendance, décision, information attendue>"
-gh issue edit <numero> --add-label "BLOQUÉ"
+gh issue edit <numero> --add-label "BLOQUE"
 
 # Déblocage — la phase courante reprend
-gh issue edit <numero> --remove-label "BLOQUÉ"
+gh issue edit <numero> --remove-label "BLOQUE"
 gh issue comment <numero> --body "▶ Débloqué — <ce qui a levé le blocage>"
 ```
 
-### 9.8 Abandon (`ABANDONNÉ`)
+### 9.8 Abandon (`ABANDONNE`)
 
-Uniquement sur décision de l'utilisateur. Retire tous les labels de phase et `BLOQUÉ`, puis ferme l'issue.
+Uniquement sur décision de l'utilisateur. Retire tous les labels de phase et `BLOQUE`, puis ferme l'issue.
 
 ```bash
 gh issue comment <numero> --body "🚫 Abandonné — <raison>"
-gh issue edit <numero> --add-label "ABANDONNÉ" --remove-label "PLANNING,EN COURS,EN REVIEW,EN QA,DONE,BLOQUÉ"
+gh issue edit <numero> --add-label "ABANDONNE" --remove-label "PLANNING,EN COURS,EN REVIEW,EN QA,DONE,BLOQUE"
 gh issue close <numero> --reason "not planned"
 ```
 
-Réouverture : retirer `ABANDONNÉ`, rouvrir l'issue (`gh issue reopen <numero>`) et reposer `PLANNING`.
+Réouverture : retirer `ABANDONNE`, rouvrir l'issue (`gh issue reopen <numero>`) et reposer `PLANNING`.
 
 ### 9.9 Création des labels (si absents du repo)
 
@@ -536,6 +536,6 @@ gh label create "EN COURS"  --color "0075ca" --description "En cours de developp
 gh label create "EN REVIEW" --color "e4e669" --description "En cours de revue"
 gh label create "EN QA"     --color "d93f0b" --description "En cours de validation QA"
 gh label create "DONE"      --color "0e8a16" --description "Implementation validee (QA OK)"
-gh label create "BLOQUÉ"    --color "b60205" --description "Avancement bloque (cause en commentaire)"
-gh label create "ABANDONNÉ" --color "cfd3d7" --description "Abandonnee, ne sera pas traitee"
+gh label create "BLOQUE"    --color "b60205" --description "Avancement bloque (cause en commentaire)"
+gh label create "ABANDONNE" --color "cfd3d7" --description "Abandonnee, ne sera pas traitee"
 ```

@@ -396,5 +396,5 @@ fix(scope): Description (#38)
 
 ## 9. Gestion des Labels de Phase
 
-Transitions de statut (`PLANNING` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE` → fermeture ; `BLOQUÉ` et `ABANDONNÉ`), responsabilites
+Transitions de statut (`PLANNING` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE` → fermeture ; `BLOQUE` et `ABANDONNE`), responsabilites
 et commandes `gh` : voir `commands/context/GITHUB.md` sections 8.2 et 9 (**source unique**, non recopiee ici).
