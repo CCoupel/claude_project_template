@@ -153,7 +153,7 @@ Pour l'implémenter : /feature #<numero>   ou   /bugfix #<numero>
 ```
 ⚠ Contradiction détectée avec une issue existante :
 
-  #38 — Ajouter le module de cache Redis  [feature, in-progress]
+  #38 — Ajouter le module de cache Redis  [feature, EN COURS]
 
 Votre demande semble en conflit avec cette issue. Comment procéder ?
   1. Créer quand même la nouvelle issue

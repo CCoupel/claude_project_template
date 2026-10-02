@@ -396,27 +396,28 @@ fi
 | `breaking` | Rupture de compatibilite de donnees → impacte `X` (voir section 8.3) |
 | `roadmap` | Visible sur le site marketing |
 
-**Labels de phase (cycle de vie dans le workflow) :**
+**Labels de phase (cycle de vie dans le workflow) — source de verite unique :**
 
-| Label | Posé par | Moment |
-|-------|----------|--------|
-| `PLANNING` | CDP (MCP) | Phase 1 — plan en cours |
-| `EN COURS` | CDP (MCP) | GATE 2 validé — DEV démarré |
-| `EN REVIEW` | CDP (MCP) | Phase 3 — REVIEW + TEST-WRITER en cours |
-| `EN QA` | CDP (MCP) | Phase 3 — QA en cours (dès TEST-WRITER DONE si parallèle au REVIEW, défaut, sinon après REVIEW) |
-| `DONE` | CDP (MCP) | QA validée |
-| — (issue fermée) | CDP (MCP) | Validation utilisateur à GATE 4 |
+| Statut | Signification | Pose par | Pose quand | Retire quand |
+|--------|---------------|----------|------------|--------------|
+| `PLANNING` | Plan en cours d'elaboration | CDP (MCP) | Phase 1 — debut du plan ; ou rejet GATE 4 Cas B (scope invalide) | GATE 2 valide (→ `EN COURS`) |
+| `EN COURS` | Developpement en cours | CDP (MCP) | GATE 2 valide (DEV demarre) ; ou cycle correctif (REVIEW refuse / QA echoue) ; ou rejet GATE 4 Cas A | Debut REVIEW/QA (→ `EN REVIEW` / `EN QA`) |
+| `EN REVIEW` | Revue de code en cours | CDP (MCP) | Phase 3 — REVIEW + TEST-WRITER demarres | Verdict REVIEW (OK → `EN QA` seul ; refus → `EN COURS`) |
+| `EN QA` | Validation QA en cours | CDP (MCP) | Phase 3 — des TEST-WRITER DONE si parallele au REVIEW (defaut), sinon apres REVIEW | QA valide (→ `DONE`) ou echec (→ `EN COURS`) |
+| `DONE` | Implementation validee (QA OK), en attente de validation utilisateur | CDP (MCP) | QA valide | Rejet GATE 4 (→ `EN COURS` ou `PLANNING`) |
+| — (issue fermee) | Livre et valide | CDP (MCP) | Validation utilisateur a GATE 4 (l'issue porte deja `DONE`) | Reouverture manuelle |
 
-Ces labels évoluent séquentiellement et sont mutuellement exclusifs, **sauf** `EN REVIEW` + `EN QA`
-simultanés pendant la fenêtre de parallélisation Review/QA par défaut (voir `QUALITY.md` section 12) —
-les deux coexistent tant que REVIEW n'a pas rendu son verdict.
-Un cycle correctif (REVIEW refuse ou QA échoue) remet le label à `EN COURS`.
-Si l'utilisateur valide à GATE 4, l'issue est fermée (elle porte déjà `DONE`, aucun changement de label).
-Si l'utilisateur rejette à GATE 4, le label `DONE` est retiré et l'issue repart vers :
-- `EN COURS` — correction dans le scope (bug, régression, précision) → retour Phase DEV (Cas A)
-- `PLANNING` — scope invalide (approche erronée, exigences changées) → retour Phase 1 (Cas B)
+Regles :
+- Les labels de phase sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
+  simultanes pendant la fenetre de parallelisation Review/QA par defaut (voir `QUALITY.md` section 12) —
+  les deux coexistent tant que REVIEW n'a pas rendu son verdict.
+- Chaque transition pose le nouveau label **et retire tous les autres** (commandes en section 9).
+- Rejet a GATE 4 : le label `DONE` est retire et l'issue repart vers :
+  - `EN COURS` — correction dans le scope (bug, regression, precision) → retour Phase DEV (Cas A)
+  - `PLANNING` — scope invalide (approche erronee, exigences changees) → retour Phase 1 (Cas B)
 
-Voir `cdp.template.md` (GATE 4) pour le détail de la décision Cas A / Cas B.
+Voir `cdp.template.md` (GATE 4) pour le detail de la decision Cas A / Cas B.
+Ce tableau et la section 9 sont la **seule definition** des statuts : les autres fichiers y renvoient, sans la recopier.
 
 ### 8.3 Mapping Labels → Segment de Version
 
@@ -447,31 +448,31 @@ fix(scope): Description (#38)
 
 ## 9. Gestion des Labels de Phase
 
-Le deployer utilise ces commandes pour mettre à jour les labels d'issue
-lors des transitions de phase du workflow CDP.
+Equivalents `gh` CLI des transitions du tableau de la section 8.2 (le CDP les applique via
+`mcp__plugin_github_github__issue_write`). Toute transition retire les autres labels de phase.
 
 ### 9.1 Transition vers `EN COURS` (DEV démarré)
 
 ```bash
-gh issue edit <numero> --add-label "EN COURS" --remove-label "EN REVIEW,EN QA,DONE"
+gh issue edit <numero> --add-label "EN COURS" --remove-label "PLANNING,EN REVIEW,EN QA,DONE"
 ```
 
 ### 9.2 Transition vers `EN REVIEW` (REVIEW en cours)
 
 ```bash
-gh issue edit <numero> --add-label "EN REVIEW" --remove-label "EN COURS,EN QA,DONE"
+gh issue edit <numero> --add-label "EN REVIEW" --remove-label "PLANNING,EN COURS,EN QA,DONE"
 ```
 
 ### 9.3 Transition vers `EN QA` (QA en cours)
 
 ```bash
-gh issue edit <numero> --add-label "EN QA" --remove-label "EN COURS,EN REVIEW,DONE"
+gh issue edit <numero> --add-label "EN QA" --remove-label "PLANNING,EN COURS,EN REVIEW,DONE"
 ```
 
 ### 9.4 Transition vers `DONE` (QA validée)
 
 ```bash
-gh issue edit <numero> --add-label "DONE" --remove-label "EN COURS,EN REVIEW,EN QA"
+gh issue edit <numero> --add-label "DONE" --remove-label "PLANNING,EN COURS,EN REVIEW,EN QA"
 ```
 
 ### 9.5 Rejet à GATE 4 (validation utilisateur refusée)
@@ -481,7 +482,7 @@ Le label `DONE` est retiré. La destination dépend de la nature de la correctio
 
 ```bash
 # Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV
-gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
+gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE,EN REVIEW,EN QA"
 
 # Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1
 gh issue edit <numero> --add-label "PLANNING" --remove-label "DONE"
