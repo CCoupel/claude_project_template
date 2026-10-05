@@ -127,9 +127,8 @@ DIR_VERSION="$X.$Y.$Z"          # ex: 1.2.0   — version globale, sans a : suff
 # Ecrire $VERSION dans {VERSION_FILE}
 git add {VERSION_FILE}
 git commit -m "chore(version): Bump to $VERSION (build)"
-# Premier vrai push des commits dev vers origin — les agents dev ne poussent jamais
-# (voir context/COMMON.md section 7.1) ; ce push envoie donc d'un coup tout l'historique
-# local accumule depuis le dernier build
+# Push du commit de version (les commits dev ont deja ete pousses par le CDP au passage
+# des issues en `DONE`, apres validation QA — voir context/COMMON.md section 7.1)
 git push origin [branche]
 
 # 3. Build — dossier nomme en candidate_vX.Y.Z (version globale, SANS a), artefact(s) a

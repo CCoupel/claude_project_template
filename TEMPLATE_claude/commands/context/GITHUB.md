@@ -404,10 +404,10 @@ fi
 | `EN COURS` | Developpement en cours | CDP (MCP) | GATE 2 valide (DEV demarre) ; ou cycle correctif (REVIEW refuse / QA echoue) ; ou rejet GATE 4 Cas A | Debut REVIEW/QA (→ `EN REVIEW` / `EN QA`) |
 | `EN REVIEW` | Revue de code en cours | CDP (MCP) | Phase 3 — REVIEW + TEST-WRITER demarres | Verdict REVIEW (OK → `EN QA` seul ; refus → `EN COURS`) |
 | `EN QA` | Validation QA en cours | CDP (MCP) | Phase 3 — des TEST-WRITER DONE si parallele au REVIEW (defaut), sinon apres REVIEW | QA valide (→ `DONE`) ou echec (→ `EN COURS`) |
-| `DONE` | Implementation validee (QA OK), en attente de validation utilisateur | CDP (MCP) | QA valide | Rejet GATE 4 (→ `EN COURS` ou `PLANNING`) |
+| `DONE` | Implementation validee (QA OK) ; branche poussee, CI en cours puis verte (l'issue est alors fermee) | CDP (MCP) | QA valide (le push de la branche et la CI suivent immediatement) | Rejet GATE 4 (→ `EN COURS` ou `PLANNING`, issue rouverte) ; ou CI non verte (→ `EN COURS`) |
 | `BLOQUE` | Avancement impossible (dependance externe, decision ou information en attente) — **s'ajoute** a la phase courante, qui est conservee pour la reprise | CDP (MCP), sur decision de l'utilisateur ou constat d'un blocage | Blocage constate, avec un commentaire precisant la cause | Blocage leve (la phase courante reprend) ou abandon |
 | `ABANDONNE` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (MCP), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
-| — (issue fermee) | Livre et valide | CDP (MCP) | Validation utilisateur a GATE 4 (l'issue porte deja `DONE`) | Reouverture manuelle |
+| — (issue fermee) | CI verte sur la branche poussee (l'issue conserve `DONE`). **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (MCP) | CI verte apres le push de la branche en `DONE` | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
 
 Regles :
 - Les labels de phase (`PLANNING` → `DONE`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
@@ -417,7 +417,14 @@ Regles :
   transition de phase — seule la levée du blocage le retire.
 - `ABANDONNE` est **terminal** : il remplace tous les labels de phase (et `BLOQUE`) et ferme l'issue (`not planned`).
 - Chaque transition de phase pose le nouveau label **et retire les autres labels de phase** (commandes en section 9).
-- Rejet a GATE 4 : le label `DONE` est retire et l'issue repart vers :
+- **Fermeture = CI verte, pas validation utilisateur.** A `DONE`, le CDP pousse la branche du milestone ; la CI
+  de validation (`infra.md` §3bis, C10) s'execute. CI verte → l'issue est fermee. CI **non verte** (rouge, orange,
+  annulee ou en erreur) → l'issue repart a `EN COURS` avec un commentaire precisant l'echec, correction, nouveau
+  cycle QA, nouveau push. Une issue n'est jamais fermee sur une CI non verte.
+- **Le milestone reste lie a la validation utilisateur** (GATE 4) : fermer les issues ne cloture pas le milestone ni
+  ne declenche PROD.
+- Rejet a GATE 4 : seules les issues **concernees** par le refus sont rouvertes (les autres restent fermees) ; leur
+  label `DONE` est retire et elles repartent vers :
   - `EN COURS` — correction dans le scope (bug, regression, precision) → retour Phase DEV (Cas A)
   - `PLANNING` — scope invalide (approche erronee, exigences changees) → retour Phase 1 (Cas B)
 
@@ -474,18 +481,35 @@ gh issue edit <numero> --add-label "EN REVIEW" --remove-label "PLANNING,EN COURS
 gh issue edit <numero> --add-label "EN QA" --remove-label "PLANNING,EN COURS,EN REVIEW,DONE"
 ```
 
-### 9.4 Transition vers `DONE` (QA validée)
+### 9.4 Transition vers `DONE` (QA validée) — puis push et CI
 
 ```bash
 gh issue edit <numero> --add-label "DONE" --remove-label "PLANNING,EN COURS,EN REVIEW,EN QA"
+git push origin milestone/vX.Y.Z   # la CI de validation (C10) demarre
 ```
 
-### 9.5 Rejet à GATE 4 (validation utilisateur refusée)
-
-Le label `DONE` est retiré. La destination dépend de la nature de la correction
-(cf. `cdp.template.md`, GATE 4 — Cas A / Cas B) :
+### 9.5 Résultat de la CI
 
 ```bash
+# CI verte → fermeture de l'issue (elle conserve DONE)
+gh issue comment <numero> --body "✅ CI verte — QA OK — en attente de validation utilisateur (GATE 4)"
+gh issue close <numero>
+
+# CI non verte (rouge, orange, annulee, en erreur) → correction obligatoire, l'issue reste ouverte
+gh issue comment <numero> --body "🔴 CI non verte — <job en echec, lien du run>"
+gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
+```
+
+### 9.6 Rejet à GATE 4 (validation utilisateur refusée)
+
+Seules les issues **concernées** sont rouvertes ; les autres restent fermées. Le label `DONE` est retiré et la
+destination dépend de la nature de la correction (cf. `cdp.template.md`, GATE 4 — Cas A / Cas B) :
+
+```bash
+# Pour chaque issue concernee uniquement
+gh issue reopen <numero>
+gh issue comment <numero> --body "↩ Rouverte — GATE 4 refuse : <ecart constate>"
+
 # Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV
 gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE,EN REVIEW,EN QA"
 
@@ -493,16 +517,12 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE,EN REVIEW,EN 
 gh issue edit <numero> --add-label "PLANNING" --remove-label "DONE"
 ```
 
-### 9.6 Fermeture (validation utilisateur à GATE 4)
+### 9.7 Validation GATE 4 (OUI)
 
-L'issue porte déjà le label `DONE` — la fermeture suffit, aucun changement de label.
+Aucun changement sur les issues (déjà fermées en `DONE`). La validation autorise la clôture du milestone et le
+déploiement PROD ; à l'issue du déploiement, la branche distante du milestone est supprimée (`deploy.md`, Étape 6).
 
-```bash
-gh issue comment <numero> --body "✅ Validé — QA OK — documentation mise à jour"
-gh issue close <numero>
-```
-
-### 9.7 Blocage et déblocage (`BLOQUE`)
+### 9.8 Blocage et déblocage (`BLOQUE`)
 
 La phase courante est conservée : seul `BLOQUE` est ajouté ou retiré.
 
@@ -516,7 +536,7 @@ gh issue edit <numero> --remove-label "BLOQUE"
 gh issue comment <numero> --body "▶ Débloqué — <ce qui a levé le blocage>"
 ```
 
-### 9.8 Abandon (`ABANDONNE`)
+### 9.9 Abandon (`ABANDONNE`)
 
 Uniquement sur décision de l'utilisateur. Retire tous les labels de phase et `BLOQUE`, puis ferme l'issue.
 

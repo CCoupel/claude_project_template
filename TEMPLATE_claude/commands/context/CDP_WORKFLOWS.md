@@ -203,8 +203,11 @@ Enchaîner directement sur la phase suivante sans autre attente.
 | Entrée Phase Review | `EN REVIEW` | `EN COURS`, `PLANNING`, `EN QA`, `DONE` |
 | Entrée Phase QA — mode parallèle (`qa_parallelizable` != false, dès TEST-WRITER DONE) | `EN QA` | `EN COURS`, `PLANNING`, `DONE` (garder `EN REVIEW`) |
 | Entrée Phase QA — mode séquentiel (après verdict Review positif) | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE` |
-| QA VALIDATED (et Review déjà approuvée) | `DONE` | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING` |
-| Deploy PROD confirmé (GATE 4) | — (issues fermées) | — |
+| QA VALIDATED (et Review déjà approuvée) | `DONE` — puis push de la branche et CI | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING` |
+| CI verte sur la branche poussée | — (issues fermées, `DONE` conservé) | — |
+| CI non verte (rouge, orange, annulée) | `EN COURS` | `DONE` |
+| Rejet GATE 4 (issues concernées seulement) | `EN COURS` (Cas A) ou `PLANNING` (Cas B), issue rouverte | `DONE` |
+| Validation GATE 4 | — (issues déjà fermées ; déploiement PROD) | — |
 
 Appel MCP pour chaque transition — boucler sur toutes les issues suivies :
 ```
@@ -215,12 +218,12 @@ pour chaque issue_num dans ISSUE_NUMS[] :
   })
 ```
 
-Deploy PROD confirmé — fermer toutes les issues suivies :
+CI verte — fermer toutes les issues suivies (la fermeture dépend de la CI, pas de la validation utilisateur ; le milestone, lui, reste lié au GATE 4) :
 ```
 pour chaque issue_num dans ISSUE_NUMS[] :
   mcp__plugin_github_github__add_issue_comment({
     issue_number: issue_num,
-    body: "✅ Livré — QA OK — documentation mise à jour"
+    body: "✅ CI verte — QA OK — en attente de validation utilisateur (GATE 4)"
   })
   mcp__plugin_github_github__issue_write({
     issue_number: issue_num, state: "closed"

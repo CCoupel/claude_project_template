@@ -186,6 +186,7 @@ attendus (binaire, image de conteneur, paquet npm/PyPI, firmware, extension, arc
 | C7 | Aucun secret en clair : `secrets.*` / variables CI uniquement ; noms alignes sur `.env.example` |
 | C8 | Ne pas deployer : le pipeline s'arrete a la publication des livrables (le deploiement reste `deploy`) |
 | C9 | Chemin = `infrastructure.environments[].publish.pipeline` pour l'environnement en `rebuild-ci` |
+| C10 | **CI de validation sur push de branche** : se declencher aussi sur le push de `milestone/*` (workflow de validation, distinct du workflow de release a tag) et y rejouer `commands.build`, `commands.test`, `commands.lint` — **sans publier ni deployer**. Son verdict (vert / non vert) conditionne la fermeture des issues passees `DONE` (`commands/context/GITHUB.md` §8.2). Permissions en lecture seule |
 
 **Generation** (aucun pipeline existant) : composer les jobs selon la stack et les livrables (setup de la
 chaine d'outils a la version du projet, build, tests, packaging, release), puis **afficher le fichier a
@@ -195,7 +196,7 @@ les lire dans la config ou remonter la question au teamleader (`BLOQUE` + questi
 `TEAMMATES_PROTOCOL.md` — il la pose a l'utilisateur via `AskUserQuestion`). `TEMPLATE_claude/templates/workflows/release-go-react.yml`
 est un **exemple de reference** du niveau attendu, pas un modele a copier tel quel.
 
-**Audit** (pipeline existant — `.github/workflows/*.y*ml`, `.gitlab-ci.yml`) : evaluer C1 a C9, un verdict
+**Audit** (pipeline existant — `.github/workflows/*.y*ml`, `.gitlab-ci.yml`) : evaluer C1 a C10, un verdict
 par exigence (`CONFORME` / `ECART` / `NON APPLICABLE`), en citant le fichier et la ligne. Ne jamais modifier
 un pipeline existant sans accord. Si des ecarts : `BLOQUE` au teamleader avec une question et 3 options — corriger (patch minimal, diff affiche),
 garder tel quel (ecart consigne dans le rapport), ou regenerer (le teamleader la pose via `AskUserQuestion`). Un pipeline sans declencheur sur tag `v*`, qui

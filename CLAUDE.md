@@ -106,7 +106,7 @@ Ils sont copiés tels quels dans `.claude/` — le dossier `TEMPLATE_claude/` su
 ### Pipeline CI/CD de release
 
 Pas de modèle par stack : `/init-project` audite le pipeline existant ou le génère, selon le contrat
-`TEMPLATE_claude/agents/infra.md` §3bis (C1-C9). Faire évoluer le contrat = modifier cette section.
+`TEMPLATE_claude/agents/infra.md` §3bis (C1-C10). Faire évoluer le contrat = modifier cette section.
 `templates/workflows/release-go-react.yml` reste un exemple de référence.
 
 ### Placeholders dans les templates

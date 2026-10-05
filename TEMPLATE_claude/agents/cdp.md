@@ -446,7 +446,15 @@ SendMessage({ to: "doc-updater", content: "
 **Apres reception :**
 - DONE →
   > `ISSUE_NUMS[]` non vide → label `DONE` sur toutes les issues, remove `EN QA`/`EN REVIEW`/`EN COURS`/`PLANNING`
-  Phase BUILD + PUBLISH QUALIF + DEPLOY QUALIF (automatique)
+  **Push + CI (avant la Phase 5)** : pousser la branche du milestone (`git push origin milestone/vX.Y.Z`) — la CI de
+  validation (`infra.md` §3bis, C10) s'execute — puis attendre son verdict (`gh run watch` / `gh run list --branch`) :
+  - **CI verte** → `ISSUE_NUMS[]` non vide → commenter puis **fermer toutes les issues** (elles gardent `DONE`) ;
+    la fermeture vaut « QA OK + CI verte », **pas** validation du milestone (reste au GATE 4). Phase BUILD +
+    PUBLISH QUALIF + DEPLOY QUALIF (automatique)
+  - **CI non verte** (rouge, orange, annulee, en erreur) → jamais de fermeture : cycle++ (`tests/METRICS.md`),
+    `ISSUE_NUMS[]` non vide → commentaire (job en echec + lien du run) + reset label `EN COURS` (`--remove-label "DONE"`),
+    retour Phase DEV avec le rapport CI, puis REVIEW + QA, `DOC` si besoin, nouveau push. Si cycle > 3 : **Escalade
+    utilisateur** ← GATE 3
 - FAILED → renvoyer au doc-updater avec correction avant de continuer
 
 ### Phase 5 — Build + Publish + Deploy QUALIF + Documentation Finalize (parallele)
@@ -543,14 +551,18 @@ retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/depl
 
 Selon la reponse utilisateur :
 - **Oui / `/deploy prod`** →
-  > `ISSUE_NUMS[]` non vide → fermer toutes les issues + verifier milestone
-  > (l'issue porte déjà le label `DONE` — la fermeture GitHub suffit, aucun changement de label)
-  Phase 6 (PROD)
+  > Les issues sont **deja fermees** (CI verte, Phase 4) — aucun changement sur elles. La validation du milestone
+  > releve de l'utilisateur : verifier le milestone (100 % des issues fermees)
+  Phase 6 (PROD) — la branche distante du milestone est supprimee en fin de deploiement reussi (`deploy.md`, Etape 6)
 - **NON** →
-  Le label `DONE` est retiré — la destination dépend de la nature de la correction (jamais `EN COURS` par défaut) :
+  **Seules les issues concernees sont rouvertes** — les autres restent fermees. Determiner les issues concernees depuis
+  la reponse de l'utilisateur (champ « Autre ») ; si elles ne sont pas designees sans ambiguite, poser un
+  `AskUserQuestion` (`multiSelect: true`, une option par issue de `ISSUE_NUMS[]`) avant tout changement.
+  > Pour chaque issue concernee : `reopen` + commentaire (ecart constate) ; le label `DONE` est retiré — la
+  > destination dépend de la nature de la correction (jamais `EN COURS` par défaut) :
 
   **Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV :**
-  > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues (`--add-label "EN COURS" --remove-label "DONE"`)
+  > issues concernees → reset label `EN COURS` (`--add-label "EN COURS" --remove-label "DONE"`)
   - dev-* et test-writer : **pas de CLEAR** — leur contexte est la carte exacte de ce qu'ils ont construit
   - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater)
   - Une fois REVIEW + QA a nouveau valides sur le fix, avant de repasser en GATE 4 :
@@ -562,7 +574,7 @@ Selon la reponse utilisateur :
     batch initial, detecte tardivement par `deployer` en Phase 6 — voir `deploy.md` étape 1ter).
 
   **Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1 :**
-  > `ISSUE_NUMS[]` non vide → reset label `PLANNING` sur toutes les issues (`--add-label "PLANNING" --remove-label "DONE"`)
+  > issues concernees → reset label `PLANNING` (`--add-label "PLANNING" --remove-label "DONE"`)
   - CLEAR(planner) → nouveau plan → GATE 2
   - Après réception du nouveau plan : CLEAR(dev-*) + CLEAR(test-writer) — contexte obsolète
   - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater) avant redispatch

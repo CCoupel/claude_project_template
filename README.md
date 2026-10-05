@@ -283,6 +283,9 @@ PLAN ──────────────────────── co
     └──────────────────────────┘
     ↓  REVIEW REJECTED → annule/ignore QA ; sinon attend QA si pas encore DONE
     ↓  label DONE
+PUSH de la branche du milestone ── déclenche la CI de validation (C10)
+    ├─ CI verte → issues fermées (elles gardent DONE) — ne vaut pas validation du milestone
+    └─ CI non verte (rouge/orange) → label EN COURS + commentaire, retour DEV, nouveau cycle
 DOC (brouillon) ─────────────── CHANGELOG + documentation technique — pas de version incrémentée
     ↓
 INFRA validation QUALIF ────── cohérence procédure/infrastructure
@@ -292,8 +295,9 @@ BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes
     └────────────────────────────────────────┴──────────────────────────────┘
     ↓  BUILD = compilation seule, incrémente `a` (aucun test rejoué) · GATE 4 attend les TROIS (NR KO → retour DEV sans solliciter l'utilisateur)
 [GATE 4] Validation manuelle ── CDP présente les scénarios à tester
-    ├─ OUI → issue fermée → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) → milestone si 100%
-    └─ NON → label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
+    ├─ OUI → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) → milestone si 100%
+    │        → branche distante du milestone supprimée une fois PROD réussi
+    └─ NON → seules les issues concernées sont rouvertes : label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
 PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un rebuild déterministe via CI) → installe l'artefact publié par la CI
                                succès : release + milestone
@@ -337,12 +341,12 @@ DEV ── fix minimal
     ├──────────────────────────┐
   REVIEW                     QA ── reproduction (vert) + NR du composant, en parallèle de REVIEW (défaut)
     └──────────────────────────┘
-    ↓  label DONE
+    ↓  label DONE → push de la branche → CI verte : issues fermées (non verte : retour DEV)
 DOC (brouillon) ── CHANGELOG (Fixed)
     ↓
 BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ── GATE 4 attend les trois
     ↓
-[GATE 4] OUI → issue fermée → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) ── installe l'artefact publié par la CI
+[GATE 4] OUI → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) ── installe l'artefact publié par la CI
 ```
 
 ### Hotfix (urgence production)
@@ -424,10 +428,10 @@ Un seul label de phase à la fois (sauf `EN REVIEW` + `EN QA` pendant la parall�
 | `EN COURS` | Développement en cours | CDP | GATE 2 validé ; cycle correctif (REVIEW refuse / QA échoue) ; rejet GATE 4 dans le scope (Cas A) |
 | `EN REVIEW` | Revue en cours | CDP | Phase 3 — REVIEW démarrée |
 | `EN QA` | QA en cours | CDP | Phase 3 — dès TEST-WRITER DONE si parallèle au REVIEW (défaut), sinon après REVIEW |
-| `DONE` | QA validée, en attente de l'utilisateur | CDP | QA validée |
+| `DONE` | QA validée ; branche poussée, CI en cours puis verte | CDP | QA validée — push immédiat de la branche ; CI non verte → retour `EN COURS` |
 | `BLOQUE` | Avancement impossible — s'ajoute à la phase courante (conservée) | CDP | Blocage constaté (cause en commentaire) ; retiré à la levée du blocage |
 | `ABANDONNE` | Ne sera pas traitée (terminal) | CDP | Sur décision de l'utilisateur uniquement ; l'issue est fermée `not planned` |
-| *(issue fermée)* | Livré | CDP | GATE 4 — l'utilisateur confirme la conformité |
+| *(issue fermée)* | QA OK + CI verte (garde `DONE`) — la validation du milestone reste à l'utilisateur (GATE 4) | CDP | CI verte après le push de la branche ; rouverte si GATE 4 refusé pour cette issue |
 
 Définition de référence (transitions, labels retirés, commandes `gh`) :
 `TEMPLATE_claude/commands/context/GITHUB.md` §8.2 et §9 — les autres fichiers y renvoient sans la recopier.
@@ -790,7 +794,7 @@ Mettre à jour `TEMPLATE_claude/.template-source.json` dans votre fork :
 
 Pas de modèle à ajouter par stack : le pipeline est **audité s'il existe, généré sinon** par `/init-project`
 (puis maintenu par l'agent `infra`) selon le contrat de `TEMPLATE_claude/agents/infra.md` §3bis (déclencheur
-tag `v*`, cohérence des versions, build identique à `commands.build`, livrables `<artefact>-<X.Y.Z>`,
+tag `v*`, CI de validation sur push de `milestone/*` (C10), cohérence des versions, build identique à `commands.build`, livrables `<artefact>-<X.Y.Z>`,
 Release créée avec les notes du changelog, permissions minimales, pas de secret en clair, pas de déploiement).
 Le pipeline généré est montré à l'utilisateur avant écriture ; un pipeline existant n'est jamais modifié sans
 accord. `release-go-react.yml` n'est qu'un exemple de référence.
