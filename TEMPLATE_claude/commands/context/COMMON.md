@@ -240,9 +240,10 @@ perf:     Amelioration de performance
 - [ ] Version `X.Y.Z` inchangee (fixee par le milestone, jamais editee manuellement) ; `a` non touche (reserve a `deploy`)
 - [ ] Commits atomiques avec messages clairs, en local
 - [ ] Pas de fichiers temporaires
-- [ ] PAS de push — tous les agents (dev, review, qa) travaillent sur le meme clone local ;
-      le premier push des commits dev vers origin a lieu au prochain deploiement QUALIF
-      (voir `agents/deploy.md` Workflow QUALIF etape 2), jamais avant
+- [ ] PAS de push par les agents dev/review/qa — ils travaillent sur le meme clone local ;
+      le premier push des commits dev vers origin est fait par le CDP quand les issues passent `DONE`
+      (QA valide, Phase 4) : il declenche la CI de validation ; CI verte → issues fermees
+      (voir `commands/context/GITHUB.md` section 8.2). Jamais avant
 ```
 
 ### 7.2 Checklist Pre-QUALIF
