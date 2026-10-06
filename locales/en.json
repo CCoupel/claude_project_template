@@ -114,7 +114,7 @@
   "features.f6.title": "STAGING → PROD pipeline",
   "features.f6.desc":  "Infra validation before each deploy. Smoke tests. PROD deploy: CI actively monitored — CODE/FLAKY failure → merge revert + tag deletion, CONFIG/INFRA failure → tag deletion only. The deployer reports facts to main, never self-corrects.",
   "features.f7.title": "Session memory",
-  "features.f7.desc":  "/start-session reads project state, current version, active milestone and in-progress work. No repetition between sessions.",
+  "features.f7.desc":  "Project memory is initialized by /init-project. /start-session reads project state, current version, active milestone and in-progress work. No repetition between sessions.",
   "features.f8.title": "Auto-generated marketing site",
   "features.f8.desc":  "/marketing generates this site from closed milestone issues, CHANGELOG and README. Dynamic version and roadmap from GitHub.",
   "features.f9.title": "CLAUDE.md maintained by the template",
@@ -123,6 +123,9 @@
   "features.f10.desc":  "Agents are spawned once at /start-session and stay IDLE for the whole session — the CDP only dispatches via SendMessage, never a new spawn. Minimal protocol: ACTIF confirmation on task receipt, DONE with a reference to the deliverable (report/handoff/SHA) at the end, back to IDLE. /clear resets an agent's context without closing it. /team-status shows each teammate's state (IDLE/EN COURS) read-only; /team-delete closes IDLE teammates (or all with --force). Stack templates: backend (Go/Node/Python), frontend (React/Vue), firmware (ESP32), plugin.",
   "features.f11.title": "Sub-agent delegation",
   "features.f11.desc":  "planner, code-reviewer and qa can offload a large scope (issue groups, review dimensions, test scopes) to temporary sub-agents they drive directly, without going back through the CDP — which remains the sole spawner/closer. QA isolates each sub-agent in its own git worktree, created and cleaned up in Bash.",
+
+  "features.f12.title": "Generic agents — non-dev projects",
+  "features.f12.desc":  "Not just code: /init-project can declare agents for business tasks (writing PowerPoint decks, documents, analyses). One shared template, one specification per instance (generic.<name>.md) — multiple instances allowed, each known to the CDP which dispatches it by role.",
 
   "install.title":       "Installation",
   "install.subtitle":    "The tmux launcher manages all your projects from a central hub.",

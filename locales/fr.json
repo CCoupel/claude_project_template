@@ -114,7 +114,7 @@
   "features.f6.title": "Pipeline QUALIF → PROD",
   "features.f6.desc":  "Validation infra avant chaque deploy. Smoke tests. Deploy PROD : la CI est surveillée activement — échec CODE/FLAKY → revert merge + suppression du tag, échec CONFIG/INFRA → suppression du tag uniquement. Le deployer remonte les faits à main, jamais de correction autonome.",
   "features.f7.title": "Mémoire de session",
-  "features.f7.desc":  "/start-session lit l'état du projet, la version, le milestone actif et le travail en cours. Aucune répétition entre sessions.",
+  "features.f7.desc":  "La mémoire projet est initialisée dès /init-project. /start-session lit l'état du projet, la version, le milestone actif et le travail en cours. Aucune répétition entre sessions.",
   "features.f8.title": "Site marketing auto-généré",
   "features.f8.desc":  "/marketing génère ce site depuis les issues du milestone clos, le CHANGELOG et le README. Version et roadmap dynamiques depuis GitHub.",
   "features.f9.title": "CLAUDE.md maintenu par le template",
@@ -123,6 +123,9 @@
   "features.f10.desc":  "Les agents sont spawnés une seule fois au /start-session et restent en IDLE toute la session — le CDP dispatche uniquement via SendMessage, jamais de nouveau spawn. Protocole minimal : confirmation ACTIF à la réception d'une tâche, DONE avec référence au livrable (rapport/handoff/SHA) en fin de tâche, retour en IDLE. /clear réinitialise le contexte d'un agent sans le refermer. /team-status affiche l'état de chaque teammate (IDLE/EN COURS) en lecture seule ; /team-delete ferme les teammates IDLE (ou tous avec --force). Templates de stack : backend (Go/Node/Python), frontend (React/Vue), firmware (ESP32), plugin.",
   "features.f11.title": "Délégation à des sous-agents",
   "features.f11.desc":  "planner, code-reviewer et qa peuvent sous-traiter un périmètre large (groupes d'issues, dimensions de revue, scopes de tests) à des sous-agents temporaires qu'ils pilotent directement, sans repasser par le CDP — qui reste seul à les spawner et les fermer. QA isole chaque sous-agent dans son propre git worktree, créé et nettoyé en Bash.",
+
+  "features.f12.title": "Agents génériques — projets non-dev",
+  "features.f12.desc":  "Pas que du code : /init-project peut déclarer des agents pour des tâches métier (rédaction de PowerPoint, de documents, analyses). Un template commun, une spécification par instance (generic.<nom>.md) — plusieurs instances possibles, chacune connue du CDP qui la dispatche selon son rôle.",
 
   "install.title":       "Installation",
   "install.subtitle":    "Le launcher tmux gère tous vos projets depuis un hub central.",
