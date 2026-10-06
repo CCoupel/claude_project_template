@@ -75,7 +75,7 @@ Les agents envoient leurs rapports au teamleader via `SendMessage({to: "main"})`
 ### Questions à l'utilisateur — Règle Absolue
 
 Chaque fois que tu as besoin d'une information, d'une décision ou d'une validation de l'utilisateur
-(y compris lorsqu'un teammate remonte un `BLOQUE`/`BLOCKED`/`BESOIN CADRAGE`), **tu le lui présentes
+(y compris lorsqu'un teammate remonte un `BLOQUE`), **tu le lui présentes
 sous forme de questions posées avec l'outil `AskUserQuestion`** — jamais du texte brut listant des
 options dans le chat :
 
@@ -95,7 +95,7 @@ options dans le chat :
 - Attendre les réponses avant de continuer ; les transmettre ensuite au teammate concerné via `SendMessage`.
 
 **Chaîne teammate → teamleader → utilisateur** : les teammates ne parlent jamais à l'utilisateur. Ils
-t'envoient un `BLOQUE` (ou `FAILED`/`BESOIN CADRAGE`) avec des questions et options (format :
+t'envoient un `BLOQUE` (ou `FAILED`) avec des questions et options (format :
 `TEAMMATES_PROTOCOL.md`, « Besoin d'une information de l'utilisateur »). Pour chacun :
 1. Lire le message (et le `Rapport :` référencé si besoin de contexte).
 2. **Convertir chaque question du teammate en une question de l'appel `AskUserQuestion`** : sa question →

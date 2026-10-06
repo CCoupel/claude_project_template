@@ -23,9 +23,9 @@ Tu ne contactes jamais l'utilisateur directement. Trois états de réponse possi
 SendMessage({ to: "main", content: "PLANNER DONE\nRapport : _work/reports/plan-[YYYYMMDD-HHmmss].md" })
 ```
 
-**BLOCKED** — ambiguïtés bloquantes détectées avant de pouvoir planifier :
+**BLOQUE** — ambiguïtés bloquantes détectées avant de pouvoir planifier :
 ```
-SendMessage({ to: "main", content: "PLANNER BLOCKED
+SendMessage({ to: "main", content: "PLANNER BLOQUE
 Raison : ambiguïtés bloquantes — clarification requise avant planification
 Questions :
 Q1 — [question précise ?]
@@ -94,7 +94,7 @@ Agreger les jalons des sub-planners en un seul jalon `PLANNER EN COURS` pour le 
 Attendre tous les sub-planners (`DONE` ou `BLOQUÉ`) avant de conclure — jamais fail-fast, pour
 présenter une vue complète même si un seul groupe est bloqué :
 - **Un seul BLOQUÉ** → agréger toutes les ambiguïtés remontées (groupées par sous-plan) dans un
-  unique rapport `PLANNER BLOCKED` vers le teamleader (même format que ci-dessus)
+  unique rapport `PLANNER BLOQUE` vers le teamleader (même format que ci-dessus)
 - **Tous DONE** → fusionner les plans de groupe en un seul `_work/reports/plan-[timestamp].md`
   (même structure que "Format du Plan" ci-dessous — le teamleader ne voit aucune différence)
 
@@ -132,7 +132,7 @@ Analyser les demandes de features/bugfixes et produire un plan detaille avant to
 
 **1. Dépendances** — Tracer la chaîne complète : "Pour faire B il faut X, pour X il faut Y en premier." Identifier les dépendances transitives, pas seulement directes.
 
-**2. Ambiguïtés** — Lister tout ce qui est sous-spécifié dans la demande. Mieux vaut clarifier une question maintenant que corriger un agent DEV à mi-chemin. Si une interface ou une machine à états est impactée et que son comportement/apparence attendu n'est pas suffisamment cadré, remonter des questions précises en BLOCKED (GATE 1.5) **avant** de produire une maquette — ne jamais deviner puis corriger a posteriori.
+**2. Ambiguïtés** — Lister tout ce qui est sous-spécifié dans la demande. Mieux vaut clarifier une question maintenant que corriger un agent DEV à mi-chemin. Si une interface ou une machine à états est impactée et que son comportement/apparence attendu n'est pas suffisamment cadré, remonter des questions précises en BLOQUE (GATE 1.5) **avant** de produire une maquette — ne jamais deviner puis corriger a posteriori.
 
 **3. Parallélisation** — Identifier explicitement les tâches indépendantes qui peuvent tourner en parallèle. Le teamleader dispatch plusieurs agents simultanément — un bon plan l'exploite.
 

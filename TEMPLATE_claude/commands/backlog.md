@@ -127,8 +127,8 @@ Analyser les résultats :
 | Situation | Action |
 |-----------|--------|
 | Aucune issue similaire | Continuer vers Etape 1 |
-| Issue(s) similaire(s) trouvée(s) | Afficher et demander confirmation |
-| Issue contradictoire trouvée | Signaler et demander comment procéder |
+| Issue(s) similaire(s) trouvée(s) | Afficher et demander confirmation (`AskUserQuestion`) |
+| Issue contradictoire trouvée | Signaler et demander comment procéder (`AskUserQuestion`) |
 
 **Si similaire(s) détectée(s) :**
 ```
@@ -137,11 +137,11 @@ Analyser les résultats :
   #42 — Ajouter auth OAuth2  [feature]
   #51 — Support login Google  [feature]
 
-C'est une nouvelle issue distincte, ou l'une de ces issues couvre déjà le besoin ?
-  1. C'est distinct — créer une nouvelle issue
-  2. #42 couvre le besoin — utiliser cette issue
-  3. #51 couvre le besoin — utiliser cette issue
 ```
+
+Puis poser via `AskUserQuestion` : `"C'est une nouvelle issue distincte, ou l'une de ces issues couvre déjà le besoin ?"` —
+options : **C'est distinct — créer une nouvelle issue** / **#42 couvre le besoin** / **#51 couvre le besoin**
+(maximum 4 options : au-delà, ne proposer que les 3 issues les plus proches).
 
 Si l'utilisateur choisit une issue existante → afficher la confirmation et s'arrêter :
 ```
@@ -176,12 +176,7 @@ Analyser `$ARGUMENTS` pour détecter le type :
 | "ajouter", "nouveau", "feature", "améliorer", "implémenter", "support" | `feature` |
 | Ambigu ou aucun indice clair | Demander |
 
-Si ambigu :
-```
-Cette issue est un bug ou une feature ?
-  1. feature
-  2. bug
-```
+Si ambigu → `AskUserQuestion` : `"Cette issue est un bug ou une feature ?"` — options : **feature** / **bug**.
 Attendre la réponse avant de continuer.
 
 ### Etape 2 — Associer à un milestone
@@ -194,16 +189,11 @@ gh api repos/{owner}/{repo}/milestones \
 ```
 
 Afficher le titre **complet** de chaque milestone (`.title` tel quel — version + nom
-descriptif s'il existe, ne jamais le tronquer à la version seule) et demander :
+descriptif s'il existe, ne jamais le tronquer à la version seule) et demander via `AskUserQuestion` :
+`"Associer cette issue à quel milestone ?"` — une option par milestone (label = titre complet, description =
+`N issues ouvertes`) + **Aucun milestone** (4 options maximum : au-delà, ne proposer que les plus récents).
 
-```
-Milestones disponibles :
-  1. v1.2.0 — Authentification OAuth2  (3 issues ouvertes)
-  2. v1.3.0  (0 issues ouvertes)
-  3. Aucun milestone
-
-Associer cette issue à quel milestone ? [1/2/3]
-```
+Exemple d'options : `v1.2.0 — Authentification OAuth2` (3 issues ouvertes) / `v1.3.0` (0 issue ouverte) / `Aucun milestone`.
 
 Le choix de l'utilisateur donne directement `TITLE` (le titre exact du milestone selectionné,
 utilise tel quel a l'etape 3 — aucune reconstruction a partir de la version).
@@ -211,8 +201,8 @@ utilise tel quel a l'etape 3 — aucune reconstruction a partir de la version).
 Si aucun milestone ouvert :
 ```
 Aucun milestone actif. Créer un milestone d'abord avec /milestone new <version>, ou continuer sans.
-Continuer sans milestone ? [O/n]
 ```
+Puis `AskUserQuestion` : `"Continuer sans milestone ?"` — options : **Continuer sans milestone** / **Annuler** (créer un milestone d'abord).
 
 ### Etape 3 — Créer l'issue
 

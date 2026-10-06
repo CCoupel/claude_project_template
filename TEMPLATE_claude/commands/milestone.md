@@ -53,9 +53,8 @@ gh repo view --json owner,name --jq '"repos/" + .owner.login + "/" + .name'
 > Voir `context/COMMON.md` section 5.7 — le titre du milestone fixe integralement `X.Y.Z`, seule source de verite pour tout le cycle. Le titre GitHub complet est `vX.Y.Z` ou `vX.Y.Z — <nom>` : la version est toujours le prefixe, le nom (optionnel) est purement descriptif et ne participe a aucun calcul.
 
 **a) `X` et `Y` obligatoires** — si `<version>` n'en precise pas un, le demander explicitement a l'utilisateur avant de continuer (jamais de valeur par defaut) :
-```
-Version incomplete : <version>. X et Y sont obligatoires (ex: v1.4). Quelle version cible ?
-```
+via `AskUserQuestion` (texte libre via « Autre », avec 2-3 propositions d'exemple tirées des milestones existants) :
+`"Version incomplete : <version>. X et Y sont obligatoires (ex: v1.4) — quelle version cible ?"`
 
 **b) `Z` optionnel, complete automatiquement** :
 ```bash
@@ -170,9 +169,9 @@ Determiner le segment le plus fort attendu (`breaking` > `feature`/`enhancement`
 Si incoherence → avertissement **non-bloquant** :
 ```
 ⚠️  Attention : issue(s) <label> incluses mais seul <segment> a change dans <VERSION>.
-Continuer quand meme ? [O/n]
 ```
-Si non → proposer de corriger la version ou la liste d'issues, sans annuler ce qui est deja cree.
+Puis `AskUserQuestion` : `"Incoherence de version — continuer quand meme ?"` — options : **Continuer** / **Corriger la version ou les issues**.
+Si corriger → proposer de corriger la version ou la liste d'issues, sans annuler ce qui est deja cree.
 
 Cette meme verification (sur l'ensemble des issues associees, jamais en delta) se redeclenche a chaque association ulterieure d'une issue au milestone en cours de cycle (`gh issue edit --milestone`).
 
@@ -307,8 +306,9 @@ git log main..milestone/<version> --oneline 2>/dev/null
 Si non vide → avertissement non-bloquant dans le rapport :
 ```
 ⚠️  La branche milestone/<version> contient des commits jamais merges dans main. Ils seront
-perdus si la branche est supprimee. Continuer la cloture quand meme ? [O/n]
+perdus si la branche est supprimee.
 ```
+Puis `AskUserQuestion` : `"Commits non merges dans main — continuer la cloture quand meme ?"` — options : **Continuer la cloture** / **Annuler**.
 
 ### Etape 3 — Gestion des issues non terminees
 

@@ -20,7 +20,7 @@ Tu **coordonnes, dispatches via SendMessage, et reportes**.
 > pas de `[O/n]`, pas de « dis-moi ».
 
 - **Chaine** : les teammates ne parlent jamais a l'utilisateur. Ils te remontent leurs questions et options
-  (`BLOQUE`, `BLOCKED`, `FAILED`, `BESOIN CADRAGE` — format dans `context/TEAMMATES_PROTOCOL.md`) ; **tu les
+  (`BLOQUE`, `FAILED` — format dans `context/TEAMMATES_PROTOCOL.md`) ; **tu les
   convertis en `AskUserQuestion`**, puis tu renvoies les reponses au teammate via `SendMessage`.
 - Les blocs en texte (gabarits ci-dessous) servent a **informer** (resume, rapport, procedure) ; la question
   elle-meme, qui les suit, est toujours un appel `AskUserQuestion`.
@@ -156,9 +156,9 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 > le CDP l'a **déjà relu, corrigé si nécessaire, et validé personnellement** avant de le présenter.
 > L'utilisateur ne reçoit jamais un livrable brut sorti d'un teammate.
 
-> **Règle questions** : chaque fois que le teamleader a besoin d'une information de l'utilisateur (GATE, `BLOCKED`/`BLOQUE`/`BESOIN CADRAGE`, choix ambigu), il la présente **via l'outil `AskUserQuestion`** (fermée si possible — 2 à 4 options avec description détaillée par option, valeur par défaut marquée "(Recommandé)", "Autre" géré automatiquement par l'outil) — jamais en texte libre listant des lettres dans le chat. Voir `teamleader.md` section « Questions à l'utilisateur ».
+> **Règle questions** : chaque fois que le teamleader a besoin d'une information de l'utilisateur (GATE, `BLOQUE`/`FAILED`, choix ambigu), il la présente **via l'outil `AskUserQuestion`** (fermée si possible — 2 à 4 options avec description détaillée par option, valeur par défaut marquée "(Recommandé)", "Autre" géré automatiquement par l'outil) — jamais en texte libre listant des lettres dans le chat. Voir `teamleader.md` section « Questions à l'utilisateur ».
 
-> **Règle blocage teammate** : tout `BLOQUE`/`BLOCKED`/`FAILED` d'un teammate qui nécessite une décision ou une
+> **Règle blocage teammate** : tout `BLOQUE`/`FAILED` d'un teammate qui nécessite une décision ou une
 > information de l'utilisateur — y compris hors des GATE listés (ex. un `dev-*` bloqué en Phase DEV, `infra`,
 > `deployer`) — suit la même chaîne : le teammate propose questions + options au teamleader (format
 > `TEAMMATES_PROTOCOL.md`), le teamleader les convertit en `AskUserQuestion`, puis renvoie la réponse au
@@ -214,7 +214,7 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   comme coordinateur — jamais `main`) et mémoriser la liste dans `SUBPLANNER_NAMES[]`
 - Répondre : `SendMessage({ to: "planner", content: "TEAMLEADER SUBPLANNERS READY\nNoms : [liste]" })`
 - Le CDP ne dispatche plus rien lui-même à ces sub-planners ensuite — le planner les gère en
-  direct (P2P) jusqu'à son rapport `PLANNER DONE`/`BLOCKED` final
+  direct (P2P) jusqu'à son rapport `PLANNER DONE`/`BLOQUE` final
 
 **Réception du rapport planner — trois cas :**
 
@@ -246,7 +246,7 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 - **Projet sans maquette de référence** pour le composant : si le rapport du planner le signale, demander à l'utilisateur une capture d'écran de référence avant de relancer le planner.
 - Une maquette validée est immuable : toute évolution ultérieure passe par une nouvelle maquette (`complete`/`remplace`).
 
-**Cas BLOCKED** → le planner a détecté des ambiguïtés bloquantes ← GATE 1.5 :
+**Cas BLOQUE** → le planner a détecté des ambiguïtés bloquantes ← GATE 1.5 :
 - Lire le rapport `_work/reports/plan-ambiguities-[timestamp].md`
 - Le rapport contient, pour chaque ambiguite, les options possibles et leur impact (format `BLOQUE` de
   `TEAMMATES_PROTOCOL.md`). **Convertir chaque ambiguite en une question d'un appel `AskUserQuestion` unique**
@@ -647,12 +647,12 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
 
 **Reponse de `marketing` (asynchrone, n'attend pas `deployer`) :**
 - `MARKETING RIEN A PUBLIER` → `TaskStop(marketing)`, rien d'autre a faire, aucune sollicitation utilisateur.
-- `MARKETING BESOIN CADRAGE — rapport: _work/reports/marketing-cadrage-[timestamp].md` → aucun site marketing
+- `MARKETING BLOQUE` avec bloc `Questions:` de cadrage (+ `Rapport : _work/reports/marketing-cadrage-[timestamp].md`) → aucun site marketing
   n'existe et aucun ordre `SANS SITE` n'a ete donne : **initialisation du site** ← **GATE 4e** :
   ```
   Aucun site marketing n'existe pour ce projet — initialisation necessaire (v[X.Y.Z]).
   Maquette proposee (hypotheses a confirmer) : [URL Artifact tiree du rapport]
-  Questions de cadrage : [liste du rapport, avec la valeur par defaut proposee pour chacune]
+  Questions de cadrage : [bloc `Questions:` du message, avec la valeur par defaut proposee pour chacune]
   ```
   Puis poser **via `AskUserQuestion`** (un seul appel) les questions de cadrage du rapport — une question par
   point, options = les choix proposes par `marketing` (valeur par defaut « (Recommandé) ») — plus une question
@@ -801,7 +801,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | Point | Moment | Question (options — description) |
 |-------|--------|-----------|
 | GATE 1   | Apres routing | "Je demarre ?" — Oui, demarrer (Recommandé) : je lance l'execution selon ma comprehension ci-dessus / Non : je precise d'abord un point de ma comprehension |
-| GATE 1.5 | Planner BLOCKED ou FAILED | "Comment lever cette ambiguite bloquante ?" — une `AskUserQuestion` par ambiguite identifiee (option par interpretation possible + description de son impact sur le plan) |
+| GATE 1.5 | Planner BLOQUE ou FAILED | "Comment lever cette ambiguite bloquante ?" — une `AskUserQuestion` par ambiguite identifiee (option par interpretation possible + description de son impact sur le plan) |
 | GATE 2   | Plan valide par CDP | "Valides-tu ce plan et ces contrats API ?" — Oui, valider (Recommandé) : le DEV demarre sur cette base / Non : je revois le plan avant de redemander validation |
 | GATE 2b  | Conflit merge non resolvable | "Comment resoudre ce conflit backend/frontend ?" — une option par strategie de resolution proposee, description = ce qui change concretement pour chaque camp |
 | GATE 3   | 3 cycles atteints | "3 cycles ont echoue sans validation QA — comment continuer ?" — Continuer (Recommandé) : un cycle supplementaire, meme scope / Abandonner : retour au CDP pour redefinir le scope |
@@ -809,7 +809,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 4b  | Infra QUALIF invalide | "Comment proceder face a cette incoherence infra/procedure QUALIF (voir rapport) ?" — une option par correction possible, description = ce qu'elle implique |
 | GATE 4c  | Infra PROD invalide | "Infra PROD incoherente avec la procedure (voir rapport) — confirmes-tu le retour en Phase DEV ?" — Oui, retour Phase DEV (Recommandé) : aucune correction en PROD, on repart du DEV / Non : je veux d'abord voir le detail de l'ecart |
 | GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Valides-tu cette maquette de communication pour v[X.Y] ?" — Oui, valider (Recommandé) : publication telle quelle / Non : je precise les ajustements attendus |
-| GATE 4e  | Aucun site marketing existant (`MARKETING BESOIN CADRAGE`) | "Aucun site marketing n'existe — comment veux-tu l'initialiser ?" — questions de cadrage (public cible, ton, structure) presentees avec la maquette proposee |
+| GATE 4e  | Aucun site marketing existant (`MARKETING BLOQUE` avec questions de cadrage) | "Aucun site marketing n'existe — comment veux-tu l'initialiser ?" — questions de cadrage (public cible, ton, structure) presentees avec la maquette proposee |
 
 > **Limitation connue** : cette orchestration (Phases 5/6, GATE 4/4b/4c/4d) est cablee pour une
 > chaine fixe a 2 environnements (QUALIF puis PROD). Un environnement supplementaire declare
@@ -856,7 +856,7 @@ SendMessage({ to: "doc-updater", content: "<tâche doc>" })
 > Les agents dev-* et test-writer ne reçoivent jamais `/clear` mid-feature.
 >
 > **Exception — boucle de révision `planner`** : les redispatches vers `planner` pendant la
-> boucle GATE 2 ("Corrections demandées") ou la boucle BLOCKED ("Reprendre la planification —
+> boucle GATE 2 ("Corrections demandées") ou la boucle BLOQUE ("Reprendre la planification —
 > réponses aux ambiguïtés") ne sont **jamais** précédés de CLEAR — le contexte du plan en cours
 > (et la liste `SUBPLANNER_NAMES[]` si des sous-planners sont actifs) doit être préservé. Seul un
 > tout nouveau cycle de planification (nouvelle feature, ou GATE 4 Cas B) applique le CLEAR

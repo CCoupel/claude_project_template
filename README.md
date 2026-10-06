@@ -242,6 +242,8 @@ spécifications sont trackées git et jamais écrasées par la sync ; ajouter un
   - Agents d'analyse → `_work/reports/[agent]-[timestamp].md`
   - Agents de code → SHA du commit
 - **Handoff** : chaque agent écrit `_work/handoff/[agent]-[timestamp].md` avant son DONE — le CDP le transmet au suivant ou l'agent le transmet directement si le CDP l'autorise
+- **Questions = `AskUserQuestion`** : toute question, confirmation ou choix attendu de l'utilisateur — y compris dans `/init-project`, `/start-session`, `/end-session`, `/backlog`, `/milestone`, `/context-audit` — passe par l'outil `AskUserQuestion`, jamais par du texte (`[O/n]`, listes numérotées). Règle posée dans `commands/context/COMMON.md` §0. Côté agents : **format unique** — tout agent remonte ses questions par `[NOM] BLOQUE` + bloc `Questions:` inline (2-4 options, 4 questions max), jamais de mot-clé propre (`BLOCKED`, `BESOIN CADRAGE`) ni de questions seulement dans un rapport
+- **Confinement dans le projet** : aucun worktree, dossier ou fichier de travail hors du dossier du projet (`../`, `/tmp`, `$TMPDIR`, `~/` interdits). Worktrees git → `.claude/worktrees/<nom>` (`MARKETING/` pour le site) ; fichiers temporaires → `_work/tmp/`. Les deux sont gitignorés. Règle posée dans `CLAUDE_TEMPLATE.md`, `agents/context/COMMON.md` et `commands/context/COMMON.md`
 - **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
 - **Teammates persistants** : tous les agents sont spawned au `/start-session` et restent en IDLE — le teamleader n'utilise que `SendMessage` pendant la session, jamais de nouveau spawn
 - **Teamleader = interlocuteur unique** : les teammates s'adressent toujours au teamleader (adresse `SendMessage` : `main`) — jamais à un « CDP » distinct. Quand le teamleader a besoin d'une information de l'utilisateur, il la présente **toujours via l'outil `AskUserQuestion`** (2 à 4 options avec description détaillée par option, valeur par défaut marquée "(Recommandé)", "Autre" géré automatiquement par l'outil). Les questions des teammates suivent la même chaîne : le teammate envoie un `BLOQUE` avec questions + options chiffrées (format dans `TEAMMATES_PROTOCOL.md`), le teamleader les convertit en `AskUserQuestion` puis renvoie la réponse au teammate — jamais de liste de questions ni de `[O/n]` en texte dans le chat
@@ -531,7 +533,7 @@ est déjà suivi par la branche de code se voit proposer une migration par `/ini
 
 **Initialisation du site** : un site marketing est la règle (`marketing.site: "auto"`). S'il n'en existe
 aucun (pas de branche `gh-pages` avec un `index.html`) et que le CDP n'a pas donné l'ordre `SANS SITE`
-(`marketing.site: false`), l'agent n'improvise pas : il **alerte le CDP** (`MARKETING BESOIN CADRAGE`)
+(`marketing.site: false`), l'agent n'improvise pas : il **alerte le CDP** (`MARKETING BLOQUE` + questions de cadrage)
 avec une **maquette proposée** (hypothèses à confirmer) et des **questions de cadrage** (public cible,
 proposition de valeur, identité, sections, visuels, appel à l'action, langues/URL). Le CDP les relaie à
 l'utilisateur (**GATE 4e**) ; « pas de site » enregistre `marketing.site: false`. Les réponses sont consignées

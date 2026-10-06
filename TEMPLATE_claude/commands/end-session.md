@@ -70,12 +70,13 @@ Si des changements sont détectés, afficher **avant de continuer** :
 
    Recommandé : lancer /context-audit pour vérifier cohérence et
    optimisation avant de clôturer.
-
-   Lancer /context-audit maintenant ? [O/n]
 ```
 
-- Si **oui** → suspendre end-session, exécuter `/context-audit`, puis reprendre à l'étape 1
-- Si **non** → continuer end-session normalement
+Puis poser la question via `AskUserQuestion` (jamais en texte) :
+`"Changements documentaires détectés — lancer /context-audit maintenant ?"` — options : **Lancer /context-audit** (Recommandé) / **Continuer sans audit**.
+
+- Si **lancer** → suspendre end-session, exécuter `/context-audit`, puis reprendre à l'étape 1
+- Si **continuer** → continuer end-session normalement
 
 Si aucun changement documentaire → passer directement à l'étape 1 sans message.
 
@@ -127,7 +128,7 @@ git stash list
 ```
 
 Si des changements non commites existent :
-- Demander confirmation : commiter, stasher, ou laisser ?
+- Demander via `AskUserQuestion` (jamais en texte) : `"Changements non commités — que faire ?"` — options : **Commiter** / **Stasher** / **Laisser en l'état**
 
 ### 5. TEAM — Fermeture des teammates
 

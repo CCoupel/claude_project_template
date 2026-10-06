@@ -154,7 +154,7 @@ test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
 **Règle absolue** : toute information, décision ou validation attendue de l'utilisateur est posée
 **via l'outil `AskUserQuestion`** — jamais en texte dans le chat (pas de liste numérotée, pas de « OUI/NON »,
 pas de `[O/n]`, pas de « dis-moi »). Ça vaut aussi pour les questions remontées par un teammate
-(`BLOQUE` / `BLOCKED` / `FAILED` / `BESOIN CADRAGE`).
+(`BLOQUE` / `FAILED` — format unique `[NOM] BLOQUE` + `Questions:`, `TEAMMATES_PROTOCOL.md`).
 
 Chaîne : les teammates ne parlent jamais à l'utilisateur — ils t'envoient leurs questions et options
 (`SendMessage` vers `main`), **tu les convertis en `AskUserQuestion`**, puis tu leur renvoies les réponses
@@ -186,6 +186,25 @@ SendMessage({
 ```
 
 <!-- END TEAMLEADER_PROTOCOL -->
+
+---
+
+## Confinement des fichiers de travail — INTERDIT de sortir du projet
+
+**Tout fichier ou dossier créé pendant le travail reste DANS le dossier du projet.** Jamais de
+`../`, de chemin absolu hors du repo, ni de `/tmp`, `$TMPDIR`, `~/` ou `mktemp` sans `-p` pointant dans le projet.
+
+| Besoin | Emplacement obligatoire |
+|--------|-------------------------|
+| Worktree git (isolation, branche parallèle) | `.claude/worktrees/<nom>` — jamais `../<repo>-<nom>` ni `/tmp/...` |
+| Worktree du site marketing | `MARKETING/` (racine du projet) |
+| Fichier / dossier temporaire (scratch, sortie intermédiaire, `.tmp`, backup) | `_work/tmp/` (créé à la demande, gitignoré) |
+| Rapports et handoffs inter-agents | `_work/reports/`, `_work/handoff/` |
+
+- Fichiers temporaires : `mkdir -p _work/tmp && mktemp -p _work/tmp ...` ; les supprimer en fin de tâche.
+- Worktrees : `git worktree add .claude/worktrees/<nom> ...` puis `git worktree remove` en fin de tâche.
+- Ces dossiers sont gitignorés (`_work/`, `.claude/worktrees/`) — ne jamais les commiter.
+- Si un outil impose un emplacement externe, rediriger via `TMPDIR=$PWD/_work/tmp` ; en cas d'impossibilité, **BLOQUE** et demande au teamleader/utilisateur.
 
 ---
 

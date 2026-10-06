@@ -22,9 +22,13 @@ jamais du texte brut listant des lettres dans le chat :
   3-4 plus frequentes en options explicites et laisser "Autre" couvrir le reste.
 - Checklist a choix multiples → `multiSelect: true` (toujours dans la limite de 4 options ; au-dela,
   scinder en plusieurs questions du meme appel — jusqu'a 4 questions groupees par appel).
-- Les questions de decouverte du workshop (Option a, phases 1-6) restent des questions ouvertes en
-  texte libre par nature (elles visent a faire emerger une reponse originale) — forcer des options
-  fermees leur ferait perdre leur but.
+- Les questions de decouverte du workshop (Option a, phases 1-6) sont **aussi** posees via `AskUserQuestion`,
+  jamais en texte dans le chat : 2 a 4 options pertinentes deduites du contexte detecte (README, manifestes,
+  reponses precedentes), la saisie libre passant par "Autre". Jusqu'a 4 questions groupees par appel (une phase
+  = 1 a 2 appels). Les listes numerotees des phases ci-dessous sont le **contenu** des questions, pas un
+  format d'affichage.
+- Toute confirmation (« Confirmer ou modifier ? », validation d'un plan, d'un diff, d'un pipeline) suit la meme
+  regle : jamais `[O/n]`, `(o/n)` ni « dis-moi » en texte.
 
 ## Workflow d'Initialisation
 
@@ -226,10 +230,11 @@ echo "✓ TEMPLATE_claude/.template-source.json mis a jour ($FETCH_TAG - $FETCH_
 # initialise — a la premiere initialisation, le champ est deja inclus a la creation du fichier
 # (section "Generation de la Configuration").
 if [ -f .claude/project-config.json ]; then
+  mkdir -p _work/tmp
   jq --arg tag "$FETCH_TAG" --arg commit "$FETCH_COMMIT" \
     '.template_version = { "tag": $tag, "commit": $commit }' \
-    .claude/project-config.json > /tmp/project-config.json.tmp \
-    && mv /tmp/project-config.json.tmp .claude/project-config.json
+    .claude/project-config.json > _work/tmp/project-config.json.tmp \
+    && mv _work/tmp/project-config.json.tmp .claude/project-config.json
   echo "✓ project-config.json : template_version mis a jour ($FETCH_TAG - $FETCH_COMMIT)"
 fi
 ```
@@ -361,6 +366,8 @@ AskUserQuestion : "Convertir maintenant vers le nouveau modele ?"
 Si confirme :
 
 ```bash
+mkdir -p _work/tmp
+mkdir -p _work/tmp
 jq --arg mech "$MECH" '
   .infrastructure.environments = [
     { "name": "QUALIF", "order": 1,
@@ -370,8 +377,8 @@ jq --arg mech "$MECH" '
       "publish": { "mode": "rebuild-ci", "trigger": "git-tag", "pipeline": ".github/workflows/release.yml" },
       "deploy":  { "mechanism": $mech } }
   ] | del(.infrastructure.deploy)
-' .claude/project-config.json > /tmp/project-config.json.tmp \
-  && mv /tmp/project-config.json.tmp .claude/project-config.json
+' .claude/project-config.json > _work/tmp/project-config.json.tmp \
+  && mv _work/tmp/project-config.json.tmp .claude/project-config.json
 
 echo "✓ infrastructure.environments genere depuis infrastructure.deploy=\"$OLD_DEPLOY\" (mecanisme normalise : $MECH)."
 echo "  Verifier/ajuster manuellement les cibles (docker-compose.*.yml, chart Helm, pipeline CI) si besoin."
@@ -581,7 +588,7 @@ TRACKED=$(git ls-files MARKETING | wc -l)
     `git show origin/gh-pages:<fichier> | diff - MARKETING/<fichier>`) ; si le contenu local diverge de
     `gh-pages`, l'afficher et demander lequel garder AVANT toute suppression. Puis :
     `git rm -r --cached MARKETING/` (les fichiers restent sur disque), deplacer le dossier
-    (`mv MARKETING /tmp/MARKETING.bak`), `git worktree add MARKETING gh-pages`, recopier les eventuelles
+    (`mkdir -p _work/tmp && mv MARKETING _work/tmp/MARKETING.bak`), `git worktree add MARKETING gh-pages`, recopier les eventuelles
     differences retenues dans le worktree et les commiter **sur `gh-pages`** (`git -C MARKETING ...`).
     Commit de migration sur la branche de code : `chore(site): MARKETING/ devient le worktree de gh-pages`
     (contient uniquement le `git rm --cached` et le `.gitignore`).
@@ -728,7 +735,8 @@ A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les
 
 ```
 1. Quel est le nom du projet ?
-   [Detecte: nom depuis package.json/go.mod] Confirmer ou modifier ?
+   [Detecte: nom depuis package.json/go.mod] → AskUserQuestion : option « <nom detecte> (Recommande) » +
+   « Autre » pour saisir un autre nom
 
 2. Decris brievement le projet (1-2 phrases) :
 ```

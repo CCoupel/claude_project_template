@@ -61,7 +61,12 @@ Raison : [une ligne]
 Action requise : [ce dont j'ai besoin]
 ```
 
-**Besoin d'une information, d'une décision ou d'une validation de l'utilisateur** : tu ne lui écris
+**Besoin d'une information, d'une décision ou d'une validation de l'utilisateur** — **format unique pour
+TOUS les agents, sans exception** (planner, marketing, deployer, infra, agents génériques, dev-*, qa...) :
+un message `[NOM] BLOQUE` avec un bloc `Questions:` inline, tel que décrit ci-dessous. Les mots-clés
+`BLOCKED`, `BESOIN CADRAGE` ou tout format ad hoc (questions seulement dans un rapport, liste libre,
+mot-clé propre à l'agent) sont **interdits** : le teamleader ne les reconnaît plus comme demande de décision.
+Tu ne lui écris
 jamais directement — tu ne parles qu'au teamleader (`main`). Chaîne obligatoire :
 
 ```
@@ -96,10 +101,13 @@ Règles du format :
 - **Chaque option = label court + conséquence concrète** — jamais un mot seul, jamais « autre ».
 - Pas d'option « Autre » manuelle : elle est ajoutée automatiquement.
 - Choix non exclusifs → ajouter `(multi-sélection)` à la question.
-- **Jamais de question ouverte** (« que veux-tu faire ? ») : proposer au moins 2 options. Seule exception :
-  une question de découverte ouverte par nature (workshop de cadrage), à signaler comme telle (`(ouverte)`).
-- Questions liées regroupées dans **un seul** `BLOQUE` (pas de messages au compte-gouttes) ; contexte long →
-  dans le fichier `Rapport :`, jamais inline.
+- **Jamais de question ouverte** (« que veux-tu faire ? ») : proposer au moins 2 options ; la saisie libre
+  passe par « Autre » côté utilisateur. Même une question de découverte (cadrage marketing, workshop) est
+  formulée avec 2-4 options plausibles déduites du contexte.
+- Questions liées regroupées dans **un seul** `BLOQUE` (pas de messages au compte-gouttes), **4 questions
+  maximum** : au-delà, envoyer les 4 plus structurantes, puis un nouveau `BLOQUE` avec le reste après réception
+  des réponses. Les questions restent **toujours dans le message** (jamais seulement dans un fichier) ;
+  le contexte long va dans le fichier `Rapport :`.
 - Ne reprends pas l'exécution tant que le teamleader ne t'a pas renvoyé les réponses.
 
 Un `FAILED`/`BLOQUE` sans question (simple constat, ex. « build cassé ») garde `Action requise : [ce dont

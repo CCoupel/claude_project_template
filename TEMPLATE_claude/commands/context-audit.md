@@ -39,7 +39,7 @@ Sinon → restreindre aux phases correspondant au scope.
 [RAPPORT] --> Présenter écarts + plan de correction + gains estimés
     |
     v
-[VALIDATION] --> Attendre confirmation utilisateur (NE PAS modifier avant)
+[VALIDATION] --> Attendre confirmation utilisateur via AskUserQuestion (NE PAS modifier avant)
     |
     v
 [APPLICATION] --> Appliquer uniquement les corrections validées
@@ -197,17 +197,15 @@ Chaque écart porte une résolution provisoire : `Auto` si elle est évidente, `
 
 ### Arbitrage des contradictions ambiguës
 
-Pour chaque écart marqué ❓, poser la question **avant de construire le plan**, et **attendre la réponse** :
+Pour chaque écart marqué ❓, poser la question via `AskUserQuestion` (jamais en texte ; un appel regroupe jusqu'à 4 écarts) **avant de
+construire le plan**, et **attendre la réponse**. Contenu de chaque question :
 
 ```
 ❓ EC-01 — Contradiction : BUILD_CMD
   CLAUDE.md ligne 42      : `make build`
   DEVELOPMENT.md ligne 15 : `go build ./...`
 
-  Quelle valeur fait référence ?
-    [1] CLAUDE.md    → make build
-    [2] DEVELOPMENT.md → go build ./...
-    [3] Autre → préciser
+  Quelle valeur fait référence ?   → options : CLAUDE.md (`make build`) / DEVELOPMENT.md (`go build ./...`) / Autre (« Autre » = préciser)
 ```
 
 Une fois toutes les ❓ résolues, construire le plan complet.
@@ -268,22 +266,22 @@ Pas de question globale. Les règles par type :
 | Migration MEMORY sans contradiction, ambiguë | Confirmation individuelle |
 | Migration MEMORY avec contradiction | Arbitrage si ❓, puis confirmation individuelle |
 
-Pour chaque **contradiction** (arbitrage déjà résolu en phase 3) et chaque **migration MEMORY**, présenter l'action et attendre la réponse avant de passer au suivant :
+Pour chaque **contradiction** (arbitrage déjà résolu en phase 3) et chaque **migration MEMORY**, présenter l'action et attendre la réponse avant de passer au suivant — via `AskUserQuestion` (options **Appliquer** / **Ignorer** ; jusqu'à 4 corrections par appel) :
 
 ```
 EC-01 🔴 Contradiction — BUILD_CMD  [résolution : CLAUDE.md fait foi]
   Action : Remplacer DEVELOPMENT.md ligne 15 par "Voir CLAUDE.md"
-  Appliquer ? [O/n]
+  → AskUserQuestion : Appliquer / Ignorer
 ```
 
 ```
 EC-05 🟡 Migration MEMORY — Convention de commit
   Action : Ajouter dans context/COMMON.md section 7, retirer de MEMORY.md
-  Appliquer ? [O/n]
+  → AskUserQuestion : Appliquer / Ignorer
 ```
 
-- Si **O** → noter comme validé, passer au suivant
-- Si **n** → noter comme ignoré, passer au suivant
+- Si **Appliquer** → noter comme validé, passer au suivant
+- Si **Ignorer** → noter comme ignoré, passer au suivant
 
 **Ne modifier aucun fichier pendant cette phase** — collecter toutes les réponses, appliquer ensuite en phase 5.
 
