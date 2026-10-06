@@ -1691,6 +1691,58 @@ informer :
    vérifier/ajuster les cibles générées, voir "Fichiers d'Environnement" dans agents/deploy.md)
 ```
 
+#### Etape d1e — Audit du graphe de dépendances des fichiers de définition locaux
+
+Exécutée **avant** tout déploiement (état de référence). Construit le graphe des fichiers de définition
+du projet, puis détecte les **liens cassés** et les **orphelins**. Lecture seule : aucune modification ici —
+les constats alimentent le rapport d4 et sont traités à l'étape d5 / vérifiés à l'étape d5e.
+
+**Noeuds** : `CLAUDE.md`, `.claude/project-config.json`, `.claude/settings.json`, `.claude/memory/*`,
+`.claude/agents/*.md` (compagnons, `dev-*`, `generic.<nom>.md`), `.claude/agents/*.template.md`,
+`.claude/agents/context/*`, `.claude/commands/*` + `context/*`, `.claude/agents/environments/*`,
+`docs/mockup/INDEX.md`, `docs/tests/INDEX.md` (s'ils existent).
+
+**Racines** (points d'entrée, jamais orphelins) : `CLAUDE.md` (tables « Agents Disponibles » et « Commandes
+Disponibles »), `project-config.json` (`stack.*` → `dev-*`, `agents.generic[]` → `generic.<nom>.md`,
+`infrastructure.environments[]` → `environments/{publish,deploy}.<env>.*`, chemins `version_file`,
+`pipeline`, `commands.*`), `settings.json` (hooks → scripts), fichiers template déployés
+(`*.template.md`, `commands/*.md`) tant que leur source existe dans `TEMPLATE_claude/`.
+
+**Arêtes** (lien = référence d'un noeud vers un autre) : colonne `Fichier` des tables de `CLAUDE.md` ;
+`@import X` ; chemins `.claude/...`, `context/X.md`, `docs/...` (liens markdown ou entre backticks) ;
+renvois « voir X section N » / ancres ; commandes de hooks (`settings.json`) ; pairage compagnon ↔ template
+(`xxx.md` ↔ `xxx.template.md`).
+
+```bash
+# Extraction des références (à compléter par la lecture du contenu pour les renvois de section)
+for f in CLAUDE.md .claude/agents/*.md .claude/agents/context/*.md .claude/commands/*.md \
+         .claude/commands/context/*.md .claude/agents/environments/*.md; do
+  [ -f "$f" ] || continue
+  grep -oE '(@import +[A-Za-z0-9_./-]+\.md|(\.claude|docs|context|agents|commands)/[A-Za-z0-9_./*-]+\.(md|json|sh|env|ya?ml))' "$f" \
+    | sed "s|^|$f -> |"
+done
+```
+
+**Liens cassés** (`BROKEN`) — pour chaque arête :
+- la cible n'existe pas (fichier absent, hors motifs `*` / `<...>` / `{...}` volontairement génériques) ;
+- la section ou l'ancre citée n'existe pas dans la cible ;
+- un `{PLACEHOLDER}` reste non substitué dans un fichier déployé ;
+- une ligne de table `Agents Disponibles` / `Commandes Disponibles` pointe vers un fichier absent.
+
+**Orphelins** (`ORPHAN`) — fichier non atteignable depuis une racine et non pairé à un template :
+- compagnon `xxx.md` (agents, `agents/context/`, `commands/context/`) dont `xxx.template.md` n'existe plus
+  ni dans `.claude/` ni dans `TEMPLATE_claude/` (template supprimé ou renommé — **à relier au nouveau nom si
+  un renommage est détectable**) ;
+- `generic.<nom>.md` dont `<nom>` n'est plus dans `agents.generic[]` ; `dev-*.md` dont la stack n'est plus
+  configurée ;
+- `environments/*.<env>.*` dont `<env>` n'est plus dans `infrastructure.environments[]` ;
+- agent déployé (`.template.md`) ou fichier de `agents/` absent de la table `Agents Disponibles` ;
+- `*.template.md` déployé dont la source a disparu de `TEMPLATE_claude/` (reliquat, voir d3).
+
+Le résultat (liste `BROKEN[]` et `ORPHAN[]` avec fichier, cible/raison, correction suggérée) est conservé
+pour d4 (rapport) et d5e (revérification). Aucun fichier de `TEMPLATE_claude/` n'est jamais candidat à
+la suppression ou à la modification : **le template fait toujours foi**.
+
 #### Etape d2 — Calculer les noms deployes attendus
 
 ```bash
@@ -1739,6 +1791,13 @@ for src in TEMPLATE_claude/agents/context/*.md TEMPLATE_claude/commands/context/
     statut="INCHANGE"
   fi
   # stocker dans CONTEXT_STATUS associatif : clé = "subdir/basename", valeur = statut
+done
+
+# Contextes RELIQUAT : *.template.md déployé dont la source n'existe plus dans TEMPLATE_claude/
+for dest in .claude/agents/context/*.template.md .claude/commands/context/*.template.md; do
+  [ -f "$dest" ] || continue
+  subdir=$(echo "$dest" | grep -o 'agents/context\|commands/context')
+  [ -f "TEMPLATE_claude/${subdir}/$(basename $dest .template.md).md" ] || echo "RELIQUAT $dest"
 done
 ```
 
@@ -1828,10 +1887,15 @@ Synchronisation depuis github.com/<repo>
   [!] dev-firmware                        ← RELIQUAT (stack firmware retirée du projet)
   [=] planner, test-writer, code-reviewer, qa, doc-updater, deployer, security, infra (8 inchangés)
 
+  Graphe des fichiers de définition locaux (etape d1e, etat avant mise a jour) :
+  [⛓] CLAUDE.md:42 → .claude/agents/old.md          ← lien casse (cible absente)
+  [○] .claude/agents/context/FOO.md                 ← orphelin (template FOO supprime/renomme)
+
   Nouveaux   : N
   Modifies   : N
   Inchanges  : N
-  Reliquats  : N  ← a supprimer
+  Reliquats  : N  ← a supprimer (commandes, agents ET contextes)
+  Liens casses : N   Orphelins : N  ← traites a l'etape d5 (confirmation) puis reverifies en d5e
 
 AskUserQuestion : "Comment appliquer cette synchronisation ?"
 - Tout appliquer et supprimer les reliquats (Recommande) — deploie nouveaux/modifies, supprime
@@ -1922,7 +1986,33 @@ for name in $DEPLOYED_AGENTS; do
     echo "  ✗ .claude/agents/${name}.template.md supprime (reliquat)"
   fi
 done
+
+# Supprimer les contextes reliquats (source disparue de TEMPLATE_claude/)
+for dest in .claude/agents/context/*.template.md .claude/commands/context/*.template.md; do
+  [ -f "$dest" ] || continue
+  subdir=$(echo "$dest" | grep -o 'agents/context\|commands/context')
+  if [ ! -f "TEMPLATE_claude/${subdir}/$(basename $dest .template.md).md" ]; then
+    rm "$dest"
+    echo "  ✗ ${subdir}/$(basename $dest) supprime (reliquat)"
+  fi
+done
 ```
+
+**Orphelins et liens cassés (d1e) — après le déploiement :** recalculer `BROKEN[]`/`ORPHAN[]` (la suppression
+des reliquats ci-dessus peut en créer : compagnon dont le template vient de disparaître). Les fichiers
+`.template.md` et `TEMPLATE_claude/` ne sont jamais touchés ; seuls les fichiers PROJET le sont, **toujours
+après confirmation** :
+
+```
+AskUserQuestion : "N orphelins / M liens cassés détectés dans les fichiers de définition du projet — que faire ?"
+- Corriger automatiquement (Recommandé) — lien cassé : repointé vers le fichier renommé/déplacé s'il est
+  identifiable sans ambiguïté, sinon la référence est retirée ; orphelin : relié à son nouveau template si un
+  renommage est détecté, sinon supprimé s'il n'a plus de racine
+- Inspecter un par un — décision au cas par cas (corriger / supprimer / conserver)
+- Ignorer — rien n'est modifié, ils seront re-signalés à la prochaine sync
+```
+
+Un fichier suivi par git est retiré avec `git rm` (jamais `rm` seul, pour que la suppression soit commitée).
 
 #### Etape d5b — Détection de doublons (règles identiques ou couvertes)
 
@@ -2118,6 +2208,56 @@ rm -f .claude/.teammates-table.tmp
 echo "✓ CLAUDE.md — table Agents Disponibles mise à jour"
 ```
 
+#### Etape d5e — Vérification post-nettoyage (doublons et graphe)
+
+Exécutée **après** le déploiement des templates (d5), le nettoyage des doublons (d5b), l'arbitrage des
+conflits (d5c) et la mise à jour de la table (d5d). Objectif : prouver que les templates mis à jour sont
+**seuls maîtres** et qu'il ne reste ni doublon ni lien cassé non assumé. Lecture seule, sauf proposition finale.
+
+**1. Doublons résiduels — contrôle déterministe** (en plus de l'analyse sémantique de d5b) :
+
+```bash
+for tmpl in .claude/agents/*.template.md .claude/agents/context/*.template.md .claude/commands/context/*.template.md; do
+  [[ -f "$tmpl" ]] || continue
+  companion="$(dirname "$tmpl")/$(basename "$tmpl" .template.md).md"
+  [[ -f "$companion" ]] || continue
+  # a) compagnon identique au template -> doublon complet
+  cmp -s "$tmpl" "$companion" && echo "DOUBLON-IDENTIQUE $companion"
+  # b) paragraphes du compagnon repris mot pour mot dans le template (hors lignes vides et titres)
+  norm() { grep -v '^\s*$' "$1" | grep -v '^#' | sed 's/[[:space:]]\+/ /g;s/^ //;s/ $//'; }
+  norm "$companion" | while IFS= read -r l; do
+    [[ ${#l} -ge 40 ]] && grep -qxF -- "$l" <(norm "$tmpl") && echo "DOUBLON-LIGNE $companion : ${l:0:60}..."
+  done
+done
+# c) commandes « customisées » (d1b) devenues identiques au template
+for name in "${CUSTOMIZED_COMMANDS[@]}"; do
+  cmp -s "TEMPLATE_claude/commands/${name}.md" ".claude/commands/${name}.md" && echo "CUSTOM-INUTILE $name"
+done
+```
+
+Relancer ensuite la classification sémantique de d5b sur l'état courant. Résultat attendu : **plus aucun
+fichier `IDENTIQUE`/`DERIVE-TEMPLATE`/`MIXTE`**, hors éléments explicitement ignorés (« Ignorer » / « Conserver
+tel quel ») ou arbitrés `[P]` en d5c — ceux-là sont listés comme **doublons assumés**, pas comme erreurs.
+
+**2. Graphe** : relancer l'extraction de d1e. Résultat attendu : `BROKEN[]` et `ORPHAN[]` vides, hors éléments
+ignorés par l'utilisateur. Vérifier en particulier qu'**aucun nettoyage de d5b/d5c n'a cassé un lien** (une
+section retirée d'un compagnon alors qu'un fichier la référence, un compagnon supprimé encore cité dans
+`CLAUDE.md`) et qu'aucun `{PLACEHOLDER}` ne subsiste dans les fichiers déployés.
+
+**3. Rapport et reprise** :
+
+```
+Vérification post-nettoyage :
+  Doublons résiduels  : N  (dont M assumés : ignorés/[P])
+  Liens cassés        : N
+  Orphelins           : N
+```
+
+Si N > 0 hors éléments assumés → `AskUserQuestion` : « Des doublons ou liens cassés subsistent — que faire ? »
+(**Les traiter maintenant** (Recommandé) — relance d5b/d5c/d5 sur ces seuls éléments, puis d5e / **Laisser en
+l'état** — signalés à la prochaine sync). Maximum 2 passes de reprise, pour éviter toute boucle ; au-delà,
+lister les éléments restants dans le rapport final d8.
+
 #### Etape d6 — Mettre à jour le bloc TEAMLEADER_PROTOCOL dans CLAUDE.md
 
 Le bloc entre `<!-- BEGIN TEAMLEADER_PROTOCOL -->` et `<!-- END TEAMLEADER_PROTOCOL -->` est maintenu par le template.  
@@ -2180,6 +2320,8 @@ Synchronisation terminee.
   Reliquats supprimes               : N
   Doublons compagnons retires       : N (etape d5b)
   Conflits compagnons arbitres      : N (etape d5c)
+  Liens casses / orphelins corriges : N / N (etapes d1e, d5)
+  Verification post-nettoyage       : N doublons residuels (dont N assumes), N liens casses, N orphelins (etape d5e)
   CLAUDE.md bloc TEAMLEADER_PROTOCOL : mis à jour
   CLAUDE.md table Agents Disponibles : mis à jour (N lignes — documentation uniquement)
   Labels GitHub                     : vérifiés (PLANNING, EN COURS, EN REVIEW, EN QA, DONE)

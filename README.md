@@ -710,6 +710,20 @@ stack configurée et resynchronisée à chaque sync (step d5d), mais uniquement 
 
 `CLAUDE.md` étant chargé nativement par Claude Code à chaque session, les règles de la Zone 2 survivent aux compactages de contexte sans mécanisme de hook supplémentaire.
 
+### Audit du graphe de dépendances et vérification post-nettoyage (automatique à chaque sync)
+
+- **Avant la mise à jour (step d1e)** : Claude parcourt le graphe des fichiers de définition locaux
+  (`CLAUDE.md`, `project-config.json`, `settings.json`, agents, contextes, environnements — arêtes :
+  tables `Fichier`, `@import`, chemins, renvois de section, hooks, pairage compagnon ↔ template) et
+  signale les **liens cassés** (cible/section absente, `{PLACEHOLDER}` restant) et les **orphelins**
+  (compagnon sans template, `generic.<nom>` ou `dev-*` hors config, environnement retiré...).
+  Les reliquats de contextes (`*.template.md` dont la source a disparu) sont désormais supprimés comme ceux des
+  commandes et agents. Correction toujours après confirmation ; `TEMPLATE_claude/` et les `*.template.md`
+  ne sont jamais modifiés — **le template fait foi**.
+- **Après la mise à jour et le nettoyage (step d5e)** : contrôle déterministe (`cmp`, lignes reprises à
+  l'identique) puis sémantique que plus aucun doublon ne subsiste (hors doublons assumés), que le graphe
+  est sain et qu'aucun nettoyage n'a cassé de lien ; reprise limitée à 2 passes.
+
 ### Détection de doublons et de conflits (automatique à chaque sync)
 
 À chaque synchronisation, Claude analyse les fichiers `*.md` compagnons (agents et contextes
