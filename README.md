@@ -69,7 +69,7 @@ TEMPLATE_claude/           │     ├── commands/
 ├── CLAUDE_TEMPLATE.md           │   └── dev-*.md      ← généré stack (tracké git)
 └── .template-source.json        ├── CLAUDE.md         ← généré (tracké git)
                                  ├── project-config.json ← généré (tracké git)
-                                 └── memory/           ← tracké git
+                                 └── memory/           ← tracké git (MEMORY.md initialisé en fin d'init)
 
                                  TEMPLATE_claude/      ← gitignore (fetché depuis GitHub)
                                  .gitignore            ← généré par /init-project
@@ -84,10 +84,12 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/agents/*.template.md` | Agents template (jamais édités) | Non (gitignore) |
 | `.claude/agents/*.md` | Adaptations projet par agent | Oui |
 | `.claude/agents/dev-*.md` | Agents projet (stack-spécifique) | Oui |
+| `.claude/agents/generic.<nom>.md` | Spécification d'une instance d'agent générique (projets non-dev, ex. rédacteur PowerPoint) — le template commun est `generic.template.md` ; plusieurs instances possibles, déclarées dans `project-config.json` → `agents.generic[]` | Oui |
 | `.claude/agents/environments/{publish,deploy}.<env>.md` | Fichiers publish/deploy par environnement (mécanisme spécifique, un par tâche × environnement) | Oui |
 | `.claude/{agents,commands}/context/*.template.md` | Contextes partagés template (jamais édités) | Non (gitignore) |
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
+| `contracts/CHANGELOG.md` | Changelog des contrats (squelette créé par `/init-project`) | Oui |
 
 > **Après un `git clone`/`git pull`** sur un projet déjà initialisé, les fichiers gitignorés
 > ci-dessus (`TEMPLATE_claude/`, commandes, agents template) sont absents jusqu'au prochain
@@ -165,6 +167,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │   ├── teamleader.md            # Teamleader — gestion team + rôle CDP
 │   ├── cdp.md                   # Règles CDP — orchestration, délégation, gates
 │   ├── implementation-planner.md
+│   ├── generic.md               # Agent générique multi-instances (projets non-dev) — spécialisé par generic.<nom>.md
 │   ├── test-writer.md
 │   ├── code-reviewer.md
 │   ├── qa.md
@@ -220,6 +223,18 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `security` | Audit de sécurité (SAST, dépendances, secrets) |
 | `pr-reviewer` | Validation des Pull Requests externes |
 | `marketing` | Communication de release depuis les données GitHub |
+| `<nom>` (`generic`) | Agent générique pour les projets non-dev (ex. rédacteur PowerPoint) — voir ci-dessous |
+
+#### Agents génériques (projets non-dev)
+
+Pour les tâches hors développement, `/init-project` (étape 5c) peut déclarer une ou plusieurs **instances**
+de l'agent `generic` : le template commun `generic.template.md` (protocole, cycle ACTIF/DONE) est partagé,
+et chaque instance est spécialisée par un **compagnon de spécification** `.claude/agents/generic.<nom>.md`
+(rôle, entrées, livrables, outils, critères de validation). Chaque instance a son nom canonique
+(ex. `redacteur-pptx`, `redacteur-doc`), est déclarée dans `project-config.json` → `agents.generic[]` et dans
+la table `## Agents Disponibles` de `CLAUDE.md`, et est connue du CDP qui la dispatche selon son rôle. Les
+spécifications sont trackées git et jamais écrasées par la sync ; ajouter une instance plus tard se fait via
+`/init-project` (option « Autre »).
 
 ### Principes de communication
 
@@ -670,6 +685,7 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
   + agents `dev-*` selon la stack configurée) et la met à jour — documentation uniquement, cette
   comparaison ne crée/modifie/supprime jamais `.claude/agents/*.md`
 - Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL` + table `Agents Disponibles`) et `.claude/settings.json`
+- Crée s'ils sont absents `.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` (jamais écrasés)
 
 ### Structure de CLAUDE.md — Zone projet / Zone template
 
