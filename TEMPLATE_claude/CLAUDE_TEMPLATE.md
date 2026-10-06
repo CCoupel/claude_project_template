@@ -50,6 +50,10 @@
 > `.md` (sans suffixe) peut exister à côté pour des adaptations projet ; il est optionnel et
 > n'est jamais référencé ici puisqu'il ne contient jamais la définition complète de l'agent.
 
+> **Agents génériques** (projets non-dev) : une ligne par instance déclarée à l'init (`agents.generic[]`
+> de `project-config.json`), ex. `| redacteur-pptx | <rôle> | .claude/agents/generic.template.md + generic.redacteur-pptx.md | permanent |`.
+> Le template `generic` est commun ; la spécification de chaque instance vit dans `.claude/agents/generic.<nom>.md`.
+
 > **permanent** = spawné au `/start-session`, reste en IDLE toute la session.  
 > **ponctuel** = spawné à la demande par la commande dédiée, fermé après DONE.
 

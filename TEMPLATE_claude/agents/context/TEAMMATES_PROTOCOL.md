@@ -19,6 +19,9 @@
 4. Passer en IDLE — attendre les instructions du teamleader
 ```
 
+> **Agent générique** : `<nom>` est le nom d'instance donné par le teamleader ; à l'étape 2 lire en plus
+> `.claude/agents/generic.template.md` puis la spécification `.claude/agents/generic.<nom>.md`.
+
 ---
 
 ## 2. Réception d'une tâche

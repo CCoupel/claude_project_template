@@ -89,6 +89,14 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `marketing` | `marketing-release` | Communication de release |
 | `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
 
+> `<nom>` (agents génériques) : instances de l'agent `generic` pour les tâches hors développement
+> (rédaction de présentation, documents métier...). Déclarées dans `project-config.json` →
+> `agents.generic[]` et dans la table `## Agents Disponibles` de `CLAUDE.md` (nom, rôle, spécification
+> `.claude/agents/generic.<nom>.md`). Plusieurs instances possibles, une spécification chacune. Le CDP les
+> dispatche par `SendMessage({ to: "<nom>" })` quand la demande de l'utilisateur correspond à leur rôle ;
+> elles ne font partie d'aucune phase de `/feature`/`/bugfix` — leur livrable est validé par le CDP
+> (voir "Validation Systématique des Livrables") avant d'être présenté à l'utilisateur.
+>
 > `sub-planner-1..N` : instances temporaires de `implementation-planner`, spawnées par le CDP
 > uniquement sur demande explicite du `planner` (`PLANNER NEED SUBPLANNERS`), vivantes le temps
 > de la Phase Plan uniquement. Pas une ligne fixe de la table — voir `implementation-planner.md`

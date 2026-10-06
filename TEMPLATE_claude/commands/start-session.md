@@ -85,6 +85,18 @@ Task({
 })
 ```
 
+Pour une **instance générique** (fichier = `generic.template.md` + `generic.<nom>.md`) :
+
+```
+Task({
+  name: "<nom>",
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md, puis .claude/agents/generic.template.md
+           puis ta spécification .claude/agents/generic.<nom>.md (obligatoire).
+           Tu es l'instance `<nom>` et fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
+           Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
+})
+```
+
 > Les agents `ponctuel` (ex: `security`, `infra`) sont spawned à la demande par leur commande dédiée — ne pas les inclure ici.
 
 3. **Attendre les ACTIF de tous les teammates** avant de continuer.

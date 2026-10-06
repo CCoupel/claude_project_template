@@ -91,7 +91,7 @@ puis deploiera les commandes et agents dans `.claude/`.
 | **COMMANDES** | `.claude/commands/*.md` | Depuis `TEMPLATE_claude/commands/*.md`, déployé en `*.md` — gitignore, pas de compagnon |
 | **AGENTS TEMPLATE** | `.claude/agents/*.template.md` | Depuis `TEMPLATE_claude/agents/*.md`, déployé en `*.template.md` — gitignore |
 | **CONTEXTES PARTAGES** | `.claude/{commands,agents}/context/*.template.md` + compagnon `.claude/{commands,agents}/context/*.md` optionnel | Depuis `TEMPLATE_claude/{commands,agents}/context/*.md` — meme convention template/compagnon que les agents |
-| **PROJET** | `.claude/CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md`, compagnons `agents/*.md` et `context/*.md` | Trackes dans git, jamais ecrases |
+| **PROJET** | `.claude/CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md`, specifications `agents/generic.<nom>.md`, compagnons `agents/*.md` et `context/*.md` | Trackes dans git, jamais ecrases |
 
 ---
 
@@ -801,6 +801,35 @@ AskUserQuestion : "Ton projet inclut-il un plugin pour une plateforme existante 
 
 ---
 
+## Etape 5c : Agents generiques — projets non-dev (optionnel)
+
+Pour les taches hors developpement (redaction de presentation, documents metier, analyses...). Chaque
+instance = un agent `generic` (template commun `agents/generic.md`) + une **specification** propre
+`.claude/agents/generic.<nom>.md`. Plusieurs instances possibles, chacune avec sa specification.
+Un projet purement non-dev peut repondre « Pas de ... » aux etapes 2 a 6 et ne declarer que des agents generiques.
+
+```
+AskUserQuestion : "Ton projet a-t-il des taches hors developpement a confier a un agent specialise ?"
+- Oui — declarer un agent generique (ex: redacteur de PowerPoint, redacteur de documentation metier)
+- Non — aucun agent generique
+```
+
+Si **Oui**, pour chaque instance (boucler tant que l'utilisateur en ajoute) :
+
+```
+AskUserQuestion (texte libre via "Autre") :
+- Nom canonique (kebab-case, unique dans la team, ex: redacteur-pptx) — jamais un nom d'agent existant
+  (planner, qa, deployer, dev-*...) ni `generic`
+- Role en une ligne
+- Specification : perimetre, entrees, livrables (formats/chemins), outils/charte, criteres de validation
+- Spawn : permanent (defaut — spawne au /start-session) | ponctuel (spawne a la demande)
+```
+
+Puis « Ajouter une autre instance ? ». Les reponses alimentent `agents.generic[]` et la specification
+(voir "2bis. Agents generiques").
+
+---
+
 ## Etape 6 : Base de Donnees
 
 ```
@@ -974,10 +1003,16 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
   },
   "agents": {
     "idle_ttl_minutes": 15,
-    "idle_warning_interval_minutes": 5
+    "idle_warning_interval_minutes": 5,
+    "generic": [
+      { "name": "redacteur-pptx", "role": "Redaction de presentations PowerPoint", "spawn": "permanent" }
+    ]
   }
 }
 ```
+
+> `agents.generic` : instances d'agents generiques (Etape 5c) — `[]` ou absent si aucune. Chaque `name`
+> est unique et correspond a un fichier `.claude/agents/generic.<name>.md`.
 
 Valeurs a deriver si elles ne sont pas fournies explicitement :
 
@@ -1022,6 +1057,35 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 
 > Même convention que les agents génériques (§ précédent) : déployé en `.template.md`,
 > avec un compagnon `.md` optionnel pour les adaptations projet.
+
+### 2bis. Agents generiques (projets non-dev)
+
+Pour chaque entree de `agents.generic[]` (Etape 5c) — idempotent, **ne jamais ecraser** une specification existante :
+
+```bash
+# Le template commun generic.template.md est deja deploye avec les autres agents (etape 4 du fetch)
+for NAME in $(jq -r '.agents.generic[]?.name' .claude/project-config.json); do
+  SPEC=".claude/agents/generic.${NAME}.md"
+  ROLE=$(jq -r --arg n "$NAME" '.agents.generic[] | select(.name==$n) | .role' .claude/project-config.json)
+  [ -f "$SPEC" ] || cat > "$SPEC" <<SPEC_EOF
+# ${NAME} — ${ROLE}
+
+## Role et perimetre
+## Entrees
+## Livrables
+## Outils et conventions
+## Criteres de validation
+SPEC_EOF
+done
+```
+
+Remplir chaque section avec les reponses de l'Etape 5c (specification **non vide** — un agent sans
+specification repond `BLOQUE` au demarrage). Le fichier est **tracke git**, jamais ecrase par la sync
+(le compagnon `generic.md` sans nom reste, lui, un compagnon classique du template `generic.template.md`).
+
+Ajouter une ligne par instance dans la table `## Agents Disponibles` de `CLAUDE.md` :
+`| <name> | <role> | .claude/agents/generic.template.md + .claude/agents/generic.<name>.md | <spawn> |`.
+Le CDP les connait via cette table et `agents.generic[]` (voir `agents/cdp.md`).
 
 ### 3. Workflow CI/CD
 
@@ -1456,6 +1520,7 @@ Configuration :
 - Environnements : <ENVIRONMENTS>  (ex: QUALIF -> PROD)
 
 Memoire projet : .claude/memory/MEMORY.md initialisee (si absente)
+Agents generiques : <NOM> (.claude/agents/generic.<NOM>.md), ...   (si declares)
 
 Agents generes :
 - .claude/agents/dev-backend.template.md
@@ -1515,7 +1580,8 @@ AskUserQuestion : "Le projet est deja initialise — que veux-tu faire ?"
 - Re-analyser le code — relance la detection automatique de stack pour rafraichir le diagnostic
   avant de choisir
 - Annuler — ne modifie rien
-(Pour modifier un seul parametre precis sans tout reconfigurer — preciser via "Autre")
+(Pour modifier un seul parametre precis sans tout reconfigurer — preciser via "Autre". Ex : ajouter une
+instance d'agent generique → Etape 5c puis "2bis. Agents generiques" uniquement, sans toucher au reste)
 ```
 
 ### Option d : Appliquer les mises a jour detectees
@@ -1703,6 +1769,9 @@ EXPECTED_TEAMMATES=(planner test-writer code-reviewer qa doc-updater deployer se
 [[ -n "$BACKEND_LANG"    ]] && EXPECTED_TEAMMATES+=(dev-backend)
 [[ -n "$FRONTEND_LANG"   ]] && EXPECTED_TEAMMATES+=(dev-frontend)
 [[ -n "$PLUGIN_PLATFORM" ]] && EXPECTED_TEAMMATES+=(dev-plugin)
+# Instances d'agents generiques declarees dans project-config.json (ligne attendue :
+# Role = .role, Fichier = generic.template.md + generic.<nom>.md, Spawn = .spawn)
+while read -r n; do [[ -n "$n" ]] && EXPECTED_TEAMMATES+=("$n"); done < <(jq -r '.agents.generic[]?.name' .claude/project-config.json)
 ```
 
 **Lire la table courante** dans le `CLAUDE.md` du projet (section entre `## Agents Disponibles`
