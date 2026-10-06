@@ -69,7 +69,7 @@ TEMPLATE_claude/           │     ├── commands/
 ├── CLAUDE_TEMPLATE.md           │   └── dev-*.md      ← généré stack (tracké git)
 └── .template-source.json        ├── CLAUDE.md         ← généré (tracké git)
                                  ├── project-config.json ← généré (tracké git)
-                                 └── memory/           ← tracké git
+                                 └── memory/           ← tracké git (MEMORY.md initialisé en fin d'init)
 
                                  TEMPLATE_claude/      ← gitignore (fetché depuis GitHub)
                                  .gitignore            ← généré par /init-project
@@ -88,6 +88,7 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/{agents,commands}/context/*.template.md` | Contextes partagés template (jamais édités) | Non (gitignore) |
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
+| `contracts/CHANGELOG.md` | Changelog des contrats (squelette créé par `/init-project`) | Oui |
 
 > **Après un `git clone`/`git pull`** sur un projet déjà initialisé, les fichiers gitignorés
 > ci-dessus (`TEMPLATE_claude/`, commandes, agents template) sont absents jusqu'au prochain
@@ -670,6 +671,7 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
   + agents `dev-*` selon la stack configurée) et la met à jour — documentation uniquement, cette
   comparaison ne crée/modifie/supprime jamais `.claude/agents/*.md`
 - Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL` + table `Agents Disponibles`) et `.claude/settings.json`
+- Crée s'ils sont absents `.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` (jamais écrasés)
 
 ### Structure de CLAUDE.md — Zone projet / Zone template
 

@@ -1396,6 +1396,51 @@ else
 fi
 ```
 
+#### Memoire projet et squelettes lus au demarrage (derniere etape)
+
+`/start-session` lit `.claude/memory/MEMORY.md` (source de verite unique) et le CDP lit `contracts/CHANGELOG.md`.
+Sans ces fichiers, le premier `/start-session` echoue. Les creer a la **toute fin** de l'init
+(apres `project-config.json`, pour en tirer les valeurs) — idempotent, ne jamais ecraser un fichier existant ;
+egalement execute a la reinitialisation d'un projet existant (option d) :
+
+```bash
+mkdir -p .claude/memory _work/handoff _work/reports contracts
+
+PROJECT_NAME=$(jq -r '.name // ""' .claude/project-config.json)
+VERSION=$(jq -r '.version // "0.1.0"' .claude/project-config.json)
+BRANCH=$(git branch --show-current 2>/dev/null); BRANCH=${BRANCH:-main}
+
+[ -f .claude/memory/MEMORY.md ] || cat > .claude/memory/MEMORY.md <<MEMORY_EOF
+# Memoire projet — ${PROJECT_NAME}
+
+> Source de verite unique au demarrage d'une session (/start-session). Mise a jour par /end-session.
+
+## Etat courant
+
+- **Version** : ${VERSION}
+- **Branche** : ${BRANCH}
+- **Travail en cours** : aucun — projet initialise par /init-project
+- **Issues actives** : aucune
+
+## Regles critiques
+
+(aucune pour le moment)
+
+## Corrections de comportement
+
+(aucune pour le moment)
+MEMORY_EOF
+
+[ -f contracts/CHANGELOG.md ] || cat > contracts/CHANGELOG.md <<'CHANGELOG_EOF'
+# Changelog des contrats
+
+> Changements de contrats (API, schemas) : `BREAKING` | `CHANGED` | `ADDED`. Lu par le CDP au GATE 2.
+CHANGELOG_EOF
+```
+
+> `_work/` est gitignore (purge a chaque `/start-session`). `.claude/workflow-state.json` n'est **pas** cree ici :
+> il est cree par le CDP au premier workflow. `.claude/memory/` est tracke — l'inclure dans le commit d'init.
+
 ---
 
 ## Message de Fin
@@ -1409,6 +1454,8 @@ Configuration :
 - Database     : <DATABASE>
 - CI/CD        : <CICD>
 - Environnements : <ENVIRONMENTS>  (ex: QUALIF -> PROD)
+
+Memoire projet : .claude/memory/MEMORY.md initialisee (si absente)
 
 Agents generes :
 - .claude/agents/dev-backend.template.md
@@ -2030,6 +2077,9 @@ else
   echo "  .claude/settings.json déjà présent — non écrasé"
 fi
 ```
+
+Puis appliquer la sous-section **"Memoire projet et squelettes lus au demarrage"** (creation idempotente de
+`.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` s'ils sont absents).
 
 #### Etape d7 — Vérifier et créer les labels GitHub de phase
 
