@@ -6,6 +6,18 @@ Ce fichier centralise les elements repetes dans les definitions de commandes et 
 
 ---
 
+## 0. Interactions avec l'utilisateur (OBLIGATOIRE)
+
+Toute question, confirmation, validation ou choix attendu de l'utilisateur — dans une commande
+(`/start-session`, `/end-session`, `/backlog`, `/milestone`, `/context-audit`...) comme dans `/init-project` —
+est pose via l'outil **`AskUserQuestion`**, jamais en texte dans le chat (pas de liste numerotee, `[O/n]`,
+`(o/n)`, `[1/2/3]`, « Attendre la reponse »). 2 a 4 options avec label court + description, defaut marque
+« (Recommande) », jusqu'a 4 questions groupees par appel, saisie libre via « Autre ». Les blocs de texte
+des commandes decrivent le **contenu** des questions, pas leur format d'affichage. Un agent qui n'est pas
+le teamleader remonte sa question au teamleader (`TEAMMATES_PROTOCOL.md`), qui la pose.
+
+---
+
 ## 1. Contexte Projet
 
 **A utiliser dans tous les agents et commandes au lieu de repeter ces informations.**
@@ -279,6 +291,11 @@ perf:     Amelioration de performance
 ---
 
 ## 8. Nettoyage
+
+### 8.0 Confinement dans le projet (OBLIGATOIRE)
+
+Jamais de worktree, dossier ou fichier de travail hors du dossier du projet (`../`, `/tmp`, `$TMPDIR`, `~/`).
+Worktree git → `.claude/worktrees/<nom>` ; temporaire → `_work/tmp/` (gitignore). Les supprimer en fin de tache.
 
 ### 8.1 Fichiers Temporaires a Supprimer
 

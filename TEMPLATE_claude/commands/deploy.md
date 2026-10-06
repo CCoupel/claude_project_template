@@ -53,7 +53,7 @@ Sinon -> workflow normal.
 ### Pour PROD
 - [ ] Version publiee disponible (`/publish prod` execute — merge, tag officiel et rebuild CI
       deja termines)
-- [ ] Confirmation utilisateur
+- [ ] Confirmation utilisateur (via `AskUserQuestion` — jamais en texte)
 
 ## Workflow QUALIF
 

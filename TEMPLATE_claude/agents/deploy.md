@@ -324,10 +324,12 @@ Si un milestone actif correspond :
 
 ```
 Milestone <TITLE> detecte (<N> issues — <X>% complete).
-Cloturer le milestone <TITLE> ? [O/n]
 ```
+Question remontee au format unique (`TEAMMATES_PROTOCOL.md`) — `DEPLOY BLOQUE` + `Questions:` :
+`Q1 — Cloturer le milestone <TITLE> ?` — `Cloturer` (Recommande) : milestone ferme, version consignee / `Laisser ouvert` : aucun changement.
+Le teamleader la pose via `AskUserQuestion`.
 
-Si oui → executer la logique de cloture (identique a `/milestone close v[X.Y.Z]`) :
+Si cloturer → executer la logique de cloture (identique a `/milestone close v[X.Y.Z]`) :
 
 1. Lister les issues ouvertes restantes dans le milestone
 2. Si issues ouvertes → proposer : reporter vers prochain milestone / fermer / laisser en suspens

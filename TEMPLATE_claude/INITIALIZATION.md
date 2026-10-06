@@ -2,6 +2,10 @@
 
 Ce document decrit le processus complet d'initialisation d'un projet avec Claude Code.
 
+> **Convention d'interaction** : toutes les questions et confirmations ci-dessous sont posees via l'outil
+> `AskUserQuestion` (2-4 options, saisie libre via « Autre »), jamais en texte dans le chat. Les blocs
+> `a) b) c)`, `(o/n)` et `> [Texte libre]` decrivent le contenu des questions, pas leur format d'affichage.
+
 ## Declenchement Automatique
 
 L'initialisation est declenchee automatiquement si :
@@ -493,7 +497,7 @@ Commandes disponibles :
 - /review, /qa, /secu
 - /build, /publish qualif|prod, /deploy qualif|prod
 
-Confirmer et generer ? (o/n)
+Confirmer et generer ? → AskUserQuestion : Generer / Modifier / Annuler
 ```
 
 ## Comportements intrinsèques

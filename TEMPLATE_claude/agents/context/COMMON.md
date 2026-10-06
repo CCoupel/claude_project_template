@@ -23,6 +23,17 @@ Ces axes s'appliquent en continu pendant le travail (conception, implementation,
 
 ---
 
+## Confinement des Fichiers de Travail (OBLIGATOIRE)
+
+Tout fichier ou dossier cree pendant le travail reste **dans le dossier du projet** — jamais `../`,
+chemin absolu hors du repo, `/tmp`, `$TMPDIR` ou `~/`.
+
+- **Worktree git** : `.claude/worktrees/<nom>` uniquement (jamais `../<repo>-<nom>`, jamais `/tmp/...`) ; `MARKETING/` pour le site.
+- **Fichier / dossier temporaire** : `_work/tmp/` (`mkdir -p _work/tmp`, `mktemp -p _work/tmp`, ou `TMPDIR="$PWD/_work/tmp"`) ; supprimer en fin de tache.
+- Si un outil impose un emplacement externe et ne peut pas etre redirige : **BLOQUE** et demander au teamleader.
+
+---
+
 ## Gestion de la Todo List (OBLIGATOIRE)
 
 Vous DEVEZ utiliser le tool `TodoWrite` pour suivre votre progression de maniere visible.

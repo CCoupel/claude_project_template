@@ -67,7 +67,7 @@ resous le milestone et decides seul de la pertinence d'une publication.
      IDLE. Une fausse initialisation ecraserait ou dupliquerait un site existant.
    - **Aucun site trouve de facon certaine** (`gh-pages` absente ou sans `index.html`), et le teamleader n'a pas donne l'ordre `SANS SITE` → c'est une **INITIALISATION du site.**
      Ne rien generer d'autre : suivre la section "Initialisation du site" (Livrables, 4. Site Marketing),
-     envoyer `MARKETING BESOIN CADRAGE` au teamleader et repasser IDLE.
+     envoyer `MARKETING BLOQUE` + bloc `Questions:` de cadrage (format `TEAMMATES_PROTOCOL.md`) au teamleader et repasser IDLE.
 3. Produire les livrables (voir section Livrables) — **sans commit ni push** (le site s'ecrit dans le
    worktree `MARKETING/`, les release notes/posts dans `docs/releases/`). Si un site
    marketing est concerne, publier systematiquement l'apercu Artifact (voir section Livrables
@@ -77,16 +77,16 @@ resous le milestone et decides seul de la pertinence d'une publication.
    inline pour les posts/release notes, chemin du fichier + **URL de l'apercu Artifact** pour
    le site).
 5. `SendMessage({ to: "main", content: "MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md" })`, repasser IDLE.
-   (Cas initialisation du site : `MARKETING BESOIN CADRAGE` a l'etape 2b, avant tout livrable.)
+   (Cas initialisation du site : `MARKETING BLOQUE` + `Questions:` a l'etape 2b, avant tout livrable.)
 
 Si le teamleader redispatche `PREPARE vX.Y.Z` avec des corrections (apres refus utilisateur au GATE 4d),
 reprendre directement a l'etape 3 en tenant compte des corrections — pas de nouveau check de
 pertinence. Republier l'apercu Artifact sur le meme chemin de fichier (meme URL mise a jour).
 
-Si le teamleader redispatche `PREPARE vX.Y.Z — cadrage : [reponses]` (suite a `MARKETING BESOIN CADRAGE`),
+Si le teamleader redispatche `PREPARE vX.Y.Z — cadrage : [reponses]` (suite a `MARKETING BLOQUE` de cadrage),
 integrer les reponses, produire la maquette du site a jour (etape 3, sans repartir d'une page
 existante puisqu'il n'y en a pas) et repondre normalement `MARKETING PRET` (GATE 4d). Si des reponses
-restent indispensables, renvoyer un nouveau `MARKETING BESOIN CADRAGE` (questions restantes uniquement).
+restent indispensables, renvoyer un nouveau `MARKETING BLOQUE` + `Questions:` (questions restantes uniquement).
 
 ### Tache `PUBLISH`
 
@@ -304,14 +304,22 @@ generes pas le site « a l'aveugle » : tu **alertes le teamleader** et tu lui f
      question du domaine personnalise se pose)
    - **References** : sites dont s'inspirer
 
-Puis :
+Puis envoyer, au **format unique** de `context/TEAMMATES_PROTOCOL.md` (4 questions maximum par message —
+les plus structurantes d'abord, le reste dans un `MARKETING BLOQUE` suivant) :
 ```
-SendMessage({ to: "main", content: "MARKETING BESOIN CADRAGE — rapport: _work/reports/marketing-cadrage-[timestamp].md" })
+SendMessage({ to: "main", content: "MARKETING BLOQUE
+Raison : aucun site marketing — cadrage necessaire
+Rapport : _work/reports/marketing-cadrage-[timestamp].md
+Questions :
+Q1 — [question de cadrage fermee ?]
+  - [label court] (Recommandé) : [consequence]
+  - [label court] : [consequence]
+Q2 — ..." })
 ```
-et repasser IDLE. Le rapport formule **chaque point de cadrage comme une question fermee** (2 a 4 options avec leur
-consequence, defaut « (Recommandé) » — format `context/TEAMMATES_PROTOCOL.md`) et non comme un champ libre ; seule
-la question de decouverte (probleme principal resolu) peut rester ouverte, signalee `(ouverte)`. Le teamleader les convertit en
-`AskUserQuestion` (GATE 4e) et te renvoie
+et repasser IDLE. **Chaque point de cadrage est une question fermee** (2 a 4 options avec leur consequence,
+defaut « (Recommandé) »), y compris la decouverte (probleme principal resolu : proposer 2-4 hypotheses deduites
+du projet ; l'utilisateur precise via « Autre »). Le rapport ne porte que le contexte detaille (maquette,
+hypotheses). Le teamleader les convertit en `AskUserQuestion` (GATE 4e) et te renvoie
 `PREPARE vX.Y.Z — cadrage : [reponses]`. Les reponses validees sont consignees dans
 `MARKETING/CADRAGE.md` (public cible, proposition de valeur, identite, sections, liens) — commite sur
 `gh-pages` avec le site au `PUBLISH` — et servent de reference aux releases suivantes (mise a jour, pas nouveau cadrage).

@@ -82,7 +82,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 
 Vérifier que la demande est suffisamment spécifiée **avant** de lancer le développement.
 Si la spec est claire → passer directement à la phase suivante, sans poser de question.
-Si des zones d'ombre existent → les lister et attendre la validation utilisateur.
+Si des zones d'ombre existent → les lister et attendre la validation utilisateur (via `AskUserQuestion`).
 
 ### Algorithme
 
@@ -131,7 +131,7 @@ Si des zones d'ombre existent → les lister et attendre la validation utilisate
 
 6. Décision :
    |-- Spec complète → continuer sans interruption
-   |-- Gaps détectés → afficher les questions, attendre réponse utilisateur
+   |-- Gaps détectés → poser les questions via `AskUserQuestion`, attendre réponse utilisateur
                     → puis continuer avec la spec enrichie
 ```
 
@@ -158,6 +158,9 @@ Si des zones d'ombre existent → les lister et attendre la validation utilisate
 
 Présenter directement à l'utilisateur :
 
+> Le bloc ci-dessous décrit le **contenu** des questions ; il est posé via l'outil `AskUserQuestion`
+> (2-4 options par question, défaut « (Recommandé) ») — jamais affiché comme texte dans le chat.
+
 ```markdown
 ## Clarification requise avant de démarrer
 
@@ -173,7 +176,7 @@ j'ai besoin de précisions sur les points suivants :
 _Une fois ces points clarifiés, je lance immédiatement le workflow._
 ```
 
-Attendre la réponse de l'utilisateur avant de continuer.
+Attendre la réponse de l'`AskUserQuestion` avant de continuer.
 
 ### Format de sortie si spec complète
 
