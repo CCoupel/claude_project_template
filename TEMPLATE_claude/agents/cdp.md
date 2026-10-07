@@ -565,7 +565,7 @@ Selon la reponse utilisateur :
 - **Oui / `/deploy prod`** →
   > Les issues sont **deja fermees** (CI verte, Phase 4) — aucun changement sur elles. La validation du milestone
   > releve de l'utilisateur : verifier le milestone (100 % des issues fermees)
-  Phase 6 (PROD) — la branche distante du milestone est supprimee en fin de deploiement reussi (`deploy.md`, Etape 6)
+  Phase 6 (PROD) — les branches residuelles (milestone, PR mergees) sont supprimees en local et en remote en fin de deploiement reussi (`deploy.md`, Etape 6)
 - **NON** →
   **Seules les issues concernees sont rouvertes** — les autres restent fermees. Determiner les issues concernees depuis
   la reponse de l'utilisateur (champ « Autre ») ; si elles ne sont pas designees sans ambiguite, poser un
