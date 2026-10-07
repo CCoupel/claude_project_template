@@ -231,7 +231,7 @@ perf:     Amelioration de performance
 > (voir `agents/pr-reviewer.md` Phase D). Pour le cas normal (cycle milestone) — voir
 > `agents/deploy.md` Tache PUBLISH PROD étape 2 pour la commande exacte (`git merge --no-ff`,
 > qui préserve l'historique detaillé de la branche milestone, condition necessaire au
-> nettoyage remote sans perte de `agents/deploy.md` Tache DEPLOY PROD Étape 6). Ne pas
+> nettoyage des branches sans perte de `agents/deploy.md` Tache DEPLOY PROD Étape 6). Ne pas
 > dupliquer cette commande ici — la source unique de vérité est `agents/deploy.md`, pour
 > éviter toute nouvelle dérive entre les deux fichiers.
 
@@ -284,8 +284,8 @@ perf:     Amelioration de performance
 - [ ] Merge vers main effectue
 - [ ] Tag Git cree et pushe
 - [ ] Release creee avec artefacts
-- [ ] Branche milestone : copie locale conservee, copie distante supprimee une fois le succes
-      confirme (le tag est l'ancrage de rollback, pas la branche — voir `agents/deploy.md` Etape 8)
+- [ ] Branches residuelles (milestone + PR `MERGED`) : supprimees en local ET en remote une fois le succes
+      confirme (le tag est l'ancrage de rollback, pas la branche — voir `agents/deploy.md` Etape 6)
 ```
 
 ---

@@ -289,7 +289,7 @@ rollout/smoke tests et le rollback infra specifiques au mecanisme choisi (docker
 vps, serverless...) — ne rien dupliquer ici.
 
 Pour DEPLOY PROD specifiquement, en cas de succes : creer les notes de release (ci-dessous),
-puis poursuivre vers l'Etape 5 (cloture milestone) et l'Etape 6 (nettoyage branche) —
+puis poursuivre vers l'Etape 5 (cloture milestone) et l'Etape 6 (nettoyage des branches, local et remote) —
 generiques, independantes du mecanisme, communes a tous les projets quel que soit le mecanisme
 de deploiement choisi.
 
@@ -353,21 +353,32 @@ SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture.
 > `deployer` — le teamleader la prend independamment, en parallele de ce deploiement, en
 > dispatchant directement `marketing`. Voir `agents/cdp.template.md` Phase 6 et `agents/marketing-release.template.md`.
 
-### Étape 6 — Nettoyage de la branche de travail (remote uniquement, apres succes confirme)
+### Étape 6 — Nettoyage des branches résiduelles (local ET remote, après succès confirmé)
 
-Une fois le déploiement PROD confirmé réussi (rollout OK, tag `vX.Y.Z` poussé), la branche de
-travail distante n'a plus d'utilité opérationnelle : le tag est l'ancrage de rollback durable
-(voir section Rollback ci-dessous, qui cible déjà le tag, jamais la branche), et `main`
-contient déjà tout son contenu (merge `--no-ff`, aucun commit perdu). Supprimer uniquement la
-copie **distante** — la copie locale n'est jamais touchée (laissée à la discrétion de chaque
-poste) :
+Une fois le déploiement PROD confirmé réussi (rollout OK, tag `vX.Y.Z` poussé, CI verte), les branches
+de travail n'ont plus d'utilité opérationnelle : le tag est l'ancrage de rollback durable (voir section
+Rollback ci-dessous, qui cible déjà le tag, jamais la branche), et `main` contient déjà tout leur contenu
+(merge `--no-ff`, aucun commit perdu). Nettoyer **en local et en remote** :
 
 ```bash
-git push origin --delete milestone/vX.Y.Z
+git fetch --prune
+git checkout main && git pull origin main          # ne jamais supprimer la branche courante
+git push origin --delete milestone/vX.Y.Z          # branche du milestone livré (remote)
+git branch -D milestone/vX.Y.Z                     # copie locale
+# Balayage des branches résiduelles : toute branche locale ou remote dont la PR est MERGED
+gh pr list --head <branche> --state all --json number,state -q '.[].state'
+git push origin --delete <branche> && git branch -D <branche>
 ```
 
+Règles :
+- **Jamais** `main`, `gh-pages` (ni toute branche de publication), ni la branche d'un milestone encore actif ;
+  jamais un worktree actif (`git worktree list`).
+- Branche dont la PR est `CLOSED` **non mergée** ou sans PR avec des commits propres : ne pas supprimer,
+  la signaler dans le `DONE` (le teamleader demandera à l'utilisateur via `AskUserQuestion`).
+- Vérifier que le merge vers `main` a réussi **avant** de tagger et de nettoyer.
+
 > Ne s'applique qu'en cas de succès confirmé. En cas d'échec du rollout, voir le Protocole
-> d'échec DEPLOY PROD ci-dessus — la branche reste intacte (local et remote) pour investigation.
+> d'échec DEPLOY PROD ci-dessus — les branches restent intactes (local et remote) pour investigation.
 
 ## Rollback
 

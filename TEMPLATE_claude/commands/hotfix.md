@@ -126,7 +126,7 @@ avant de deployer — jamais de contournement.
 
 Deploiement, mecanique identique a `agents/deploy.md` Taches PUBLISH PROD / DEPLOY PROD (build
 candidat, push de la branche milestone, merge `--no-ff` vers `main`, tag `vX.Y.Z`, suivi CI,
-nettoyage remote de la branche a l'Etape 6 en cas de succes) — dispatcher `deployer` avec
+nettoyage des branches local + remote a l'Etape 6 en cas de succes) — dispatcher `deployer` avec
 l'ordre chaine BUILD puis PUBLISH PROD puis DEPLOY PROD, **sans passer par QUALIF** — seule
 exception ou PUBLISH PROD part directement d'un BUILD frais plutot que d'un artefact deja
 valide en QUALIF (voir `agents/deploy.md` Mode Teammates).

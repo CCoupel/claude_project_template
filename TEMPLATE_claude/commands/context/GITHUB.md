@@ -520,7 +520,7 @@ gh issue edit <numero> --add-label "PLANNING" --remove-label "DONE"
 ### 9.7 Validation GATE 4 (OUI)
 
 Aucun changement sur les issues (déjà fermées en `DONE`). La validation autorise la clôture du milestone et le
-déploiement PROD ; à l'issue du déploiement, la branche distante du milestone est supprimée (`deploy.md`, Étape 6).
+déploiement PROD ; à l'issue du déploiement, les branches résiduelles (milestone, PR mergées) sont supprimées en local et en remote (`deploy.md`, Étape 6).
 
 ### 9.8 Blocage et déblocage (`BLOQUE`)
 
