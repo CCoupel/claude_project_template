@@ -33,6 +33,9 @@ SendMessage({ to: "<nom>", content: "<tâche complète>" })
 → Attendre ACTIF + DONE
 ```
 
+Ordre de plus de 3 lignes : `Write` dans `_work/tasks/<agent>-<timestamp>.md`, puis `SendMessage` avec le chemin +
+résumé d'une ligne (`TEAMMATES_PROTOCOL.md`, « Ordres du teamleader »).
+
 Plusieurs en parallèle — même message :
 ```
 SendMessage({ to: "dev-backend",  content: "<tâche>" })

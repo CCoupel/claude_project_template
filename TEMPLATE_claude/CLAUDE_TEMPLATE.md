@@ -113,12 +113,14 @@ Tu **coordonnes et dispatches**. Tu n'exécutes aucune tâche technique toi-mêm
 
 | Outil interdit | Déléguer à |
 |---------------|-----------|
-| `Edit`, `Write`, `MultiEdit` | `dev-*`, `doc-updater` |
+| `Edit`, `Write`, `MultiEdit` (sauf `Write` d'un ordre dans `_work/tasks/*.md`) | `dev-*`, `doc-updater` |
 | `Bash` (build / test / git) | `qa`, `deployer`, `dev-*` |
 | `Read` (code applicatif) | `code-reviewer`, `planner` |
 | `Glob`, `Grep` (recherche code) | `planner`, `dev-*` |
 
-**`Read` autorisé uniquement pour** : `CLAUDE.md`, `MEMORY.md`, `project-config.json`, `_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`
+**`Read` autorisé uniquement pour** : `CLAUDE.md`, `MEMORY.md`, `project-config.json`, `_work/tasks/*.md`, `_work/handoff/*.md`, `_work/reports/*.md`, `contracts/CHANGELOG.md`
+
+**`Write` autorisé uniquement pour** : `_work/tasks/*.md` (ordres aux teammates, création seule — jamais `Edit`/`MultiEdit`, jamais un autre chemin)
 
 **Ne jamais** exécuter une tâche technique soi-même — spawner l'agent approprié.
 
@@ -131,6 +133,12 @@ Tous les teammates sont spawned au démarrage (`/start-session`) et sont en IDLE
 SendMessage({ to: "<nom-canonique>", content: "<tâche complète>" })
 → Attendre ACTIF (confirmation) + DONE (références fichiers)
 ```
+
+**Ordre de plus de 3 lignes → fichier** : `Write` dans `_work/tasks/<agent>-<YYYYMMDD-HHmmss>.md` (un fichier par ordre,
+jamais réécrit), puis `SendMessage` avec le seul chemin + un résumé d'une ligne :
+`Tâche : _work/tasks/<agent>-<timestamp>.md — <résumé>`. Le fichier liste périmètre, fichiers à lire et livrables
+attendus. Restent inline : ordre ≤ 3 lignes, `/clear`, réponses à un `BLOQUE`, correction de rapport invalide.
+Relire l'ordre (`_work/tasks/*.md`) pour contrôler le `DONE` par rapport à la demande.
 
 Plusieurs agents en parallèle — même tour :
 ```
@@ -199,7 +207,7 @@ SendMessage({
 | Worktree git (isolation, branche parallèle) | `.claude/worktrees/<nom>` — jamais `../<repo>-<nom>` ni `/tmp/...` |
 | Worktree du site marketing | `MARKETING/` (racine du projet) |
 | Fichier / dossier temporaire (scratch, sortie intermédiaire, `.tmp`, backup) | `_work/tmp/` (créé à la demande, gitignoré) |
-| Rapports et handoffs inter-agents | `_work/reports/`, `_work/handoff/` |
+| Ordres du teamleader (> 3 lignes), rapports et handoffs inter-agents | `_work/tasks/`, `_work/reports/`, `_work/handoff/` |
 
 - Fichiers temporaires : `mkdir -p _work/tmp && mktemp -p _work/tmp ...` ; les supprimer en fin de tâche.
 - Worktrees : `git worktree add .claude/worktrees/<nom> ...` puis `git worktree remove` en fin de tâche.

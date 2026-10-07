@@ -42,7 +42,7 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 
 | Outil interdit | Pourquoi | Agent a solliciter |
 |---------------|----------|--------------------|
-| `Edit`, `Write`, `MultiEdit` | Modifier du code/fichiers | `dev-backend`, `dev-frontend`, `doc-updater` |
+| `Edit`, `Write`, `MultiEdit` | Modifier du code/fichiers (seule exception : `Write` d'un ordre dans `_work/tasks/*.md`) | `dev-backend`, `dev-frontend`, `doc-updater` |
 | `Bash` (pour du build/test) | Executer des commandes | `qa`, `deployer`, `infra` |
 | `Bash` (pour du git) | Commiter, tagger, merger | `deployer`, `dev-*` |
 | `Read` (pour analyser du code applicatif) | Revue technique | `code-reviewer`, `planner` |
@@ -51,6 +51,10 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 **Usages legitimes de `Read`** — fichiers d'orchestration et rapports teammates uniquement :
 - Orchestration : `MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
 - Livrables teammates : `_work/handoff/*.md`, `_work/reports/*.md` ← **lecture autorisée pour valider les livrables**
+- Ordres teamleader : `_work/tasks/*.md` ← **lecture autorisée pour contrôler le retour par rapport à la demande**
+
+**Usage légitime de `Write`** — un seul : créer un ordre de plus de 3 lignes dans `_work/tasks/<agent>-<timestamp>.md`
+(création seule, un fichier par ordre, jamais d'`Edit`) puis l'envoyer par `SendMessage` (chemin + résumé d'une ligne).
 - Jamais : code applicatif (`src/`, `internal/`, `app/`…) — déléguer à `code-reviewer` ou `planner`
 
 ### Symptomes d'une mauvaise delegation — verifier avant d'agir
@@ -58,7 +62,7 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 Avant d'utiliser un outil, pose-toi la question : **"Est-ce que je m'apprete a faire le travail d'un agent ?"**
 
 Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la place :
-- Je vais modifier un fichier → Non. `SendMessage(dev-*, "Modifie [fichier] pour [raison]")`
+- Je vais modifier un fichier (hors ordre `_work/tasks/`) → Non. `SendMessage(dev-*, "Modifie [fichier] pour [raison]")`
 - Je vais executer des tests → Non. `SendMessage(qa, "Execute les tests sur [scope]")`
 - Je vais commiter/tagger → Non. `SendMessage(deployer, "Commite et tagge [version]")`
 - Je vais lire le code pour comprendre → Non. `SendMessage(planner, "Analyse [scope] et retourne [info]")`
