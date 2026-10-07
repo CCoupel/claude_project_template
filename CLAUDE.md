@@ -156,6 +156,12 @@ gh release create vX.Y.Z --verify-tag --generate-notes --title vX.Y.Z
 
 Une release par tag, sans exception — ne pas laisser de tag sans release.
 
+Une fois la release publiée (et la CI verte pour un repo qui en a une), **nettoyer les branches résiduelles**
+en local et en remote : `git fetch --prune`, puis `git branch -D <b>` et `git push origin --delete <b>` pour
+chaque branche dont la PR est `MERGED`. Ne jamais toucher `main`, `gh-pages`, `gh-pages-update` ; une branche à
+PR fermée avec des commits non mergés : demander avant de la supprimer. Vérifier que `gh pr merge` a réussi
+avant de tagger.
+
 ---
 
 ## Ce qu'il ne faut PAS faire
