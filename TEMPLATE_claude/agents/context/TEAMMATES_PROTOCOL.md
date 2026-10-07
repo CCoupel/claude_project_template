@@ -27,12 +27,32 @@
 ## 2. Réception d'une tâche
 
 ```
+Lire l'ordre : message court, ou fichier `_work/tasks/...` référencé (voir « Ordres du teamleader » ci-dessous)
 SendMessage({ to: "main", content: "[NOM] ACTIF" })   ← confirmer réception
 Exécuter la tâche
 Écrire le livrable dans un fichier
 SendMessage({ to: "main", content: "[NOM] DONE\n<références fichiers>" })
 Retour en IDLE
 ```
+
+### Ordres du teamleader — au-delà de 3 lignes, un fichier
+
+La règle « fichier-first » vaut aussi dans le sens teamleader → teammate :
+
+- **Ordre de 3 lignes ou moins** : inline dans le `SendMessage`.
+- **Ordre de plus de 3 lignes** : le teamleader l'écrit dans `_work/tasks/[agent]-[YYYYMMDD-HHmmss].md`
+  (un fichier par ordre, jamais réécrit) et n'envoie que le chemin + un résumé d'une ligne :
+
+```
+SendMessage({ to: "<agent>", content: "Tâche : _work/tasks/<agent>-<timestamp>.md — <résumé en une ligne>" })
+```
+
+- Le fichier contient : le périmètre, les fichiers à lire (plan, handoff, contrats) et les livrables attendus
+  avec leurs chemins. Pas d'extrait de code ni de contenu copié d'un autre fichier : une référence suffit.
+- **Exceptions inline** (toujours courts) : `/clear`, réponses à un `BLOQUE`, correction de rapport invalide.
+- À la réception : lire le fichier **avant** d'envoyer `ACTIF`. Fichier introuvable → `[NOM] BLOQUE` (raison en une ligne).
+- Le teamleader garde le droit de relire `_work/tasks/*.md` pour contrôler le `DONE` par rapport à la demande
+  initiale (voir `teamleader.md`).
 
 ---
 
@@ -45,6 +65,7 @@ Retour en IDLE
 | dev-*, test-writer | Code commité | SHA uniquement dans le message |
 | planner, code-reviewer, qa, security | Rapport | `_work/reports/[agent]-[YYYYMMDD-HHmmss].md` |
 | Tous | Handoff | `_work/handoff/[agent]-[YYYYMMDD-HHmmss].md` |
+| teamleader | Ordre (> 3 lignes) | `_work/tasks/[agent]-[YYYYMMDD-HHmmss].md` |
 
 Format du message DONE :
 ```
@@ -130,7 +151,7 @@ le format sans le confronter à la table de dispatch.
 - Jamais de communication directe avec l'utilisateur — tout via le teamleader
 - Rester en IDLE après DONE — ne pas fermer ce pane
 - Signaler les jalons en cours de route (EN COURS étape N/M) — voir section 4b
-- Si la tâche référence un handoff (`_work/handoff/...`) ou un rapport (`_work/reports/...`) → lire le fichier avant de commencer
+- Si la tâche référence un fichier d'ordre (`_work/tasks/...`), un handoff (`_work/handoff/...`) ou un rapport (`_work/reports/...`) → lire le fichier avant de commencer
 
 ---
 
