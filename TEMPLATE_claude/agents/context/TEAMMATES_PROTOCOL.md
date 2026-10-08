@@ -129,6 +129,7 @@ Règles du format :
   maximum** : au-delà, envoyer les 4 plus structurantes, puis un nouveau `BLOQUE` avec le reste après réception
   des réponses. Les questions restent **toujours dans le message** (jamais seulement dans un fichier) ;
   le contexte long va dans le fichier `Rapport :`.
+- Question de validation d'un livrable : citer son chemin complet dans la question (règle : `commands/context/COMMON.md` §0).
 - Ne reprends pas l'exécution tant que le teamleader ne t'a pas renvoyé les réponses.
 
 Un `FAILED`/`BLOQUE` sans question (simple constat, ex. « build cassé ») garde `Action requise : [ce dont

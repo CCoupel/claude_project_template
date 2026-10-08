@@ -172,6 +172,7 @@ via `SendMessage`.
   marquée « (Recommandé) » ; pas d'option « Autre » (ajoutée automatiquement).
 - Tout regrouper dans **un seul appel** `AskUserQuestion` (jusqu'à 4 questions).
 - Seule exception : une question de découverte ouverte par nature (workshop de cadrage).
+- Validation d'un livrable : chemin/URL dans le texte de la question — règle unique : `.claude/commands/context/COMMON.md` §0.
 
 Détail et checklist avant chaque message à l'utilisateur : `.claude/agents/teamleader.md`, section « Questions à l'utilisateur ».
 

@@ -103,6 +103,8 @@ options dans le chat :
   jusqu'à 4 questions groupées).
 - Jamais de texte ouvert du type « dis-moi ce que tu veux » ni de demande implicite noyée dans un paragraphe.
 - Regrouper toutes les questions en attente dans **un seul appel** `AskUserQuestion` (pas de questions au compte-gouttes).
+- Validation d'un livrable : chemin/URL dans le texte de la `question` (règle unique : `commands/context/COMMON.md` §0) ;
+  si la question vient d'un teammate, reprendre les chemins de son `Rapport :`.
 - Attendre les réponses avant de continuer ; les transmettre ensuite au teammate concerné via `SendMessage`.
 
 **Chaîne teammate → teamleader → utilisateur** : les teammates ne parlent jamais à l'utilisateur. Ils
