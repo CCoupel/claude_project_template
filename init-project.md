@@ -59,6 +59,9 @@ jamais du texte brut listant des lettres dans le chat :
     |
     v
 [FINALISATION] --> CLAUDE.md + .gitignore + CI/CD workflow
+    |
+    v
+[AUDIT CONTEXTE] --> commit d'init puis /context-audit (audit complet)
 ```
 
 > La phase **FETCH TEMPLATE** est toujours executee en premier.
@@ -1515,6 +1518,33 @@ CHANGELOG_EOF
 
 ---
 
+### 6. Audit du contexte (`/context-audit`)
+
+Derniere etape avant le message de fin : un init genere beaucoup de fichiers par substitution de placeholders
+(commandes, agents, `environments/*`, `CLAUDE.md`, `project-config.json`) — c'est la que naissent les `{VARIABLE}`
+non remplaces, les references vers un agent non genere et les incoherences entre `project-config.json`,
+`CLAUDE.md` et les agents. `/context-audit` les detecte deja : on le reutilise tel quel, sans variante.
+
+1. **Commiter l'etat initial AVANT l'audit** (fichiers d'init suivis par git, `.claude/memory/` inclus) pour que le
+   diff de l'audit soit isole et facile a relire ou annuler :
+
+   ```bash
+   git add -A && git commit -m "chore(claude): init-project" || true   # || true : rien a commiter = ok
+   ```
+
+2. **Lancer `/context-audit`** en audit complet (sans scope), en suivant `commands/context-audit.md`. Les
+   resolutions `Auto` (doublons, references cassees, optimisations) sont appliquees sans question, les `❓`
+   passent par `AskUserQuestion`, comme d'habitude. Apres un init, `MEMORY.md` est vide : la migration
+   MEMORY → docs (2.4) n'a rien a signaler.
+3. **Presenter le rapport "post-init" en tete du message de fin** : ecarts corriges en Auto, ecarts arbitres, ecarts
+   laisses en l'etat. Ne pas committer les corrections de l'audit : l'utilisateur relit `git diff` (le commit
+   d'init sert de point de retour).
+
+Si `/context-audit` est absent de `.claude/commands/` (deploiement incomplet), le signaler dans le rapport et
+continuer — ne jamais bloquer la fin de l'init.
+
+---
+
 ## Message de Fin
 
 ```
@@ -1529,6 +1559,9 @@ Configuration :
 
 Memoire projet : .claude/memory/MEMORY.md initialisee (si absente)
 Agents generiques : <NOM> (.claude/agents/generic.<NOM>.md), ...   (si declares)
+
+Audit contexte (/context-audit) : N ecarts corriges (Auto), N arbitres, N laisses — voir `git diff`
+  (commit d'init = point de retour)
 
 Agents generes :
 - .claude/agents/dev-backend.template.md
@@ -2310,6 +2343,13 @@ gh label create "EN QA"     --color "f9d0c4" --description "Issue en cours de te
 gh label create "DONE"      --color "0e8a16" --description "Issue livrée et validée"           --force
 ```
 
+#### Etape d7b — Audit du contexte (`/context-audit`)
+
+Meme etape que « 6. Audit du contexte » de l'init : commiter l'etat synchronise (point de retour), puis lancer
+`/context-audit` en audit complet. Les verifications d1e / d5e (graphe, doublons) restent la verification
+specifique a la synchronisation ; `/context-audit` y ajoute les incoherences et references cassees transverses
+(commandes, agents, contextes). Reporter le resultat dans le rapport d8.
+
 #### Etape d8 — Rapport final
 
 ```
@@ -2325,6 +2365,7 @@ Synchronisation terminee.
   CLAUDE.md bloc TEAMLEADER_PROTOCOL : mis à jour
   CLAUDE.md table Agents Disponibles : mis à jour (N lignes — documentation uniquement)
   Labels GitHub                     : vérifiés (PLANNING, EN COURS, EN REVIEW, EN QA, DONE)
+  Audit contexte (/context-audit)   : N corriges (Auto), N arbitres, N laisses (etape d7b)
   Schema infrastructure             : [convertit vers environments[] | deja a jour | inchange (refuse)]
 
   Fichiers PROJET preserves (non touches) :
