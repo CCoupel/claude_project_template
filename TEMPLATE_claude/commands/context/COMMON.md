@@ -16,6 +16,11 @@ est pose via l'outil **`AskUserQuestion`**, jamais en texte dans le chat (pas de
 des commandes decrivent le **contenu** des questions, pas leur format d'affichage. Un agent qui n'est pas
 le teamleader remonte sa question au teamleader (`TEAMMATES_PROTOCOL.md`), qui la pose.
 
+**Validation d'un livrable** (document, fichier, maquette, plan, rapport, PR, page publiee...) : le **chemin
+complet** (ou l'URL cliquable) de chaque livrable a valider figure **dans le texte de la question elle-meme** —
+jamais « voir le fichier genere » ni un lien donne seulement plus haut dans le chat. L'utilisateur ne doit ni
+chercher le livrable, ni avoir a le demander.
+
 ---
 
 ## 1. Contexte Projet
