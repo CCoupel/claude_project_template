@@ -108,11 +108,11 @@
   "features.f3.title": "Parallel agents",
   "features.f3.desc":  "DEV ∥ TEST-WRITER simultaneously. Backend ∥ Frontend if independent. Automatic merge conflict resolution before REVIEW.",
   "features.f4.title": "Issues & Milestones",
-  "features.f4.desc":  "Labels updated at each phase (PLANNING → EN COURS → EN REVIEW → EN QA → DONE → closed). Milestone auto-closed after PROD CI if 100%.",
+  "features.f4.desc":  "Labels updated at each phase (PLANNING → EN COURS → EN REVIEW → EN QA → DONE → closed). BLOQUE (modifier) and ABANDONNE (terminal) statuses. At DONE: push, then the issue is closed only once CI is green. Milestone auto-closed after PROD CI if 100%.",
   "features.f5.title": "12 specialized agents",
   "features.f5.desc":  "CDP, Planner, Dev, Test-Writer, Reviewer, QA, Infra, Deployer, Doc, Security, PR-Reviewer, Marketing. File-based deliverables, lightweight communication.",
   "features.f6.title": "STAGING → PROD pipeline",
-  "features.f6.desc":  "Infra validation before each deploy. Smoke tests. PROD deploy: CI actively monitored — CODE/FLAKY failure → merge revert + tag deletion, CONFIG/INFRA failure → tag deletion only. The deployer reports facts to main, never self-corrects.",
+  "features.f6.desc":  "Infra validation before each deploy. Smoke tests. PROD deploy: CI actively monitored — CODE/FLAKY failure → merge revert + tag deletion, CONFIG/INFRA failure → tag deletion only. The deployer reports facts to main, never self-corrects. The release pipeline is audited if it exists, generated otherwise (infra contract C1-C10); the tag is the source of truth for the version, CI checks it without modifying it. After going to production, leftover branches are cleaned up locally and on the remote.",
   "features.f7.title": "Session memory",
   "features.f7.desc":  "Project memory is initialized by /init-project. /start-session reads project state, current version, active milestone and in-progress work. No repetition between sessions.",
   "features.f8.title": "Auto-generated marketing site",
@@ -126,6 +126,9 @@
 
   "features.f12.title": "Generic agents — non-dev projects",
   "features.f12.desc":  "Not just code: /init-project can declare agents for business tasks (writing PowerPoint decks, documents, analyses). One shared template, one specification per instance (generic.<name>.md) — multiple instances allowed, each known to the CDP which dispatches it by role.",
+
+  "features.f13.title": "Context audit at init",
+  "features.f13.desc":  "An init generates many files through substitution: /init-project ends with a state commit (return point) then /context-audit — unreplaced placeholders, broken references, inconsistencies between project-config.json, CLAUDE.md and agents. Automatic fixes are left to review in git diff. The same audit runs after a template sync.",
 
   "install.title":       "Installation",
   "install.subtitle":    "The tmux launcher manages all your projects from a central hub.",
@@ -178,7 +181,7 @@
   "commands.cat.deploy":       "Deployment & Communication",
   "commands.start-session":    "Starts the session: reads project memory, current version and active milestone, shows work in progress",
   "commands.end-session":      "Closes the session: checks git status, updates project memory, closes teammates (/team-delete --force)",
-  "commands.context-audit":    "Audits config files: duplicates, broken refs, drift between the template and deployed files",
+  "commands.context-audit":    "Audits config files: duplicates, broken refs, drift between the template and deployed files — runs automatically at the end of /init-project",
   "commands.init-project":     "Bootstraps a new project, migrates an older version, or syncs with the template",
   "commands.feature":          "New feature — the CDP chains PLAN, DEV ∥ TEST-WRITER, REVIEW, QA, DOC and staging deploy automatically, up to your GATE 4 validation",
   "commands.bugfix":           "Bug fix — same pipeline as /feature, with a mandatory regression test before review",

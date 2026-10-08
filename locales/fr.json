@@ -108,11 +108,11 @@
   "features.f3.title": "Agents en parallèle",
   "features.f3.desc":  "DEV ∥ TEST-WRITER simultanés. Backend ∥ Frontend si indépendants. Résolution de merge conflicts automatique avant REVIEW.",
   "features.f4.title": "Issues & Milestones",
-  "features.f4.desc":  "Labels mis à jour à chaque phase (PLANNING → EN COURS → EN REVIEW → EN QA → DONE → closed). Milestone auto-clos après CI PROD si 100%.",
+  "features.f4.desc":  "Labels mis à jour à chaque phase (PLANNING → EN COURS → EN REVIEW → EN QA → DONE → closed). Statuts BLOQUE (modificateur) et ABANDONNE (terminal). À DONE : push, puis issue fermée seulement quand la CI est verte. Milestone auto-clos après CI PROD si 100%.",
   "features.f5.title": "12 agents spécialisés",
   "features.f5.desc":  "CDP, Planner, Dev, Test-Writer, Reviewer, QA, Infra, Deployer, Doc, Security, PR-Reviewer, Marketing. Livrables fichiers, communication légère.",
   "features.f6.title": "Pipeline QUALIF → PROD",
-  "features.f6.desc":  "Validation infra avant chaque deploy. Smoke tests. Deploy PROD : la CI est surveillée activement — échec CODE/FLAKY → revert merge + suppression du tag, échec CONFIG/INFRA → suppression du tag uniquement. Le deployer remonte les faits à main, jamais de correction autonome.",
+  "features.f6.desc":  "Validation infra avant chaque deploy. Smoke tests. Deploy PROD : la CI est surveillée activement — échec CODE/FLAKY → revert merge + suppression du tag, échec CONFIG/INFRA → suppression du tag uniquement. Le deployer remonte les faits à main, jamais de correction autonome. Le pipeline de release est audité s'il existe, généré sinon (contrat infra C1-C10) ; le tag fait foi pour la version, la CI la vérifie sans la modifier. Après la mise en prod, les branches résiduelles sont nettoyées en local et en remote.",
   "features.f7.title": "Mémoire de session",
   "features.f7.desc":  "La mémoire projet est initialisée dès /init-project. /start-session lit l'état du projet, la version, le milestone actif et le travail en cours. Aucune répétition entre sessions.",
   "features.f8.title": "Site marketing auto-généré",
@@ -126,6 +126,9 @@
 
   "features.f12.title": "Agents génériques — projets non-dev",
   "features.f12.desc":  "Pas que du code : /init-project peut déclarer des agents pour des tâches métier (rédaction de PowerPoint, de documents, analyses). Un template commun, une spécification par instance (generic.<nom>.md) — plusieurs instances possibles, chacune connue du CDP qui la dispatche selon son rôle.",
+
+  "features.f13.title": "Audit du contexte à l'init",
+  "features.f13.desc":  "Un init génère beaucoup de fichiers par substitution : /init-project se termine par un commit d'état (point de retour) puis /context-audit — placeholders non remplacés, références cassées, incohérences entre project-config.json, CLAUDE.md et agents. Les corrections automatiques restent à relire dans git diff. Même audit après une synchronisation du template.",
 
   "install.title":       "Installation",
   "install.subtitle":    "Le launcher tmux gère tous vos projets depuis un hub central.",
@@ -178,7 +181,7 @@
   "commands.cat.deploy":       "Déploiement & Communication",
   "commands.start-session":    "Démarre la session : lit la mémoire projet, la version courante et le milestone actif, affiche le travail en cours",
   "commands.end-session":      "Clôture la session : vérifie le git status, met à jour la mémoire projet, ferme les teammates (/team-delete --force)",
-  "commands.context-audit":    "Audit des fichiers de configuration : doublons, refs cassées, dérive entre template et fichiers déployés",
+  "commands.context-audit":    "Audit des fichiers de configuration : doublons, refs cassées, dérive entre template et fichiers déployés — lancé automatiquement à la fin de /init-project",
   "commands.init-project":     "Bootstrap d'un nouveau projet, migration depuis une version antérieure, ou synchronisation avec le template",
   "commands.feature":          "Nouvelle fonctionnalité — le CDP enchaîne PLAN, DEV ∥ TEST-WRITER, REVIEW, QA, DOC puis deploy QUALIF automatiquement, jusqu'à votre validation en GATE 4",
   "commands.bugfix":           "Correction de bug — même pipeline que /feature, avec test de régression obligatoire avant la revue",
