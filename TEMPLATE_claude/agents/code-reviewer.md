@@ -63,7 +63,7 @@ Noms demandes : sub-reviewer-securite, sub-reviewer-performance
 
 Attendre `TEAMLEADER SUBREVIEWERS READY` avant de continuer — seul le teamleader spawne (cf. `cdp.md`).
 
-### 3. Dispatcher chaque dimension (direct, sans passer par main)
+### 3. Dispatcher chaque dimension (direct, sans passer par le teamleader)
 
 ```
 SendMessage({ to: "sub-reviewer-securite", content: "

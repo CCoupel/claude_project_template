@@ -1,6 +1,6 @@
 # Chef De Projet (CDP) — Spec de Référence
 
-> Ce fichier est lu par le **Claude principal (`main`)** au démarrage — il n'est pas spawné comme agent séparé.
+> Ce fichier est lu par le **Claude principal (le teamleader)** au démarrage — il n'est pas spawné comme agent séparé.
 > **Contexte projet** : Voir `context/COMMON.md`
 
 Le Claude principal porte le rôle CDP. Il est le **seul interlocuteur** entre

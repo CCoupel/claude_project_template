@@ -2,11 +2,15 @@
 
 **Chaque agent doit lire ce fichier au démarrage avant toute action.**
 
-> **Interlocuteur unique = le teamleader.** Le teamleader est le Claude principal ; son adresse
-> `SendMessage` est **`main`** (c'est l'adresse la plus fiable). Tout message vers le teamleader
-> s'écrit donc `SendMessage({ to: "main", ... })`. Dans le texte, tu parles toujours du
-> **teamleader** — jamais du « CDP » ni de « main » comme d'un rôle distinct : c'est la même entité.
-> Le nom de rôle « CDP » désigne uniquement les règles d'orchestration (`cdp.md`) que le teamleader applique.
+> **Interlocuteur unique = le teamleader.** Le teamleader est le Claude principal.
+>
+> **Règle de nommage (valable dans tous les fichiers du template) :**
+> - **Dans le texte** (instructions, rapports, messages) : toujours **« teamleader »**. Jamais « main », ni « CDP »
+>   comme interlocuteur — « CDP » ne désigne que les règles d'orchestration (`cdp.md`) que le teamleader applique.
+> - **Dans le champ `to` de `SendMessage`** : toujours la chaîne **`"main"`** — c'est l'identifiant technique du
+>   Claude principal (adresse la plus fiable), pas un rôle. `to: "teamleader"` est incorrect.
+>
+> Exemple : « Tu remontes le `DONE` au teamleader » → `SendMessage({ to: "main", content: "[NOM] DONE" })`.
 
 ---
 
@@ -88,10 +92,10 @@ un message `[NOM] BLOQUE` avec un bloc `Questions:` inline, tel que décrit ci-d
 `BLOCKED`, `BESOIN CADRAGE` ou tout format ad hoc (questions seulement dans un rapport, liste libre,
 mot-clé propre à l'agent) sont **interdits** : le teamleader ne les reconnaît plus comme demande de décision.
 Tu ne lui écris
-jamais directement — tu ne parles qu'au teamleader (`main`). Chaîne obligatoire :
+jamais directement — tu ne parles qu'au teamleader. Chaîne obligatoire :
 
 ```
-teammate  →  BLOQUE + questions structurées (SendMessage → main)
+teammate  →  BLOQUE + questions structurées (SendMessage → teamleader)
 teamleader →  les convertit en AskUserQuestion (jamais de texte brut dans le chat)
 utilisateur →  répond aux questions
 teamleader →  te renvoie les réponses via SendMessage
@@ -194,11 +198,11 @@ Tu repars dans le même état qu'au démarrage de session — contexte propre, p
 
 ## 6. Exception — Sous-agents temporaires (`planner`, `code-reviewer`, `qa` uniquement)
 
-Toutes les règles ci-dessus supposent une communication exclusive avec `main`. **Trois exceptions
+Toutes les règles ci-dessus supposent une communication exclusive avec le teamleader. **Trois exceptions
 existent**, chacune limitée à l'agent concerné :
 
 - `planner` peut demander au teamleader de spawner des `sub-planner-N` temporaires et communiquer avec
-  eux **directement, sans relayer via `main`** — protocole complet dans
+  eux **directement, sans relayer via le teamleader** — protocole complet dans
   `agents/implementation-planner.md` section "Délégation à des Sous-Planners". Fermeture différée
   à la sortie de la Phase Plan (boucle de révision GATE 2 comprise).
 - `code-reviewer` peut demander au teamleader de spawner des `sub-reviewer-<dimension>` temporaires,
@@ -213,7 +217,7 @@ existent**, chacune limitée à l'agent concerné :
 
 Aucun autre teammate n'est autorisé à ce pattern. Les sous-agents temporaires eux-mêmes suivent
 une variante minimale du protocole standard : ils rapportent `ACTIF`/`DONE`/`BLOQUÉ` à l'agent
-qui les a fait spawner (pas à `main`), et ne spawnent jamais rien eux-mêmes. Ils ne ferment
+qui les a fait spawner (pas au teamleader), et ne spawnent jamais rien eux-mêmes. Ils ne ferment
 jamais leur propre process — seul le teamleader les ferme (`TaskStop`), jamais l'agent coordinateur ni
 eux-mêmes.
 

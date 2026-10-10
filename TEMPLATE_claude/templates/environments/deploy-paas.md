@@ -40,7 +40,7 @@ echo "Deploiement {ENV_NAME} termine - $VERSION"
 
 Un echec ici est toujours un echec d'installation — le build (BUILD) et la publication (PUBLISH
 {ENV_NAME}) ont deja reussi. Consulter les logs de la plateforme (`heroku logs -a {DEPLOY_TARGET}`
-/ dashboard Railway ou Render). Rapport a `main`, jamais de correction autonome.
+/ dashboard Railway ou Render). Rapport au teamleader, jamais de correction autonome.
 
 ## Rollback
 

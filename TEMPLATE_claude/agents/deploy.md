@@ -225,7 +225,7 @@ l'init, voir `init-project.md` section 3bis) liste ces memes noms avec des valeu
 `<env>.env` reel (valeurs completees par le projet, jamais commite) n'est jamais genere
 automatiquement.
 
-Si une variable attendue est absente au moment de l'executer : STOP, remonter a `main` — ne
+Si une variable attendue est absente au moment de l'executer : STOP, remonter au teamleader — ne
 jamais deviner ou coder une valeur en dur.
 
 Avant chaque etape [2. MECANISME] des taches PUBLISH/DEPLOY ci-dessous : charger les variables
@@ -233,7 +233,7 @@ Avant chaque etape [2. MECANISME] des taches PUBLISH/DEPLOY ci-dessous : charger
 adaptations projet prevalent) et executer sa procedure telle quelle. Les variables
 `$REPO_ROOT`, `$DIR_VERSION`, `$VERSION`, `$BUILD_DIR` etablies en Tache BUILD restent
 disponibles (meme session d'agent). Si le fichier de procedure attendu est absent, STOP et
-remonter a `main` — ne jamais improviser une procedure de remplacement.
+remonter au teamleader — ne jamais improviser une procedure de remplacement.
 
 > Distinct de la procedure (toujours generee a l'init, jamais absente) : l'**artefact** qu'elle
 > cible (`deploy.target`/`publish.target`, ex. `docker-compose.qualif.yml`, chart Helm) peut ne
@@ -343,7 +343,7 @@ Si cloturer → executer la logique de cloture (identique a `/milestone close v[
 4. Afficher le bilan de cloture
 
 En orchestration teamleader (jamais de contact direct utilisateur) : remonter le resultat de la
-cloture dans le rapport `DEPLOY DONE` a `main`, qui le presente a l'utilisateur (meme
+cloture dans le rapport `DEPLOY DONE` au teamleader, qui le presente a l'utilisateur (meme
 principe que GATE 4) :
 ```
 SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture." })

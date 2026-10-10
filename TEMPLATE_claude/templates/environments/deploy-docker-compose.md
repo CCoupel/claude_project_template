@@ -42,7 +42,7 @@ docker-compose -f {DEPLOY_TARGET} logs --tail=50
 ```
 
 Un echec ici est toujours un echec d'installation — le build (BUILD) et la publication (PUBLISH
-{ENV_NAME}) ont deja reussi. Rapport a `main`, jamais de correction autonome.
+{ENV_NAME}) ont deja reussi. Rapport au teamleader, jamais de correction autonome.
 
 ## Rollback
 

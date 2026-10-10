@@ -37,7 +37,7 @@ ROLLOUT_STATUS=$?
 
 ## Echec
 
-Le deployer ne corrige rien lui-même. Il rollback l'infra, et remonte à `main`. La publication
+Le deployer ne corrige rien lui-même. Il rollback l'infra, et remonte au teamleader. La publication
 (PUBLISH {ENV_NAME}) ayant déjà réussi, un échec ici est toujours un échec
 d'installation/rollout — jamais un échec de code ni de build.
 

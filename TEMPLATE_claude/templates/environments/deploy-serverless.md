@@ -41,7 +41,7 @@ echo "Deploiement {ENV_NAME} termine - $VERSION"
 
 Un echec ici est toujours un echec d'installation — le build (BUILD) et la publication (PUBLISH
 {ENV_NAME}) ont deja reussi. Consulter les logs de la plateforme (CloudWatch / Vercel / Netlify
-build logs). Rapport a `main`, jamais de correction autonome.
+build logs). Rapport au teamleader, jamais de correction autonome.
 
 ## Rollback
 

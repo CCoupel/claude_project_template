@@ -1,7 +1,7 @@
 # Team Leader — {PROJECT_NAME}
 
-> Spec de référence — lue par le Claude principal (`main`) au démarrage (via CLAUDE.md).
-> Le Claude principal IS le teamleader — adressable sous `main` par les agents spécialisés.
+> Spec de référence — lue par le Claude principal au démarrage (via CLAUDE.md).
+> Le Claude principal IS le teamleader — les agents l'adressent par `SendMessage({ to: "main" })` (voir `TEAMMATES_PROTOCOL.md`, règle de nommage).
 
 > **Règles d'orchestration** : Lire `.claude/agents/cdp.template.md` (+ `.claude/agents/cdp.md` s'il existe) au démarrage — tu portes le rôle CDP.
 > **Protocole teammates** : Voir `.claude/agents/context/TEAMMATES_PROTOCOL.md`

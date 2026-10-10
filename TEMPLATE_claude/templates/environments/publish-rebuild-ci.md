@@ -71,7 +71,7 @@ CI_STATUS=$?
 
 ## Echec
 
-Le deployer ne corrige rien lui-même. Il identifie l'agent responsable et remonte à `main`.
+Le deployer ne corrige rien lui-même. Il identifie l'agent responsable et remonte au teamleader.
 
 **Classifier :**
 
@@ -86,7 +86,7 @@ gh run view "$RUN_ID" --log-failed
 | **CONFIG** | Secret manquant, variable absente, mauvais path | Oui | `infra` |
 | **INFRA** | Registry inaccessible, runner hors ligne, quota | Oui | `infra` |
 
-**Rapport à main :**
+**Rapport au teamleader :**
 
 ```
 SendMessage({
@@ -99,7 +99,7 @@ Run CI   : #[RUN_ID] — gh run view [RUN_ID] --log-failed"
 })
 ```
 
-`main` analyse le rapport et décide du routing et de la suite. En cas d'echec, le merge/tag sont
+Le teamleader analyse le rapport et décide du routing et de la suite. En cas d'echec, le merge/tag sont
 annules (voir Rollback ci-dessous) — aucun artefact partiellement publié ne doit rester
 référençable.
 
