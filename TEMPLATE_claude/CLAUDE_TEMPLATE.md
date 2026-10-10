@@ -16,6 +16,14 @@
 
 ---
 
+## Labels d'issues — Règle de Phase
+
+À chaque changement de phase, mettre à jour les labels de **toutes** les issues suivies (`ISSUE_NUMS[]`)
+**avant** d'envoyer l'ordre suivant : `SendMessage` à `deployer` (`gh issue edit --add-label … --remove-label …`,
+procédure `.claude/commands/context/GITHUB.md` §9). La clôture du milestone reste soumise à la validation utilisateur.
+
+---
+
 ## Configuration Projet
 
 | Paramètre | Valeur |

@@ -400,14 +400,14 @@ fi
 
 | Statut | Signification | Pose par | Pose quand | Retire quand |
 |--------|---------------|----------|------------|--------------|
-| `PLANNING` | Plan en cours d'elaboration | CDP (MCP) | Phase 1 — debut du plan ; ou rejet GATE 4 Cas B (scope invalide) | GATE 2 valide (→ `EN COURS`) |
-| `EN COURS` | Developpement en cours | CDP (MCP) | GATE 2 valide (DEV demarre) ; ou cycle correctif (REVIEW refuse / QA echoue) ; ou rejet GATE 4 Cas A | Debut REVIEW/QA (→ `EN REVIEW` / `EN QA`) |
-| `EN REVIEW` | Revue de code en cours | CDP (MCP) | Phase 3 — REVIEW + TEST-WRITER demarres | Verdict REVIEW (OK → `EN QA` seul ; refus → `EN COURS`) |
-| `EN QA` | Validation QA en cours | CDP (MCP) | Phase 3 — des TEST-WRITER DONE si parallele au REVIEW (defaut), sinon apres REVIEW | QA valide (→ `DONE`) ou echec (→ `EN COURS`) |
-| `DONE` | Implementation validee (QA OK) ; branche poussee, CI en cours puis verte (l'issue est alors fermee) | CDP (MCP) | QA valide (le push de la branche et la CI suivent immediatement) | Rejet GATE 4 (→ `EN COURS` ou `PLANNING`, issue rouverte) ; ou CI non verte (→ `EN COURS`) |
-| `BLOQUE` | Avancement impossible (dependance externe, decision ou information en attente) — **s'ajoute** a la phase courante, qui est conservee pour la reprise | CDP (MCP), sur decision de l'utilisateur ou constat d'un blocage | Blocage constate, avec un commentaire precisant la cause | Blocage leve (la phase courante reprend) ou abandon |
-| `ABANDONNE` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (MCP), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
-| — (issue fermee) | CI verte sur la branche poussee (l'issue conserve `DONE`). **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (MCP) | CI verte apres le push de la branche en `DONE` | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
+| `PLANNING` | Plan en cours d'elaboration | CDP (`gh`, §9) | Phase 1 — debut du plan ; ou rejet GATE 4 Cas B (scope invalide) | GATE 2 valide (→ `EN COURS`) |
+| `EN COURS` | Developpement en cours | CDP (`gh`, §9) | GATE 2 valide (DEV demarre) ; ou cycle correctif (REVIEW refuse / QA echoue) ; ou rejet GATE 4 Cas A | Debut REVIEW/QA (→ `EN REVIEW` / `EN QA`) |
+| `EN REVIEW` | Revue de code en cours | CDP (`gh`, §9) | Phase 3 — REVIEW + TEST-WRITER demarres | Verdict REVIEW (OK → `EN QA` seul ; refus → `EN COURS`) |
+| `EN QA` | Validation QA en cours | CDP (`gh`, §9) | Phase 3 — des TEST-WRITER DONE si parallele au REVIEW (defaut), sinon apres REVIEW | QA valide (→ `DONE`) ou echec (→ `EN COURS`) |
+| `DONE` | Implementation validee (QA OK) ; branche poussee, CI en cours puis verte (l'issue est alors fermee) | CDP (`gh`, §9) | QA valide (le push de la branche et la CI suivent immediatement) | Rejet GATE 4 (→ `EN COURS` ou `PLANNING`, issue rouverte) ; ou CI non verte (→ `EN COURS`) |
+| `BLOQUE` | Avancement impossible (dependance externe, decision ou information en attente) — **s'ajoute** a la phase courante, qui est conservee pour la reprise | CDP (`gh`, §9), sur decision de l'utilisateur ou constat d'un blocage | Blocage constate, avec un commentaire precisant la cause | Blocage leve (la phase courante reprend) ou abandon |
+| `ABANDONNE` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (`gh`, §9), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
+| — (issue fermee) | CI verte sur la branche poussee (l'issue conserve `DONE`). **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (`gh`, §9) | CI verte apres le push de la branche en `DONE` | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
 
 Regles :
 - Les labels de phase (`PLANNING` → `DONE`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
@@ -460,8 +460,18 @@ fix(scope): Description (#38)
 
 ## 9. Gestion des Labels de Phase
 
-Equivalents `gh` CLI des transitions du tableau de la section 8.2 (le CDP les applique via
-`mcp__plugin_github_github__issue_write`). Toute transition retire les autres labels de phase.
+**Propriétaire** : le teamleader (CDP). Il n'a ni `Bash` ni outil GitHub MCP : il **ordonne** à `deployer`
+(une ligne, inline) d'exécuter les commandes ci-dessous, puis attend son `DONE`.
+**Règle** : à chaque changement de phase, les labels de **toutes** les issues de `ISSUE_NUMS[]` sont mis à jour
+**avant** d'envoyer l'ordre de la phase suivante. Une phase sans labels à jour n'est pas terminée.
+
+```
+SendMessage({ to: "deployer", content: "Labels : issues #12 #15 → EN COURS (GITHUB.md §9.1)" })
+```
+
+Si un outil GitHub MCP est disponible (`mcp__plugin_github_github__issue_write`), il est équivalent ; sinon `gh`
+est la procédure de référence. Toute transition retire les autres labels de phase. La fermeture d'une issue suit
+§9.5 ; la clôture du milestone reste soumise à la validation utilisateur (GATE 4).
 
 ### 9.1 Transition vers `EN COURS` (DEV démarré)
 
