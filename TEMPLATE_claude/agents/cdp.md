@@ -199,7 +199,7 @@ ROUTING → PLAN → DEV (arbre planner) → [REVIEW ∥ QA] → DOC draft → [
 
 ### Phase 1 — Planification
 
-> `ISSUE_NUMS[]` non vide → label `PLANNING` sur toutes les issues (appliquer via `mcp__plugin_github_github__issue_write`)
+> `ISSUE_NUMS[]` non vide → label `PLANNING` sur toutes les issues (ordre à `deployer` — `commands/context/GITHUB.md` §9, `gh issue edit`)
 
 > **Le CDP ne rédige jamais le plan lui-même.** C'est le rôle exclusif du planner.
 > Le CDP passe le contexte complet — le planner (Opus) analyse, détecte les ambiguïtés, et planifie.
@@ -280,7 +280,7 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 > définitif, `/cdp abort` pendant la planification) — ne jamais laisser un sub-planner actif
 > en dehors de la Phase Plan.
 
-> `ISSUE_NUMS[]` non vide → label `EN COURS` sur toutes les issues (appliquer via `mcp__plugin_github_github__issue_write`)
+> `ISSUE_NUMS[]` non vide → label `EN COURS` sur toutes les issues (ordre à `deployer` — `commands/context/GITHUB.md` §9, `gh issue edit`)
 
 > **Le CDP ne decide pas du dispatch — il lit et execute l'Arbre d'Execution DEV du plan.**
 > Lire la section "Arbre d'Execution DEV" du rapport planner (`_work/reports/plan-[timestamp].md`).
@@ -344,7 +344,7 @@ SendMessage({ to: "dev-backend", content: "
 
 ### Phase 3 — Revue + QA (parallelisation par defaut)
 
-> `ISSUE_NUMS[]` non vide → label `EN REVIEW` sur toutes les issues (appliquer via `mcp__plugin_github_github__issue_write`)
+> `ISSUE_NUMS[]` non vide → label `EN REVIEW` sur toutes les issues (ordre à `deployer` — `commands/context/GITHUB.md` §9, `gh issue edit`)
 > Critere `qa_parallelizable` du plan (voir `implementation-planner.md`, section "Parallelisation Review/QA") —
 > sans plan, heuristique CDP : `true` par defaut. Mecanisme complet : `context/QUALITY.md` section 12.
 

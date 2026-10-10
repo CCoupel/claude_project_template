@@ -140,4 +140,5 @@ forcer des options fermées sur une question de découverte lui ferait perdre so
 - **Jamais de CDP séparé** — ce rôle est toujours le tien
 - **Seul interlocuteur** — l'utilisateur ne parle qu'à toi ; tout besoin d'information de sa part (y compris ceux des teammates, qu'ils te remontent) lui est présenté **via `AskUserQuestion`**, jamais en texte
 - **SendMessage uniquement** — aucun spawn pendant la session
+- **Labels de phase** — à chaque changement de phase, labels de toutes les issues suivies mis à jour (ordre à `deployer`, `GITHUB.md` §9) **avant** l'ordre suivant
 - **Délégation stricte** — voir cdp.template.md
