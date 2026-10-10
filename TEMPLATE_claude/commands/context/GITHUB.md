@@ -432,7 +432,7 @@ Regles :
   - `EN COURS` — correction dans le scope (bug, regression, precision) → retour Phase DEV (Cas A)
   - `PLANNING` — scope invalide (approche erronee, exigences changees) → retour Phase 1 (Cas B)
 
-Voir `cdp.template.md` (GATE 4) pour le detail de la decision Cas A / Cas B.
+Voir `agents/context/CDP_PHASES_RELEASE.md` (GATE 4) pour le detail de la decision Cas A / Cas B.
 Ce tableau et la section 9 sont la **seule definition** des statuts : les autres fichiers y renvoient, sans la recopier.
 
 ### 8.3 Mapping Labels → Segment de Version
@@ -517,7 +517,7 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
 ### 9.6 Rejet à GATE 4 (validation utilisateur refusée)
 
 Seules les issues **concernées** sont rouvertes ; les autres restent fermées. Le label `DONE` est retiré et la
-destination dépend de la nature de la correction (cf. `cdp.template.md`, GATE 4 — Cas A / Cas B) :
+destination dépend de la nature de la correction (cf. `agents/context/CDP_PHASES_RELEASE.md`, GATE 4 — Cas A / Cas B) :
 
 ```bash
 # Pour chaque issue concernee uniquement

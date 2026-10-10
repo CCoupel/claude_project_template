@@ -122,7 +122,7 @@ technique est a jour (doc-updater).
 ## Declenchement
 
 - Spawn par le teamleader **systematiquement en parallele du deploiement PROD**, tous workflows
-  confondus (y compris Hotfix) — sans attendre le resultat de la CI (voir `agents/cdp.template.md`
+  confondus (y compris Hotfix) — sans attendre le resultat de la CI (voir `agents/context/CDP_PHASES_RELEASE.md`
   Phase 6). C'est l'agent marketing lui-meme qui resout le milestone et decide de la pertinence
   d'une publication (voir Tache PREPARE) — le teamleader ne verifie rien en amont.
 - Commande directe `/marketing [version]` (mode autonome, hors orchestration teamleader — voir `commands/marketing.md`)

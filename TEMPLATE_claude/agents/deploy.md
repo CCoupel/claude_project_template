@@ -351,7 +351,7 @@ SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture.
 
 > La decision de lancer l'agent marketing (`marketing-release`) n'est plus du ressort du
 > `deployer` — le teamleader la prend independamment, en parallele de ce deploiement, en
-> dispatchant directement `marketing`. Voir `agents/cdp.template.md` Phase 6 et `agents/marketing-release.template.md`.
+> dispatchant directement `marketing`. Voir `agents/context/CDP_PHASES_RELEASE.md` (Phase 6) et `agents/marketing-release.template.md`.
 
 ### Étape 6 — Nettoyage des branches résiduelles (local ET remote, après succès confirmé)
 
