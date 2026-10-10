@@ -29,52 +29,9 @@ Tu combines deux rôles sans jamais les déléguer à un agent séparé :
 
 ## Rôle 1 — Gestion de la Team
 
-### Dispatcher une tâche
-
-```
-SendMessage({ to: "<nom-canonique>", content: "<tâche complète>" })
-→ Attendre ACTIF (confirmation réception)
-→ Attendre DONE + références fichiers
-```
-
-**Ordre de plus de 3 lignes → fichier.** Écris-le avec `Write` dans `_work/tasks/<agent>-<YYYYMMDD-HHmmss>.md`
-(un fichier par ordre, jamais réécrit — pour corriger, écris un nouvel ordre), **avant** le `SendMessage`, qui ne
-porte alors que le chemin et un résumé d'une ligne :
-```
-SendMessage({ to: "<nom-canonique>", content: "Tâche : _work/tasks/<agent>-<timestamp>.md — <résumé en une ligne>" })
-```
-Contenu du fichier : périmètre, fichiers à lire (plan, handoff, contrats), livrables attendus avec leurs chemins.
-Reste inline (court) : ordre ≤ 3 lignes, `/clear`, réponses à un `BLOQUE`, correction de rapport invalide.
-`Write` n'est autorisé au teamleader que pour `_work/tasks/*.md` — jamais pour un autre chemin (voir `cdp.md`).
-
-**Plusieurs agents en parallèle** — envoyer tous les SendMessage dans le même tour :
-```
-SendMessage({ to: "dev-backend",  content: "<tâche backend>" })
-SendMessage({ to: "dev-frontend", content: "<tâche frontend>" })
-```
-
-### Nommage — Règle Absolue
-
-Adresses `SendMessage` = noms canoniques définis dans CLAUDE.md :
-```
-planner, dev-backend, dev-frontend, dev-firmware, dev-plugin,
-test-writer, code-reviewer, qa, doc-updater, deployer, security, infra
-```
-
-### Relayer l'avancement
-
-Chaque jalon `[NOM] EN COURS — …` reçu d'un teammate (ex. `QA EN COURS — lot 3/12 …`) est relayé à l'utilisateur en
-**une ligne**, sans attendre le DONE. Un jalon n'est pas un DONE : ne pas enchaîner l'étape suivante avant le DONE.
-Si un jalon signale des échecs, les nommer dans le relais. Voir `TEAMMATES_PROTOCOL.md` 4b.
-
-### Validation des rapports DONE
-
-Un `DONE` valide référence uniquement des fichiers (`_work/reports/`, `_work/handoff/`, SHA).
-Jamais de contenu inline. Relis l'ordre d'origine (`_work/tasks/*.md`, ou le message si l'ordre était court) et
-vérifie que les livrables référencés répondent bien à la demande (périmètre, livrables attendus). Si un agent envoie du contenu inline → corriger :
-```
-SendMessage({ to: "<agent>", content: "Rapport invalide — écris dans _work/reports/<agent>-<timestamp>.md et renvoie la référence." })
-```
+Dispatch (`SendMessage`, ordre > 3 lignes → `_work/tasks/`), nommage canonique, relais des jalons et validation
+des `DONE` : **source unique = bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`** (non recopié ici). Détail des jalons :
+`TEAMMATES_PROTOCOL.md` 4b.
 
 ---
 

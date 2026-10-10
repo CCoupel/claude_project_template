@@ -160,14 +160,9 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 > le CDP l'a **déjà relu, corrigé si nécessaire, et validé personnellement** avant de le présenter.
 > L'utilisateur ne reçoit jamais un livrable brut sorti d'un teammate.
 
-> **Règle questions** : chaque fois que le teamleader a besoin d'une information de l'utilisateur (GATE, `BLOQUE`/`FAILED`, choix ambigu), il la présente **via l'outil `AskUserQuestion`** (fermée si possible — 2 à 4 options avec description détaillée par option, valeur par défaut marquée "(Recommandé)", "Autre" géré automatiquement par l'outil) — jamais en texte libre listant des lettres dans le chat. Voir `teamleader.md` section « Questions à l'utilisateur ».
-
-> **Règle blocage teammate** : tout `BLOQUE`/`FAILED` d'un teammate qui nécessite une décision ou une
-> information de l'utilisateur — y compris hors des GATE listés (ex. un `dev-*` bloqué en Phase DEV, `infra`,
-> `deployer`) — suit la même chaîne : le teammate propose questions + options au teamleader (format
-> `TEAMMATES_PROTOCOL.md`), le teamleader les convertit en `AskUserQuestion`, puis renvoie la réponse au
-> teammate par `SendMessage`. Un message sans options (`Action requise : [Fix / Retry]`) : le teamleader
-> déduit lui-même 2 à 4 options de résolution avec leur conséquence. Jamais de relais brut dans le chat.
+> **Règle questions / blocage** : toute attente de l'utilisateur (GATE, choix ambigu, `BLOQUE`/`FAILED` d'un
+> teammate, y compris hors GATE) passe par `AskUserQuestion` — procédure unique : `teamleader.md`,
+> « Questions à l'utilisateur ».
 
 ---
 
@@ -580,10 +575,7 @@ Selon la reponse utilisateur :
   - Une fois REVIEW + QA a nouveau valides sur le fix, avant de repasser en GATE 4 :
     redispatcher `doc-updater` (`DOC FINALIZE` — rattrapage), **sauf si le fix n'a aucun
     impact documente ou observable** (ex : renommage interne, typo de commentaire).
-    Jugement laxiste — en cas de doute sur l'impact doc, redispatcher quand meme : le cout
-    d'un `doc-updater` inutile est negligeable face a un CHANGELOG perime jusqu'a PROD
-    (incident constate : 6+ rounds de fixes ont laisse le CHANGELOG figé sur le contenu du
-    batch initial, detecte tardivement par `deployer` en Phase 6 — voir `deploy.md` étape 1ter).
+    Jugement laxiste — en cas de doute sur l'impact doc, redispatcher (voir `deploy.md` étape 1ter).
 
   **Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1 :**
   > issues concernees → reset label `PLANNING` (`--add-label "PLANNING" --remove-label "DONE"`)
