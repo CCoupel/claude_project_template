@@ -221,7 +221,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) + vérification couverture des contrats |
 | `qa` | Exécution des tests et validation (unit/integration/E2E/perf) |
 | `infra` | Validation des procédures de déploiement + infra Docker/Helm/CI |
-| `deployer` | Build (compilation locale, agnostique à l'environnement) + Publication QUALIF/PROD (mécanisme propre à chacun, voir `.claude/agents/environments/`) + Déploiement QUALIF/PROD — surveille activement la CI lors de PUBLISH PROD, rollback automatique sur échec, remonte les faits à main |
+| `deployer` | Build (compilation locale, agnostique à l'environnement) + Publication QUALIF/PROD (mécanisme propre à chacun, voir `.claude/agents/environments/`) + Déploiement QUALIF/PROD — surveille activement la CI lors de PUBLISH PROD, rollback automatique sur échec, remonte les faits au teamleader |
 | `doc-updater` | Mise à jour CHANGELOG, README, documentation technique |
 | `security` | Audit de sécurité (SAST, dépendances, secrets) |
 | `pr-reviewer` | Validation des Pull Requests externes |
@@ -323,7 +323,7 @@ BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes
     ↓  [GATE 4c] escalade si infra PROD incohérente
 PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un rebuild déterministe via CI) → installe l'artefact publié par la CI
                                succès : release + milestone
-                               échec  : rollback infra → rapport à main → routing agent
+                               échec  : rollback infra → rapport au teamleader → routing agent
 ```
 
 **Points de validation utilisateur (GATES) :**
@@ -488,7 +488,7 @@ Le deployer classe l'échec depuis les logs et remonte les faits, sans corriger 
 | `CONFIG` | La config CI est en cause, le code est sain | `infra` |
 | `INFRA` | L'infrastructure CI est en cause, le code est sain | `infra` |
 
-`main` décide du routing vers l'agent responsable. Le merge et le tag de la publication échouée
+Le teamleader décide du routing vers l'agent responsable. Le merge et le tag de la publication échouée
 sont annulés (rollback) — aucun artefact partiellement publié ne reste référençable.
 
 ### Déploiement PROD (installation pure, sans build ni merge ni tag)
@@ -507,7 +507,7 @@ selon `infrastructure.environments[].deploy.mechanism`.
 **En cas d'échec du rollout :** rollback infra (`kubectl rollout undo`, réinstallation de la
 version précédente) — la publication (`/publish prod`) ayant déjà réussi (CI verte), l'échec ici
 est toujours un échec d'installation, jamais un échec de code ni de build. Le deployer remonte
-les faits bruts à `main`, qui décide de la suite.
+les faits bruts au teamleader, qui décide de la suite.
 
 ### Clôture de milestone
 

@@ -524,15 +524,15 @@ sans jamais builder ni publier :
               succès : artefact publié, disponible pour /deploy prod
               échec  :
                 ├── lire logs → classifier (CODE / FLAKY / CONFIG / INFRA)
-                └── rapport à main → main route vers l'agent responsable (dev/qa/infra)
+                └── rapport au teamleader → il route vers l'agent responsable (dev/qa/infra)
 
 /deploy prod  : installe l'artefact publié par /publish prod → vérifie le rollout
                         ↓
               succès : release notes + milestone
-              échec  : rollback infra (rollout undo) → rapport à main
+              échec  : rollback infra (rollout undo) → rapport au teamleader
 ```
 
-Le deployer ne corrige jamais lui-même — il remonte les faits, `main` décide du routing.
+Le deployer ne corrige jamais lui-même — il remonte les faits, le teamleader décide du routing.
 
 La mécanique concrète (commandes exactes) de PUBLISH et DEPLOY ne vit plus dans l'agent
 `deploy.md` — elle est générée à l'init, un fichier par tâche × environnement, dans

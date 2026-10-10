@@ -39,7 +39,7 @@ ssh -i "$SSH_KEY_PATH" {DEPLOY_TARGET%%:*} "journalctl -u app --since '5 min ago
 ```
 
 Un echec ici est toujours un echec d'installation — le build (BUILD) et la publication (PUBLISH
-{ENV_NAME}) ont deja reussi. Rapport a `main`, jamais de correction autonome.
+{ENV_NAME}) ont deja reussi. Rapport au teamleader, jamais de correction autonome.
 
 ## Rollback
 

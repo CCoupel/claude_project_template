@@ -65,7 +65,7 @@ Noms demandes : sub-qa-unit, sub-qa-integration
 
 Attendre `TEAMLEADER SUBAGENTS READY` avant de continuer — seul le teamleader spawne (cf. `cdp.md`).
 
-### 2. Dispatcher chaque scope (direct, sans passer par main)
+### 2. Dispatcher chaque scope (direct, sans passer par le teamleader)
 
 ```
 SendMessage({ to: "sub-qa-unit", content: "
@@ -77,7 +77,7 @@ SendMessage({ to: "sub-qa-unit", content: "
 4. Nettoyer : git worktree remove .claude/worktrees/sub-qa-unit
 5. Ecrire le verdict (VALIDATED / NOT VALIDATED) et les echecs dans le rapport ci-dessous — pas dans le message.
 Rapport attendu : _work/reports/qa-unit-[timestamp].md
-Retour : `DONE` + chemin du rapport uniquement ; jalons `EN COURS` (fin de lot) vers moi, pas vers main.
+Retour : `DONE` + chemin du rapport uniquement ; jalons `EN COURS` (fin de lot) vers moi, pas vers le teamleader.
 " })
 ```
 

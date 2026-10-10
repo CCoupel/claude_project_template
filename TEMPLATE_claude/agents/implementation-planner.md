@@ -77,7 +77,7 @@ Noms demandés : sub-planner-1, sub-planner-2
 
 Attendre `TEAMLEADER SUBPLANNERS READY` avant de continuer — seul le teamleader spawne (cf. `cdp.md`).
 
-### 3. Dispatcher chaque groupe (direct, sans passer par main)
+### 3. Dispatcher chaque groupe (direct, sans passer par le teamleader)
 
 ```
 SendMessage({ to: "sub-planner-1", content: "
