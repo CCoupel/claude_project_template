@@ -330,6 +330,16 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 > - security : ajouter au Batch 1 si la feature touche auth/crypto/donnees sensibles
 > - infra : ajouter en Batch 0 (avant tout) si la feature necessite un changement infra
 
+## Lots (si le milestone compte plusieurs issues)
+
+> Decoupage du milestone en groupes d'issues livrees ensemble. Le teamleader pose `LOT-N` sur chaque issue
+> (`commands/context/GITHUB.md` §9.11) : une issue = un seul lot. Omettre la section pour une issue unique.
+
+| Lot | Issues | Objectif | Deblocage |
+|-----|--------|----------|-----------|
+| LOT-1 | #12, #15 | <resultat livre> | aucun |
+| LOT-2 | #18 | <resultat livre> | LOT-1 termine |
+
 ## Tests Requis
 > Plan de tests : `context/COMMON.md` section 15. Ces tests sont ecrits par test-writer (nature `feature`).
 - [ ] Tests unitaires : <description>

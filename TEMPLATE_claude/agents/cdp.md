@@ -237,6 +237,7 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   " })
   ```
 - Répéter jusqu'à validation explicite de l'utilisateur avant de lancer la Phase 2
+- **Plan avec table « Lots »** : après validation, ordonner à `deployer` de poser `LOT-N` sur chaque issue du lot (`commands/context/GITHUB.md` §9.11) avant le premier ordre DEV
 
 **Maquette au GATE 2** (convention : `context/COMMON.md` section 14) :
 - **Correction/refus** : reformuler les retours de l'utilisateur en **contraintes durables** et les ajouter à `docs/mockup/DECISIONS.md`, par composant (ex. « je ne veux pas cette couleur et fais plus gros » → « pas de bleu pour ce composant », « taille > 24px »). Le brouillon rejeté n'est pas conservé, seules les raisons le sont. Inclure ces contraintes dans la correction redispatchée au planner.

@@ -409,6 +409,10 @@ fi
 | `ABANDONNE` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (`gh`, §9), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
 | — (issue fermee) | CI verte sur la branche poussee (l'issue conserve `DONE`). **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (`gh`, §9) | CI verte apres le push de la branche en `DONE` | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
 
+**Label de lot (decoupage du milestone par le planner) :** `LOT-1`, `LOT-2`… — pose par le CDP (via `deployer`, §9.11)
+sur chaque issue du lot, apres validation du plan (GATE 2). Ce n'est **pas** un label de phase : il se superpose a la
+phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot.
+
 Regles :
 - Les labels de phase (`PLANNING` → `DONE`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
   simultanes pendant la fenetre de parallelisation Review/QA par defaut (voir `QUALITY.md` section 12) —
@@ -558,7 +562,7 @@ gh issue close <numero> --reason "not planned"
 
 Réouverture : retirer `ABANDONNE`, rouvrir l'issue (`gh issue reopen <numero>`) et reposer `PLANNING`.
 
-### 9.9 Création des labels (si absents du repo)
+### 9.10 Création des labels (si absents du repo)
 
 ```bash
 gh label create "PLANNING"  --color "c5def5" --description "Planification en cours"
@@ -568,4 +572,17 @@ gh label create "EN QA"     --color "d93f0b" --description "En cours de validati
 gh label create "DONE"      --color "0e8a16" --description "Implementation validee (QA OK)"
 gh label create "BLOQUE"    --color "b60205" --description "Avancement bloque (cause en commentaire)"
 gh label create "ABANDONNE" --color "cfd3d7" --description "Abandonnee, ne sera pas traitee"
+```
+
+### 9.11 Lots du milestone (`LOT-N`)
+
+Quand le plan du planner decoupe le milestone en lots (table « Lots » du plan), le CDP ordonne a `deployer` de
+poser le label de chaque lot sur ses issues, **apres GATE 2** et avant le premier ordre DEV. Les labels de phase
+s'appliquent ensuite par lot (une issue du lot 2 reste `PLANNING` tant que son lot n'est pas lance).
+
+```bash
+gh label create "LOT-1" --color "5319e7" --description "Lot 1 du milestone"   # si absent
+gh issue edit <numero> --add-label "LOT-1"
+# Re-decoupage (plan revu) : retirer l'ancien lot
+gh issue edit <numero> --add-label "LOT-2" --remove-label "LOT-1"
 ```
