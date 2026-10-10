@@ -442,6 +442,7 @@ Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §14. `/init
 ### Suivi des issues GitHub
 
 Le CDP met à jour les labels de l'issue associée à chaque transition de phase, **avant** l'ordre de la phase suivante : il ordonne à `deployer` d'exécuter les `gh issue edit` de `GITHUB.md` §9 (le teamleader n'a pas de `Bash`).
+Quand le planner découpe le milestone en lots, chaque issue reçoit en plus un label `LOT-N` (posé après le GATE 2, jamais retiré par une transition de phase).
 Un seul label de phase à la fois (sauf `EN REVIEW` + `EN QA` pendant la parallélisation Review/QA ; `BLOQUE` se superpose à la phase) :
 
 | Statut | Signification | Posé par | Posé quand |
