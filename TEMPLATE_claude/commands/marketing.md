@@ -279,7 +279,7 @@ c) Regenerer la roadmap uniquement
 
 Agent ponctuel — non spawné au `/start-session`, spawné à la demande. Orchestré par le CDP
 en deux dispatches distincts (`PREPARE` puis `PUBLISH`), en parallèle du déploiement PROD —
-voir `agents/cdp.template.md` Phase 6 et `agents/marketing-release.template.md` pour le détail du protocole :
+voir `agents/context/CDP_PHASES_RELEASE.md` (Phase 6) et `agents/marketing-release.template.md` pour le détail du protocole :
 
 ```
 Task({

@@ -132,7 +132,7 @@ exception ou PUBLISH PROD part directement d'un BUILD frais plutot que d'un arte
 valide en QUALIF (voir `agents/deploy.md` Mode Teammates).
 
 **Preparation marketing — dispatch systematique en parallele, comme pour tout deploiement PROD**
-(voir `agents/cdp.template.md` Phase 6, meme mecanique GATE 4d / PUBLISH) : `CLEAR(marketing)`
+(voir `agents/context/CDP_PHASES_RELEASE.md` (Phase 6), meme mecanique GATE 4d / PUBLISH) : `CLEAR(marketing)`
 puis `SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z]" })` dans le meme tour que le
 dispatch `deployer`. Le hotfix peut embarquer plus que le simple correctif (regle "Aucune
 Livraison Partielle" ci-dessus) — c'est l'agent marketing qui decide seul, sur le contenu reel

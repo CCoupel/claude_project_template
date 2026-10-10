@@ -79,6 +79,6 @@ Verification --> Promotion --> Notification   Verification --> Doc --> Merge+Tag
 En orchestration CDP, `/publish` n'est jamais invoque seul : la Phase 5 (QUALIF) du CDP
 dispatch au `deployer` un ordre chaine `BUILD` puis `PUBLISH QUALIF` puis `DEPLOY QUALIF`,
 et la Phase 6 (PROD) un ordre chaine `PUBLISH PROD` puis `DEPLOY PROD`, executes en sequence
-par l'agent avant de repondre. Voir `agents/cdp.md` Phases 5 et 6 pour le protocole complet.
+par l'agent avant de repondre. Voir `agents/context/CDP_PHASES_RELEASE.md` (Phases 5 et 6) pour le protocole complet.
 
 Spec : `.claude/agents/deploy.md` (voir Taches PUBLISH QUALIF / PUBLISH PROD)

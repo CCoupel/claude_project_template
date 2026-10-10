@@ -557,7 +557,7 @@ SendMessage({ to: "doc-updater", content: "
 
 > Résumé — la mécanique complète (validation infra, dispatch parallèle avec doc-updater et NR complète
 > (`qa`, scope `regression-full`, `testing.full_regression_at`), format du GATE 4 — ouvert seulement
-> quand QUALIF, DOC finalize et NR complète sont terminés) est documentée dans `agents/cdp.md` Phase 5, qui fait autorité ; ne pas
+> quand QUALIF, DOC finalize et NR complète sont terminés) est documentée dans `agents/context/CDP_PHASES_RELEASE.md` Phase 5, qui fait autorité ; ne pas
 > dupliquer ici au-delà de ce résumé pour éviter toute dérive entre les deux fichiers.
 
 ```
@@ -575,7 +575,7 @@ SendMessage({ to: "deployer", content: "
 |-- Recevoir DONE + rapport de build/publication/déploiement
 |-- CDP informe l'utilisateur : QUALIF déployée, scénarios de validation fournis
 |-- Publish + Deploy PROD : déclenché uniquement par commande explicite `/deploy prod` (voir
-    `agents/cdp.md` Phase 6 — publie via merge + tag officiel, rebuild déterministe via CI,
+    `agents/context/CDP_PHASES_RELEASE.md` Phase 6 — publie via merge + tag officiel, rebuild déterministe via CI,
     puis installe)
 ```
 

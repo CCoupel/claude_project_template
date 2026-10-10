@@ -99,7 +99,7 @@ En cas de probleme :
 dispatch `deployer` chaine `PUBLISH PROD` puis `DEPLOY PROD` + preparation marketing en
 parallele, meme tour), **sans distinction entre une commande directe et une confirmation
 GATE 4 en plein cycle CDP** — les deux cas suivent exactement le meme chemin. Voir
-`agents/cdp.template.md` Phase 6 pour le protocole complet (reponses asynchrones, GATE 4d,
+`agents/context/CDP_PHASES_RELEASE.md` (Phase 6) pour le protocole complet (reponses asynchrones, GATE 4d,
 condition de publication) et `agents/marketing-release.template.md` pour l'agent marketing.
 
 Spec : `.claude/agents/deploy.template.md` (+ `.claude/agents/deploy.md` si présent) — voir Tache DEPLOY QUALIF / DEPLOY PROD

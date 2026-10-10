@@ -184,6 +184,9 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │       ├── COMMON.md
 │       ├── DEV_COMMON.md
 │       ├── TEAMMATES_PROTOCOL.md
+│       ├── CDP_PHASES_PLAN_DEV.md      # Phases 1-2 du CDP (lues à l'entrée de la phase)
+│       ├── CDP_PHASES_REVIEW_QA.md     # Phases 3-4
+│       ├── CDP_PHASES_RELEASE.md       # Phases 5-6 (QUALIF, GATE 4, PROD)
 │       ├── VALIDATION_COMMON.md
 │       └── GITHUB.md
 │
