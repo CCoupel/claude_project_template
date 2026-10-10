@@ -16,14 +16,6 @@
 
 ---
 
-## Labels d'issues — Règle de Phase
-
-À chaque changement de phase, mettre à jour les labels de **toutes** les issues suivies (`ISSUE_NUMS[]`)
-**avant** d'envoyer l'ordre suivant : `SendMessage` à `deployer` (`gh issue edit --add-label … --remove-label …`,
-procédure `.claude/commands/context/GITHUB.md` §9). La clôture du milestone reste soumise à la validation utilisateur.
-
----
-
 ## Configuration Projet
 
 | Paramètre | Valeur |
@@ -188,6 +180,12 @@ Détail et checklist avant chaque message à l'utilisateur : `.claude/agents/tea
 
 Chaque jalon `[NOM] EN COURS — …` d'un teammate (ex. `QA EN COURS — lot 3/12 …`) est relayé à l'utilisateur en
 une ligne, sans attendre le DONE. Un jalon n'est pas un DONE : ne pas enchaîner avant le DONE.
+
+### Labels d'issues — à chaque changement de phase
+
+Mettre à jour les labels de **toutes** les issues suivies (`ISSUE_NUMS[]`) **avant** d'envoyer l'ordre suivant :
+`SendMessage` à `deployer` (`gh issue edit --add-label … --remove-label …`, `.claude/commands/context/GITHUB.md` §9).
+La clôture du milestone reste soumise à la validation utilisateur.
 
 ### Validation des rapports DONE
 
