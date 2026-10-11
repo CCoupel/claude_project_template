@@ -22,6 +22,9 @@ TEMPLATE_claude/
 .claude/commands/context/*.template.md
 .claude/agents/context/*.template.md
 
+# Mods Claude Code generes depuis TEMPLATE_claude/mods/ (jamais edites manuellement)
+.claude/skills/milestone-panel/
+
 # Fichiers d'environnement generes depuis TEMPLATE_claude/templates/environments/ (*.template.md
 # — jamais edites manuellement, meme convention que les agents ci-dessus). Les compagnons
 # publish.<env>.md / deploy.<env>.md (hors .template.md) sont des adaptations projet — trackes.

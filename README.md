@@ -139,6 +139,9 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 ├── .template-source.json        # Référence GitHub (repo + commit du dernier fetch)
 ├── gitignore-for-projects       # Copié en .gitignore par /init-project
 │
+├── mods/                        # Mods Claude Code, déployés dans .claude/skills/<mod>/
+│   └── milestone-panel/         # Panneau latéral : issues du milestone en cours par phase
+│
 ├── commands/                    # Commandes slash
 │   ├── start-session.md
 │   ├── end-session.md
@@ -622,6 +625,15 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 | `/progression` | Tableau de bord temps réel — statut de chaque agent actif |
 | `/team-status` | État de la team (tableau agents + statut IDLE/EN COURS) — lecture seule |
 | `/team-delete [--force]` | Ferme les teammates IDLE ; `--force` ferme tous les teammates, y compris ceux EN COURS |
+
+### Panneau milestone (mod)
+
+Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/milestone-panel`)
+les issues **ouvertes** du milestone en cours, groupées par label de phase (`PLANNING` → `DONE`, `BLOQUE` en rouge).
+Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) qui porte une issue en phase ; à défaut,
+le panneau liste les milestones ouverts avec leur avancement. Il se rafraîchit 10 s après chaque
+`gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),
+puis toutes les 5 min. Délais réglables via la config du mod (`propagationDelaySec`, `refreshIntervalSec`). Nécessite `gh`.
 
 ### Validation
 

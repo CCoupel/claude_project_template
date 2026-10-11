@@ -210,6 +210,14 @@ for src in TEMPLATE_claude/commands/context/*.md; do
   cp "$src" "$dest"
   echo "  ✓ $dest"
 done
+
+# Mods Claude Code (panneau milestone…) : chargés automatiquement depuis .claude/skills/<mod>/.
+# Copie complète, générée — gitignorée comme le reste des fichiers template.
+for src in TEMPLATE_claude/mods/*/; do
+  dest=".claude/skills/$(basename $src)"
+  mkdir -p "$dest" && cp -r "$src". "$dest/"
+  echo "  ✓ $dest"
+done
 ```
 
 #### 5. Mettre a jour TEMPLATE_claude/.template-source.json et project-config.json
