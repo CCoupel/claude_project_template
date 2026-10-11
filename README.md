@@ -629,7 +629,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 ### Panneau milestone (mod)
 
 Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/milestone-panel`)
-les issues **ouvertes** du milestone en cours, groupées par label de phase (`PLANNING` → `DONE`, `BLOQUE` en rouge).
+les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge.
 Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) qui porte une issue en phase ; à défaut,
 le panneau liste les milestones ouverts avec leur avancement. Il se rafraîchit 10 s après chaque
 `gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),

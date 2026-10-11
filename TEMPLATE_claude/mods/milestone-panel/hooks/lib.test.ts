@@ -16,7 +16,7 @@ test('milestone en cours = premier milestone avec une issue en phase', () => {
   ]
   const v = buildView(ms, issues, 1)
   expect(v.current).toBe('v1.3.0')
-  expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['PLANNING', 'EN COURS'])
+  expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['EN COURS', 'PLANNING'])
   expect(v.issues.find(i => i.number === 1)?.isBlocked).toBe(true)
 })
 

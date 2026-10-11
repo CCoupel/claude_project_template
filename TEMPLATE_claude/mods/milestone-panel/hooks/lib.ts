@@ -74,7 +74,8 @@ export const buildView = (
 }
 
 export const groupByPhase = (issues: Issue[]) =>
-  [...PHASES, 'SANS PHASE']
+  // Du plus avancé au moins avancé, le backlog (sans phase) en dernier.
+  [...PHASES].reverse().concat('SANS PHASE' as never)
     .map(phase => ({ phase, issues: issues.filter(i => i.phase === phase) }))
     .filter(g => g.issues.length > 0)
 
