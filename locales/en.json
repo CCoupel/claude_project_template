@@ -42,7 +42,7 @@
   "wf.review.sub":     "🧵 can delegate to sub-reviewer-<dimension> (security, performance...)",
   "wf.qa":             "QA testing",
   "wf.qa.desc":        "Runs scripts · Follows manual procedures · Starts as soon as tests are ready",
-  "wf.qa.sub":         "🧵 can delegate to sub-qa-<scope>, each isolated in its own git worktree",
+  "wf.qa.sub":         "🧵 can delegate to sub-qa-<scope>, each isolated in a detached git worktree, on committed code",
   "wf.reviewqa.note":  "By default, QA doesn't wait for the Review verdict — REJECTED cancels QA and sends it back to DEV. Falls back to sequential mode when risk is high (per plan).",
   "wf.doc":            "Documentation (draft)",
   "wf.doc.desc":       "CHANGELOG · API docs if needed · DONE label applied",
@@ -129,6 +129,9 @@
 
   "features.f13.title": "Context audit at init",
   "features.f13.desc":  "An init generates many files through substitution: /init-project ends with a state commit (return point) then /context-audit — unreplaced placeholders, broken references, inconsistencies between project-config.json, CLAUDE.md and agents. Automatic fixes are left to review in git diff. The same audit runs after a template sync.",
+
+  "features.f14.title": "Controlled current branch",
+  "features.f14.desc":  "A single working branch at a time, set by the teamleader — the only one allowed to switch it or go back to a previous commit. Agents consume it: they check it at start and send a request to the teamleader for any other operation. A bugfix started during a milestone joins the plan with top priority and ships with it. Worktrees stay free, with no branch created, and tests only run on committed code.",
 
   "install.title":       "Installation",
   "install.subtitle":    "The tmux launcher manages all your projects from a central hub.",

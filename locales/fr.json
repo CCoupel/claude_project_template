@@ -42,7 +42,7 @@
   "wf.review.sub":     "🧵 peut déléguer à des sub-reviewer-<dimension> (sécurité, performance...)",
   "wf.qa":             "Tests QA",
   "wf.qa.desc":        "Exécute les scripts · Suit les procédures manuelles · Démarre dès les tests prêts",
-  "wf.qa.sub":         "🧵 peut déléguer à des sub-qa-<scope>, chacun isolé dans son git worktree",
+  "wf.qa.sub":         "🧵 peut déléguer à des sub-qa-<scope>, chacun isolé dans un git worktree détaché, sur du code commité",
   "wf.reviewqa.note":  "Par défaut, QA ne dépend pas du verdict Review — REJECTED annule QA et renvoie en DEV. Repli séquentiel si risque élevé (plan).",
   "wf.doc":            "Documentation (brouillon)",
   "wf.doc.desc":       "CHANGELOG · docs API si besoin · Label DONE appliqué",
@@ -129,6 +129,9 @@
 
   "features.f13.title": "Audit du contexte à l'init",
   "features.f13.desc":  "Un init génère beaucoup de fichiers par substitution : /init-project se termine par un commit d'état (point de retour) puis /context-audit — placeholders non remplacés, références cassées, incohérences entre project-config.json, CLAUDE.md et agents. Les corrections automatiques restent à relire dans git diff. Même audit après une synchronisation du template.",
+
+  "features.f14.title": "Branche courante maîtrisée",
+  "features.f14.desc":  "Une seule branche de travail à la fois, fixée par le teamleader — seul à pouvoir en changer ou revenir à un commit précédent. Les agents la consomment : ils la vérifient au démarrage et passent par une demande au teamleader pour toute autre opération. Un bugfix lancé pendant un milestone rejoint le plan en priorité et est livré avec lui. Les worktrees restent libres, sans branche créée, et les tests ne tournent que sur du code commité.",
 
   "install.title":       "Installation",
   "install.subtitle":    "Le launcher tmux gère tous vos projets depuis un hub central.",
