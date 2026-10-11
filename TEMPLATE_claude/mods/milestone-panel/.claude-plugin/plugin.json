@@ -1,0 +1,20 @@
+{
+  "name": "milestone-panel",
+  "version": "0.1.0",
+  "description": "Panneau latéral : issues ouvertes du milestone en cours groupées par phase, ou avancement des milestones.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "propagationDelaySec": {
+      "type": "number",
+      "title": "Délai de propagation (s)",
+      "description": "Attente après un gh issue edit/close/reopen/create avant de relire GitHub.",
+      "default": 10
+    },
+    "refreshIntervalSec": {
+      "type": "number",
+      "title": "Rafraîchissement périodique (s)",
+      "description": "Relecture de sécurité, indépendante des événements.",
+      "default": 300
+    }
+  }
+}
