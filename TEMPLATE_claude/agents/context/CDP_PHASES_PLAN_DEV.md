@@ -18,6 +18,11 @@ SendMessage({ to: "planner", content: "
 " })
 ```
 
+**Issue entrante en cours de milestone** (`/bugfix`, `/hotfix` ou ajout alors qu'un plan existe déjà et que du DEV est lancé) :
+même branche, pas de worktree ni de livraison séparés. Dispatcher au planner `Issue entrante #N à intégrer au plan du milestone
+vX.Y.Z — priorité : en tête de l'arbre d'exécution` (batch 1, avant le travail non démarré ; les tâches en cours ne sont pas
+interrompues). Nouveau GATE 2 sur le plan mis à jour, puis `LOT-N`/labels comme ci-dessous. Livré uniquement avec le milestone.
+
 **Cas NEED SUBPLANNERS** — le planner a identifié des groupes indépendants et demande à
 sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous-Planners") :
 - Spawner chaque nom demandé via `Task`/`Agent` (prompt générique fixe, pointant vers `planner`

@@ -34,6 +34,39 @@ chemin absolu hors du repo, `/tmp`, `$TMPDIR` ou `~/`.
 
 ---
 
+## Branche Courante et Historique (OBLIGATOIRE)
+
+**Une seule branche de travail a la fois, fixee par le teamleader** (`milestone/vX.Y.Z` ; un bugfix ou
+un hotfix lance pendant un milestone rejoint cette branche, il n'ouvre jamais la sienne). Le teamleader
+est **seul proprietaire du HEAD du checkout principal** : lui seul cree/change la branche et revient a
+un commit precedent. Les autres agents sont **consommateurs** de la branche.
+
+**Interdit a tout agent hors teamleader, dans le checkout principal** : `git checkout`, `git switch`,
+`git reset`, `git rebase`, `git stash`, `git clean`, `git revert`, `git cherry-pick`, `git merge`,
+`git branch -D`/`-m`, ou tout retour a un commit precedent. Commits (`git add`/`commit`) et `push` de la
+branche courante : autorises.
+
+- **Au demarrage de chaque tache** : verifier `git branch --show-current` contre la branche annoncee
+  dans l'ordre du teamleader. Different ou ordre sans branche → **BLOQUE**, ne pas corriger soi-meme.
+- **Besoin d'une autre branche, d'un retour arriere ou d'une operation interdite** (ex. `deployer` qui
+  doit repasser sur `main`, `pr-reviewer` qui doit resynchroniser le milestone) : envoyer au teamleader
+  `BRANCH REQUEST : <operation> — <raison>` puis attendre sa reponse. Ne jamais l'executer.
+- **Worktree** : libre, pour isoler une execution ou lire/pousser une autre branche **sans toucher au
+  HEAD du checkout principal** (`.claude/worktrees/<nom>`, voir Confinement ci-dessus). Pas de nouvelle
+  branche : `git worktree add --detach .claude/worktrees/<nom> <ref>` ; pousser un commit vers une
+  branche distante : `git push origin HEAD:<branche>`. Supprimer le worktree en fin de tache.
+- **Tests (`qa`, sub-qa) : uniquement sur du code commite.** `git status --porcelain` non vide sur la
+  branche source → **BLOQUE** (le worktree ne voit que les commits).
+
+**Cote teamleader** — changement de branche (nouveau milestone, retour a un commit) :
+1. Tree propre exigé (jamais de `stash`/`reset` a la place d'un agent) ; sinon demander aux agents de commiter.
+2. `BRANCH CHANGE PENDING : <ancienne> → <nouvelle>` a tous les agents actifs ; attendre qu'ils aient
+   commite et soient inactifs (`DONE`/`IDLE`).
+3. Executer le `checkout`/`reset`, puis `BRANCH CHANGE DONE : <nouvelle>` a tous les agents actifs.
+4. Retour a un commit precedent ou `reset --hard` : confirmation utilisateur (`AskUserQuestion`) avant.
+
+---
+
 ## Gestion de la Todo List (OBLIGATOIRE)
 
 Vous DEVEZ utiliser le tool `TodoWrite` pour suivre votre progression de maniere visible.
