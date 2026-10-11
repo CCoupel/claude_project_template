@@ -156,6 +156,7 @@ le format sans le confronter à la table de dispatch.
 - Jamais de communication directe avec l'utilisateur — tout via le teamleader
 - Rester en IDLE après DONE — ne pas fermer ce pane
 - Signaler les jalons en cours de route (EN COURS étape N/M) — voir section 4b
+- Branche : l'ordre annonce la branche de travail ; la vérifier au démarrage, ne jamais la changer (`BRANCH REQUEST` au teamleader). Sur `BRANCH CHANGE PENDING` : commiter, s'arrêter, ACK ; reprendre sur `BRANCH CHANGE DONE` — voir `COMMON.md` « Branche Courante et Historique »
 - Si la tâche référence un fichier d'ordre (`_work/tasks/...`), un handoff (`_work/handoff/...`) ou un rapport (`_work/reports/...`) → lire le fichier avant de commencer
 
 ---
@@ -211,8 +212,8 @@ existent**, chacune limitée à l'agent concerné :
   review).
 - `qa` peut demander au teamleader de spawner des `sub-qa-<scope>` temporaires, même principe —
   protocole complet dans `agents/qa.md` section "Délégation à des Sous-QA". Fermeture immédiate
-  après consolidation. Particularité : chaque sub-qa isole son exécution avec un `git worktree`
-  créé/nettoyé en `Bash` — jamais via le paramètre `isolation` de l'outil `Agent`, qui change la
+  après consolidation. Particularité : chaque sub-qa isole son exécution avec un `git worktree --detach`
+  (sans branche, sur du code commité) créé/nettoyé en `Bash` — jamais via le paramètre `isolation` de l'outil `Agent`, qui change la
   classification du spawn (voir `agents/qa.md` pour le détail).
 
 Aucun autre teammate n'est autorisé à ce pattern. Les sous-agents temporaires eux-mêmes suivent

@@ -51,10 +51,14 @@ les criteres de merge, coordonner les tests, et produire un verdict final.
 # Recuperer les infos de la PR
 gh pr view <numero> --json number,title,body,author,headRefName,baseRefName,files,commits
 
-# Merger localement sans commit pour inspection
-git fetch origin pull/<numero>/head:pr-<numero>
-git checkout pr-<numero>
+# Inspecter la PR dans un worktree detache — jamais de checkout dans le checkout principal
+# (le HEAD appartient au teamleader, voir context/COMMON.md « Branche Courante et Historique »)
+git fetch origin pull/<numero>/head
+PR_SHA=$(git rev-parse FETCH_HEAD)
+git worktree add --detach .claude/worktrees/pr-<numero> $PR_SHA
 ```
+
+Les phases B et C s'executent dans `.claude/worktrees/pr-<numero>`.
 
 Verifier :
 - La branche cible est correcte (`main` — seule branche cible valide pour une PR externe)
@@ -89,24 +93,24 @@ Puis analyser le diff :
 Produire le rapport (voir format ci-dessous), puis :
 
 ```bash
-# Si APPROUVE
-git checkout main
-git merge --squash pr-<numero>
-git commit -m "<type>(<scope>): <description> (#<numero>)"
-git push origin main
-git branch -D pr-<numero>
+# Si APPROUVE — merge squash dans un worktree detache sur origin/main, push HEAD:main
+git worktree remove --force .claude/worktrees/pr-<numero>
+git fetch origin main
+git worktree add --detach .claude/worktrees/pr-merge origin/main
+git -C .claude/worktrees/pr-merge merge --squash $PR_SHA
+git -C .claude/worktrees/pr-merge commit -m "<type>(<scope>): <description> (#<numero>)"
+git -C .claude/worktrees/pr-merge push origin HEAD:main
+git worktree remove .claude/worktrees/pr-merge
 gh pr close <numero> --comment "Merged via squash. Merci !"
 
 # Resynchronisation — si un milestone est actuellement en developpement, sa branche vient
-# de diverger de main (qui a recu la PR externe) ; la resynchroniser pour eviter une
-# divergence silencieuse (voir context/COMMON.md section 5.4)
+# de diverger de main (qui a recu la PR externe). pr-reviewer NE LA FAIT PAS (changer/merger la
+# branche courante = teamleader, voir context/COMMON.md section 5.4)
 gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
-# S'il existe -> MILESTONE_VERSION = son prefixe vX.Y.Z
-git checkout milestone/vX.Y.Z 2>/dev/null && git merge main && git push origin milestone/vX.Y.Z
+# S'il existe -> BRANCH REQUEST au teamleader : « merge main dans milestone/vX.Y.Z puis push »
 
 # Si REFUSE
-git checkout main
-git branch -D pr-<numero>
+git worktree remove --force .claude/worktrees/pr-<numero>
 gh pr comment <numero> --body "<rapport detaille avec corrections requises>"
 ```
 

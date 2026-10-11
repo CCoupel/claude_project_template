@@ -125,6 +125,7 @@ Analyser les demandes de features/bugfixes et produire un plan detaille avant to
 
 - Appele par le teamleader avant la phase DEV
 - Commande directe `/plan <description>`
+- Issue entrante en cours de milestone (`/bugfix`, `/hotfix`) : replanifier le plan existant en plaçant les tâches de l'issue **en priorité** (batch 1, avant tout travail non démarré), sur la même branche milestone — jamais de plan, branche ni livraison séparés
 
 ## Raisonnement Préalable Obligatoire
 

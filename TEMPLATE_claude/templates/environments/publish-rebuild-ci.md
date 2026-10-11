@@ -49,15 +49,20 @@ grep -q "$DEV_VERSION" CHANGELOG.md || {
 # rollback en cas d'echec (ci-dessous) dispose de l'etat exact merge, avant la suppression de la
 # branche distante en cas de succes (voir `agents/deploy.md`, Tache DEPLOY {ENV_NAME}, Etape 6).
 git push origin milestone/vX.Y.Z
-git checkout main
-git merge --no-ff milestone/vX.Y.Z -m "Release v$VERSION"
-git push origin main
+# Merge dans un worktree detache sur origin/main — le HEAD du checkout principal reste sur la branche
+# milestone (il appartient au teamleader, voir context/COMMON.md « Branche Courante et Historique »)
+REL=.claude/worktrees/release
+git fetch origin main
+git worktree add --detach "$REL" origin/main
+git -C "$REL" merge --no-ff milestone/vX.Y.Z -m "Release v$VERSION"
+git -C "$REL" push origin HEAD:main
 
 # 3. Tag officiel — LE declencheur du rebuild deterministe. Le pipeline CI (`{CI_PIPELINE}`) est
 # configure sur `tags: ['v*']` : ce push de tag lance le job de build, qui reconstruit depuis ce
 # commit fige et publie le resultat (registre / GitHub Release).
-git tag -a "v$VERSION" -m "Release v$VERSION"
+git -C "$REL" tag -a "v$VERSION" -m "Release v$VERSION"   # tag sur le commit de merge
 git push origin "v$VERSION"
+git worktree remove "$REL"
 
 sleep 5
 RUN_ID=$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
@@ -111,9 +116,11 @@ echo "Publication {ENV_NAME} terminee - v$VERSION (tag pousse, CI OK)"
 ## Rollback
 
 ```bash
-git checkout main
-git revert HEAD --no-edit
-git push origin main
+# Worktree detache sur origin/main (jamais de checkout dans le checkout principal)
+git fetch origin main && git worktree add --detach .claude/worktrees/rollback origin/main
+git -C .claude/worktrees/rollback revert HEAD --no-edit
+git -C .claude/worktrees/rollback push origin HEAD:main
+git worktree remove .claude/worktrees/rollback
 git tag -d v[X.Y.Z]
 git push origin --delete v[X.Y.Z]
 # Correction : agent responsable (voir Echec ci-dessus), puis /publish {ENV_NAME_LOWER} a nouveau

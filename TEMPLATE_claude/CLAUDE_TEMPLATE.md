@@ -200,13 +200,14 @@ SendMessage({
 
 | Besoin | Emplacement obligatoire |
 |--------|-------------------------|
-| Worktree git (isolation, branche parallèle) | `.claude/worktrees/<nom>` — jamais `../<repo>-<nom>` ni `/tmp/...` |
+| Worktree git (isolation d'exécution, sans nouvelle branche) | `.claude/worktrees/<nom>` — jamais `../<repo>-<nom>` ni `/tmp/...` |
 | Worktree du site marketing | `MARKETING/` (racine du projet) |
 | Fichier / dossier temporaire (scratch, sortie intermédiaire, `.tmp`, backup) | `_work/tmp/` (créé à la demande, gitignoré) |
 | Ordres du teamleader (> 3 lignes), rapports et handoffs inter-agents | `_work/tasks/`, `_work/reports/`, `_work/handoff/` |
 
 - Fichiers temporaires : `mkdir -p _work/tmp && mktemp -p _work/tmp ...` ; les supprimer en fin de tâche.
-- Worktrees : `git worktree add .claude/worktrees/<nom> ...` puis `git worktree remove` en fin de tâche.
+- Worktrees : `git worktree add --detach .claude/worktrees/<nom> <ref>` (sans créer de branche) puis `git worktree remove` en fin de tâche.
+- Branche courante : fixée par le teamleader seul ; les agents ne font ni `checkout`/`switch`/`reset` ni retour à un commit précédent dans le checkout principal (`BRANCH REQUEST` au teamleader) — voir `agents/context/COMMON.md`.
 - Ces dossiers sont gitignorés (`_work/`, `.claude/worktrees/`) — ne jamais les commiter.
 - Si un outil impose un emplacement externe, rediriger via `TMPDIR=$PWD/_work/tmp` ; en cas d'impossibilité, **BLOQUE** et demande au teamleader/utilisateur.
 

@@ -362,7 +362,9 @@ Rollback ci-dessous, qui cible déjà le tag, jamais la branche), et `main` cont
 
 ```bash
 git fetch --prune
-git checkout main && git pull origin main          # ne jamais supprimer la branche courante
+# La branche courante ne se supprime pas, et deployer ne change pas le HEAD (teamleader seul, voir
+# context/COMMON.md « Branche Courante et Historique ») : si `git branch --show-current` vaut encore
+# milestone/vX.Y.Z → BRANCH REQUEST au teamleader « checkout main + pull » et attendre BRANCH CHANGE DONE
 git push origin --delete milestone/vX.Y.Z          # branche du milestone livré (remote)
 git branch -D milestone/vX.Y.Z                     # copie locale
 # Balayage des branches résiduelles : toute branche locale ou remote dont la PR est MERGED

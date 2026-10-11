@@ -70,7 +70,8 @@ Attendre `TEAMLEADER SUBAGENTS READY` avant de continuer — seul le teamleader 
 ```
 SendMessage({ to: "sub-qa-unit", content: "
 [NOM] execution de tests — scope : unitaires, branche/commit : [branche]
-1. git worktree add .claude/worktrees/sub-qa-unit -b sub-qa-unit [branche]
+1. Verifier `git status --porcelain` vide sur [branche] (tests sur code commite uniquement, sinon BLOQUE),
+   puis git worktree add --detach .claude/worktrees/sub-qa-unit [branche]   # pas de branche creee
 2. Copier les fichiers non trackes necessaires (.env, config locale — voir project-config.json
    si liste, sinon ignorer) depuis le checkout principal vers le worktree.
 3. Executer les tests du scope assigne dans ce worktree.
@@ -81,6 +82,9 @@ Retour : `DONE` + chemin du rapport uniquement ; jalons `EN COURS` (fin de lot) 
 " })
 ```
 
+> **Worktree detache, jamais de branche** : `--detach` evite toute branche `sub-qa-*` a suivre/nettoyer, et
+> le sub-qa ne commite pas (il teste). Regle generale : `context/COMMON.md` « Branche Courante et Historique ».
+>
 > **Pourquoi pas `isolation: "worktree"` de l'outil `Agent`** : ce parametre force une
 > classification "Subagent" (execution async en une passe, notifie son spawner) incompatible
 > avec le protocole teammate standard (mailbox, `ACTIF`/`DONE`/`BLOQUE`, P2P) — verifie

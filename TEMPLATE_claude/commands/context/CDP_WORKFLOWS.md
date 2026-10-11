@@ -18,7 +18,7 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 | Commande | Type | Workflow | Version |
 |----------|------|----------|---------|
 | `/feature` | FEATURE | Complet | Rattache a un milestone (nouveau ou existant) — `X.Y.Z` fixe par son titre |
-| `/bugfix` | BUGFIX | Simplifie | Milestone actif -> aucun changement (commits normaux) ; sinon -> milestone `X.Y.Z+1` cree automatiquement |
+| `/bugfix` | BUGFIX | Simplifie | Milestone actif -> integre au milestone, planifie en priorite par le planner, livre avec lui (commits normaux) ; sinon -> milestone `X.Y.Z+1` cree automatiquement |
 | `/hotfix` | HOTFIX | Accelere | Milestone actif -> integre a celui-ci (commit direct sur sa branche) ; sinon -> milestone `X.Y.Z+1` dedie cree automatiquement |
 | `/refactor` | REFACTOR | Leger | Rattache au milestone actif — aucun changement de version (`a` gere par `deployer` au prochain BUILD) |
 
@@ -261,6 +261,11 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 > fois (voir `context/COMMON.md` section 5.4) — HOTFIX/BUGFIX sans reference explicite
 > rejoignent ce milestone actif s'il existe, sinon un milestone dedie est cree automatiquement
 > (voir Phase Clarification etape 3c et Phase Versionnement ci-dessous).
+
+> **Seul le teamleader exécute ce bloc** (propriétaire du HEAD — `agents/context/COMMON.md` « Branche Courante
+> et Historique ») : tree propre, `BRANCH CHANGE PENDING` aux agents actifs avant, `BRANCH CHANGE DONE` après.
+> Une seule branche de travail à la fois : un `/bugfix` ou `/hotfix` lancé pendant un milestone n'ouvre jamais
+> sa branche, il est planifié en priorité dans le plan du milestone et livré avec lui.
 
 ```bash
 # FEATURE / BUGFIX / HOTFIX / REFACTOR — checkout-ou-creation idempotent de la branche milestone
