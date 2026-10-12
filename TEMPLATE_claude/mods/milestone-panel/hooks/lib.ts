@@ -49,6 +49,7 @@ export const buildView = (
   rawMilestones: RawMilestone[],
   rawIssues: RawIssue[],
   now: number,
+  colors: Record<string, string> = {},
 ): View => {
   const sorted = [...rawMilestones].sort(compareMilestones)
   const started = new Set(
@@ -70,7 +71,7 @@ export const buildView = (
     open: m.open_issues,
     closed: m.closed_issues,
   }))
-  return { current, issues, milestones, updatedAt: now, error: null }
+  return { current, issues, milestones, colors, updatedAt: now, error: null }
 }
 
 export const groupByPhase = (issues: Issue[]) =>

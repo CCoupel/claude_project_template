@@ -14,7 +14,7 @@
       "type": "number",
       "title": "Rafraîchissement périodique (s)",
       "description": "Relecture de sécurité, indépendante des événements.",
-      "default": 300
+      "default": 60
     }
   }
 }
