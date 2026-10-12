@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { View } from '../types'
-import { buildView, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
+import { PHASES, allocate, buildView, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -144,37 +144,50 @@ export const register: Register = (on, options) => {
       v.colors[label] ? `#${v.colors[label]}` : fallback
     const phaseColor = (phase: string) =>
       phase === 'SANS PHASE' ? 'gray' : hex(phase, 'white')
-    const C_CLOSED = hex('DONE', 'green')
-    const C_STARTED = hex('EN COURS', 'yellow')
-
-    // Trois valeurs : fermées / démarrées (une phase) / non démarrées.
-    const progress = (closed: number, started: number, notStarted: number) => {
-      const total = closed + started + notStarted
+    // Ordre de développement : fermées, puis phases du plus avancé au moins avancé, puis non démarrées.
+    const ORDER = [...PHASES].reverse()
+    const progress = (closed: number, byPhase: Record<string, number>, notStarted: number) => {
+      const segs = [
+        { label: 'fermées', n: closed, color: hex('DONE', 'green') },
+        ...ORDER.filter(p => p !== 'DONE' && (byPhase[p] ?? 0) > 0).map(p => ({
+          label: p,
+          n: byPhase[p] ?? 0,
+          color: phaseColor(p),
+        })),
+        { label: 'non démarrées', n: notStarted, color: 'gray' },
+      ]
+      const total = segs.reduce((a, x) => a + x.n, 0)
       const width = Math.max(8, Math.min(30, columns - 16))
-      const cells = (n: number) => (total === 0 ? 0 : Math.round((n / total) * width))
-      const c = cells(closed)
-      const s = Math.min(cells(started), width - c)
+      const cells = allocate(segs.map(x => x.n), width)
       const pct = total === 0 ? 0 : Math.round((closed / total) * 100)
       return (
         <Box flexDirection="column">
           <Text wrap="truncate-end">
-            <Text color={C_CLOSED}>{'█'.repeat(c)}</Text>
-            <Text color={C_STARTED}>{'█'.repeat(s)}</Text>
-            <Text dimColor>{'░'.repeat(width - c - s)}</Text>
+            {segs.map((x, k) =>
+              x.label === 'non démarrées' ? (
+                <Text dimColor>{'░'.repeat(cells[k])}</Text>
+              ) : (
+                <Text color={x.color}>{'█'.repeat(cells[k])}</Text>
+              ),
+            )}
+            {total === 0 && <Text dimColor>{'░'.repeat(width)}</Text>}
             <Text bold>{` ${pct}%`}</Text>
           </Text>
           <Text wrap="truncate-end">
-            <Text color={C_CLOSED}>{`${closed} fermées`}</Text>
-            <Text dimColor>{' · '}</Text>
-            <Text color={C_STARTED}>{`${started} démarrées`}</Text>
-            <Text dimColor>{` · ${notStarted} non démarrées`}</Text>
+            {segs
+              .filter(x => x.n > 0 || x.label === 'fermées')
+              .map((x, k) => (
+                <Text color={x.color}>{`${k > 0 ? ' · ' : ''}${x.n} ${x.label}`}</Text>
+              ))}
           </Text>
         </Box>
       )
     }
 
     const cur = v.milestones.find(m => m.title === v.current)
-    const startedCount = v.issues.filter(i => i.phase !== 'SANS PHASE').length
+    const byPhase: Record<string, number> = {}
+    for (const i of v.issues) if (i.phase !== 'SANS PHASE') byPhase[i.phase] = (byPhase[i.phase] ?? 0) + 1
+    const startedCount = Object.values(byPhase).reduce((a, b) => a + b, 0)
 
     return (
       <Box flexDirection="column">
@@ -183,16 +196,26 @@ export const register: Register = (on, options) => {
         {v.current ? (
           <Box flexDirection="column">
             {T({ bold: true, color: 'cyan' }, `Milestone ${v.current}`)}
-            {cur && progress(cur.closed, startedCount, v.issues.length - startedCount)}
-            {groupByPhase(v.issues).map(g => (
+            {cur && progress(cur.closed, byPhase, v.issues.length - startedCount)}
+            {groupByLot(v.issues).map(lotGroup => (
               <Box flexDirection="column" marginTop={1}>
-                {T({ bold: true, color: phaseColor(g.phase) }, `${g.phase} (${g.issues.length})`)}
-                {g.issues.map(i =>
-                  T(
-                    { color: i.isBlocked ? 'red' : undefined },
-                    `${i.isBlocked ? '⛔' : ' '} #${i.number} ${i.title}`,
-                  ),
-                )}
+                {lotGroup.lot !== null || groupByLot(v.issues).length > 1
+                  ? T(
+                      { bold: true, inverse: true, color: lotGroup.lot ? hex(lotGroup.lot, 'magenta') : 'gray' },
+                      ` ${lotGroup.lot ?? 'SANS LOT'} (${lotGroup.issues.length}) `,
+                    )
+                  : null}
+                {groupByPhase(lotGroup.issues).map(g => (
+                  <Box flexDirection="column">
+                    {T({ bold: true, color: phaseColor(g.phase) }, `${g.phase} (${g.issues.length})`)}
+                    {g.issues.map(i =>
+                      T(
+                        { color: i.isBlocked ? 'red' : undefined },
+                        `${i.isBlocked ? '⛔' : ' '} #${i.number} ${i.title}`,
+                      ),
+                    )}
+                  </Box>
+                ))}
               </Box>
             ))}
           </Box>
@@ -203,7 +226,7 @@ export const register: Register = (on, options) => {
             {v.milestones.map(m => (
               <Box flexDirection="column" marginTop={1}>
                 {T({ bold: true, color: 'cyan' }, m.title)}
-                {progress(m.closed, 0, m.open)}
+                {progress(m.closed, {}, m.open)}
               </Box>
             ))}
           </Box>

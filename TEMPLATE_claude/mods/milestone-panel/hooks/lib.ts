@@ -38,6 +38,8 @@ const compareMilestones = (a: RawMilestone, b: RawMilestone) => {
   return compareTitles(a.title, b.title)
 }
 
+const lotOf = (i: RawIssue) => i.labels.map(l => l.name).find(n => /^LOT-\d+$/i.test(n)) ?? null
+
 const phaseOf = (i: RawIssue) =>
   i.labels.map(l => l.name).find(n => (PHASES as readonly string[]).includes(n)) ?? null
 
@@ -63,6 +65,7 @@ export const buildView = (
           number: i.number,
           title: i.title,
           phase: phaseOf(i) ?? 'SANS PHASE',
+          lot: lotOf(i),
           isBlocked: i.labels.some(l => l.name === 'BLOQUE'),
         }))
     : []
@@ -79,6 +82,61 @@ export const groupByPhase = (issues: Issue[]) =>
   [...PHASES].reverse().concat('SANS PHASE' as never)
     .map(phase => ({ phase, issues: issues.filter(i => i.phase === phase) }))
     .filter(g => g.issues.length > 0)
+
+/** Phases où le développement a réellement commencé (PLANNING = plan en cours, pas encore de dev). */
+const DEV_PHASES = ['EN COURS', 'EN REVIEW', 'EN QA', 'DONE']
+
+/**
+ * Issues regroupées par lot (`LOT-N`) : lots en développement d'abord, puis lots en PLANNING,
+ * puis lots sans phase (chaque niveau par numéro croissant), puis les issues sans lot.
+ * Sans aucun lot dans le milestone : un seul groupe `lot: null`, aucun intitulé à afficher.
+ */
+export const groupByLot = (issues: Issue[]) => {
+  const num = (l: string) => parseInt(l.slice(4), 10)
+  const lots = [...new Set(issues.map(i => i.lot).filter((l): l is string => !!l))]
+  if (lots.length === 0) return [{ lot: null as string | null, issues }]
+  // Niveaux : 0 = développement engagé, 1 = PLANNING seul, 2 = aucune phase ; puis numéro croissant.
+  const tier = (l: string) => {
+    const phases = issues.filter(i => i.lot === l).map(i => i.phase)
+    return phases.some(p => DEV_PHASES.includes(p)) ? 0 : phases.includes('PLANNING') ? 1 : 2
+  }
+  lots.sort((a, b) => tier(a) - tier(b) || num(a) - num(b))
+  const groups: { lot: string | null; issues: Issue[] }[] = lots.map(lot => ({
+    lot,
+    issues: issues.filter(i => i.lot === lot),
+  }))
+  const rest = issues.filter(i => !i.lot)
+  return rest.length > 0 ? [...groups, { lot: null, issues: rest }] : groups
+}
+
+/**
+ * Répartit `width` cellules entre des effectifs, proportionnellement (plus fort reste) ;
+ * tout effectif non nul garde au moins une cellule. Somme = `width` si le total est non nul.
+ */
+export const allocate = (counts: number[], width: number) => {
+  const total = counts.reduce((a, b) => a + b, 0)
+  if (total === 0) return counts.map(() => 0)
+  const exact = counts.map(c => (c / total) * width)
+  const cells = exact.map(Math.floor)
+  let left = width - cells.reduce((a, b) => a + b, 0)
+  exact
+    .map((x, k) => ({ k, r: x - Math.floor(x) }))
+    .sort((a, b) => b.r - a.r)
+    .forEach(({ k }) => {
+      if (left > 0) {
+        cells[k] += 1
+        left -= 1
+      }
+    })
+  counts.forEach((c, k) => {
+    if (c > 0 && cells[k] === 0) {
+      const big = cells.indexOf(Math.max(...cells))
+      cells[big] -= 1
+      cells[k] = 1
+    }
+  })
+  return cells
+}
 
 /** Étiquettes de phase visées par une commande `gh issue edit/close/...`. */
 export type Expectation = { number: number; label: string | null; isClosed: boolean }

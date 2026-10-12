@@ -1,4 +1,4 @@
-export type Issue = { number: number; title: string; phase: string; isBlocked: boolean }
+export type Issue = { number: number; title: string; phase: string; lot: string | null; isBlocked: boolean }
 export type MilestoneRow = { title: string; open: number; closed: number }
 export type View = {
   /** Milestone en cours, ou null quand aucun n'a d'issue en phase. */
