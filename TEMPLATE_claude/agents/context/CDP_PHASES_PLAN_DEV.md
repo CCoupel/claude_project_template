@@ -53,7 +53,7 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   " })
   ```
 - Répéter jusqu'à validation explicite de l'utilisateur avant de lancer la Phase 2
-- **Plan avec table « Lots »** : avant GATE 2, vérifier que chaque issue du milestone figure dans un seul lot nommé `LOT-<entier>` (sinon renvoyer le plan au planner). Après validation, ordonner à `deployer` de poser `LOT-N` sur chaque issue du lot (`commands/context/GITHUB.md` §9.11) avant le premier ordre DEV
+- **Plan avec table « Lots »** : avant GATE 2, vérifier que chaque issue du milestone figure dans un seul lot ou sous-lot nommé `LOT-<entier>` ou `LOT-<entier>.<entier>` (sinon renvoyer le plan au planner). Les lots sont traités **un à la fois**, dans l'ordre (`LOT-1`, `LOT-2`…) : cycle complet DEV → REVIEW → QA → Phase 5 (QUALIF) → **GATE LOT** (l'utilisateur teste et valide) → push → CI verte → fermeture des issues du lot (`GITHUB.md` §9.5b), puis lot suivant. Aucune validation après la CI. Les issues des lots non lancés restent `PRET`. Après validation (GATE 2), ordonner à `deployer` de poser `PRET` sur toutes les issues (`commands/context/GITHUB.md` §9.0) et `LOT-N` sur chaque issue du lot (`commands/context/GITHUB.md` §9.11) avant le premier ordre DEV
 
 **Maquette au GATE 2** (convention : `context/COMMON.md` section 14) :
 - **Correction/refus** : reformuler les retours de l'utilisateur en **contraintes durables** et les ajouter à `docs/mockup/DECISIONS.md`, par composant (ex. « je ne veux pas cette couleur et fais plus gros » → « pas de bleu pour ce composant », « taille > 24px »). Le brouillon rejeté n'est pas conservé, seules les raisons le sont. Inclure ces contraintes dans la correction redispatchée au planner.
@@ -92,7 +92,7 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 > définitif, `/cdp abort` pendant la planification) — ne jamais laisser un sub-planner actif
 > en dehors de la Phase Plan.
 
-> `ISSUE_NUMS[]` non vide → label `EN COURS` sur toutes les issues (ordre à `deployer` — `commands/context/GITHUB.md` §9, `gh issue edit`)
+> `ISSUE_NUMS[]` non vide → label `EN COURS` sur les issues du lot lancé, à l'envoi de l'ordre DEV (elles étaient `PRET` depuis GATE 2 — ordre à `deployer` — `commands/context/GITHUB.md` §9, `gh issue edit`)
 
 > **Le CDP ne decide pas du dispatch — il lit et execute l'Arbre d'Execution DEV du plan.**
 > Lire la section "Arbre d'Execution DEV" du rapport planner (`_work/reports/plan-[timestamp].md`).

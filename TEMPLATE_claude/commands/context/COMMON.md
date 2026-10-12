@@ -259,7 +259,7 @@ perf:     Amelioration de performance
 - [ ] Pas de fichiers temporaires
 - [ ] PAS de push par les agents dev/review/qa — ils travaillent sur le meme clone local ;
       le premier push des commits dev vers origin est fait par le CDP quand les issues passent `DONE`
-      (QA valide, Phase 4) : il declenche la CI de validation ; CI verte → issues fermees
+      (QA valide, Phase 4) : il declenche la CI de validation ; CI verte → issues fermees (milestone avec lots : push apres la validation QUALIF du lot, GATE LOT)
       (voir `commands/context/GITHUB.md` section 8.2). Jamais avant
 ```
 

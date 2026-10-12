@@ -196,23 +196,25 @@ Enchaîner directement sur la phase suivante sans autre attente.
 ### Labels GitHub — Suivi de Phase
 
 > **Condition** : s'applique si `ISSUE_NUMS[]` est non vide (construit en CLARIFICATION).
-> **Règle** : chaque transition de phase met à jour le label de **toutes** les issues suivies. Un seul label
+> **Règle** : chaque transition de phase met à jour le label de **toutes** les issues suivies, **dès l'événement** (retour DONE/FAILED/BLOQUE d'un teammate ou validation d'un GATE), pas seulement à l'envoi de l'ordre suivant — l'état dit ce qui reste à faire (`GITHUB.md` §9.12). Un seul label
 > actif à la fois par issue, **sauf** `EN REVIEW` + `EN QA` simultanés pendant la fenêtre de parallélisation
 > Review/QA par défaut (voir `QUALITY.md` section 12) — les deux coexistent tant que REVIEW n'a pas rendu
 > son verdict.
 
 | Transition | Label à ajouter | Labels à retirer |
 |------------|----------------|-----------------|
-| Entrée Phase Plan (FEATURE) | `PLANNING` | `EN COURS`, `EN REVIEW`, `EN QA`, `DONE` |
-| Entrée Phase Dev | `EN COURS` | `PLANNING`, `EN REVIEW`, `EN QA`, `DONE` |
+| Entrée Phase Plan (FEATURE) | `PLANNING` | `PRET`, `EN COURS`, `EN REVIEW`, `EN QA`, `DONE` |
+| GATE 2 validé (plan accepté, DEV pas encore lancé) | `PRET` | `PLANNING` |
+| Ordre DEV du lot (Phase Dev) | `EN COURS` | `PLANNING`, `PRET`, `EN REVIEW`, `EN QA`, `DONE` |
 | Retour Phase Dev (cycle REVIEW ou QA) | `EN COURS` | `EN REVIEW`, `EN QA` |
-| Entrée Phase Review | `EN REVIEW` | `EN COURS`, `PLANNING`, `EN QA`, `DONE` |
-| Entrée Phase QA — mode parallèle (`qa_parallelizable` != false, dès TEST-WRITER DONE) | `EN QA` | `EN COURS`, `PLANNING`, `DONE` (garder `EN REVIEW`) |
-| Entrée Phase QA — mode séquentiel (après verdict Review positif) | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `DONE` |
-| QA VALIDATED (et Review déjà approuvée) | `DONE` — puis push de la branche et CI | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING` |
-| CI verte sur la branche poussée | — (issues fermées, `DONE` conservé) | — |
+| Retour DEV `DONE` (entrée Phase Review) | `EN REVIEW` | `EN COURS`, `PLANNING`, `PRET`, `EN QA`, `DONE` |
+| Entrée Phase QA — mode parallèle (`qa_parallelizable` != false, dès TEST-WRITER DONE) | `EN QA` | `EN COURS`, `PLANNING`, `PRET`, `DONE` (garder `EN REVIEW`) |
+| Entrée Phase QA — mode séquentiel (après verdict Review positif) | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `PRET`, `DONE` |
+| QA VALIDATED (et Review déjà approuvée) | `DONE` — puis push de la branche et CI | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`, `PRET` |
+| Lot validé en QUALIF par l'utilisateur (GATE LOT, avec lots) | — (push de la branche puis CI) | — |
+| CI verte sur la branche poussée | — (issues fermées, `DONE` conservé) ; avec lots : lot suivant → `EN COURS` à son ordre DEV | — |
 | CI non verte (rouge, orange, annulée) | `EN COURS` | `DONE` |
-| Rejet GATE 4 (issues concernées seulement) | `EN COURS` (Cas A) ou `PLANNING` (Cas B), issue rouverte | `DONE` |
+| Rejet GATE 4 (issues concernées seulement) | `EN COURS` (Cas A) ou `PLANNING` (Cas B), issue rouverte | `DONE` (et `PRET`) |
 | Validation GATE 4 | — (issues déjà fermées ; déploiement PROD) | — |
 
 Appel MCP pour chaque transition — boucler sur toutes les issues suivies :
@@ -224,7 +226,7 @@ pour chaque issue_num dans ISSUE_NUMS[] :
   })
 ```
 
-CI verte — fermer toutes les issues suivies (la fermeture dépend de la CI, pas de la validation utilisateur ; le milestone, lui, reste lié au GATE 4) :
+CI verte — fermer les issues suivies (avec lots : celles du lot seulement ; la fermeture dépend de la CI, pas d'une validation utilisateur ; le milestone, lui, reste lié au GATE 4) :
 ```
 pour chaque issue_num dans ISSUE_NUMS[] :
   mcp__plugin_github_github__add_issue_comment({
@@ -338,7 +340,7 @@ titre entier (le nom ne doit jamais empêcher un matching).
 ```
 pour chaque issue_num dans ISSUE_NUMS[] :
   mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["PLANNING"], remove: ["EN COURS", "EN REVIEW", "EN QA", "DONE"] } })
+    labels: { add: ["PLANNING"], remove: ["PRET", "EN COURS", "EN REVIEW", "EN QA", "DONE"] } })
 ```
 
 > **Le CDP ne rédige jamais le plan lui-même.** C'est le rôle exclusif du planner.
@@ -369,6 +371,14 @@ Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING l
 
 **Présenter le plan validé à l'utilisateur et demander validation** ← GATE 2
 
+**→ Dès la validation (GATE 2 OUI), appliquer label `PRET`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
+
+```
+pour chaque issue_num dans ISSUE_NUMS[] :
+  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
+    labels: { add: ["PRET"], remove: ["PLANNING"] } })
+```
+
 ---
 
 ### Phase Dev (Dispatch)
@@ -381,12 +391,12 @@ pour chaque nom dans SUBPLANNER_NAMES[] :
 SUBPLANNER_NAMES[] = []
 ```
 
-**→ Appliquer label `EN COURS`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
+**→ À l'ordre DEV du lot, appliquer label `EN COURS`** sur les issues de ce lot (toutes celles de `ISSUE_NUMS[]` sans lots) si non vide :
 
 ```
 pour chaque issue_num dans ISSUE_NUMS[] :
   mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["EN COURS"], remove: ["PLANNING", "EN REVIEW", "EN QA", "DONE"] } })
+    labels: { add: ["EN COURS"], remove: ["PLANNING", "PRET", "EN REVIEW", "EN QA", "DONE"] } })
 ```
 
 ```
@@ -424,7 +434,7 @@ Analyser le scope, puis dispatcher les agents concernés via SendMessage :
 ```
 pour chaque issue_num dans ISSUE_NUMS[] :
   mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["EN REVIEW"], remove: ["EN COURS", "PLANNING", "EN QA", "DONE"] } })
+    labels: { add: ["EN REVIEW"], remove: ["EN COURS", "PLANNING", "PRET", "EN QA", "DONE"] } })
 ```
 
 ```
@@ -489,7 +499,7 @@ pour chaque nom de la liste "Sub-reviewers a fermer" :
 ```
 pour chaque issue_num dans ISSUE_NUMS[] :
   mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["EN QA"], remove: ["EN REVIEW", "EN COURS", "PLANNING", "DONE"] } })
+    labels: { add: ["EN QA"], remove: ["EN REVIEW", "EN COURS", "PLANNING", "PRET", "DONE"] } })
 ```
 
 ```
@@ -527,9 +537,9 @@ pour chaque nom de la liste "Sub-qa a fermer" :
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
         |-- VALIDATED                   -> Phase Doc (automatique) :
-                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING"] )
+                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING", "PRET"] )
         |-- VALIDATED WITH RESERVATIONS -> Phase Doc (noter reserves, continuer) :
-                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING"] )
+                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING", "PRET"] )
         |-- NOT VALIDATED               -> Retour Phase Dev (cycle++) :
                                            mcp__plugin_github_github__issue_write( labels: add ["EN COURS"], remove ["EN QA", "EN REVIEW"] )
                                            relancer code-reviewer + test-writer
