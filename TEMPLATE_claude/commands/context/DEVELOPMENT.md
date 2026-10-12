@@ -94,6 +94,14 @@ Commit local uniquement — **pas de push**. Tous les agents (dev, review, qa) t
 le meme clone local ; le premier push des commits dev vers origin a lieu au prochain
 deploiement QUALIF, jamais avant (voir `context/COMMON.md` section 7.1).
 
+### Regle — Tests de timing (ports, attentes, concurrence)
+
+- Pas de sondage de port (boucle « essayer de se connecter ») ni d'attente fixe (`sleep N`).
+- Attentes **par evenement** (canal, signal, callback, « ready ») avec de **larges delais** (timeouts
+  genereux : ils ne coutent rien quand tout va bien).
+- Interdit de **rebinder un port ephemere libere** (le port pris puis relache peut etre reattribue) : garder le
+  listener ouvert ou passer le listener deja bind au code teste.
+
 ### Etape 6 : Generer Resume
 
 ```markdown

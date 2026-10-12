@@ -264,6 +264,11 @@ porte la determination de version, la verification documentation, le protocole d
 (classification CODE/FLAKY/CONFIG/INFRA pour `rebuild-ci`) et le rollback specifiques a ce
 mecanisme — ne rien dupliquer ici.
 
+**Barriere PUBLISH PROD en `rebuild-ci`** : refuser de merger dans `main` et de taguer tant que le workflow de
+pre-validation (`ci-branch.yml`, `infra.md` §3bis C10 — il ne lance que `commands.ci`) n'est pas vert sur le **SHA
+exact** de la branche milestone : `gh run list --workflow ci-branch.yml --commit <sha>`. Un tag ne sert jamais de
+test ; apres un echec on corrige sur la branche, on ne retague pas (detail dans le fichier d'environnement).
+
 **Hotfix** (voir Mode Teammates) : pour PUBLISH PROD specifiquement, le prerequis "publication
 validee sur l'environnement precedent" est leve — le candidat vient directement de BUILD.
 
@@ -419,6 +424,7 @@ Rollback PUBLISH ci-dessus plutôt que de corriger au niveau DEPLOY.
 ### PUBLISH PROD
 
 - [ ] Publication (`X.Y.Z.a`) validee en QUALIF (sauf hotfix)
+- [ ] Pre-validation CI (`ci-branch.yml`, `commands.ci`) verte sur le SHA exact a merger — pas de merge/tag sinon
 - [ ] NR complete VALIDATED (`testing.full_regression_at` — `qa`, scope `regression-full`)
 - [ ] Performance acceptable
 - [ ] Securite verifiee

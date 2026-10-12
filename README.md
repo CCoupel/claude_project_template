@@ -849,7 +849,9 @@ Mettre à jour `TEMPLATE_claude/.template-source.json` dans votre fork :
 
 Pas de modèle à ajouter par stack : le pipeline est **audité s'il existe, généré sinon** par `/init-project`
 (puis maintenu par l'agent `infra`) selon le contrat de `TEMPLATE_claude/agents/infra.md` §3bis (déclencheur
-tag `v*`, CI de validation sur push de `milestone/*` (C10), cohérence des versions, build identique à `commands.build`, livrables `<artefact>-<X.Y.Z>`,
+tag `v*`, CI de pré-validation sur push de `milestone/*` et à la demande (C10), script unique `commands.ci` partagé CI/QA/deploy (C11), cohérence des versions, build identique à `commands.build`, livrables `<artefact>-<X.Y.Z>`,
 Release créée avec les notes du changelog, permissions minimales, pas de secret en clair, pas de déploiement).
+
+**Une seule CI, locale et distante** : `commands.ci` (`CI_CMD`) est un script unique (build, lint, tests + détecteur de course, audit, build web) appelé par les workflows, `qa` et `deploy` — plus d'écart local/CI. `/init-project` génère aussi un workflow de **pré-validation** (`ci-branch.yml` : push de `milestone/*` + à la demande, sans publier). `deploy` (PUBLISH PROD, `rebuild-ci`) **refuse de merger et de taguer** tant que ce workflow n'est pas vert sur le SHA exact (`gh run list --workflow ci-branch.yml --commit <sha>`) : un tag ne sert jamais de test, on corrige sur la branche sans retaguer. Un échec CI `FLAKY` se relance une fois au plus, puis analyse. `qa` rejoue les tests de timing en conditions de runner (2 CPU, charge) et relance l'audit de dépendances juste avant la release ; règle des tests de timing (pas de sondage de port ni d'attente fixe, attentes par événement, pas de rebind de port éphémère) dans `commands/context/DEVELOPMENT.md` et `QUALITY.md`.
 Le pipeline généré est montré à l'utilisateur avant écriture ; un pipeline existant n'est jamais modifié sans
 accord. `release-go-react.yml` n'est qu'un exemple de référence.

@@ -1008,6 +1008,7 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
     "test": "<TEST_CMD>",
     "lint": "<LINT_CMD>",
     "audit": "<AUDIT_CMD>",
+    "ci": "<CI_CMD : script unique de la CI, ex. scripts/ci.sh>",
     "typecheck": "<TYPECHECK_CMD>",
     "coverage": "<COVERAGE_CMD>",
     "test_fast": "<TEST_FAST_CMD>",
@@ -1045,6 +1046,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.test` | Stack : `go test ./...` / `npm test` / `pytest` |
 | `commands.lint` | Stack : `golangci-lint run` / `npm run lint` / `ruff check .` |
 | `commands.audit` | Stack : `govulncheck ./...` / `npm audit` / `pip-audit` |
+| `commands.ci` | `CI_CMD` : **script unique** de la CI (defaut `scripts/ci.sh`, genere par l'etape "3. Workflow CI/CD" s'il n'existe pas) enchainant build, lint/vet, tests (+ detecteur de course si la stack en a un), `commands.audit`, build frontend. Appele par les workflows (release et pre-validation), `qa` et `deploy` — voir `agents/infra.md` §3bis C11 |
 | `commands.typecheck` | Frontend TS : `npm run typecheck` / `tsc --noEmit` — vide sinon |
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
 | `marketing.site` | Defaut `"auto"` : un site marketing est attendu (branche `gh-pages`, uniquement — `MARKETING/` en est le worktree git, jamais un dossier de la branche de code) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
@@ -1109,18 +1111,20 @@ Le CDP les connait via cette table et `agents.generic[]` (voir `agents/cdp.md`).
 ### 3. Workflow CI/CD
 
 Le pipeline de release n'est plus copie d'un modele : il est **audite s'il existe, genere sinon**, selon le
-contrat de `TEMPLATE_claude/agents/infra.md` section 3bis (exigences C1 a C10). Si l'utilisateur a repondu
+contrat de `TEMPLATE_claude/agents/infra.md` section 3bis (exigences C1 a C11). Si l'utilisateur a repondu
 « Aucun » a l'Etape 7, ne rien faire.
 
 1. **Detecter** : `.github/workflows/*.y*ml`, `.gitlab-ci.yml`.
-2. **Pipeline existant → audit** : evaluer C1-C10 (verdict `CONFORME` / `ECART` / `NON APPLICABLE`, fichier et ligne
+2. **Pipeline existant → audit** : evaluer C1-C11 (verdict `CONFORME` / `ECART` / `NON APPLICABLE`, fichier et ligne
    cites), afficher le tableau, puis AskUserQuestion :
    - Corriger les ecarts (Recommande) — patch minimal, diff affiche et valide avant ecriture
    - Garder tel quel — ecarts consignes dans le rapport final (un ecart C1/C5 reste signale comme bloquant
      pour le mode `rebuild-ci`)
    - Regenerer — remplace le pipeline apres sauvegarde (`.bak`)
    Ne jamais ecraser ni modifier sans reponse.
-3. **Aucun pipeline → generation** : composer le pipeline a partir de `project-config.json` (stack, livrables,
+3. **Aucun pipeline → generation** : ecrire d'abord le script `CI_CMD` (`commands.ci`, C11) s'il n'existe pas, puis
+   generer **deux workflows** qui n'y font que `run: $CI_CMD` : pre-validation `.github/workflows/ci-branch.yml`
+   (C10 : push `milestone/*` + `workflow_dispatch`, lecture seule, sans publier) et release. Composer le pipeline a partir de `project-config.json` (stack, livrables,
    `version_file`, `commands.*`) en suivant le contrat, l'afficher, le faire valider (AskUserQuestion :
    Ecrire / Modifier / Annuler), l'ecrire a `infrastructure.environments[].publish.pipeline`
    (par defaut `.github/workflows/release.yml`), puis le valider syntaxiquement (`actionlint` si present).
@@ -1641,7 +1645,7 @@ instance d'agent generique → Etape 5c puis "2bis. Agents generiques" uniquemen
 #### Etape d1c — Audit du pipeline CI/CD de release
 
 Appliquer l'etape "3. Workflow CI/CD" (sections Generation de la Configuration) en mode audit : detecter le
-pipeline, evaluer C1-C10 (`agents/infra.md` section 3bis), proposer corrections ou generation si absent. Ne rien
+pipeline, evaluer C1-C11 (`agents/infra.md` section 3bis), proposer corrections ou generation si absent. Ne rien
 modifier sans reponse de l'utilisateur ; ne pas re-poser l'Etape 7 si le systeme CI/CD est deja connu.
 
 #### Etape d1a — Site marketing : worktree `gh-pages`

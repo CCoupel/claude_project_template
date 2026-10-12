@@ -105,6 +105,14 @@ Boucle DEV rapide (`commands.test_fast`) et tests cibles (`commands.test_targete
 dossiers) : voir `context/COMMON.md` section 15. Un scope deja VALIDATED sur le meme arbre git n'est pas rejoue
 (`_work/tests-ledger.md`).
 
+### 7bis. CI_CMD et tests de timing
+
+- `commands.ci` (`CI_CMD`) est le **script unique** de la CI (build, lint, tests + detecteur de course, audit,
+  build web) : QA, deploy et les workflows l'appellent tous (`agents/infra.md` §3bis C11).
+- Tests de timing : pas de sondage de port ni d'attente fixe ; attentes par evenement avec de larges delais ;
+  jamais de rebind d'un port ephemere libere (`context/DEVELOPMENT.md`). QA les rejoue en conditions de
+  runner (2 CPU, charge) ; un test instable est `flaky` (une relance max, `context/COMMON.md`).
+
 ---
 
 ## 8. Structure Rapport Review
