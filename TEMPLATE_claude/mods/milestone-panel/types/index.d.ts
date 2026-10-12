@@ -5,6 +5,8 @@ export type View = {
   current: string | null
   issues: Issue[]
   milestones: MilestoneRow[]
+  /** Couleur GitHub (hex sans #) de chaque label du dépôt. */
+  colors: Record<string, string>
   updatedAt: number
   error: string | null
 }

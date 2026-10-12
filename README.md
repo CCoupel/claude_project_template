@@ -629,11 +629,11 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 ### Panneau milestone (mod)
 
 Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/milestone-panel`), **uniquement dans la session du team-leader** (les sessions de teammates ne l'ouvrent pas)
-les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge.
+les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge. Le titre du milestone est suivi d'une barre d'avancement à trois valeurs (fermées, démarrées = une phase, non démarrées), chaque phase reprend la couleur de son label GitHub et les lignes s'adaptent à la largeur du panneau.
 Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) qui porte une issue en phase ; à défaut,
 le panneau liste les milestones ouverts avec leur avancement. Il se rafraîchit 10 s après chaque
 `gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),
-puis toutes les 5 min. Délais réglables via la config du mod (`propagationDelaySec`, `refreshIntervalSec`). Nécessite `gh`.
+puis toutes les minutes, après toute commande Bash et après chaque délégation du team-leader (`SendMessage`, `Agent`). Délais réglables via la config du mod (`propagationDelaySec`, `refreshIntervalSec`). Nécessite `gh`.
 
 ### Validation
 
