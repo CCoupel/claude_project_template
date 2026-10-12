@@ -1648,6 +1648,22 @@ Appliquer l'etape "3. Workflow CI/CD" (sections Generation de la Configuration) 
 pipeline, evaluer C1-C11 (`agents/infra.md` section 3bis), proposer corrections ou generation si absent. Ne rien
 modifier sans reponse de l'utilisateur ; ne pas re-poser l'Etape 7 si le systeme CI/CD est deja connu.
 
+**Migration CI_CMD / pre-validation (projet deja initialise)** — a faire si `commands.ci` est absent de
+`project-config.json` ou si C10/C11 sont en `ECART` :
+
+1. **Config** : ajouter `commands.ci` (cle absente des configs anterieures ; `project-config.json` est par
+   ailleurs conserve tel quel). Valeur proposee : `scripts/ci.sh` s'il existe, sinon ce chemin a creer.
+2. **Script `CI_CMD`** : s'il n'existe pas, le deriver des etapes du workflow de release existant
+   (build, vet/lint, tests, audit, build web — plus `commands.build/test/lint/audit`), l'afficher, puis
+   AskUserQuestion : Ecrire (Recommande) / Modifier / Passer. Ne rien ecrire sans reponse ; ne jamais
+   inventer une etape absente du workflow ni de la config.
+3. **Workflow de pre-validation** : s'il n'existe pas, generer `.github/workflows/ci-branch.yml` (C10 : push
+   `milestone/*` + `workflow_dispatch`, lecture seule, `run: $CI_CMD`), meme validation utilisateur.
+4. **Workflow de release existant** : proposer (jamais impose, diff affiche, sauvegarde `.bak`) de reduire
+   ses etapes de CI a `run: $CI_CMD` pour supprimer l'ecart local/CI ; « garder tel quel » est consigne dans
+   le rapport (ecart C11).
+5. **Fichier d'environnement `rebuild-ci`** : voir d1d (la barriere de pre-validation y vit).
+
 #### Etape d1a — Site marketing : worktree `gh-pages`
 
 Appliquer la section **"Site marketing — worktree `gh-pages`"** (ajout de `MARKETING/` au `.gitignore` et
@@ -1711,6 +1727,7 @@ done
 > modifiés ici, même si leur source `TEMPLATE_claude/templates/environments/` a changé. C'est un
 > filet de sécurité (éviter qu'`agents/deploy.md` référence un fichier inexistant), pas une
 > synchronisation complète — limitation assumée, à signaler dans le rapport si applicable.
+> Seule exception : la migration de la barriere de pre-validation (`rebuild-ci`), ci-dessous.
 
 ```bash
 if jq -e '.infrastructure.environments' .claude/project-config.json >/dev/null 2>&1; then
@@ -1725,6 +1742,14 @@ if jq -e '.infrastructure.environments' .claude/project-config.json >/dev/null 2
   done
 fi
 ```
+
+**Exception — migration de la barriere de pre-validation** : pour chaque environnement `publish.mode =
+"rebuild-ci"`, si `publish.<env>.template.md` ne contient pas la section « BARRIERE » (`grep -q BARRIERE`),
+il date d'avant la pre-validation CI. AskUserQuestion : Regenerer depuis
+`TEMPLATE_claude/templates/environments/publish-rebuild-ci.md` (Recommande — ancien fichier sauvegarde en
+`.bak`, diff affiche, cibles/variables relues dans `project-config.json`) / Garder tel quel (ecart consigne
+au rapport : `deploy` applique alors seulement la regle generique de `agents/deploy.md`, sans commande de
+barriere). Jamais d'ecrasement sans reponse ; les autres modes (`promote`, etc.) ne sont pas concernes.
 
 Si `MISSING_ENV_FILES[]` non vide → exécuter pour ces seules entrées manquantes la génération
 décrite en section "3bis. Fichiers d'environnement" (Génération de la Configuration), puis
