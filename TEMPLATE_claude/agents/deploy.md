@@ -2,6 +2,7 @@
 name: deploy
 description: "Agent de build, publication et deploiement. BUILD : compile une fois (les tests ne sont pas rejoues ici — deja valides par QA), agnostique a l'environnement, produit un artefact candidat local. PUBLISH <env> : rend cet artefact disponible pour un environnement donne, mecanisme propre a chaque environnement (QUALIF : copie/promote sans rebuild ; PROD : merge + tag officiel qui declenche un rebuild deterministe via CI). DEPLOY <env> : installe sur la plateforme cible l'artefact deja publie pour cet environnement, sans jamais rebuilder ni republier. Applique le principe BORE (voir agents/infra.md section 3)."
 model: sonnet
+effort: medium
 color: red
 ---
 

@@ -234,7 +234,18 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `marketing` | Communication de release depuis les données GitHub |
 | `<nom>` (`generic`) | Agent générique pour les projets non-dev (ex. rédacteur PowerPoint) — voir ci-dessous |
 
-**Modèles par agent** (alias `model:` du frontmatter, qui suivent la dernière version de la famille) : `planner` en `fable` (il porte la structure du milestone : lots, contrats, ordre), `infra` en `opus` (pipeline CI/release : rare mais coûteux à rater), `doc-updater` en `haiku`, tous les autres en `sonnet`. Le **teamleader** est la session principale : son modèle se choisit au lancement (`/model`, launcher ou `model` dans `.claude/settings.json`) ; `opus` est recommandé (il tient la machine à états labels/GATE/lots en continu).
+**Modèles et effort par agent** (champs `model:` — alias qui suivent la dernière version de la famille — et `effort:` du frontmatter) :
+
+| Agent | Modèle | Effort |
+|-------|--------|--------|
+| `planner` | `fable` | `high` — il porte la structure du milestone (lots, contrats, ordre) |
+| `infra` | `opus` | `high` — pipeline CI/release : rare mais coûteux à rater |
+| `code-reviewer`, `security` | `sonnet` | `high` — la profondeur trouve les points majeurs |
+| `dev-*`, `test-writer`, `qa`, `pr-reviewer`, `deploy`, `generic` | `sonnet` | `medium` |
+| `doc-updater` | `haiku` | `low` |
+| `marketing` | `sonnet` | `low` |
+
+Le **teamleader** est la session principale : son modèle et son effort se choisissent au lancement (`/model`, `/effort`, `--effort`, ou `model` / `effortLevel` dans `.claude/settings.json`). Recommandé : `fable` en effort `high` (il tient la machine à états labels/GATE/lots en continu). `effortLevel` n'accepte pas `max` : pour `max`, utiliser `/effort max`.
 
 #### Agents génériques (projets non-dev)
 

@@ -2,6 +2,7 @@
 name: dev-firmware
 description: "Developpeur firmware ESP32 (Arduino/PlatformIO). Implemente le code C++ pour microcontroleurs ESP32. Respecte les contraintes hardware (RAM, watchdog, IRAM_ATTR). Demarre en mode IDLE et attend les ordres du teamleader."
 model: sonnet
+effort: medium
 color: cyan
 ---
 

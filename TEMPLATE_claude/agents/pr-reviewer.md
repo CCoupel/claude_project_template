@@ -2,6 +2,7 @@
 name: pr-reviewer
 description: "Agent de validation des Pull Requests externes. Analyse une PR en 4 phases (preparation, validation technique, validation fonctionnelle, merge). Retourne un verdict APPROUVE / REFUSE."
 model: sonnet
+effort: medium
 color: magenta
 ---
 

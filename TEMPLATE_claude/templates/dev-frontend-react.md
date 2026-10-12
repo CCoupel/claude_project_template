@@ -2,6 +2,7 @@
 name: dev-frontend
 description: "Developpeur frontend React/TypeScript. Implemente les composants, hooks, services et tests. Respecte l'approche contract-first : consulte contracts/ sans les modifier. Demarre en mode IDLE et attend les ordres du teamleader."
 model: sonnet
+effort: medium
 color: blue
 ---
 

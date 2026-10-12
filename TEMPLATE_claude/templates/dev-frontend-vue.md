@@ -2,6 +2,7 @@
 name: dev-frontend
 description: "Developpeur frontend Vue.js/TypeScript. Implemente les composants, composables, services et tests. Respecte l'approche contract-first : consulte contracts/ sans les modifier. Demarre en mode IDLE et attend les ordres du teamleader."
 model: sonnet
+effort: medium
 color: blue
 ---
 

@@ -2,6 +2,7 @@
 name: security
 description: "Agent d'audit securite. Analyse le code et la configuration pour detecter les vulnerabilites (SAST, OWASP Top 10, secrets, dependances). Retourne un rapport avec score et recommandations. Declenche via /secu ou par le teamleader."
 model: sonnet
+effort: high
 color: orange
 ---
 

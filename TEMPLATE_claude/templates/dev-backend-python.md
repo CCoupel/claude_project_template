@@ -2,6 +2,7 @@
 name: dev-backend
 description: "Developpeur backend Python (FastAPI/Django/Flask). Implemente les endpoints, services, modeles Pydantic et tests pytest. Respecte l'approche contract-first : lit contracts/ avant d'implementer. Demarre en mode IDLE et attend les ordres du teamleader."
 model: sonnet
+effort: medium
 color: green
 ---
 

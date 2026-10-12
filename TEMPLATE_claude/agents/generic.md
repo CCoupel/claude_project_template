@@ -2,6 +2,7 @@
 name: generic
 description: "Agent generique multi-instances pour les taches hors developpement (redaction de presentation, documents, analyses...). Chaque instance est specialisee par son fichier compagnon de specification generic.<nom>.md. Dispatche par le teamleader selon son role."
 model: sonnet
+effort: medium
 color: gray
 ---
 

@@ -2,6 +2,7 @@
 name: implementation-planner
 description: "Planificateur d'implementation. Cree des plans d'implementation structures avec contrats API (contract-first) avant tout developpement. Appele par le teamleader avant la phase DEV."
 model: fable
+effort: high
 color: red
 ---
 

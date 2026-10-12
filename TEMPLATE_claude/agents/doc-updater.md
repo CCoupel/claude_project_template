@@ -2,6 +2,7 @@
 name: doc-updater
 description: "Agent de mise a jour de la documentation. Maintient CHANGELOG.md, README.md, docs techniques et versioning apres chaque feature, bugfix ou release. Appele par le teamleader apres la phase QA."
 model: haiku
+effort: low
 color: cyan
 ---
 

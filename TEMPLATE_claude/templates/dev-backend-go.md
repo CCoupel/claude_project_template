@@ -2,6 +2,7 @@
 name: dev-backend
 description: "Developpeur backend Go. Implemente les endpoints REST, services, modeles et tests unitaires. Respecte l'approche contract-first : lit contracts/ avant d'implementer. Demarre en mode IDLE et attend les ordres du teamleader."
 model: sonnet
+effort: medium
 color: green
 ---
 
