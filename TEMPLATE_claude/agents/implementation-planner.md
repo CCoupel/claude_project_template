@@ -331,10 +331,21 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 > - security : ajouter au Batch 1 si la feature touche auth/crypto/donnees sensibles
 > - infra : ajouter en Batch 0 (avant tout) si la feature necessite un changement infra
 
-## Lots (si le milestone compte plusieurs issues)
+## Lots (obligatoire si le milestone compte 2 issues ou plus)
 
 > Decoupage du milestone en groupes d'issues livrees ensemble. Le teamleader pose `LOT-N` sur chaque issue
-> (`commands/context/GITHUB.md` §9.11) : une issue = un seul lot. Omettre la section pour une issue unique.
+> (`commands/context/GITHUB.md` §9.11) et le panneau `milestone-panel` regroupe les issues par lot.
+> Omettre la section uniquement pour une issue unique.
+>
+> **Regles :**
+> - **Nommage strict** : `LOT-<entier>` — majuscules, tiret, entier sans zero devant (`LOT-1`, `LOT-2`, `LOT-10`).
+>   Pas de `Lot 1`, `lot-1`, `LOT-01`, `LOT-A` : le label doit correspondre a `^LOT-[0-9]+$` pour etre reconnu.
+> - **Numerotation continue a partir de 1**, dans l'ordre de livraison (`LOT-1` est livre en premier).
+> - **Exhaustif et exclusif** : chaque issue ouverte du milestone figure dans **un seul** lot ; aucune issue sans lot.
+>   Lister les issues sous la forme `#<numero>` (la table est relue pour poser les labels).
+> - Un lot regroupe des issues couplees (meme composant, dependance, livraison conjointe) ; un lot unique
+>   (`LOT-1` = toutes les issues) est valide quand rien ne justifie de decouper.
+> - La colonne « Deblocage » reference un lot par son nom exact (`LOT-1 termine`).
 
 | Lot | Issues | Objectif | Deblocage |
 |-----|--------|----------|-----------|

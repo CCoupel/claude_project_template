@@ -449,7 +449,7 @@ Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §14. `/init
 ### Suivi des issues GitHub
 
 Le CDP met à jour les labels de l'issue associée à chaque transition de phase, **avant** l'ordre de la phase suivante : il ordonne à `deployer` d'exécuter les `gh issue edit` de `GITHUB.md` §9 (le teamleader n'a pas de `Bash`).
-Quand le planner découpe le milestone en lots, chaque issue reçoit en plus un label `LOT-N` (posé après le GATE 2, jamais retiré par une transition de phase).
+Dès que le milestone compte 2 issues ou plus, le planner le découpe en lots (obligatoire) : chaque issue reçoit exactement un label `LOT-<entier>` (nommage strict `^LOT-[0-9]+$`, numérotation continue depuis 1), en plus de sa phase. Ce label est posé après le GATE 2 et jamais retiré par une transition de phase.
 Un seul label de phase à la fois (sauf `EN REVIEW` + `EN QA` pendant la parallélisation Review/QA ; `BLOQUE` se superpose à la phase) :
 
 | Statut | Signification | Posé par | Posé quand |
@@ -629,7 +629,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 ### Panneau milestone (mod)
 
 Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/milestone-panel`), **uniquement dans la session du team-leader** (les sessions de teammates ne l'ouvrent pas)
-les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge. Le titre du milestone est suivi d'une barre d'avancement à trois valeurs (fermées, démarrées = une phase, non démarrées), chaque phase reprend la couleur de son label GitHub et les lignes s'adaptent à la largeur du panneau.
+les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge. Le titre du milestone est suivi d'une barre d'avancement segmentée dans l'ordre de développement (fermées, puis chaque phase à la couleur de son label, puis non démarrées), les issues sont regroupées par lot (label `LOT-N`, GITHUB.md §9.11) quand le milestone en porte, lots en développement d'abord, puis en PLANNING, puis sans phase, issues sans lot en dernier, et chaque phase reprend la couleur de son label GitHub et les lignes s'adaptent à la largeur du panneau.
 Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) qui porte une issue en phase ; à défaut,
 le panneau liste les milestones ouverts avec leur avancement. Il se rafraîchit 10 s après chaque
 `gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),

@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { buildView, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
+import { allocate, buildView, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -44,4 +44,28 @@ test('session teammate détectée par env ou flags, pas le team-leader', () => {
   expect(isTeammateSession([undefined, undefined], 'claude --dangerously-skip-permissions')).toBe(false)
   expect(isTeammateSession(['dev-backend@team'], 'claude')).toBe(true)
   expect(isTeammateSession([], 'claude --agent-id x@t --team-name t')).toBe(true)
+})
+
+test('regroupement par lot : démarrés en premier, non démarrés ensuite, sans lot en dernier ; sans lot = un groupe nu', () => {
+  const issues = [
+    { number: 1, title: 'a', labels: lab('LOT-10', 'EN COURS'), milestone: { title: 'v1' } },
+    { number: 2, title: 'b', labels: lab('LOT-2'), milestone: { title: 'v1' } },
+    { number: 3, title: 'c', labels: lab('PLANNING'), milestone: { title: 'v1' } },
+    { number: 4, title: 'd', labels: lab('LOT-3'), milestone: { title: 'v1' } },
+    { number: 5, title: 'e', labels: lab('LOT-4', 'PLANNING'), milestone: { title: 'v1' } },
+  ]
+  const v = buildView([{ title: 'v1', due_on: null, open_issues: 5, closed_issues: 0 }], issues, 0)
+  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-10', 'LOT-4', 'LOT-2', 'LOT-3', null])
+  const plain = buildView([{ title: 'v1', due_on: null, open_issues: 1, closed_issues: 0 }], [issues[2]], 0)
+  expect(groupByLot(plain.issues)).toHaveLength(1)
+  expect(groupByLot(plain.issues)[0].lot).toBeNull()
+})
+
+test('allocate : somme = largeur, effectif non nul garde une cellule, ordre conservé', () => {
+  const c = allocate([0, 1, 1, 7, 0], 20)
+  expect(c.reduce((a, b) => a + b, 0)).toBe(20)
+  expect(c[1]).toBeGreaterThan(0)
+  expect(c[0]).toBe(0)
+  expect(allocate([0, 0], 10)).toEqual([0, 0])
+  expect(allocate([1, 99], 8).every((x, k) => (k === 0 ? x >= 1 : true))).toBe(true)
 })

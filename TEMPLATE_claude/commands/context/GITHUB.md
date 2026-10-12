@@ -580,6 +580,9 @@ Quand le plan du planner decoupe le milestone en lots (table « Lots » du plan)
 poser le label de chaque lot sur ses issues, **apres GATE 2** et avant le premier ordre DEV. Les labels de phase
 s'appliquent ensuite par lot (une issue du lot 2 reste `PLANNING` tant que son lot n'est pas lance).
 
+Nommage strict `LOT-<entier>` (`^LOT-[0-9]+$`, sans zero devant) : c'est ce que reconnait le panneau `milestone-panel`
+pour regrouper les issues par lot. Chaque issue du milestone porte un seul label de lot.
+
 ```bash
 gh label create "LOT-1" --color "5319e7" --description "Lot 1 du milestone"   # si absent
 gh issue edit <numero> --add-label "LOT-1"
