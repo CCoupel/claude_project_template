@@ -51,12 +51,10 @@ SendMessage({ to: "doc-updater", content: "
 ```
 
 > **Milestone avec lots** : la Phase 5 s'exécute **pour chaque lot** (BUILD, PUBLISH QUALIF, DEPLOY QUALIF, NR et
-> DOC selon les règles ci-dessous), puis le **GATE LOT** remplace le GATE 4 intermédiaire : l'utilisateur teste la
-> QUALIF du lot (`AskUserQuestion` : « Valider le lot et passer au suivant » / « Valider le lot et publier le
-> milestone en PROD » / « Refuser »). OUI → push, CI, fermeture des issues du lot, lot suivant (`GITHUB.md` §9.5b).
-> Le GATE 4 (PROD) n'a lieu qu'une fois : après le dernier lot, ou sur « publier en PROD » (publication anticipée,
-> lots restants déplacés vers un autre milestone). Refus du lot : Cas A / Cas B ci-dessous, sans réouverture
-> (issues non encore fermées).
+> DOC selon les règles ci-dessous), puis le **GATE LOT** (question et options : tableau des points de validation de
+> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire. Le GATE 4 (PROD) n'a lieu qu'une
+> fois : après le dernier lot, ou sur la publication anticipée. Refus du lot : Cas A / Cas B ci-dessous, sans
+> réouverture (issues non encore fermées).
 
 **GATE 4 — s'ouvre uniquement quand TOUT est termine :**
 
