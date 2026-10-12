@@ -88,24 +88,25 @@ export const groupByPhase = (issues: Issue[]) =>
     .filter(g => g.issues.length > 0)
 
 /**
- * Issues regroupées par lot (`LOT-N`) : lots les plus avancés d'abord (DONE, EN QA, EN REVIEW,
- * EN COURS, PLANNING, sans phase), puis les issues sans lot.
+ * Issues regroupées par lot (`LOT-N`) : lots les plus avancés d'abord (avancement moyen de leurs issues :
+ * DONE, EN QA, EN REVIEW, EN COURS, PRET, PLANNING, sans phase), puis les issues sans lot.
  * Sans aucun lot dans le milestone : un seul groupe `lot: null`, aucun intitulé à afficher.
  */
 export const groupByLot = (issues: Issue[]) => {
   const num = (l: string) => parseInt(l.slice(4), 10)
   const lots = [...new Set(issues.map(i => i.lot).filter((l): l is string => !!l))]
   if (lots.length === 0) return [{ lot: null as string | null, issues }]
-  // Avancement : phase la plus avancée du lot, puis cumul des phases de ses issues, puis numéro croissant.
+  // Avancement : phase moyenne des issues du lot (un lot entièrement DONE passe avant un lot DONE + EN REVIEW),
+  // puis phase la plus avancée, puis numéro croissant.
   const rank = (phase: string) => (PHASES as readonly string[]).indexOf(phase) + 1 // 0 = sans phase
   const stats = (l: string) => {
     const ranks = issues.filter(i => i.lot === l).map(i => rank(i.phase))
-    return { best: Math.max(...ranks), sum: ranks.reduce((a, b) => a + b, 0) }
+    return { best: Math.max(...ranks), avg: ranks.reduce((a, b) => a + b, 0) / ranks.length }
   }
   lots.sort((a, b) => {
     const x = stats(a)
     const y = stats(b)
-    return y.best - x.best || y.sum - x.sum || num(a) - num(b)
+    return y.avg - x.avg || y.best - x.best || num(a) - num(b)
   })
   const groups: { lot: string | null; issues: Issue[] }[] = lots.map(lot => ({
     lot,

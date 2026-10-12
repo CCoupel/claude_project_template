@@ -80,7 +80,7 @@ test('lots triés par avancement et non par numéro', () => {
     { number: 5, title: 'e', labels: lab('LOT-4'), milestone: m },
   ]
   const v = buildView([{ title: 'v1', due_on: null, open_issues: 5, closed_issues: 0 }], issues, 0)
-  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-2', 'LOT-4', 'LOT-3', 'LOT-1'])
+  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-2', 'LOT-3', 'LOT-4', 'LOT-1'])
 })
 
 test('PRET est une phase : classée entre PLANNING et EN COURS', () => {
@@ -108,4 +108,18 @@ test('sous-lots LOT-x.y : regroupés sous le lot parent, sans distinction', () =
   expect(groups.map(g => g.lot)).toEqual(['LOT-2', 'LOT-1'])
   expect(groups[0].issues.map(i => i.number)).toEqual([1, 2])
   expect(v.issues[0].lotLabel).toBe('LOT-2.1')
+})
+
+test('un lot entièrement DONE passe avant un lot DONE + EN REVIEW', () => {
+  const m = { title: 'v1' }
+  const issues = [
+    { number: 1, title: 'a', labels: lab('LOT-2', 'DONE'), milestone: m },
+    { number: 2, title: 'b', labels: lab('LOT-2', 'EN REVIEW'), milestone: m },
+    { number: 3, title: 'c', labels: lab('LOT-4', 'DONE'), milestone: m },
+    { number: 4, title: 'd', labels: lab('LOT-4', 'DONE'), milestone: m },
+    { number: 5, title: 'e', labels: lab('LOT-1', 'DONE'), milestone: m },
+    { number: 6, title: 'f', labels: lab('LOT-6', 'EN QA'), milestone: m },
+  ]
+  const v = buildView([{ title: 'v1', due_on: null, open_issues: 6, closed_issues: 0 }], issues, 0)
+  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-1', 'LOT-4', 'LOT-2', 'LOT-6'])
 })
