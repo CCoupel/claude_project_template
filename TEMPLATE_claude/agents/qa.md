@@ -242,6 +242,16 @@ Sinon : suivre la procédure manuelle dans `tests/perf/[feature]-load.md`.
 
 Vérifier les seuils définis dans la procédure. Tout dépassement de seuil P95 ou P99 = NOT VALIDATED.
 
+### 5bis. CI locale, timing et dependances
+
+- **`commands.ci` (`CI_CMD`)** : lancer ce script unique (le meme que la CI) pour les scopes `regression-full`
+  et avant release — jamais une liste d'etapes reconstituee a la main.
+- **Tests de timing** (attentes, delais, ports, concurrence) : les rejouer dans des conditions de runner
+  (2 CPU, machine chargee, ex. `taskset -c 0,1` + charge parallele) ; un test qui n'est vert qu'a vide est
+  `flaky`, a signaler (regles : `commands/context/DEVELOPMENT.md`, `QUALITY.md` §7bis).
+- **Audit de dependances** (`commands.audit`) : le relancer juste avant la release, pas seulement a la CI de
+  la branche ; une vulnerabilite connue = `NOT VALIDATED`.
+
 ### 6. Verification du Build
 
 ```bash

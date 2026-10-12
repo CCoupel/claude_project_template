@@ -608,6 +608,8 @@ SendMessage({ to: "deployer", content: "
 | QA echoue | Retour DEV avec erreurs |
 | Build echoue | Retour DEV avec erreur build |
 | 3 cycles atteints | Escalade utilisateur |
+| Echec CI **FLAKY** (pre-validation `ci-branch.yml` ou release) | Relance **une fois au plus** ; au 2e echec → analyse des logs, traiter comme CODE (retour DEV). Jamais de relance en boucle |
+| Echec CI apres tag | Corriger sur la branche milestone puis re-valider ; **ne pas retaguer** pour retester. L'ordre PROD de l'utilisateur ne vaut pas autorisation de retaguer sans limite : tout nouveau tag est redemande (`AskUserQuestion`) |
 
 ---
 

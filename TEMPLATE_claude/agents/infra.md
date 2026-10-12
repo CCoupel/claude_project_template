@@ -179,24 +179,26 @@ attendus (binaire, image de conteneur, paquet npm/PyPI, firmware, extension, arc
 |---|----------|
 | C1 | Se declencher sur le tag SemVer `v*` (rebuild deterministe depuis le commit fige du tag — BORE (b)) |
 | C2 | **Le tag `vX.Y.Z` fait foi** pour la version : la valeur est extraite du tag (jamais calculee en CI — ni `git describe`, ni numero de run, ni date) et son format SemVer est verifie. Le pipeline **verifie sans jamais modifier** que `version_file` et le manifeste de chaque composant (`package.json`, `pyproject.toml`, `Cargo.toml`, firmware, `manifest.json`...) sont egaux a cette valeur ; echec bloquant avant tout build. Nom des livrables, tags d'image et titre de la Release derivent de cette seule valeur |
-| C3 | Utiliser la **meme procedure de build** que `commands.build` (jamais une variante) et rejouer les controles bloquants (`commands.test`, `commands.lint`) avant de publier |
+| C3 | Utiliser la **meme procedure de build** que `commands.build` (jamais une variante) et rejouer les controles bloquants en appelant **uniquement `commands.ci`** (`CI_CMD`, voir C11) — pas une liste d'etapes propre au workflow |
 | C4 | Produire un livrable par type declare, nomme `<artefact>-<X.Y.Z>.<ext>` (+ somme de controle) |
 | C5 | Creer la GitHub Release (ou GitLab Release) du tag avec les notes extraites de `CHANGELOG.md`/milestone et les livrables en pieces jointes |
 | C6 | Permissions minimales (ex. GitHub : `contents: write` seulement si necessaire), versions d'actions epinglees |
 | C7 | Aucun secret en clair : `secrets.*` / variables CI uniquement ; noms alignes sur `.env.example` |
 | C8 | Ne pas deployer : le pipeline s'arrete a la publication des livrables (le deploiement reste `deploy`) |
 | C9 | Chemin = `infrastructure.environments[].publish.pipeline` pour l'environnement en `rebuild-ci` |
-| C10 | **CI de validation sur push de branche** : se declencher aussi sur le push de `milestone/*` (workflow de validation, distinct du workflow de release a tag) et y rejouer `commands.build`, `commands.test`, `commands.lint` — **sans publier ni deployer**. Son verdict (vert / non vert) conditionne la fermeture des issues passees `DONE` (`commands/context/GITHUB.md` §8.2). Permissions en lecture seule |
+| C10 | **CI de pre-validation, sans publier** : un workflow distinct du workflow de release (`.github/workflows/ci-branch.yml`, GitLab : job `ci-branch`) se declenche sur le push de `milestone/*` **et** a la demande (`workflow_dispatch`), et ne contient que `run: $CI_CMD` (C11) — **sans publier ni deployer**, permissions en lecture seule. Son verdict (vert / non vert) conditionne la fermeture des issues passees `DONE` (`commands/context/GITHUB.md` §8.2) **et** la barriere de `deploy` avant merge/tag (`PUBLISH PROD`, voir `agents/deploy.md`) : un tag ne sert jamais de test |
+| C11 | **Un script unique `CI_CMD`** (`commands.ci` dans `project-config.json`, ex. `scripts/ci.sh`) porte toutes les etapes de la CI : build, lint/vet, tests (avec detecteur de course quand la stack en a un), audit de securite des dependances (`commands.audit`), build du frontend. Le workflow de release (C3) et celui de pre-validation (C10) n'ont que `run: $CI_CMD` ; `qa` et `deploy` l'appellent aussi en local. Aucune etape n'existe uniquement en CI ou uniquement en local (ecart local/CI interdit) |
 
-**Generation** (aucun pipeline existant) : composer les jobs selon la stack et les livrables (setup de la
-chaine d'outils a la version du projet, build, tests, packaging, release), puis **afficher le fichier a
+**Generation** (aucun pipeline existant) : ecrire d'abord le script `CI_CMD` (C11, `commands.ci`), puis composer les
+workflows : pre-validation (C10, `run: $CI_CMD`) et release (setup de la chaine d'outils a la version du projet,
+`run: $CI_CMD`, packaging, release), puis **afficher le fichier a
 l'utilisateur pour validation avant de l'ecrire**. Valider la syntaxe si l'outil existe (`actionlint`,
 `gitlab-ci-lint`) ; sinon le signaler. Ne jamais inventer de version d'outil, de secret ou de chemin :
 les lire dans la config ou remonter la question au teamleader (`BLOQUE` + questions/options, format
 `TEAMMATES_PROTOCOL.md` — il la pose a l'utilisateur via `AskUserQuestion`). `TEMPLATE_claude/templates/workflows/release-go-react.yml`
 est un **exemple de reference** du niveau attendu, pas un modele a copier tel quel.
 
-**Audit** (pipeline existant — `.github/workflows/*.y*ml`, `.gitlab-ci.yml`) : evaluer C1 a C10, un verdict
+**Audit** (pipeline existant — `.github/workflows/*.y*ml`, `.gitlab-ci.yml`) : evaluer C1 a C11, un verdict
 par exigence (`CONFORME` / `ECART` / `NON APPLICABLE`), en citant le fichier et la ligne. Ne jamais modifier
 un pipeline existant sans accord. Si des ecarts : `BLOQUE` au teamleader avec une question et 3 options — corriger (patch minimal, diff affiche),
 garder tel quel (ecart consigne dans le rapport), ou regenerer (le teamleader la pose via `AskUserQuestion`). Un pipeline sans declencheur sur tag `v*`, qui

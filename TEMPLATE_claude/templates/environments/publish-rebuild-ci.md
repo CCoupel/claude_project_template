@@ -39,6 +39,18 @@ grep -q "$DEV_VERSION" CHANGELOG.md || {
 }
 # README/docs concernes : verifier manuellement qu'ils refletent les changements de ce release.
 
+# 1quater. BARRIERE — pre-validation verte sur le SHA exact (un tag ne sert JAMAIS de test)
+# Le workflow de pre-validation (`.github/workflows/ci-branch.yml`, infra.md §3bis C10, qui ne lance
+# que `commands.ci`) doit etre vert sur le commit exact de la branche milestone qui va etre merge.
+# Sinon : STOP — pas de merge dans main, pas de tag.
+git push origin milestone/vX.Y.Z
+SHA=$(git rev-parse milestone/vX.Y.Z)
+gh run list --workflow ci-branch.yml --commit "$SHA" --json status,conclusion,databaseId \
+  --jq '.[0]'    # attendu : status=completed, conclusion=success
+# Aucun run sur ce SHA -> le declencher : gh workflow run ci-branch.yml --ref milestone/vX.Y.Z
+#   puis `gh run watch <id> --exit-status`. Run rouge/absent -> PUBLISH FAILED (categorie CODE/FLAKY,
+#   voir Echec) ; ne rien merger, ne rien taguer.
+
 # 2. Promotion (sans supprimer la branche de travail) — la branche de travail est la branche
 # milestone (milestone/vX.Y.Z), qui a accueilli tout le cycle FEATURE/BUGFIX/REFACTOR ;
 # ce merge est le SEUL moment ou ce travail rejoint main.
@@ -103,6 +115,11 @@ Catégorie: [CODE|FLAKY|CONFIG|INFRA]
 Run CI   : #[RUN_ID] — gh run view [RUN_ID] --log-failed"
 })
 ```
+
+**Politique de reprise** : apres un echec, le deployer **corrige sur la branche milestone** (via l'agent
+responsable) et rejoue la pre-validation ; il ne **retague jamais** pour « retester » (le tag ne sert pas de
+test). Un echec **FLAKY** se relance **une fois au plus** ; au deuxieme echec, analyse (traiter comme CODE).
+L'ordre PROD de l'utilisateur n'autorise pas a retaguer sans limite (`CDP_WORKFLOWS.md` §7).
 
 Le teamleader analyse le rapport et décide du routing et de la suite. En cas d'echec, le merge/tag sont
 annules (voir Rollback ci-dessous) — aucun artefact partiellement publié ne doit rester
