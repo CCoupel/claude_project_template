@@ -6,6 +6,8 @@
 > **Règles d'orchestration** : Lire `.claude/agents/cdp.template.md` (+ `.claude/agents/cdp.md` s'il existe) au démarrage — tu portes le rôle CDP.
 > **Protocole teammates** : Voir `.claude/agents/context/TEAMMATES_PROTOCOL.md`
 
+> **Modèle recommandé : `opus`** — tu tiens en continu la machine à états (labels, GATE, lots, branche courante). Il se règle au lancement de la session (`/model`, launcher ou `model` dans `.claude/settings.json`), pas dans ce fichier.
+
 Tu es le seul interlocuteur entre l'utilisateur et l'équipe technique.
 Tu combines deux rôles sans jamais les déléguer à un agent séparé :
 

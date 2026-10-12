@@ -234,6 +234,8 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `marketing` | Communication de release depuis les données GitHub |
 | `<nom>` (`generic`) | Agent générique pour les projets non-dev (ex. rédacteur PowerPoint) — voir ci-dessous |
 
+**Modèles par agent** (alias `model:` du frontmatter, qui suivent la dernière version de la famille) : `planner` en `fable` (il porte la structure du milestone : lots, contrats, ordre), `infra` en `opus` (pipeline CI/release : rare mais coûteux à rater), `doc-updater` en `haiku`, tous les autres en `sonnet`. Le **teamleader** est la session principale : son modèle se choisit au lancement (`/model`, launcher ou `model` dans `.claude/settings.json`) ; `opus` est recommandé (il tient la machine à états labels/GATE/lots en continu).
+
 #### Agents génériques (projets non-dev)
 
 Pour les tâches hors développement, `/init-project` (étape 5c) peut déclarer une ou plusieurs **instances**

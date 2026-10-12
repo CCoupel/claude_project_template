@@ -8,7 +8,7 @@
 > `ISSUE_NUMS[]` non vide → label `PLANNING` sur toutes les issues (ordre à `deployer` — `commands/context/GITHUB.md` §9, `gh issue edit`)
 
 > **Le CDP ne rédige jamais le plan lui-même.** C'est le rôle exclusif du planner.
-> Le CDP passe le contexte complet — le planner (Opus) analyse, détecte les ambiguïtés, et planifie.
+> Le CDP passe le contexte complet — le planner (Fable) analyse, détecte les ambiguïtés, et planifie.
 
 ```
 SendMessage({ to: "planner", content: "
