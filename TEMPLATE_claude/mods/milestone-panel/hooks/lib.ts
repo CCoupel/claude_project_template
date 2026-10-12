@@ -83,24 +83,26 @@ export const groupByPhase = (issues: Issue[]) =>
     .map(phase => ({ phase, issues: issues.filter(i => i.phase === phase) }))
     .filter(g => g.issues.length > 0)
 
-/** Phases où le développement a réellement commencé (PLANNING = plan en cours, pas encore de dev). */
-const DEV_PHASES = ['EN COURS', 'EN REVIEW', 'EN QA', 'DONE']
-
 /**
- * Issues regroupées par lot (`LOT-N`) : lots en développement d'abord, puis lots en PLANNING,
- * puis lots sans phase (chaque niveau par numéro croissant), puis les issues sans lot.
+ * Issues regroupées par lot (`LOT-N`) : lots les plus avancés d'abord (DONE, EN QA, EN REVIEW,
+ * EN COURS, PLANNING, sans phase), puis les issues sans lot.
  * Sans aucun lot dans le milestone : un seul groupe `lot: null`, aucun intitulé à afficher.
  */
 export const groupByLot = (issues: Issue[]) => {
   const num = (l: string) => parseInt(l.slice(4), 10)
   const lots = [...new Set(issues.map(i => i.lot).filter((l): l is string => !!l))]
   if (lots.length === 0) return [{ lot: null as string | null, issues }]
-  // Niveaux : 0 = développement engagé, 1 = PLANNING seul, 2 = aucune phase ; puis numéro croissant.
-  const tier = (l: string) => {
-    const phases = issues.filter(i => i.lot === l).map(i => i.phase)
-    return phases.some(p => DEV_PHASES.includes(p)) ? 0 : phases.includes('PLANNING') ? 1 : 2
+  // Avancement : phase la plus avancée du lot, puis cumul des phases de ses issues, puis numéro croissant.
+  const rank = (phase: string) => (PHASES as readonly string[]).indexOf(phase) + 1 // 0 = sans phase
+  const stats = (l: string) => {
+    const ranks = issues.filter(i => i.lot === l).map(i => rank(i.phase))
+    return { best: Math.max(...ranks), sum: ranks.reduce((a, b) => a + b, 0) }
   }
-  lots.sort((a, b) => tier(a) - tier(b) || num(a) - num(b))
+  lots.sort((a, b) => {
+    const x = stats(a)
+    const y = stats(b)
+    return y.best - x.best || y.sum - x.sum || num(a) - num(b)
+  })
   const groups: { lot: string | null; issues: Issue[] }[] = lots.map(lot => ({
     lot,
     issues: issues.filter(i => i.lot === lot),

@@ -148,8 +148,9 @@ export const register: Register = (on, options) => {
     const ORDER = [...PHASES].reverse()
     const progress = (closed: number, byPhase: Record<string, number>, notStarted: number) => {
       const segs = [
-        { label: 'fermées', n: closed, color: hex('DONE', 'green') },
-        ...ORDER.filter(p => p !== 'DONE' && (byPhase[p] ?? 0) > 0).map(p => ({
+        // Violet de GitHub pour « closed » : distinct du label DONE (vert).
+        { label: 'fermées', n: closed, color: '#a371f7' },
+        ...ORDER.filter(p => (byPhase[p] ?? 0) > 0).map(p => ({
           label: p,
           n: byPhase[p] ?? 0,
           color: phaseColor(p),
@@ -159,7 +160,8 @@ export const register: Register = (on, options) => {
       const total = segs.reduce((a, x) => a + x.n, 0)
       const width = Math.max(8, Math.min(30, columns - 16))
       const cells = allocate(segs.map(x => x.n), width)
-      const pct = total === 0 ? 0 : Math.round((closed / total) * 100)
+      const finished = closed + (byPhase.DONE ?? 0) // DONE = QA validée, issue fermée dès la CI verte
+      const pct = total === 0 ? 0 : Math.round((finished / total) * 100)
       return (
         <Box flexDirection="column">
           <Text wrap="truncate-end">

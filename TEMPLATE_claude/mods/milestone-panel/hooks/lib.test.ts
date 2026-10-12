@@ -46,7 +46,7 @@ test('session teammate détectée par env ou flags, pas le team-leader', () => {
   expect(isTeammateSession([], 'claude --agent-id x@t --team-name t')).toBe(true)
 })
 
-test('regroupement par lot : démarrés en premier, non démarrés ensuite, sans lot en dernier ; sans lot = un groupe nu', () => {
+test('regroupement par lot : triés par avancement, sans lot en dernier ; sans lot = un groupe nu', () => {
   const issues = [
     { number: 1, title: 'a', labels: lab('LOT-10', 'EN COURS'), milestone: { title: 'v1' } },
     { number: 2, title: 'b', labels: lab('LOT-2'), milestone: { title: 'v1' } },
@@ -68,4 +68,17 @@ test('allocate : somme = largeur, effectif non nul garde une cellule, ordre cons
   expect(c[0]).toBe(0)
   expect(allocate([0, 0], 10)).toEqual([0, 0])
   expect(allocate([1, 99], 8).every((x, k) => (k === 0 ? x >= 1 : true))).toBe(true)
+})
+
+test('lots triés par avancement et non par numéro', () => {
+  const m = { title: 'v1' }
+  const issues = [
+    { number: 1, title: 'a', labels: lab('LOT-1', 'EN COURS'), milestone: m },
+    { number: 2, title: 'b', labels: lab('LOT-2', 'DONE'), milestone: m },
+    { number: 3, title: 'c', labels: lab('LOT-3', 'EN REVIEW'), milestone: m },
+    { number: 4, title: 'd', labels: lab('LOT-4', 'DONE'), milestone: m },
+    { number: 5, title: 'e', labels: lab('LOT-4'), milestone: m },
+  ]
+  const v = buildView([{ title: 'v1', due_on: null, open_issues: 5, closed_issues: 0 }], issues, 0)
+  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-2', 'LOT-4', 'LOT-3', 'LOT-1'])
 })
