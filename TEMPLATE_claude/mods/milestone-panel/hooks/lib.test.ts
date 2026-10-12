@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { buildView, groupByPhase, isConsistent, parseGhIssueCommand } from './lib'
+import { buildView, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -38,4 +38,10 @@ test('commande gh issue edit : attentes et cohérence', () => {
   expect(isConsistent(stale, exp)).toBe(false)
   const fresh = [{ number: 12, title: 'x', labels: lab('EN QA'), milestone: null }]
   expect(isConsistent(fresh, exp)).toBe(true)
+})
+
+test('session teammate détectée par env ou flags, pas le team-leader', () => {
+  expect(isTeammateSession([undefined, undefined], 'claude --dangerously-skip-permissions')).toBe(false)
+  expect(isTeammateSession(['dev-backend@team'], 'claude')).toBe(true)
+  expect(isTeammateSession([], 'claude --agent-id x@t --team-name t')).toBe(true)
 })
