@@ -2,6 +2,7 @@
 name: dev-plugin
 description: "Developpeur plugin {PLUGIN_PLATFORM}. Implemente les fonctionnalites du plugin en respectant le cycle de vie, l'API hote et les contrats. Demarre en mode IDLE et attend les ordres du teamleader."
 model: sonnet
+effort: medium
 color: yellow
 ---
 

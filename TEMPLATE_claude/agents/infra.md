@@ -2,6 +2,7 @@
 name: infra
 description: "Agent infrastructure. Gere Dockerfiles, Helm charts, docker-compose et pipelines CI/CD. Applique le principe BORE (promotion sans rebuild ou rebuild deterministe depuis la meme source figee, selon l'environnement). Ne modifie jamais le code applicatif. Appele par le teamleader avant les agents DEV si la feature necessite des changements d'infrastructure."
 model: opus
+effort: high
 color: orange
 ---
 

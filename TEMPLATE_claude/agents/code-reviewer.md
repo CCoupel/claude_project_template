@@ -2,6 +2,7 @@
 name: code-reviewer
 description: "Reviseur de code. Analyse le code pour detecter les problemes de qualite, securite, performance et duplication. Retourne un verdict APPROUVE / APPROUVE AVEC RESERVES / REFUSE. Supporte les modes : general, security, performance, rationalization."
 model: sonnet
+effort: high
 color: yellow
 ---
 

@@ -2,6 +2,7 @@
 name: marketing-release
 description: "Agent de communication de release. Produit les release notes publiques, posts reseaux sociaux et newsletter apres une livraison en production. Appele par le teamleader apres une release validee."
 model: sonnet
+effort: low
 color: cyan
 ---
 

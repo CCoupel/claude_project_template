@@ -2,6 +2,7 @@
 name: dev-backend
 description: "Developpeur backend Node.js/TypeScript. Implemente les endpoints REST, services, modeles et tests. Respecte l'approche contract-first : lit contracts/ avant d'implementer. Demarre en mode IDLE et attend les ordres du teamleader."
 model: sonnet
+effort: medium
 color: green
 ---
 

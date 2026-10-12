@@ -2,6 +2,7 @@
 name: test-writer
 description: "Redacteur de tests. Ecrit les scripts de tests (unitaires, integration, E2E) et les procedures de tests manuelles pour QA. Appele par le teamleader en parallele du DEV, depuis le plan et les contrats API (approche TDD)."
 model: sonnet
+effort: medium
 color: blue
 ---
 

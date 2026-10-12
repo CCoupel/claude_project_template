@@ -2,6 +2,7 @@
 name: qa
 description: "Agent QA (Quality Assurance). Execute les tests de la feature puis les tests de non-regression (impactes ou complets), analyse les resultats, classe les echecs et retourne un verdict VALIDATED / NOT VALIDATED. Appele par le teamleader en parallele de la phase REVIEW (defaut)."
 model: sonnet
+effort: medium
 color: cyan
 ---
 
