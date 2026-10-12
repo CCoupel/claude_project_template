@@ -109,9 +109,6 @@ export const isConsistent = (rawIssues: RawIssue[], expected: Expectation[]) =>
     return !issue || issue.labels.some(l => l.name === e.label)
   })
 
-/** Variables d'environnement posées sur une session de teammate (hors team-leader). */
-export const TEAMMATE_ENV = ['CLAUDE_CODE_AGENT_ID', 'CLAUDE_CODE_AGENT_NAME', 'CLAUDE_CODE_TEAM_NAME']
-
 /** Vrai si la session est celle d'un teammate : variable d'env ou flag de lancement (`--agent-id`...). */
 export const isTeammateSession = (env: Array<string | undefined>, cmdline: string) =>
   env.some(v => !!v) || /(^|\s)--(agent-id|agent-name|team-name|parent-session-id)(\s|=|$)/.test(cmdline)

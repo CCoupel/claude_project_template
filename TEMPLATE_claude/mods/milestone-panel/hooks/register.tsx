@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { View } from '../types'
-import { TEAMMATE_ENV, buildView, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
+import { buildView, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -18,7 +18,11 @@ let retries = 0
 let isTeammate = false
 
 async function detectTeammate($: any) {
-  const env = await Promise.all(TEAMMATE_ENV.map(n => $.env.get(n)))
+  const env = await Promise.all([
+    $.env.get('CLAUDE_CODE_AGENT_ID'),
+    $.env.get('CLAUDE_CODE_AGENT_NAME'),
+    $.env.get('CLAUDE_CODE_TEAM_NAME'),
+  ])
   const res = await $.process.run(['sh', '-c', 'tr "\\0" " " < /proc/$PPID/cmdline 2>/dev/null'])
   return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
 }
