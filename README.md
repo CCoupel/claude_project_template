@@ -312,7 +312,7 @@ PLAN ──────────────────────── co
     ↓  (🧵 peut déléguer à des sub-planner-N — groupes d'issues indépendants)
     ↓  label PLANNING
 [GATE 2] Validation plan (+ alerte breaking changes si détectés)
-    ↓  label EN COURS
+    ↓  label PRET (EN COURS à l'ordre DEV du lot)
     ├──────────────────────────┐
   DEV                     TEST-WRITER ── depuis plan + contrats (TDD)
     └──────────────────────────┘
@@ -346,17 +346,38 @@ PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un reb
                                échec  : rollback infra → rapport au teamleader → routing agent
 ```
 
+**Milestone avec lots** — les lots sont traités **un à la fois** ; la boucle ci-dessus (DEV → REVIEW → QA) s'applique à chaque lot, mais le push et la fermeture des issues attendent la validation QUALIF du lot :
+
+```
+(DEV → REVIEW → QA du lot N, label DONE)
+    ↓
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF ── le lot N est testé en QUALIF
+    ↓
+[GATE LOT] l'utilisateur teste et valide ── lot suivant / publier le milestone en PROD / refuser
+    ↓  OUI
+PUSH → CI de validation ── verte : issues du lot N fermées (DONE conservé) → lot N+1 (PRET → EN COURS)
+                           non verte : label EN COURS + commentaire, retour DEV
+```
+
+Aucune validation n'est demandée après la CI d'un lot. Le GATE 4 (PROD) n'a lieu qu'une fois : après le dernier lot, ou sur « publier le milestone en PROD » (publication anticipée : les lots restants sont déplacés vers un autre milestone). Déroulement : `TEMPLATE_claude/commands/context/GITHUB.md` §9.5b.
+
 **Points de validation utilisateur (GATES) :**
 
 | Gate | Moment | Action requise |
 |------|--------|----------------|
 | 1 | Après analyse | Confirmer le démarrage |
 | 2 | Après plan | Valider le plan et les contrats API |
+| 1.5 | Planner bloqué ou en échec (ambiguïté) | Lever l'ambiguïté |
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
+| LOT | Milestone avec lots : lot déployé en QUALIF | Valider le lot (suivant / publier en PROD) ou refuser |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
 | 4 | BUILD+PUBLISH+DEPLOY QUALIF **et** DOC (finalize) tous les deux DONE | OUI (issue fermée + publish/deploy prod) ou NON (retour DEV ou PLAN) |
 | 4b | Procédure QUALIF incohérente | Corriger avant build/publish/deploy |
 | 4c | Procédure PROD incohérente | Corriger avant publish/deploy |
+| 4d | Maquette de communication prête | Valider la communication de release |
+| 4e | Aucun site marketing existant | Répondre aux questions de cadrage |
+
+Question et options exactes de chaque gate : `TEMPLATE_claude/agents/cdp.md` (tableau des points de validation).
 
 > **Limitation connue** : cette orchestration (Gates 4/4b/4c) n'est câblée que pour la chaîne
 > à 2 environnements QUALIF→PROD. Un environnement supplémentaire déclaré dans

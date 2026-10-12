@@ -533,8 +533,8 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
 ### 9.5b Lot : QUALIF, validation, push (GATE LOT)
 
 Les lots sont traites **un a la fois**. Quand la QA valide le lot (`DONE`), il est deploye en QUALIF (Phase 5) puis
-presente a l'utilisateur (`AskUserQuestion`, avec le lien de la QUALIF et du rapport QA). Il n'y a **aucune**
-validation apres la CI du lot.
+presente a l'utilisateur (question et options : point « GATE LOT » du tableau de `agents/cdp.md`, avec le lien de la
+QUALIF et du rapport QA). Il n'y a **aucune** validation apres la CI du lot.
 
 ```
 QA valide → label DONE → Phase 5 (BUILD, PUBLISH QUALIF, DEPLOY QUALIF) → GATE LOT : l'utilisateur teste et valide
@@ -545,10 +545,9 @@ QA valide → label DONE → Phase 5 (BUILD, PUBLISH QUALIF, DEPLOY QUALIF) → 
         sans reouverture puisque l'issue n'est pas encore fermee
 ```
 
-Le GATE LOT propose aussi **« Valider et publier le milestone en PROD »** : publication anticipee. Les lots restants
-(issues `PRET`) sont alors deplaces vers un autre milestone (`gh issue edit <numero> --milestone "<TITLE>"` ; le
-label `LOT-N` les suit) puis le milestone est publie avec les seuls lots valides (GATE 4 / Phase 6). Sur le dernier
-lot, cette option est « Valider et publier en PROD ».
+**Publication anticipee** (option du GATE LOT) : les lots restants (issues `PRET`) sont deplaces vers un autre
+milestone (`gh issue edit <numero> --milestone "<TITLE>"` ; le label `LOT-N` les suit) puis le milestone est publie
+avec les seuls lots valides (GATE 4 / Phase 6).
 
 ### 9.6 Rejet à GATE 4 (validation utilisateur refusée)
 
