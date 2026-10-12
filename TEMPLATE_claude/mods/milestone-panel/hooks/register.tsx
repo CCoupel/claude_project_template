@@ -186,6 +186,12 @@ export const register: Register = (on, options) => {
       )
     }
 
+    // Libellés de phase alignés : « PHASE : #n titre », les suivantes « <blanc> : #n titre ».
+    const LABEL_W = Math.max(...PHASES.map(p => p.length), 'SANS PHASE'.length)
+    // Une ligne par issue : « LOT  PHASE : #n titre » ; lot et phase ne sont écrits que sur leur première ligne.
+    const lotGroups = groupByLot(v.issues)
+    const hasLots = lotGroups.some(g => g.lot !== null)
+    const LOT_W = Math.max(...lotGroups.map(g => (g.lot ?? 'SANS LOT').length))
     const cur = v.milestones.find(m => m.title === v.current)
     const byPhase: Record<string, number> = {}
     for (const i of v.issues) if (i.phase !== 'SANS PHASE') byPhase[i.phase] = (byPhase[i.phase] ?? 0) + 1
@@ -199,27 +205,26 @@ export const register: Register = (on, options) => {
           <Box flexDirection="column">
             {T({ bold: true, color: 'cyan' }, `Milestone ${v.current}`)}
             {cur && progress(cur.closed, byPhase, v.issues.length - startedCount)}
-            {groupByLot(v.issues).map(lotGroup => (
-              <Box flexDirection="column" marginTop={1}>
-                {lotGroup.lot !== null || groupByLot(v.issues).length > 1
-                  ? T(
-                      { bold: true, inverse: true, color: lotGroup.lot ? hex(lotGroup.lot, 'magenta') : 'gray' },
-                      ` ${lotGroup.lot ?? 'SANS LOT'} (${lotGroup.issues.length}) `,
-                    )
-                  : null}
-                {groupByPhase(lotGroup.issues).map(g => (
-                  <Box flexDirection="column">
-                    {T({ bold: true, color: phaseColor(g.phase) }, `${g.phase} (${g.issues.length})`)}
-                    {g.issues.map(i =>
-                      T(
-                        { color: i.isBlocked ? 'red' : undefined },
-                        `${i.isBlocked ? '⛔' : ' '} #${i.number} ${i.title}`,
-                      ),
+            {lotGroups.flatMap(lg =>
+              groupByPhase(lg.issues).flatMap((g, gi) =>
+                g.issues.map((i, k) => (
+                  <Text wrap="truncate-end">
+                    {hasLots && (
+                      <Text bold color={lg.lot ? hex(lg.lot, 'magenta') : 'gray'}>
+                        {(gi === 0 && k === 0 ? (lg.lot ?? 'SANS LOT') : '').padEnd(LOT_W + 1)}
+                      </Text>
                     )}
-                  </Box>
-                ))}
-              </Box>
-            ))}
+                    <Text bold color={phaseColor(g.phase)}>
+                      {k === 0 ? g.phase.padEnd(LABEL_W) : ' '.repeat(LABEL_W)}
+                    </Text>
+                    <Text dimColor>{': '}</Text>
+                    <Text color={i.isBlocked ? 'red' : undefined}>
+                      {`${i.isBlocked ? '⛔' : ''}#${i.number} ${i.title}`}
+                    </Text>
+                  </Text>
+                )),
+              ),
+            )}
           </Box>
         ) : (
           <Box flexDirection="column">
