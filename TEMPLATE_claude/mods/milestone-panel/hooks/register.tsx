@@ -210,7 +210,7 @@ export const register: Register = (on, options) => {
                 g.issues.map((i, k) => (
                   <Text wrap="truncate-end">
                     {hasLots && (
-                      <Text bold color={lg.lot ? hex(lg.lot, 'magenta') : 'gray'}>
+                      <Text bold color={lg.lot ? hex(lg.issues.find(i => i.lotLabel)?.lotLabel ?? lg.lot, 'magenta') : 'gray'}>
                         {(gi === 0 && k === 0 ? (lg.lot ?? 'SANS LOT') : '').padEnd(LOT_W + 1)}
                       </Text>
                     )}

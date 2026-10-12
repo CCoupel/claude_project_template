@@ -50,6 +50,14 @@ SendMessage({ to: "doc-updater", content: "
 " })
 ```
 
+> **Milestone avec lots** : la Phase 5 s'exécute **pour chaque lot** (BUILD, PUBLISH QUALIF, DEPLOY QUALIF, NR et
+> DOC selon les règles ci-dessous), puis le **GATE LOT** remplace le GATE 4 intermédiaire : l'utilisateur teste la
+> QUALIF du lot (`AskUserQuestion` : « Valider le lot et passer au suivant » / « Valider le lot et publier le
+> milestone en PROD » / « Refuser »). OUI → push, CI, fermeture des issues du lot, lot suivant (`GITHUB.md` §9.5b).
+> Le GATE 4 (PROD) n'a lieu qu'une fois : après le dernier lot, ou sur « publier en PROD » (publication anticipée,
+> lots restants déplacés vers un autre milestone). Refus du lot : Cas A / Cas B ci-dessous, sans réouverture
+> (issues non encore fermées).
+
 **GATE 4 — s'ouvre uniquement quand TOUT est termine :**
 
 Attendre DONE de deployer ET DONE de doc-updater ET (si `testing.full_regression_at` est `qualif` ou `build`)
@@ -97,7 +105,7 @@ retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/depl
 
 Selon la reponse utilisateur :
 - **Oui / `/deploy prod`** →
-  > Les issues sont **deja fermees** (CI verte, Phase 4) — aucun changement sur elles. La validation du milestone
+  > Les issues sont **deja fermees** (CI verte, Phase 4 ; avec lots : CI verte apres chaque GATE LOT) — aucun changement sur elles. La validation du milestone
   > releve de l'utilisateur : verifier le milestone (100 % des issues fermees)
   Phase 6 (PROD) — les branches residuelles (milestone, PR mergees) sont supprimees en local et en remote en fin de deploiement reussi (`deploy.md`, Etape 6)
 - **NON** →

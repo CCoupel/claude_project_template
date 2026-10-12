@@ -400,21 +400,27 @@ fi
 
 | Statut | Signification | Pose par | Pose quand | Retire quand |
 |--------|---------------|----------|------------|--------------|
-| `PLANNING` | Plan en cours d'elaboration | CDP (`gh`, §9) | Phase 1 — debut du plan ; ou rejet GATE 4 Cas B (scope invalide) | GATE 2 valide (→ `EN COURS`) |
-| `EN COURS` | Developpement en cours | CDP (`gh`, §9) | GATE 2 valide (DEV demarre) ; ou cycle correctif (REVIEW refuse / QA echoue) ; ou rejet GATE 4 Cas A | Debut REVIEW/QA (→ `EN REVIEW` / `EN QA`) |
-| `EN REVIEW` | Revue de code en cours | CDP (`gh`, §9) | Phase 3 — REVIEW + TEST-WRITER demarres | Verdict REVIEW (OK → `EN QA` seul ; refus → `EN COURS`) |
-| `EN QA` | Validation QA en cours | CDP (`gh`, §9) | Phase 3 — des TEST-WRITER DONE si parallele au REVIEW (defaut), sinon apres REVIEW | QA valide (→ `DONE`) ou echec (→ `EN COURS`) |
-| `DONE` | Implementation validee (QA OK) ; branche poussee, CI en cours puis verte (l'issue est alors fermee) | CDP (`gh`, §9) | QA valide (le push de la branche et la CI suivent immediatement) | Rejet GATE 4 (→ `EN COURS` ou `PLANNING`, issue rouverte) ; ou CI non verte (→ `EN COURS`) |
+| `PLANNING` | Plan a elaborer ou a valider (planner au travail, ou plan rendu en attente de GATE 2) | CDP (`gh`, §9) | Phase 1 — debut du plan ; ou rejet GATE 4 Cas B (scope invalide) | GATE 2 valide (→ `PRET`) |
+| `PRET` | Plan valide, developpement pas encore lance (lot en attente, ordre DEV non envoye) | CDP (`gh`, §9) | GATE 2 valide | Ordre DEV du lot (→ `EN COURS`) |
+| `EN COURS` | Developpement a faire ou en cours (ordre DEV envoye, jusqu'au retour DONE de tous les dev de l'issue) | CDP (`gh`, §9) | Ordre DEV du lot ; ou cycle correctif (REVIEW refuse / QA echoue) ; ou rejet GATE 4 Cas A | Retour DONE des dev (→ `EN REVIEW`) |
+| `EN REVIEW` | Revue de code a faire ou en cours | CDP (`gh`, §9) | Retour DONE de tous les dev de l'issue | Verdict REVIEW (OK → `EN QA` seul ; refus → `EN COURS`) |
+| `EN QA` | Validation QA a faire ou en cours | CDP (`gh`, §9) | Retour DONE des TEST-WRITER si parallele au REVIEW (defaut), sinon verdict REVIEW positif | QA valide (→ `DONE`) ou echec (→ `EN COURS`) |
+| `DONE` | Implementation validee (QA OK) ; branche poussee, CI en cours puis verte (l'issue est alors fermee) ; avec lots, le lot est d'abord valide par l'utilisateur en QUALIF (GATE LOT), puis pousse | CDP (`gh`, §9) | QA valide (le push de la branche et la CI suivent immediatement) | Rejet GATE LOT ou GATE 4 (→ `EN COURS` ou `PLANNING`, issue rouverte si fermee) ; ou CI non verte (→ `EN COURS`) |
 | `BLOQUE` | Avancement impossible (dependance externe, decision ou information en attente) — **s'ajoute** a la phase courante, qui est conservee pour la reprise | CDP (`gh`, §9), sur decision de l'utilisateur ou constat d'un blocage | Blocage constate, avec un commentaire precisant la cause | Blocage leve (la phase courante reprend) ou abandon |
 | `ABANDONNE` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (`gh`, §9), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
-| — (issue fermee) | CI verte sur la branche poussee (l'issue conserve `DONE`). **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (`gh`, §9) | CI verte apres le push de la branche en `DONE` | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
+| — (issue fermee) | CI verte sur la branche poussee (avec lots : apres la validation QUALIF du lot, GATE LOT). L'issue conserve `DONE`. **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (`gh`, §9) | CI verte apres le push de la branche en `DONE` (avec lots : apres validation du lot, §9.5b) | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
+
+**Regle de semantique : l'etat dit ou en est l'issue dans le cycle (ce qui reste a faire), pas ce qu'un teammate
+fait a cet instant.** Il change donc **au retour** du teammate (DONE/FAILED/BLOQUE) ou a la **validation de
+l'utilisateur** (GATE), jamais seulement a l'envoi de l'ordre suivant : une issue en attente de lancement n'est pas
+`EN COURS`, elle est `PRET`.
 
 **Label de lot (decoupage du milestone par le planner) :** `LOT-1`, `LOT-2`… — pose par le CDP (via `deployer`, §9.11)
 sur chaque issue du lot, apres validation du plan (GATE 2). Ce n'est **pas** un label de phase : il se superpose a la
-phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot.
+phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot. Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est l'unite de livraison ; le panneau regroupe par lot parent `LOT-N`).
 
 Regles :
-- Les labels de phase (`PLANNING` → `DONE`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
+- Les labels de phase (`PLANNING` → `PRET` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
   simultanes pendant la fenetre de parallelisation Review/QA par defaut (voir `QUALITY.md` section 12) —
   les deux coexistent tant que REVIEW n'a pas rendu son verdict.
 - `BLOQUE` est un **modificateur** : il coexiste avec le label de phase en cours et n'est jamais retire par une
@@ -422,9 +428,10 @@ Regles :
 - `ABANDONNE` est **terminal** : il remplace tous les labels de phase (et `BLOQUE`) et ferme l'issue (`not planned`).
 - Chaque transition de phase pose le nouveau label **et retire les autres labels de phase** (commandes en section 9).
 - **Fermeture = CI verte, pas validation utilisateur.** A `DONE`, le CDP pousse la branche du milestone ; la CI
-  de validation (`infra.md` §3bis, C10) s'execute. CI verte → l'issue est fermee. CI **non verte** (rouge, orange,
-  annulee ou en erreur) → l'issue repart a `EN COURS` avec un commentaire precisant l'echec, correction, nouveau
-  cycle QA, nouveau push. Une issue n'est jamais fermee sur une CI non verte.
+  de validation (`infra.md` §3bis, C10) s'execute. CI verte → l'issue est fermee. **Avec lots**, le push n'a lieu
+  qu'apres la validation QUALIF du lot par l'utilisateur (GATE LOT, §9.5b) ; aucune validation n'est demandee apres
+  la CI. CI **non verte** (rouge, orange, annulee ou en erreur) → l'issue repart a `EN COURS` avec un commentaire
+  precisant l'echec, correction, nouveau cycle QA, nouveau push. Une issue n'est jamais fermee sur une CI non verte.
 - **Le milestone reste lie a la validation utilisateur** (GATE 4) : fermer les issues ne cloture pas le milestone ni
   ne declenche PROD.
 - Rejet a GATE 4 : seules les issues **concernees** par le refus sont rouvertes (les autres restent fermees) ; leur
@@ -477,28 +484,37 @@ Si un outil GitHub MCP est disponible (`mcp__plugin_github_github__issue_write`)
 est la procédure de référence. Toute transition retire les autres labels de phase. La fermeture d'une issue suit
 §9.5 ; la clôture du milestone reste soumise à la validation utilisateur (GATE 4).
 
-### 9.1 Transition vers `EN COURS` (DEV démarré)
+### 9.0 Transition vers `PRET` (GATE 2 validé)
+
+Pose a la validation du plan par l'utilisateur, sur **toutes** les issues du milestone ; elles passent a `EN COURS`
+lot par lot, a l'ordre DEV (§9.1).
 
 ```bash
-gh issue edit <numero> --add-label "EN COURS" --remove-label "PLANNING,EN REVIEW,EN QA,DONE"
+gh issue edit <numero> --add-label "PRET" --remove-label "PLANNING"
+```
+
+### 9.1 Transition vers `EN COURS` (ordre DEV du lot envoyé, ou cycle correctif)
+
+```bash
+gh issue edit <numero> --add-label "EN COURS" --remove-label "PLANNING,PRET,EN REVIEW,EN QA,DONE"
 ```
 
 ### 9.2 Transition vers `EN REVIEW` (REVIEW en cours)
 
 ```bash
-gh issue edit <numero> --add-label "EN REVIEW" --remove-label "PLANNING,EN COURS,EN QA,DONE"
+gh issue edit <numero> --add-label "EN REVIEW" --remove-label "PLANNING,PRET,EN COURS,EN QA,DONE"
 ```
 
 ### 9.3 Transition vers `EN QA` (QA en cours)
 
 ```bash
-gh issue edit <numero> --add-label "EN QA" --remove-label "PLANNING,EN COURS,EN REVIEW,DONE"
+gh issue edit <numero> --add-label "EN QA" --remove-label "PLANNING,PRET,EN COURS,EN REVIEW,DONE"
 ```
 
 ### 9.4 Transition vers `DONE` (QA validée) — puis push et CI
 
 ```bash
-gh issue edit <numero> --add-label "DONE" --remove-label "PLANNING,EN COURS,EN REVIEW,EN QA"
+gh issue edit <numero> --add-label "DONE" --remove-label "PLANNING,PRET,EN COURS,EN REVIEW,EN QA"
 git push origin milestone/vX.Y.Z   # la CI de validation (C10) demarre
 ```
 
@@ -514,6 +530,26 @@ gh issue comment <numero> --body "🔴 CI non verte — <job en echec, lien du r
 gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
 ```
 
+### 9.5b Lot : QUALIF, validation, push (GATE LOT)
+
+Les lots sont traites **un a la fois**. Quand la QA valide le lot (`DONE`), il est deploye en QUALIF (Phase 5) puis
+presente a l'utilisateur (`AskUserQuestion`, avec le lien de la QUALIF et du rapport QA). Il n'y a **aucune**
+validation apres la CI du lot.
+
+```
+QA valide → label DONE → Phase 5 (BUILD, PUBLISH QUALIF, DEPLOY QUALIF) → GATE LOT : l'utilisateur teste et valide
+  OUI → push de la branche du milestone → CI de validation (C10)
+          CI verte     → fermeture des issues du lot (§9.5, DONE conserve) → lot suivant (§9.0 → §9.1)
+          CI non verte → §9.5 (EN COURS, correction, nouveau push)
+  NON → seules les issues concernees repartent : meme procedure que §9.6 (Cas A → EN COURS, Cas B → PLANNING),
+        sans reouverture puisque l'issue n'est pas encore fermee
+```
+
+Le GATE LOT propose aussi **« Valider et publier le milestone en PROD »** : publication anticipee. Les lots restants
+(issues `PRET`) sont alors deplaces vers un autre milestone (`gh issue edit <numero> --milestone "<TITLE>"` ; le
+label `LOT-N` les suit) puis le milestone est publie avec les seuls lots valides (GATE 4 / Phase 6). Sur le dernier
+lot, cette option est « Valider et publier en PROD ».
+
 ### 9.6 Rejet à GATE 4 (validation utilisateur refusée)
 
 Seules les issues **concernées** sont rouvertes ; les autres restent fermées. Le label `DONE` est retiré et la
@@ -528,7 +564,7 @@ gh issue comment <numero> --body "↩ Rouverte — GATE 4 refuse : <ecart consta
 gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE,EN REVIEW,EN QA"
 
 # Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1
-gh issue edit <numero> --add-label "PLANNING" --remove-label "DONE"
+gh issue edit <numero> --add-label "PLANNING" --remove-label "PRET,DONE"
 ```
 
 ### 9.7 Validation GATE 4 (OUI)
@@ -556,7 +592,7 @@ Uniquement sur décision de l'utilisateur. Retire tous les labels de phase et `B
 
 ```bash
 gh issue comment <numero> --body "🚫 Abandonné — <raison>"
-gh issue edit <numero> --add-label "ABANDONNE" --remove-label "PLANNING,EN COURS,EN REVIEW,EN QA,DONE,BLOQUE"
+gh issue edit <numero> --add-label "ABANDONNE" --remove-label "PLANNING,PRET,EN COURS,EN REVIEW,EN QA,DONE,BLOQUE"
 gh issue close <numero> --reason "not planned"
 ```
 
@@ -565,7 +601,8 @@ Réouverture : retirer `ABANDONNE`, rouvrir l'issue (`gh issue reopen <numero>`)
 ### 9.10 Création des labels (si absents du repo)
 
 ```bash
-gh label create "PLANNING"  --color "c5def5" --description "Planification en cours"
+gh label create "PLANNING"  --color "c5def5" --description "Plan a elaborer ou a valider"
+gh label create "PRET"      --color "bfdadc" --description "Plan valide, developpement pas encore lance"
 gh label create "EN COURS"  --color "0075ca" --description "En cours de developpement"
 gh label create "EN REVIEW" --color "e4e669" --description "En cours de revue"
 gh label create "EN QA"     --color "d93f0b" --description "En cours de validation QA"
@@ -576,16 +613,45 @@ gh label create "ABANDONNE" --color "cfd3d7" --description "Abandonnee, ne sera 
 
 ### 9.11 Lots du milestone (`LOT-N`)
 
-Quand le plan du planner decoupe le milestone en lots (table « Lots » du plan), le CDP ordonne a `deployer` de
+Quand le plan du planner decoupe le milestone en lots independants (table « Lots » du plan), le CDP ordonne a `deployer` de
 poser le label de chaque lot sur ses issues, **apres GATE 2** et avant le premier ordre DEV. Les labels de phase
-s'appliquent ensuite par lot (une issue du lot 2 reste `PLANNING` tant que son lot n'est pas lance).
+s'appliquent ensuite par lot. Les lots sont traites **un a la fois**, dans l'ordre (`LOT-1`, `LOT-2`…) : le lot en cours est
+`EN COURS`/`EN REVIEW`/`EN QA`/`DONE`, les suivants restent `PRET` jusqu'a la fermeture des issues du lot precedent (CI verte, §9.5b).
 
 Nommage strict `LOT-<entier>` (`^LOT-[0-9]+$`, sans zero devant) : c'est ce que reconnait le panneau `milestone-panel`
 pour regrouper les issues par lot. Chaque issue du milestone porte un seul label de lot.
 
 ```bash
-gh label create "LOT-1" --color "5319e7" --description "Lot 1 du milestone"   # si absent
+gh label create "LOT-1" --color "5319e7" --description "Lot 1 du milestone"   # si absent (sous-lot : "LOT-2.1")
 gh issue edit <numero> --add-label "LOT-1"
 # Re-decoupage (plan revu) : retirer l'ancien lot
 gh issue edit <numero> --add-label "LOT-2" --remove-label "LOT-1"
 ```
+
+### 9.12 Moment des transitions : au retour du teammate ou a la validation
+
+L'etat dit ou en est l'issue (ce qui reste a faire). Il change donc **des que l'evenement se produit**, avant de
+relayer a l'utilisateur et avant tout nouvel ordre — que le teammate ait rendu son travail (`DONE`, `FAILED`,
+`BLOQUE`) ou que l'utilisateur ait valide un GATE. Le suivi (issues GitHub, panneau `milestone-panel`) reflete ainsi
+l'etat reel meme quand le teamleader attend (GATE, teammate parallele, lot en file).
+
+| Evenement | Labels a appliquer sur les issues concernees |
+|-----------|-----------------------------------------------|
+| Demande de plan (Phase 1) | `PLANNING` (§ table) |
+| Planner `DONE` (plan rendu) | aucun : `PLANNING` jusqu'a la validation (le plan peut etre refuse) |
+| GATE 2 valide | `PRET` sur toutes les issues (§9.0) ; `LOT-N` poses (§9.11) |
+| Ordre DEV d'un lot | `EN COURS` sur les issues de ce lot (§9.1) |
+| DEV `DONE` (tous les dev de l'issue) | `EN REVIEW` (§9.2) |
+| TEST-WRITER `DONE` (review parallele) | + `EN QA` (§9.3, `EN REVIEW` conserve) |
+| REVIEW `DONE` — verdict OK | retirer `EN REVIEW` (`EN QA` seul) ; en mode sequentiel : `EN QA` (§9.3) |
+| REVIEW `DONE` — refus | `EN COURS`, retirer `EN REVIEW` et `EN QA` (§9.1) |
+| QA `DONE` — validee | `DONE` (§9.4), puis push et CI |
+| Lot valide en QUALIF par l'utilisateur (GATE LOT) | aucun label : push puis CI (§9.5b) |
+| CI verte d'un lot | issues du lot fermees (§9.5) ; `EN COURS` sur les issues du lot suivant a son ordre DEV (§9.1) |
+| QA `FAILED` / tests en echec | `EN COURS`, retirer `EN QA` et `EN REVIEW` (§9.1) |
+| CI verte / non verte | fermeture des issues / `EN COURS` (§9.5) |
+| Teammate `BLOQUE` | ajouter `BLOQUE` + commentaire de cause (§9.8) ; la phase est conservee |
+| Blocage leve | retirer `BLOQUE` + commentaire (§9.8) |
+
+Un retour qui ne change aucun label (ex. test-writer `DONE` en mode sequentiel) n'appelle aucun ordre a `deployer`.
+L'ordre a `deployer` reste le meme (`SendMessage`, une ligne) et son `DONE` est attendu avant de poursuivre.

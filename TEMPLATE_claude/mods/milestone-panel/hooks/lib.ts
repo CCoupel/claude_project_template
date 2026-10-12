@@ -1,6 +1,6 @@
 import type { Issue, MilestoneRow, View } from '../types'
 
-export const PHASES = ['PLANNING', 'EN COURS', 'EN REVIEW', 'EN QA', 'DONE'] as const
+export const PHASES = ['PLANNING', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'DONE'] as const
 
 type RawIssue = {
   number: number
@@ -38,7 +38,10 @@ const compareMilestones = (a: RawMilestone, b: RawMilestone) => {
   return compareTitles(a.title, b.title)
 }
 
-const lotOf = (i: RawIssue) => i.labels.map(l => l.name).find(n => /^LOT-\d+$/i.test(n)) ?? null
+const lotLabelOf = (i: RawIssue) => i.labels.map(l => l.name).find(n => /^LOT-\d+(\.\d+)?$/i.test(n)) ?? null
+
+// Regroupement par lot : un sous-lot (`LOT-2.1`) appartient au lot parent (`LOT-2`), sans distinction.
+const lotOf = (i: RawIssue) => lotLabelOf(i)?.replace(/\.\d+$/, '') ?? null
 
 const phaseOf = (i: RawIssue) =>
   i.labels.map(l => l.name).find(n => (PHASES as readonly string[]).includes(n)) ?? null
@@ -66,6 +69,7 @@ export const buildView = (
           title: i.title,
           phase: phaseOf(i) ?? 'SANS PHASE',
           lot: lotOf(i),
+          lotLabel: lotLabelOf(i),
           isBlocked: i.labels.some(l => l.name === 'BLOQUE'),
         }))
     : []

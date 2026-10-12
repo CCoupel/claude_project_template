@@ -333,24 +333,41 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 
 ## Lots (obligatoire si le milestone compte 2 issues ou plus)
 
-> Decoupage du milestone en groupes d'issues livrees ensemble. Le teamleader pose `LOT-N` sur chaque issue
+> Decoupage du milestone en groupes d'issues livrables ensemble. Le teamleader pose `LOT-N` sur chaque issue
 > (`commands/context/GITHUB.md` §9.11) et le panneau `milestone-panel` regroupe les issues par lot.
 > Omettre la section uniquement pour une issue unique.
 >
+> **Un lot est independant et auto-suffisant : il peut etre livre seul.** Les lots sont traites **un a la fois, dans
+> l'ordre** (`LOT-1`, puis `LOT-2`…) : a la fin d'un lot (QA validee) il est deploye en QUALIF et l'utilisateur le
+> valide ; il est alors pousse, la CI passe au vert, ses issues sont fermees, puis le lot suivant demarre. Si le milestone doit etre publie en urgence,
+> on publie les lots valides et les lots restants sont deplaces vers un autre milestone : un lot ne doit donc
+> **dependre que des lots qui le precedent**, jamais d'un lot suivant.
+>
 > **Regles :**
-> - **Nommage strict** : `LOT-<entier>` — majuscules, tiret, entier sans zero devant (`LOT-1`, `LOT-2`, `LOT-10`).
->   Pas de `Lot 1`, `lot-1`, `LOT-01`, `LOT-A` : le label doit correspondre a `^LOT-[0-9]+$` pour etre reconnu.
-> - **Numerotation continue a partir de 1**, dans l'ordre de livraison (`LOT-1` est livre en premier).
+> - **Nommage strict** : `LOT-<entier>` ou `LOT-<entier>.<entier>` — majuscules, tiret, entiers sans zero devant
+>   (`LOT-1`, `LOT-10`, `LOT-2.1`). Pas de `Lot 1`, `lot-1`, `LOT-01`, `LOT-A` : le label doit correspondre a
+>   `^LOT-[0-9]+(\.[0-9]+)?$` pour etre reconnu.
+> - **Numerotation continue a partir de 1, = ordre d'execution** (`LOT-1` est traite et livre en premier).
 > - **Exhaustif et exclusif** : chaque issue ouverte du milestone figure dans **un seul** lot ; aucune issue sans lot.
 >   Lister les issues sous la forme `#<numero>` (la table est relue pour poser les labels).
-> - Un lot regroupe des issues couplees (meme composant, dependance, livraison conjointe) ; un lot unique
->   (`LOT-1` = toutes les issues) est valide quand rien ne justifie de decouper.
-> - La colonne « Deblocage » reference un lot par son nom exact (`LOT-1 termine`).
+> - **Criteres de decoupage, par priorite** :
+>   1. **Autonomie** : si une issue depend d'une autre, elles sont dans le **meme** lot, ou la dependance est dans un
+>      lot **anterieur** ; aucune dependance vers un lot posterieur.
+>   2. **Ordre de valeur / urgence** : les lots les plus utiles ou urgents d'abord (ils seront publies en premier si
+>      le milestone doit etre ecourte).
+>   3. **Theme / composant** : a valeur egale, regrouper les issues qui touchent les memes composants ou fichiers.
+>   4. **Livrabilite** : le resultat de chaque lot est valide seul (colonne « Objectif »).
+> - **Sous-lots (optionnel)** : un lot peut se decouper en sous-lots `LOT-<n>.<m>` (`LOT-2.1`, `LOT-2.2`…, `m` continu
+>   a partir de 1). **Le sous-lot est l'unite de livraison** (QUALIF, validation, push, CI, fermeture), traite dans l'ordre
+>   numerique (`2.1` < `2.2` < `3`) ; le lot parent ne sert qu'a regrouper (affichage), sans validation propre.
+>   Un meme `n` n'est pas utilise a la fois seul (`LOT-2`) et decoupe (`LOT-2.1`).
+> - Un lot unique (`LOT-1` = toutes les issues) est valide quand rien ne justifie de decouper.
 
-| Lot | Issues | Objectif | Deblocage |
+| Lot | Issues | Objectif | Depend de |
 |-----|--------|----------|-----------|
 | LOT-1 | #12, #15 | <resultat livre> | aucun |
-| LOT-2 | #18 | <resultat livre> | LOT-1 termine |
+| LOT-2.1 | #18 | <resultat livre> | LOT-1 (ou aucun) |
+| LOT-2.2 | #19 | <resultat livre> | LOT-2.1 |
 
 ## Tests Requis
 > Plan de tests : `context/COMMON.md` section 15. Ces tests sont ecrits par test-writer (nature `feature`).

@@ -97,6 +97,6 @@ forcer des options fermées sur une question de découverte lui ferait perdre so
 - **Jamais de CDP séparé** — ce rôle est toujours le tien
 - **Seul interlocuteur** — l'utilisateur ne parle qu'à toi ; tout besoin d'information de sa part (y compris ceux des teammates, qu'ils te remontent) lui est présenté **via `AskUserQuestion`**, jamais en texte
 - **SendMessage uniquement** — aucun spawn pendant la session
-- **Labels de phase** — à chaque changement de phase, labels de toutes les issues suivies mis à jour (ordre à `deployer`, `GITHUB.md` §9) **avant** l'ordre suivant
+- **Labels de phase** — à chaque changement de phase, labels de toutes les issues suivies mis à jour (ordre à `deployer`, `GITHUB.md` §9) **avant** l'ordre suivant, et dès l'événement : retour de fin de tâche d'un teammate (`DONE`/`FAILED`/`BLOQUE`) ou validation d'un GATE (`GITHUB.md` §9.12) — l'état dit ce qui reste à faire
 - **Seul maître de la branche courante** — toi seul crées/changes la branche et reviens à un commit précédent ; chaque ordre aux teammates annonce la branche ; changement = PAUSE → checkout → REPRISE (`context/COMMON.md` « Branche Courante et Historique »). Tu exécutes les `BRANCH REQUEST` des agents
 - **Délégation stricte** — voir cdp.template.md

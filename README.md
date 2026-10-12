@@ -313,7 +313,7 @@ PLAN ──────────────────────── co
     ↓  REVIEW REJECTED → annule/ignore QA ; sinon attend QA si pas encore DONE
     ↓  label DONE
 PUSH de la branche du milestone ── déclenche la CI de validation (C10)
-    ├─ CI verte → issues fermées (elles gardent DONE) — ne vaut pas validation du milestone
+    ├─ CI verte → issues fermées (elles gardent DONE) — ne vaut pas validation du milestone ; avec lots : le push n'a lieu qu'après la validation QUALIF du lot (GATE LOT), puis lot suivant
     └─ CI non verte (rouge/orange) → label EN COURS + commentaire, retour DEV, nouveau cycle
 DOC (brouillon) ─────────────── CHANGELOG + documentation technique — pas de version incrémentée
     ↓
@@ -370,7 +370,7 @@ DEV ── fix minimal
     ├──────────────────────────┐
   REVIEW                     QA ── reproduction (vert) + NR du composant, en parallèle de REVIEW (défaut)
     └──────────────────────────┘
-    ↓  label DONE → push de la branche → CI verte : issues fermées (non verte : retour DEV)
+    ↓  label DONE → push de la branche → CI verte : issues fermées (avec lots : push après validation QUALIF du lot ; non verte : retour DEV)
 DOC (brouillon) ── CHANGELOG (Fixed)
     ↓
 BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ── GATE 4 attend les trois
@@ -448,20 +448,21 @@ Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §14. `/init
 
 ### Suivi des issues GitHub
 
-Le CDP met à jour les labels de l'issue associée à chaque transition de phase, **avant** l'ordre de la phase suivante : il ordonne à `deployer` d'exécuter les `gh issue edit` de `GITHUB.md` §9 (le teamleader n'a pas de `Bash`).
-Dès que le milestone compte 2 issues ou plus, le planner le découpe en lots (obligatoire) : chaque issue reçoit exactement un label `LOT-<entier>` (nommage strict `^LOT-[0-9]+$`, numérotation continue depuis 1), en plus de sa phase. Ce label est posé après le GATE 2 et jamais retiré par une transition de phase.
+Le CDP met à jour les labels de l'issue associée à chaque transition de phase, **dès l'événement** — retour de fin de tâche d'un teammate (`DONE`/`FAILED`/`BLOQUE`) ou validation d'un GATE (`GITHUB.md` §9.12) — et avant l'ordre suivant. **L'état dit ce qui reste à faire pour l'issue, pas ce qu'un teammate fait à cet instant** : il ordonne à `deployer` d'exécuter les `gh issue edit` de `GITHUB.md` §9 (le teamleader n'a pas de `Bash`).
+Dès que le milestone compte 2 issues ou plus, le planner le découpe en lots (obligatoire) : chaque issue reçoit exactement un label `LOT-<entier>` (nommage strict `^LOT-[0-9]+(\.[0-9]+)?$`, numérotation continue depuis 1 ; un lot peut se découper en sous-lots `LOT-2.1`, `LOT-2.2`, dont chacun est une unité de livraison), en plus de sa phase. Un lot est indépendant et auto-suffisant (livrable seul). Les lots sont traités **un à la fois**, dans l'ordre : à la fin d'un lot (QA validée), il est déployé en QUALIF et l'utilisateur le teste et le valide (**GATE LOT**) ; le lot est alors poussé, la CI passe au vert, ses issues sont fermées (aucune validation après la CI), puis le lot suivant démarre — les lots non lancés restent `PRET`. Si le milestone doit être publié en urgence, les lots restants sont déplacés vers un autre milestone (`GITHUB.md` §9.5b). Découpage par priorité : indépendance, puis thème/composant, puis livrabilité ; un lot ne dépend que des lots qui le précèdent. Ce label est posé après le GATE 2 et jamais retiré par une transition de phase.
 Un seul label de phase à la fois (sauf `EN REVIEW` + `EN QA` pendant la parallélisation Review/QA ; `BLOQUE` se superpose à la phase) :
 
 | Statut | Signification | Posé par | Posé quand |
 |--------|---------------|----------|------------|
-| `PLANNING` | Plan en cours | CDP | Phase 1 ; ou rejet GATE 4 hors scope (Cas B) |
-| `EN COURS` | Développement en cours | CDP | GATE 2 validé ; cycle correctif (REVIEW refuse / QA échoue) ; rejet GATE 4 dans le scope (Cas A) |
-| `EN REVIEW` | Revue en cours | CDP | Phase 3 — REVIEW démarrée |
-| `EN QA` | QA en cours | CDP | Phase 3 — dès TEST-WRITER DONE si parallèle au REVIEW (défaut), sinon après REVIEW |
+| `PLANNING` | Plan à élaborer ou à valider | CDP | Phase 1 ; ou rejet GATE 4 hors scope (Cas B) ; reste tant que le plan n'est pas validé (GATE 2) |
+| `PRET` | Plan validé, développement pas encore lancé (lot en attente) | CDP | GATE 2 validé |
+| `EN COURS` | Développement à faire ou en cours | CDP | Ordre DEV du lot ; cycle correctif (REVIEW refusé / QA échoue) ; rejet GATE 4 dans le scope (Cas A) |
+| `EN REVIEW` | Revue à faire ou en cours | CDP | Retour DONE de tous les dev de l'issue |
+| `EN QA` | QA à faire ou en cours | CDP | Retour DONE des TEST-WRITER si parallèle au REVIEW (défaut), sinon après le verdict REVIEW |
 | `DONE` | QA validée ; branche poussée, CI en cours puis verte | CDP | QA validée — push immédiat de la branche ; CI non verte → retour `EN COURS` |
 | `BLOQUE` | Avancement impossible — s'ajoute à la phase courante (conservée) | CDP | Blocage constaté (cause en commentaire) ; retiré à la levée du blocage |
 | `ABANDONNE` | Ne sera pas traitée (terminal) | CDP | Sur décision de l'utilisateur uniquement ; l'issue est fermée `not planned` |
-| *(issue fermée)* | QA OK + CI verte (garde `DONE`) — la validation du milestone reste à l'utilisateur (GATE 4) | CDP | CI verte après le push de la branche ; rouverte si GATE 4 refusé pour cette issue |
+| *(issue fermée)* | QA OK + CI verte (garde `DONE`) — la validation du milestone reste à l'utilisateur (GATE 4) | CDP | CI verte après le push de la branche (avec lots : après validation QUALIF du lot, GATE LOT) ; rouverte si GATE 4 refusé pour cette issue |
 
 Définition de référence (transitions, labels retirés, commandes `gh`) :
 `TEMPLATE_claude/commands/context/GITHUB.md` §8.2 et §9 — les autres fichiers y renvoient sans la recopier.
@@ -629,7 +630,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 ### Panneau milestone (mod)
 
 Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/milestone-panel`), **uniquement dans la session du team-leader** (les sessions de teammates ne l'ouvrent pas)
-les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge. Le titre du milestone est suivi d'une barre d'avancement segmentée dans l'ordre de développement (fermées en violet, puis chaque phase présente — `DONE` compris — à la couleur de son label, puis non démarrées ; le pourcentage compte fermées + `DONE`), les issues sont regroupées par lot (label `LOT-N`, GITHUB.md §9.11) quand le milestone en porte, lots triés par avancement (phase la plus avancée, puis cumul des phases, puis numéro), issues sans lot en dernier, chaque phase reprend la couleur de son label GitHub et s'affiche en une ligne par issue (`LOT  PHASE : #n titre`, libellés alignés, écrits uniquement sur la première ligne de leur groupe) et les lignes s'adaptent à la largeur du panneau.
+les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PRET`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge. Le titre du milestone est suivi d'une barre d'avancement segmentée dans l'ordre de développement (fermées en violet, puis chaque phase présente — `DONE` compris — à la couleur de son label, puis non démarrées ; le pourcentage compte fermées + `DONE`), les issues sont regroupées par lot (label `LOT-N`, GITHUB.md §9.11 ; les sous-lots `LOT-N.M` sont regroupés sous le lot parent, sans distinction) quand le milestone en porte, lots triés par avancement (phase la plus avancée, puis cumul des phases, puis numéro), issues sans lot en dernier, chaque phase reprend la couleur de son label GitHub et s'affiche en une ligne par issue (`LOT  PHASE : #n titre`, libellés alignés, écrits uniquement sur la première ligne de leur groupe) et les lignes s'adaptent à la largeur du panneau.
 Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) qui porte une issue en phase ; à défaut,
 le panneau liste les milestones ouverts avec leur avancement. Il se rafraîchit 10 s après chaque
 `gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),
