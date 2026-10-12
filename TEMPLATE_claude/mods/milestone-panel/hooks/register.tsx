@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { View } from '../types'
-import { buildView, groupByPhase, isConsistent, parseGhIssueCommand } from './lib'
+import { TEAMMATE_ENV, buildView, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -15,6 +15,13 @@ let pending: { cancel: () => void } | null = null
 let expected: Expectation[] = []
 let isRunning = false
 let retries = 0
+let isTeammate = false
+
+async function detectTeammate($: any) {
+  const env = await Promise.all(TEAMMATE_ENV.map(n => $.env.get(n)))
+  const res = await $.process.run(['sh', '-c', 'tr "\\0" " " < /proc/$PPID/cmdline 2>/dev/null'])
+  return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
+}
 
 async function gh($: any, argv: string[]) {
   const res = await $.process.run(['gh', ...argv])
@@ -59,6 +66,9 @@ export const register: Register = (on, options) => {
   const everyMs = Math.max(30, Number(options.refreshIntervalSec ?? 300)) * 1000
 
   on('session.start', async ($, e, next) => {
+    // Panneau réservé au team-leader : une session de teammate ne l'ouvre ni ne le rafraîchit.
+    isTeammate = await detectTeammate($).catch(() => false)
+    if (isTeammate) return next(e)
     await $.command.register({
       name: 'milestone-panel',
       description: 'Ouvre le panneau des issues du milestone en cours',
@@ -70,6 +80,7 @@ export const register: Register = (on, options) => {
   })
 
   on('command.run', { command: 'milestone-panel' }, async $ => {
+    if (isTeammate) return { text: 'Panneau réservé au team-leader.' }
     await $.ui.open({ id: PANE, title: 'Milestone' })
     void refresh($)
     return { text: 'Panneau milestone ouvert.' }
@@ -80,6 +91,7 @@ export const register: Register = (on, options) => {
   // Les appels faits par des sous-agents ne sont peut-être pas vus : le timer périodique couvre.
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     const ran = await next(e)
+    if (isTeammate) return ran
     const found = parseGhIssueCommand(String((e as { command?: string }).command ?? ''))
     if (found.length > 0) {
       expected = [...expected, ...found]
