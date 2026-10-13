@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage, View } from '../types'
-import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor } from './lib'
+import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -10,7 +10,7 @@ const RETRY_MS = 15_000
 
 const empty: View = { current: null, issues: [], milestones: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
 const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
-const noUsage: Usage = { windows: [], source: null, updatedAt: 0 }
+const noUsage: Usage = { windows: [], source: null, updatedAt: 0, error: null }
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const USAGE_THROTTLE_MS = 20_000
 let lastUsageAt = 0
@@ -48,6 +48,7 @@ async function refreshUsage($: any, isForced = false) {
   const now = await $.clock.now()
   if (!isForced && now - lastUsageAt < USAGE_THROTTLE_MS) return
   lastUsageAt = now
+  let error = 'pas de credential OAuth (clé API, passerelle ou non connecté)'
   try {
     const auth = await $.session.authorize()
     if (auth?.kind === 'bearer') {
@@ -57,12 +58,22 @@ async function refreshUsage($: any, isForced = false) {
         await update($, usage, () => parsed)
         return
       }
+      error = res.ok ? 'réponse sans tableau `limits`' : `HTTP ${res.status}`
     }
-  } catch {
-    // repli sur les en-têtes ci-dessous
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e)
   }
+  // Repli sur les en-têtes de la dernière réponse — sans jamais effacer des fenêtres du compte déjà obtenues
+  // (la limite par modèle, ex. Fable, n'y figure pas) : on les garde et on note l'échec.
   const u = await $.session.usage()
-  await update($, usage, () => buildUsage(u.rateLimits ?? [], now))
+  const limits = u.rateLimits ?? []
+  await update($, usage, prev =>
+    prev && prev.source === 'account' && prev.windows.length > 0
+      ? mergeHeaders(prev, limits, now, error)
+      : { ...buildUsage(limits, now), error },
+  )
+  // Nouvel essai rapide après un échec (le throttle normal attend 20 s, le timer une minute).
+  $.clock.after(5_000, () => void refreshUsage($, true).catch(() => undefined))
 }
 
 async function gh($: any, argv: string[]) {
@@ -150,7 +161,7 @@ export const register: Register = (on, options) => {
     const now = await $.clock.now()
     const conso = u.windows.length === 0
       ? 'consommation : aucune limite rapportée'
-      : `consommation (${u.source === 'account' ? 'compte' : 'en-têtes'}) : ${u.windows.map(w => `${w.label} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, \`${w.kind}\`)`).join(', ')}`
+      : `consommation (${u.source === 'account' ? 'compte' : 'en-têtes'}${u.error ? `, dernier échec endpoint compte : ${u.error}` : ''}) : ${u.windows.map(w => `${w.label} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, \`${w.kind}\`)`).join(', ')}`
     if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error} ; ${conso}.` }
     const what = v.current
       ? `milestone ${v.current}${v.isReleasing ? ' (publication)' : ''}, ${v.issues.length} issue(s) ouverte(s)`

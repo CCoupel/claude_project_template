@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor, usageLabel } from './lib'
+import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor, usageLabel } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -208,4 +208,17 @@ test('consommation : endpoint du compte (session, semaine, limite par modèle), 
   expect(usageColor(21, 70, 'normal')).toBe('blue')
   expect(parseAccountUsage({ five_hour: {} }, 1)).toBe(null)
   expect(parseAccountUsage(null, 1)).toBe(null)
+})
+
+test('consommation : un échec passager de l’endpoint garde les fenêtres du compte (dont Fable)', () => {
+  const prev = parseAccountUsage({ limits: [
+    { kind: 'session', percent: 72, resets_at: '2026-10-13T13:00:00+00:00' },
+    { kind: 'weekly_all', percent: 97, resets_at: '2026-10-14T10:00:00+00:00' },
+    { kind: 'weekly_scoped', group: 'weekly', percent: 21, scope: { model: { display_name: 'Fable' } } },
+  ] }, 1)!
+  const u = mergeHeaders(prev, [{ kind: 'five_hour', percentUsed: 80 }, { kind: 'seven_day', percentUsed: 98 }], 2, 'HTTP 503')
+  expect(u.source).toBe('account')
+  expect(u.error).toBe('HTTP 503')
+  expect(u.windows.map(w => `${w.label} ${w.percentUsed}`)).toEqual(['Session 80', 'Semaine 98', 'Fable sem. 21'])
+  expect(u.windows[0].resetsAt).toBe('2026-10-13T13:00:00+00:00')
 })

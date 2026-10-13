@@ -237,7 +237,7 @@ export function buildUsage(limits: RateLimit[], now: number): Usage {
   const windows = limits
     .map(l => ({ kind: l.kind, label: usageLabel(l.kind), percentUsed: Math.max(0, l.percentUsed), resetsAt: l.resetsAt ?? null, severity: null }))
     .sort((a, b) => usageRank(a.kind) - usageRank(b.kind) || a.kind.localeCompare(b.kind))
-  return { windows, source: 'headers', updatedAt: now }
+  return { windows, source: 'headers', updatedAt: now, error: null }
 }
 
 /** Une entrée de `limits[]` de l'endpoint d'utilisation du compte (`/api/oauth/usage`). */
@@ -279,7 +279,23 @@ export function parseAccountUsage(json: unknown, now: number): Usage | null {
       severity: l.severity ?? null,
     }))
     .sort((a, b) => (ACCOUNT_RANK[a.kind] ?? 9) - (ACCOUNT_RANK[b.kind] ?? 9) || a.label.localeCompare(b.label))
-  return { windows, source: 'account', updatedAt: now }
+  return { windows, source: 'account', updatedAt: now, error: null }
+}
+
+/**
+ * Échec passager de l'endpoint du compte alors qu'on a déjà ses fenêtres : on les garde (la limite par modèle n'existe
+ * nulle part ailleurs), en rafraîchissant session et semaine depuis les en-têtes de la dernière réponse quand elles y sont.
+ */
+export function mergeHeaders(prev: Usage, limits: RateLimit[], now: number, error: string): Usage {
+  const byKind: Record<string, RateLimit | undefined> = {
+    session: limits.find(l => l.kind === 'five_hour'),
+    weekly_all: limits.find(l => l.kind === 'seven_day'),
+  }
+  const windows = prev.windows.map(w => {
+    const h = byKind[w.kind]
+    return h ? { ...w, percentUsed: Math.max(0, h.percentUsed), resetsAt: h.resetsAt ?? w.resetsAt } : w
+  })
+  return { ...prev, windows, updatedAt: now, error }
 }
 
 const two = (n: number) => String(n).padStart(2, '0')
