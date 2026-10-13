@@ -20,7 +20,7 @@ test('milestone en cours = premier milestone avec une issue en phase', () => {
   expect(v.issues.find(i => i.number === 1)?.isBlocked).toBe(true)
 })
 
-test('aucun milestone en cours : liste des milestones triés SemVer', () => {
+test('aucun milestone en cours : liste triée par progression puis par version', () => {
   const v = buildView(ms, [], 1)
   expect(v.current).toBe(null)
   expect(v.milestones.map(m => m.title)).toEqual(['v1.2.0', 'v1.3.0'])
@@ -122,4 +122,24 @@ test('un lot entièrement DONE passe avant un lot DONE + EN REVIEW', () => {
   ]
   const v = buildView([{ title: 'v1', due_on: null, open_issues: 6, closed_issues: 0 }], issues, 0)
   expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-1', 'LOT-4', 'LOT-2', 'LOT-6'])
+})
+
+test('liste des milestones : sans version (x) en dernier, puis progression décroissante, puis version croissante', () => {
+  const m = (title: string, open: number, closed: number) => ({ title, due_on: null, open_issues: open, closed_issues: closed })
+  const v = buildView(
+    [m('v11.3', 3, 0), m('v11.2.2', 4, 0), m('v11.2.1', 0, 8), m('vX.0.x', 1, 0), m('v12.0', 2, 2)],
+    [],
+    1,
+  )
+  expect(v.milestones.map(x => x.title)).toEqual(['v11.2.1', 'v12.0', 'v11.2.2', 'v11.3', 'vX.0.x'])
+})
+
+test('milestones sans version (vX.0.x, vx.x.x) en dernier, même avec une progression plus haute', () => {
+  const m = (title: string, open: number, closed: number) => ({ title, due_on: null, open_issues: open, closed_issues: closed })
+  const v = buildView(
+    [m('vX.0.x — DNS', 0, 5), m('vx.x.x — Scoring', 1, 1), m('v11.3 — Ambiance', 3, 0), m('v11.2.2', 4, 0)],
+    [],
+    1,
+  )
+  expect(v.milestones.map(x => x.title)).toEqual(['v11.2.2', 'v11.3 — Ambiance', 'vX.0.x — DNS', 'vx.x.x — Scoring'])
 })
