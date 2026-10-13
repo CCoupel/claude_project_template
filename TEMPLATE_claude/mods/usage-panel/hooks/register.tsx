@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { View } from '../types'
-import { buildView, formatReset, formatResetShort, isTeammateSession, shortLabelOf } from './lib'
+import { bar, buildView, formatReset, formatResetShort, isTeammateSession, shortLabelOf } from './lib'
 
 // Ligne de statut permanente sous le prompt (une par mod, remplacée à chaque mesure) ; toast en plus seulement
 // quand une fenêtre franchit le seuil d'alerte ou 90 %, et sur /panel-usage. Ni panneau ni bandeau.
@@ -25,16 +25,19 @@ async function detectTeammate($: any) {
   return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
 }
 
-/** « Session 53 % (15:00) · Semaine 95 % (mer. 12:00) · Fable sem. 17 % (mer. 12:00) », ⚠ au-delà du seuil. */
-export function toastLine(v: View, now: number, warnPercent: number): string {
+const BAR_W = 10
+
+/** « Session █████░░░░░ 53 % (15:00) · Semaine █████████▌ 95 % (mer. 12:00) », ⚠/🔴 au-delà des seuils. */
+export function toastLine(v: View, now: number, warnPercent: number, barWidth = BAR_W): string {
   return v.windows
     .map(w => {
       const pct = Math.round(w.percentUsed)
       const mark = pct >= 90 ? '🔴 ' : pct >= warnPercent ? '⚠ ' : ''
       const reset = formatResetShort(w.resetsAt, now)
-      return `${mark}${shortLabelOf(w.kind)} ${pct} %${reset ? ` (${reset})` : ''}`
+      const b = bar(w.percentUsed, barWidth)
+      return `${mark}${shortLabelOf(w.kind)} ${'█'.repeat(b.filled)}${'░'.repeat(b.empty)} ${pct} %${reset ? ` (${reset})` : ''}`
     })
-    .join(' · ')
+    .join('  ·  ')
 }
 
 /** 0 sous le seuil, 1 au-delà, 2 à partir de 90 % : un toast à chaque franchissement vers le haut. */

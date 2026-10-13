@@ -681,7 +681,7 @@ puis toutes les minutes, après toute commande Bash et après chaque délégatio
 Le mod `usage-panel` **épingle sous le prompt** du team-leader (jamais dans une session de teammate) une ligne de statut
 permanente avec les fenêtres de quota du compte Claude telles que l'API les rapporte : **Session** (5 h), **Semaine** (7 j)
 et les limites hebdomadaires distinctes par modèle (ex. « Fable sem. »), avec pourcentage et heure de réinitialisation
-(« 15:00 », « demain 12:00 », « mer. 12:00 », « 42 min ») — `Session 53 % (15:00) · Semaine 95 % (mer. 12:00) · …`.
+(« 15:00 », « demain 12:00 », « mer. 12:00 », « 42 min ») et sa barre de progression — `Session █████░░░░░ 53 % (15:00)  ·  Semaine █████████▌ 95 % (mer. 12:00)  ·  …`.
 Marque ⚠ au-delà du seuil configurable (`warnPercent`, 70 % par défaut), 🔴 à partir de 90 % ; un **toast** signale en plus
 chaque franchissement de seuil vers le haut (durée `toastSec`, 8 s). La ligne est mise à jour à chaque mesure poussée par le
 moteur (après chaque tour, et dès qu'une fenêtre bouge d'un point) et toutes les minutes. `/panel-usage` relit, affiche le
