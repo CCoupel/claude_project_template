@@ -146,7 +146,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │
 ├── mods/                        # Mods Claude Code, déployés dans .claude/skills/<mod>/
 │   ├── milestone-panel/         # Panneau latéral : issues du milestone en cours par phase
-│   └── usage-panel/             # Toast : consommation du compte Claude (session, semaine, par modèle, réinitialisation)
+│   └── usage-panel/             # Ligne de statut : consommation du compte Claude (session, semaine, par modèle, réinitialisation)
 │
 ├── commands/                    # Commandes slash
 │   ├── start-session.md
@@ -676,17 +676,17 @@ le panneau liste les milestones ouverts avec leur avancement, les milestones san
 `gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),
 puis toutes les minutes, après toute commande Bash et après chaque délégation du team-leader (`SendMessage`, `Agent`). Délais réglables via la config du mod (`propagationDelaySec`, `refreshIntervalSec`). Nécessite `gh`.
 
-### Toast consommation (mod)
+### Ligne de consommation (mod)
 
-Le mod `usage-panel` affiche en **toast** (petite boîte quelques secondes en haut à droite du transcript, dans la session
-du team-leader uniquement) les fenêtres de quota du compte Claude telles que l'API les rapporte : **Session** (5 h),
-**Semaine** (7 j) et les limites hebdomadaires distinctes par modèle (ex. « Fable sem. »), avec pourcentage et heure de
-réinitialisation (« 15:00 », « demain 12:00 », « mer. 12:00 », « 42 min ») — `Session 53 % (15:00) · Semaine 95 % (mer. 12:00) · …`.
-Marque ⚠ au-delà du seuil configurable (`warnPercent`, 70 % par défaut), 🔴 à partir de 90 % ; durée réglable (`toastSec`, 8 s).
-Le toast apparaît au démarrage, puis à chaque fois qu'une fenêtre bouge d'un point (mesure poussée par le moteur après chaque
-tour), jamais deux fois pour la même ligne. `/panel-usage` relit, affiche le toast et répond avec le détail (libellés complets).
-Mêmes chiffres que `/usage` et la ligne de statut ; sans abonnement (clé API), rien n'est affiché. Rien de permanent à l'écran :
-le panneau milestone garde seul la place à droite.
+Le mod `usage-panel` **épingle sous le prompt** du team-leader (jamais dans une session de teammate) une ligne de statut
+permanente avec les fenêtres de quota du compte Claude telles que l'API les rapporte : **Session** (5 h), **Semaine** (7 j)
+et les limites hebdomadaires distinctes par modèle (ex. « Fable sem. »), avec pourcentage et heure de réinitialisation
+(« 15:00 », « demain 12:00 », « mer. 12:00 », « 42 min ») — `Session 53 % (15:00) · Semaine 95 % (mer. 12:00) · …`.
+Marque ⚠ au-delà du seuil configurable (`warnPercent`, 70 % par défaut), 🔴 à partir de 90 % ; un **toast** signale en plus
+chaque franchissement de seuil vers le haut (durée `toastSec`, 8 s). La ligne est mise à jour à chaque mesure poussée par le
+moteur (après chaque tour, et dès qu'une fenêtre bouge d'un point) et toutes les minutes. `/panel-usage` relit, affiche le
+toast et répond avec le détail (libellés complets). Mêmes chiffres que `/usage` ; sans abonnement (clé API), rien n'est
+affiché. Le panneau milestone garde seul la place à droite.
 
 ### Validation
 

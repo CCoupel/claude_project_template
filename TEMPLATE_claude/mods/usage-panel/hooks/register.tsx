@@ -4,13 +4,14 @@ import type { Register } from 'claude-code'
 import type { View } from '../types'
 import { buildView, formatReset, formatResetShort, isTeammateSession, shortLabelOf } from './lib'
 
-// Toast (petite boîte en haut à droite du transcript, quelques secondes) : affiché au démarrage, à chaque fois
-// qu'une fenêtre de quota bouge d'un point, et sur /panel-usage. Ni panneau ni bandeau : rien de permanent.
+// Ligne de statut permanente sous le prompt (une par mod, remplacée à chaque mesure) ; toast en plus seulement
+// quand une fenêtre franchit le seuil d'alerte ou 90 %, et sur /panel-usage. Ni panneau ni bandeau.
 const empty: View = { windows: [], costUsd: null, updatedAt: 0 }
 const view = atom({ plugin: 'usage-panel', key: 'view' } as const, empty)
 
 let isTeammate = false
 let lastShown = ''
+let lastLevels: Record<string, number> = {}
 let warnPercent = 70
 let timeoutMs = 8_000
 
@@ -36,14 +37,28 @@ export function toastLine(v: View, now: number, warnPercent: number): string {
     .join(' · ')
 }
 
+/** 0 sous le seuil, 1 au-delà, 2 à partir de 90 % : un toast à chaque franchissement vers le haut. */
+const levelOf = (pct: number) => (pct >= 90 ? 2 : pct >= warnPercent ? 1 : 0)
+
 async function show($: any, isForced: boolean) {
   const v = await read($, view)
-  if (v.windows.length === 0) return false
+  if (v.windows.length === 0) {
+    $.ui.status(undefined)
+    return false
+  }
   const line = toastLine(v, await $.clock.now(), warnPercent)
-  // Sans changement visible (même ligne, à la minute près), pas de nouveau toast — sauf sur demande.
-  if (!isForced && line === lastShown) return false
-  lastShown = line
-  $.ui.toast(line, { timeoutMs })
+  if (line !== lastShown) {
+    lastShown = line
+    $.ui.status(line)
+  }
+  const levels: Record<string, number> = {}
+  let isCrossing = false
+  for (const w of v.windows) {
+    levels[w.kind] = levelOf(w.percentUsed)
+    if (w.kind in lastLevels && levels[w.kind] > lastLevels[w.kind]) isCrossing = true
+  }
+  lastLevels = levels
+  if (isForced || isCrossing) $.ui.toast(line, { timeoutMs })
   return true
 }
 
@@ -61,8 +76,10 @@ export const register: Register = (on, options) => {
     // Réservé au team-leader : une session de teammate n'affiche rien.
     isTeammate = await detectTeammate($).catch(() => false)
     if (isTeammate) return next(e)
-    await $.command.register({ name: 'panel-usage', description: 'Affiche la consommation du compte Claude (toast + détail)' })
+    await $.command.register({ name: 'panel-usage', description: 'Recharge la ligne de consommation du compte Claude (toast + détail)' })
     void refresh($).then(() => show($, false))
+    // Les heures de réinitialisation avancent (« 42 min ») même sans nouvelle mesure.
+    $.clock.every(60_000, () => void refresh($).then(() => show($, false)))
     return next(e)
   })
 
@@ -79,13 +96,12 @@ export const register: Register = (on, options) => {
     return { text: lines.join('\n') }
   })
 
-  // Mesure poussée par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point :
-  // toast seulement quand une fenêtre a bougé (changed contient `rateLimits`).
+  // Mesure poussée par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point.
   on('session.measure', async ($, e, next) => {
     if (isTeammate) return next(e)
     const now = await $.clock.now()
     await update($, view, () => buildView(e.rateLimits ?? [], e.cost?.usd ?? null, now))
-    if ((e.changed ?? []).includes('rateLimits')) void show($, false)
+    void show($, false)
     return next(e)
   })
 }
