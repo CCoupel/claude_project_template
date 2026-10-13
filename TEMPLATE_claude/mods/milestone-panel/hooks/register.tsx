@@ -1,8 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { View } from '../types'
-import { PHASES, allocate, buildView, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand } from './lib'
+import type { Usage, View } from '../types'
+import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand, usageBar, usageColor, usageLabel } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -10,6 +10,8 @@ const RETRY_MS = 15_000
 
 const empty: View = { current: null, issues: [], milestones: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
 const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
+const noUsage: Usage = { windows: [], updatedAt: 0 }
+const usage = atom({ plugin: 'milestone-panel', key: 'usage' } as const, noUsage)
 
 let pending: { cancel: () => void } | null = null
 let expected: Expectation[] = []
@@ -19,14 +21,27 @@ let isTeammate = false
 let lastRefreshAt = 0
 const THROTTLE_MS = 20_000
 
+const WALK_ANCESTORS = 'p=$$; n=0; while [ "$p" -gt 1 ] && [ $n -lt 12 ]; do tr "\\\\0" " " < /proc/$p/cmdline 2>/dev/null; echo; p=$(awk "/^PPid:/{print \\$2}" /proc/$p/status 2>/dev/null); [ -n "$p" ] || break; n=$((n+1)); done'
+
 async function detectTeammate($: any) {
   const env = await Promise.all([
     $.env.get('CLAUDE_CODE_AGENT_ID'),
     $.env.get('CLAUDE_CODE_AGENT_NAME'),
     $.env.get('CLAUDE_CODE_TEAM_NAME'),
   ])
-  const res = await $.process.run(['sh', '-c', 'tr "\\0" " " < /proc/$PPID/cmdline 2>/dev/null'])
+  // Les teammates (teammateMode tmux) n'ont aucune variable d'environnement d'agent : seul le processus
+  // `claude` porte --agent-name/--team-name, et il peut y avoir des shells intermédiaires avant lui.
+  // On remonte donc toute la chaîne des ancêtres (12 niveaux max).
+  const res = await $.process.run(['sh', '-c', WALK_ANCESTORS])
   return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
+}
+
+// Consommation du compte (fenêtres de quota de la dernière réponse API) : relue au démarrage, à chaque reload et
+// toutes les minutes (le compte à rebours avance) ; poussée par le moteur à chaque mesure (session.measure).
+async function refreshUsage($: any) {
+  const u = await $.session.usage()
+  const now = await $.clock.now()
+  await update($, usage, () => buildUsage(u.rateLimits ?? [], now))
 }
 
 async function gh($: any, argv: string[]) {
@@ -73,6 +88,7 @@ async function refresh($: any) {
 export const register: Register = (on, options) => {
   const delayMs = Math.max(1, Number(options.propagationDelaySec ?? 10)) * 1000
   const everyMs = Math.max(30, Number(options.refreshIntervalSec ?? 60)) * 1000
+  const warnPercent = Number((options as any).warnPercent ?? 70)
 
   on('session.start', async ($, e, next) => {
     // Panneau réservé au team-leader : une session de teammate ne l'ouvre ni ne le rafraîchit.
@@ -84,7 +100,16 @@ export const register: Register = (on, options) => {
     })
     void $.ui.open({ id: PANE, title: 'Milestone' })
     void refresh($)
+    void refreshUsage($).catch(() => undefined)
     $.clock.every(everyMs, () => void refresh($))
+    $.clock.every(60_000, () => void refreshUsage($).catch(() => undefined))
+    return next(e)
+  })
+
+  on('session.measure', async ($, e, next) => {
+    if (isTeammate) return next(e)
+    const now = await $.clock.now()
+    await update($, usage, () => buildUsage(e.rateLimits ?? [], now))
     return next(e)
   })
 
@@ -98,14 +123,19 @@ export const register: Register = (on, options) => {
     lastRefreshAt = 0
     await update($, view, () => empty)
     await $.ui.open({ id: PANE, title: 'Milestone' })
-    await refresh($)
+    await Promise.all([refresh($), refreshUsage($).catch(() => undefined)])
     $.ui.invalidate('ui.render')
     const v = await read($, view)
-    if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error}` }
+    const u = await read($, usage)
+    const now = await $.clock.now()
+    const conso = u.windows.length === 0
+      ? 'consommation : aucune limite rapportée'
+      : `consommation : ${u.windows.map(w => `${usageLabel(w.kind)} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, fenêtre API \`${w.kind}\`)`).join(', ')}`
+    if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error} ; ${conso}.` }
     const what = v.current
       ? `milestone ${v.current}${v.isReleasing ? ' (publication)' : ''}, ${v.issues.length} issue(s) ouverte(s)`
       : `${v.milestones.length} milestone(s) ouvert(s), aucun en cours`
-    return { text: `Panneau milestone rechargé : ${what}.` }
+    return { text: `Panneau milestone rechargé : ${what} ; ${conso}.` }
   })
 
   // Les labels de phase sont posés par le teamleader via `gh issue edit` (GITHUB.md §9) :
@@ -145,13 +175,42 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     const v = await read($, view)
+    const u = await read($, usage)
+    const now = await $.clock.now()
     const columns = (e.viewport as { columns?: number } | undefined)?.columns ?? 40
     // Le texte long est tronqué par le panneau lui-même, à sa vraie largeur.
     const T = (props: Record<string, unknown>, text: string) => (
       <Text wrap="truncate-end" {...props}>{text}</Text>
     )
 
-    if (v.updatedAt === 0 && !v.error) return <Text dimColor>Chargement…</Text>
+    // Premières lignes : consommation du compte, une ligne par fenêtre de quota « Libellé  barre  %  réinit. ».
+    const USAGE_W = Math.max(...u.windows.map(w => usageLabel(w.kind).length), 0)
+    const usageBlock = u.windows.length > 0 && (
+      <Box flexDirection="column" marginBottom={1}>
+        {u.windows.map(w => {
+          const c = usageColor(w.percentUsed, warnPercent)
+          const b = usageBar(w.percentUsed, 10)
+          const reset = formatReset(w.resetsAt, now)
+          return (
+            <Text wrap="truncate-end">
+              <Text bold>{usageLabel(w.kind).padEnd(USAGE_W + 1)}</Text>
+              <Text color={c}>{'█'.repeat(b.filled)}</Text>
+              <Text dimColor>{'░'.repeat(b.empty)}</Text>
+              <Text bold color={c}>{` ${String(Math.round(w.percentUsed)).padStart(3)} %`}</Text>
+              {reset !== '' && <Text dimColor>{`  ${reset}`}</Text>}
+            </Text>
+          )
+        })}
+      </Box>
+    )
+
+    if (v.updatedAt === 0 && !v.error)
+      return (
+        <Box flexDirection="column">
+          {usageBlock}
+          <Text dimColor>Chargement…</Text>
+        </Box>
+      )
 
     const hex = (label: string, fallback: string) =>
       v.colors[label] ? `#${v.colors[label]}` : fallback
@@ -213,6 +272,7 @@ export const register: Register = (on, options) => {
 
     return (
       <Box flexDirection="column">
+        {usageBlock}
         {v.error && T({ color: 'red' }, `gh: ${v.error}`)}
         {v.current ? (
           <Box flexDirection="column">

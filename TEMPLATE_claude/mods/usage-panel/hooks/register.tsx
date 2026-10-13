@@ -15,13 +15,18 @@ let lastLevels: Record<string, number> = {}
 let warnPercent = 70
 let timeoutMs = 8_000
 
+const WALK_ANCESTORS = 'p=$$; n=0; while [ "$p" -gt 1 ] && [ $n -lt 12 ]; do tr "\\\\0" " " < /proc/$p/cmdline 2>/dev/null; echo; p=$(awk "/^PPid:/{print \\$2}" /proc/$p/status 2>/dev/null); [ -n "$p" ] || break; n=$((n+1)); done'
+
 async function detectTeammate($: any) {
   const env = await Promise.all([
     $.env.get('CLAUDE_CODE_AGENT_ID'),
     $.env.get('CLAUDE_CODE_AGENT_NAME'),
     $.env.get('CLAUDE_CODE_TEAM_NAME'),
   ])
-  const res = await $.process.run(['sh', '-c', 'tr "\\0" " " < /proc/$PPID/cmdline 2>/dev/null'])
+  // Les teammates (teammateMode tmux) n'ont aucune variable d'environnement d'agent : seul le processus
+  // `claude` porte --agent-name/--team-name, et il peut y avoir des shells intermédiaires avant lui.
+  // On remonte donc toute la chaîne des ancêtres (12 niveaux max).
+  const res = await $.process.run(['sh', '-c', WALK_ANCESTORS])
   return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
 }
 
@@ -95,8 +100,8 @@ export const register: Register = (on, options) => {
     if (v.windows.length === 0) return { text: 'Aucune limite rapportée (pas d’abonnement, ou aucune réponse reçue).' }
     await show($, true)
     const now = await $.clock.now()
-    const lines = v.windows.map(w => `${w.label} : ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || 'réinitialisation inconnue'})`)
-    return { text: lines.join('\n') }
+    const lines = v.windows.map(w => `${w.label} : ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || 'réinitialisation inconnue'}) — fenêtre API \`${w.kind}\``)
+    return { text: `${lines.join('\n')}\nSeules les fenêtres rapportées par l'API dans la dernière réponse sont listées.` }
   })
 
   // Mesure poussée par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point.

@@ -13,8 +13,22 @@ export type View = {
   error: string | null
 }
 
+export type UsageWindow = {
+  /** Fenêtre telle que rapportée par l'API (`five_hour`, `seven_day`, `spend_limit`…). */
+  kind: string
+  /** 0 à 100 (au-delà sur un plafond de dépense dépassé). */
+  percentUsed: number
+  /** Réinitialisation, ISO 8601 ; absent quand l'API ne la donne pas. */
+  resetsAt: string | null
+}
+export type Usage = {
+  windows: UsageWindow[]
+  /** Dernière mesure reçue (ms), 0 avant la première. */
+  updatedAt: number
+}
+
 declare module 'claude-code' {
   interface PluginState {
-    'milestone-panel': { view: View }
+    'milestone-panel': { view: View; usage: Usage }
   }
 }
