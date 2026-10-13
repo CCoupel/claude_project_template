@@ -46,7 +46,12 @@ curl -fsSL \
 Ouvrir le projet dans Claude Code et lancer `/init-project`.
 
 `/init-project` fetche automatiquement `TEMPLATE_claude/` depuis GitHub,
-détecte la stack et génère la configuration complète. Il se termine par un **audit du contexte** :
+détecte la stack et génère la configuration complète. Sans remote `origin`, il demande le repo GitHub (existant,
+ou à créer via `gh repo create`). Pour un **nouveau projet** (aucun code détecté) avec un remote GitHub, il crée
+les labels de phase, puis le **premier milestone `v0.1.0`** et ses **issues de base** (squelette du projet, pipeline
+CI/CD, publication/déploiement du premier environnement, README, et une issue par cas d'usage v1 du workshop de
+cadrage) après validation de la liste — jamais sur un projet avec code existant, déjà doté de milestones ou de tags,
+ni lors d'une mise à jour. Il se termine par un **audit du contexte** :
 commit d'init (point de retour), puis `/context-audit` complet — placeholders non remplacés, références
 cassées, incohérences `project-config.json` ↔ `CLAUDE.md` ↔ agents. Les corrections `Auto` ne sont pas committées :
 relire `git diff`.
@@ -649,7 +654,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 |----------|-------------|
 | `/backlog` | Lister les issues GitHub ouvertes |
 | `/backlog <desc>` | Rechercher une issue et lancer le workflow adapté |
-| `/milestone new <version> [date]` | Créer un milestone et associer des issues |
+| `/milestone new <version> [date]` | Créer un milestone et associer des issues (le premier, `v0.1.0`, est créé par `/init-project` sur un nouveau projet) |
 | `/milestone status` | Progression du milestone actif (barre %) |
 | `/milestone close [version]` | Clôturer avec gestion des issues non terminées |
 
