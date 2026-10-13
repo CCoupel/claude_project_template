@@ -1,0 +1,14 @@
+{
+  "name": "usage-panel",
+  "version": "0.1.0",
+  "description": "Panneau latéral : consommation du compte Claude (session en cours, semaine, limites par modèle) avec l'heure de réinitialisation.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "warnPercent": {
+      "type": "number",
+      "title": "Seuil d'alerte (%)",
+      "description": "Au-delà, la barre passe en orange ; en rouge à partir de 90 %.",
+      "default": 70
+    }
+  }
+}

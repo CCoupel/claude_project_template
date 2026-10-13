@@ -145,7 +145,8 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 ├── gitignore-for-projects       # Copié en .gitignore par /init-project
 │
 ├── mods/                        # Mods Claude Code, déployés dans .claude/skills/<mod>/
-│   └── milestone-panel/         # Panneau latéral : issues du milestone en cours par phase
+│   ├── milestone-panel/         # Panneau latéral : issues du milestone en cours par phase
+│   └── usage-panel/             # Panneau latéral : consommation du compte Claude (session, semaine, par modèle)
 │
 ├── commands/                    # Commandes slash
 │   ├── start-session.md
@@ -674,6 +675,16 @@ Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) 
 le panneau liste les milestones ouverts avec leur avancement, les milestones sans version (`vX.0.x`, `vx.x.x`) en dernier, puis par progression décroissante puis par version croissante, une ligne par milestone (`barre  %  fermées/total  titre`) ; l'heure de mise à jour est sur la ligne de titre. Il se rafraîchit 10 s après chaque
 `gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),
 puis toutes les minutes, après toute commande Bash et après chaque délégation du team-leader (`SendMessage`, `Agent`). Délais réglables via la config du mod (`propagationDelaySec`, `refreshIntervalSec`). Nécessite `gh`.
+
+### Panneau consommation (mod)
+
+Le mod `usage-panel` affiche dans un panneau « Consommation » (ouvert au démarrage à partir de 144 colonnes ; sinon `/usage-panel`)
+les fenêtres de quota du compte Claude telles que l'API les rapporte à chaque réponse : **session actuelle** (5 h), **cette semaine**
+(7 j) et les limites hebdomadaires distinctes par modèle (ex. « Fable cette semaine »), chacune avec sa barre, son pourcentage
+et son heure de réinitialisation (« à 15:00 », « demain 12:00 », « le mercredi 12:00 », « dans 42 min »). Barre bleue, orange
+au-delà du seuil configurable (`warnPercent`, 70 % par défaut), rouge à partir de 90 %. Le coût de la session (USD) et l'heure de
+mise à jour sont en pied. Les valeurs sont poussées par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point ;
+sans abonnement (clé API), le panneau l'indique. Mêmes chiffres que `/usage` et la ligne de statut.
 
 ### Validation
 

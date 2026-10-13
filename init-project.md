@@ -211,7 +211,7 @@ for src in TEMPLATE_claude/commands/context/*.md; do
   echo "  ✓ $dest"
 done
 
-# Mods Claude Code (panneau milestone…) : chargés automatiquement depuis .claude/skills/<mod>/.
+# Mods Claude Code (panneaux milestone, consommation…) : chargés automatiquement depuis .claude/skills/<mod>/.
 # Copie complète, générée — gitignorée comme le reste des fichiers template.
 for src in TEMPLATE_claude/mods/*/; do
   dest=".claude/skills/$(basename $src)"
