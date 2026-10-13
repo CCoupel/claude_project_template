@@ -31,6 +31,8 @@ export type Usage = {
   source: 'account' | 'headers' | null
   /** Dernière mesure reçue (ms), 0 avant la première. */
   updatedAt: number
+  /** Dernier échec de lecture de l'endpoint du compte (les valeurs affichées datent alors de la lecture précédente), null sinon. */
+  error: string | null
 }
 
 declare module 'claude-code' {
