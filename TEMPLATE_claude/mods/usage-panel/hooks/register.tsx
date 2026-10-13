@@ -27,10 +27,17 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
+  // /usage-panel = reload : état remis à zéro, panneau rouvert, mesure relue (attendue), redessin forcé.
   on('command.run', { command: 'usage-panel' }, async $ => {
+    await update($, view, () => empty)
     await $.ui.open({ id: PANE, title: TITLE, rows: 10 })
-    void refresh($)
-    return { text: 'Panneau de consommation ouvert.' }
+    await refresh($)
+    $.ui.invalidate('ui.render')
+    const v = await read($, view)
+    if (v.windows.length === 0) return { text: 'Panneau de consommation rechargé : aucune limite rapportée.' }
+    const now = await $.clock.now()
+    const lines = v.windows.map(w => `${w.label} : ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || 'réinitialisation inconnue'})`)
+    return { text: `Panneau de consommation rechargé.\n${lines.join('\n')}` }
   })
 
   // Mesure poussée par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point.

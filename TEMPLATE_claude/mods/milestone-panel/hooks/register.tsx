@@ -88,11 +88,24 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
+  // /milestone-panel = reload : état remis à zéro, panneau rouvert, GitHub relu (attendu), redessin forcé.
   on('command.run', { command: 'milestone-panel' }, async $ => {
     if (isTeammate) return { text: 'Panneau réservé au team-leader.' }
+    pending?.cancel()
+    pending = null
+    expected = []
+    retries = 0
+    lastRefreshAt = 0
+    await update($, view, () => empty)
     await $.ui.open({ id: PANE, title: 'Milestone' })
-    void refresh($)
-    return { text: 'Panneau milestone ouvert.' }
+    await refresh($)
+    $.ui.invalidate('ui.render')
+    const v = await read($, view)
+    if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error}` }
+    const what = v.current
+      ? `milestone ${v.current}${v.isReleasing ? ' (publication)' : ''}, ${v.issues.length} issue(s) ouverte(s)`
+      : `${v.milestones.length} milestone(s) ouvert(s), aucun en cours`
+    return { text: `Panneau milestone rechargé : ${what}.` }
   })
 
   // Les labels de phase sont posés par le teamleader via `gh issue edit` (GITHUB.md §9) :
