@@ -11,6 +11,8 @@ const view = atom({ plugin: 'usage-panel', key: 'view' } as const, empty)
 
 let isTeammate = false
 let lastShown = ''
+let warnPercent = 70
+let timeoutMs = 8_000
 
 async function detectTeammate($: any) {
   const env = await Promise.all([
@@ -34,26 +36,26 @@ export function toastLine(v: View, now: number, warnPercent: number): string {
     .join(' · ')
 }
 
+async function show($: any, isForced: boolean) {
+  const v = await read($, view)
+  if (v.windows.length === 0) return false
+  const line = toastLine(v, await $.clock.now(), warnPercent)
+  // Sans changement visible (même ligne, à la minute près), pas de nouveau toast — sauf sur demande.
+  if (!isForced && line === lastShown) return false
+  lastShown = line
+  $.ui.toast(line, { timeoutMs })
+  return true
+}
+
+async function refresh($: any) {
+  const u = await $.session.usage()
+  const now = await $.clock.now()
+  await update($, view, () => buildView(u.rateLimits ?? [], u.cost?.usd ?? null, now))
+}
+
 export const register: Register = (on, options) => {
-  const warnPercent = Number((options as any)?.userConfig?.warnPercent ?? 70)
-  const timeoutMs = Math.max(1, Number((options as any)?.userConfig?.toastSec ?? 8)) * 1000
-
-  async function show($: any, isForced: boolean) {
-    const v = await read($, view)
-    if (v.windows.length === 0) return false
-    const line = toastLine(v, await $.clock.now(), warnPercent)
-    // Sans changement visible (même ligne, à la minute près), pas de nouveau toast — sauf sur demande.
-    if (!isForced && line === lastShown) return false
-    lastShown = line
-    $.ui.toast(line, { timeoutMs })
-    return true
-  }
-
-  async function refresh($: any) {
-    const u = await $.session.usage()
-    const now = await $.clock.now()
-    await update($, view, () => buildView(u.rateLimits ?? [], u.cost?.usd ?? null, now))
-  }
+  warnPercent = Number((options as any)?.userConfig?.warnPercent ?? 70)
+  timeoutMs = Math.max(1, Number((options as any)?.userConfig?.toastSec ?? 8)) * 1000
 
   on('session.start', async ($, e, next) => {
     // Réservé au team-leader : une session de teammate n'affiche rien.
