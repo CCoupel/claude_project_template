@@ -669,7 +669,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 
 ### Panneau milestone (mod)
 
-Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/milestone-panel`, qui à tout moment **recharge** le panneau : état remis à zéro, relecture GitHub immédiate, redessin, et résumé en réponse), **uniquement dans la session du team-leader** (les sessions de teammates ne l'ouvrent pas)
+Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/panel-milestone`, qui à tout moment **recharge** le panneau : état remis à zéro, relecture GitHub immédiate, redessin, et résumé en réponse), **uniquement dans la session du team-leader** (les sessions de teammates ne l'ouvrent pas)
 les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PRET`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge. Le titre du milestone est suivi d'une barre d'avancement segmentée dans l'ordre de développement (fermées en violet, puis chaque phase présente — `DONE` compris — à la couleur de son label, puis non démarrées ; le pourcentage compte fermées + `DONE`), les issues sont regroupées par lot (label `LOT-N`, GITHUB.md §9.11 ; les sous-lots `LOT-N.M` sont regroupés sous le lot parent, sans distinction) quand le milestone en porte, lots triés par avancement (phase moyenne de leurs issues : un lot entièrement `DONE` passe avant un lot `DONE` + `EN REVIEW` ; puis phase la plus avancée, puis numéro), issues sans lot en dernier, chaque phase reprend la couleur de son label GitHub et s'affiche en une ligne par issue (`LOT  PHASE : #n titre`, libellés alignés, écrits uniquement sur la première ligne de leur groupe) et les lignes s'adaptent à la largeur du panneau.
 Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) qui porte une issue en phase ; sinon un milestone encore ouvert dont toutes les issues sont fermées (CI verte) reste le milestone en cours, signalé « — publication » pendant la publication/le déploiement PROD, jusqu'à sa clôture ; à défaut,
 le panneau liste les milestones ouverts avec leur avancement, les milestones sans version (`vX.0.x`, `vx.x.x`) en dernier, puis par progression décroissante puis par version croissante, une ligne par milestone (`barre  %  fermées/total  titre`) ; l'heure de mise à jour est sur la ligne de titre. Il se rafraîchit 10 s après chaque
@@ -678,7 +678,7 @@ puis toutes les minutes, après toute commande Bash et après chaque délégatio
 
 ### Panneau consommation (mod)
 
-Le mod `usage-panel` affiche dans un panneau « Consommation » (ouvert au démarrage à partir de 144 colonnes ; sinon `/usage-panel`, qui à tout moment **recharge** le panneau et répond avec les valeurs relues)
+Le mod `usage-panel` affiche dans un panneau « Consommation » (ouvert au démarrage à partir de 144 colonnes ; sinon `/panel-usage`, qui à tout moment **recharge** le panneau et répond avec les valeurs relues)
 les fenêtres de quota du compte Claude telles que l'API les rapporte à chaque réponse : **session actuelle** (5 h), **cette semaine**
 (7 j) et les limites hebdomadaires distinctes par modèle (ex. « Fable cette semaine »), chacune avec sa barre, son pourcentage
 et son heure de réinitialisation (« à 15:00 », « demain 12:00 », « le mercredi 12:00 », « dans 42 min »). Barre bleue, orange

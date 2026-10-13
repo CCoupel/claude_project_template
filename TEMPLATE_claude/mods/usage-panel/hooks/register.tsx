@@ -19,7 +19,7 @@ export const register: Register = (on, options) => {
   const warnPercent = Number((options as any)?.userConfig?.warnPercent ?? 70)
 
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'usage-panel', description: 'Ouvre le panneau de consommation du compte Claude' })
+    await $.command.register({ name: 'panel-usage', description: 'Ouvre ou recharge le panneau de consommation du compte Claude' })
     void $.ui.open({ id: PANE, title: TITLE, rows: 10 })
     void refresh($)
     // Les heures de réinitialisation avancent (« dans N min ») même sans nouvelle mesure.
@@ -27,8 +27,8 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  // /usage-panel = reload : état remis à zéro, panneau rouvert, mesure relue (attendue), redessin forcé.
-  on('command.run', { command: 'usage-panel' }, async $ => {
+  // /panel-usage = reload : état remis à zéro, panneau rouvert, mesure relue (attendue), redessin forcé.
+  on('command.run', { command: 'panel-usage' }, async $ => {
     await update($, view, () => empty)
     await $.ui.open({ id: PANE, title: TITLE, rows: 10 })
     await refresh($)

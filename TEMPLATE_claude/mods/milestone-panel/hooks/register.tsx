@@ -79,8 +79,8 @@ export const register: Register = (on, options) => {
     isTeammate = await detectTeammate($).catch(() => false)
     if (isTeammate) return next(e)
     await $.command.register({
-      name: 'milestone-panel',
-      description: 'Ouvre le panneau des issues du milestone en cours',
+      name: 'panel-milestone',
+      description: 'Ouvre ou recharge le panneau des issues du milestone en cours',
     })
     void $.ui.open({ id: PANE, title: 'Milestone' })
     void refresh($)
@@ -88,8 +88,8 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  // /milestone-panel = reload : état remis à zéro, panneau rouvert, GitHub relu (attendu), redessin forcé.
-  on('command.run', { command: 'milestone-panel' }, async $ => {
+  // /panel-milestone = reload : état remis à zéro, panneau rouvert, GitHub relu (attendu), redessin forcé.
+  on('command.run', { command: 'panel-milestone' }, async $ => {
     if (isTeammate) return { text: 'Panneau réservé au team-leader.' }
     pending?.cancel()
     pending = null
