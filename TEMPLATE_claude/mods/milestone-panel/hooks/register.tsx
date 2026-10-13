@@ -197,7 +197,11 @@ export const register: Register = (on, options) => {
     const v = await read($, view)
     const u = await read($, usage)
     const now = await $.clock.now()
-    const columns = (e.viewport as { columns?: number } | undefined)?.columns ?? 40
+    // Largeur du corps du panneau (hors cadre), pas celle du terminal : la barre s'adapte à la fenêtre.
+    const columns =
+      (e.props as { bodyColumns?: number } | undefined)?.bodyColumns ??
+      (e.viewport as { columns?: number } | undefined)?.columns ??
+      40
     // Le texte long est tronqué par le panneau lui-même, à sa vraie largeur.
     const T = (props: Record<string, unknown>, text: string) => (
       <Text wrap="truncate-end" {...props}>{text}</Text>
@@ -207,7 +211,7 @@ export const register: Register = (on, options) => {
     // La barre prend la largeur disponible (libellé + « 100 % » + réinitialisation la plus longue réservés).
     const USAGE_W = Math.max(...u.windows.map(w => w.label.length), 0)
     const RESET_W = Math.max(...u.windows.map(w => formatReset(w.resetsAt, now).length), 0)
-    const BAR_W = Math.max(10, Math.min(60, columns - USAGE_W - RESET_W - 12))
+    const BAR_W = Math.max(8, Math.min(40, columns - USAGE_W - RESET_W - 10))
     const usageBlock = u.windows.length > 0 && (
       <Box flexDirection="column" marginBottom={1}>
         {u.windows.map(w => {
