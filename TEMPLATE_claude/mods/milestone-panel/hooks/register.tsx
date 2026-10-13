@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage, View } from '../types'
-import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand, usageBar, usageColor, usageLabel } from './lib'
+import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -10,7 +10,10 @@ const RETRY_MS = 15_000
 
 const empty: View = { current: null, issues: [], milestones: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
 const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
-const noUsage: Usage = { windows: [], updatedAt: 0 }
+const noUsage: Usage = { windows: [], source: null, updatedAt: 0 }
+const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
+const USAGE_THROTTLE_MS = 20_000
+let lastUsageAt = 0
 const usage = atom({ plugin: 'milestone-panel', key: 'usage' } as const, noUsage)
 
 let pending: { cancel: () => void } | null = null
@@ -36,11 +39,29 @@ async function detectTeammate($: any) {
   return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
 }
 
-// Consommation du compte (fenêtres de quota de la dernière réponse API) : relue au démarrage, à chaque reload et
-// toutes les minutes (le compte à rebours avance) ; poussée par le moteur à chaque mesure (session.measure).
-async function refreshUsage($: any) {
-  const u = await $.session.usage()
+// Consommation du compte : d'abord l'endpoint d'utilisation du compte (même source que la page « Utilisation »
+// du site — session, semaine, et limites hebdomadaires par modèle comme Fable), via le credential tenu par
+// l'hôte ($.session.authorize → $.http.fetch, le secret ne transite jamais par le mod) ; à défaut (clé API,
+// passerelle, hors ligne), les en-têtes de la dernière réponse ($.session.usage().rateLimits).
+// Relue au démarrage, à chaque reload, toutes les minutes, et après chaque mesure du moteur (20 s mini entre deux).
+async function refreshUsage($: any, isForced = false) {
   const now = await $.clock.now()
+  if (!isForced && now - lastUsageAt < USAGE_THROTTLE_MS) return
+  lastUsageAt = now
+  try {
+    const auth = await $.session.authorize()
+    if (auth?.kind === 'bearer') {
+      const res = await $.http.fetch(USAGE_URL, { auth: auth.handle, headers: { 'anthropic-beta': 'oauth-2025-04-20', Accept: 'application/json' } })
+      const parsed = res.ok ? parseAccountUsage(JSON.parse(res.text), now) : null
+      if (parsed && parsed.windows.length > 0) {
+        await update($, usage, () => parsed)
+        return
+      }
+    }
+  } catch {
+    // repli sur les en-têtes ci-dessous
+  }
+  const u = await $.session.usage()
   await update($, usage, () => buildUsage(u.rateLimits ?? [], now))
 }
 
@@ -100,16 +121,15 @@ export const register: Register = (on, options) => {
     })
     void $.ui.open({ id: PANE, title: 'Milestone' })
     void refresh($)
-    void refreshUsage($).catch(() => undefined)
+    void refreshUsage($, true).catch(() => undefined)
     $.clock.every(everyMs, () => void refresh($))
-    $.clock.every(60_000, () => void refreshUsage($).catch(() => undefined))
+    $.clock.every(60_000, () => void refreshUsage($, true).catch(() => undefined))
     return next(e)
   })
 
+  // Mesure poussée par le moteur après chaque tour : relecture (throttlée) de la consommation.
   on('session.measure', async ($, e, next) => {
-    if (isTeammate) return next(e)
-    const now = await $.clock.now()
-    await update($, usage, () => buildUsage(e.rateLimits ?? [], now))
+    if (!isTeammate) void refreshUsage($).catch(() => undefined)
     return next(e)
   })
 
@@ -123,14 +143,14 @@ export const register: Register = (on, options) => {
     lastRefreshAt = 0
     await update($, view, () => empty)
     await $.ui.open({ id: PANE, title: 'Milestone' })
-    await Promise.all([refresh($), refreshUsage($).catch(() => undefined)])
+    await Promise.all([refresh($), refreshUsage($, true).catch(() => undefined)])
     $.ui.invalidate('ui.render')
     const v = await read($, view)
     const u = await read($, usage)
     const now = await $.clock.now()
     const conso = u.windows.length === 0
       ? 'consommation : aucune limite rapportée'
-      : `consommation : ${u.windows.map(w => `${usageLabel(w.kind)} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, fenêtre API \`${w.kind}\`)`).join(', ')}`
+      : `consommation (${u.source === 'account' ? 'compte' : 'en-têtes'}) : ${u.windows.map(w => `${w.label} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, \`${w.kind}\`)`).join(', ')}`
     if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error} ; ${conso}.` }
     const what = v.current
       ? `milestone ${v.current}${v.isReleasing ? ' (publication)' : ''}, ${v.issues.length} issue(s) ouverte(s)`
@@ -184,16 +204,19 @@ export const register: Register = (on, options) => {
     )
 
     // Premières lignes : consommation du compte, une ligne par fenêtre de quota « Libellé  barre  %  réinit. ».
-    const USAGE_W = Math.max(...u.windows.map(w => usageLabel(w.kind).length), 0)
+    // La barre prend la largeur disponible (libellé + « 100 % » + réinitialisation la plus longue réservés).
+    const USAGE_W = Math.max(...u.windows.map(w => w.label.length), 0)
+    const RESET_W = Math.max(...u.windows.map(w => formatReset(w.resetsAt, now).length), 0)
+    const BAR_W = Math.max(10, Math.min(60, columns - USAGE_W - RESET_W - 12))
     const usageBlock = u.windows.length > 0 && (
       <Box flexDirection="column" marginBottom={1}>
         {u.windows.map(w => {
-          const c = usageColor(w.percentUsed, warnPercent)
-          const b = usageBar(w.percentUsed, 10)
+          const c = usageColor(w.percentUsed, warnPercent, w.severity)
+          const b = usageBar(w.percentUsed, BAR_W)
           const reset = formatReset(w.resetsAt, now)
           return (
             <Text wrap="truncate-end">
-              <Text bold>{usageLabel(w.kind).padEnd(USAGE_W + 1)}</Text>
+              <Text bold>{w.label.padEnd(USAGE_W + 1)}</Text>
               <Text color={c}>{'█'.repeat(b.filled)}</Text>
               <Text dimColor>{'░'.repeat(b.empty)}</Text>
               <Text bold color={c}>{` ${String(Math.round(w.percentUsed)).padStart(3)} %`}</Text>

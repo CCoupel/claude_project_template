@@ -232,11 +232,54 @@ export function usageRank(kind: string): number {
   return 4
 }
 
+/** Fenêtres des en-têtes de la dernière réponse API (`$.session.usage().rateLimits`) : repli sans endpoint compte. */
 export function buildUsage(limits: RateLimit[], now: number): Usage {
   const windows = limits
-    .map(l => ({ kind: l.kind, percentUsed: Math.max(0, l.percentUsed), resetsAt: l.resetsAt ?? null }))
+    .map(l => ({ kind: l.kind, label: usageLabel(l.kind), percentUsed: Math.max(0, l.percentUsed), resetsAt: l.resetsAt ?? null, severity: null }))
     .sort((a, b) => usageRank(a.kind) - usageRank(b.kind) || a.kind.localeCompare(b.kind))
-  return { windows, updatedAt: now }
+  return { windows, source: 'headers', updatedAt: now }
+}
+
+/** Une entrée de `limits[]` de l'endpoint d'utilisation du compte (`/api/oauth/usage`). */
+export type AccountLimit = {
+  kind: string
+  group?: string | null
+  percent: number
+  severity?: string | null
+  resets_at?: string | null
+  scope?: { model?: { id?: string | null; display_name?: string | null } | null; surface?: string | null } | null
+}
+
+const ACCOUNT_RANK: Record<string, number> = { session: 0, weekly_all: 1, weekly_scoped: 2 }
+
+/** Libellé d'une limite du compte : « Session », « Semaine », « Fable sem. » (modèle), « <surface> sem. ». */
+export function accountLabel(l: AccountLimit): string {
+  if (l.kind === 'session') return 'Session'
+  if (l.kind === 'weekly_all') return 'Semaine'
+  const scope = l.scope?.model?.display_name ?? l.scope?.model?.id ?? l.scope?.surface ?? null
+  if (l.kind === 'weekly_scoped' || l.group === 'weekly') return scope ? `${scope} sem.` : 'Semaine (autre)'
+  return scope ? `${scope} ${l.kind}` : l.kind
+}
+
+/**
+ * Fenêtres de l'endpoint d'utilisation du compte — la même source que la page « Utilisation » du site :
+ * session, semaine toutes limites, et les limites hebdomadaires distinctes par modèle (ex. Fable).
+ * Retourne null si la réponse n'a pas de tableau `limits` exploitable.
+ */
+export function parseAccountUsage(json: unknown, now: number): Usage | null {
+  const limits = (json as { limits?: unknown } | null)?.limits
+  if (!Array.isArray(limits)) return null
+  const windows = (limits as AccountLimit[])
+    .filter(l => l && typeof l.kind === 'string' && typeof l.percent === 'number')
+    .map(l => ({
+      kind: l.kind,
+      label: accountLabel(l),
+      percentUsed: Math.max(0, l.percent),
+      resetsAt: l.resets_at ?? null,
+      severity: l.severity ?? null,
+    }))
+    .sort((a, b) => (ACCOUNT_RANK[a.kind] ?? 9) - (ACCOUNT_RANK[b.kind] ?? 9) || a.label.localeCompare(b.label))
+  return { windows, source: 'account', updatedAt: now }
 }
 
 const two = (n: number) => String(n).padStart(2, '0')
@@ -259,9 +302,9 @@ export function formatReset(resetsAt: string | null, now: number): string {
 }
 
 /** Couleur de la barre de consommation : bleu, orange au-delà du seuil, rouge à partir de 90 %. */
-export function usageColor(percent: number, warnPercent: number): string {
-  if (percent >= 90) return 'red'
-  if (percent >= warnPercent) return 'yellow'
+export function usageColor(percent: number, warnPercent: number, severity: string | null = null): string {
+  if (severity === 'critical' || percent >= 90) return 'red'
+  if (severity === 'warning' || percent >= warnPercent) return 'yellow'
   return 'blue'
 }
 

@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseGhIssueCommand, usageBar, usageColor, usageLabel } from './lib'
+import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor, usageLabel } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -168,7 +168,8 @@ test('consommation : libellés, ordre, barre et couleur', () => {
     ],
     1,
   )
-  expect(u.windows.map(w => usageLabel(w.kind))).toEqual(['Session', 'Semaine', 'Fable sem.'])
+  expect(u.windows.map(w => w.label)).toEqual(['Session', 'Semaine', 'Fable sem.'])
+  expect(u.source).toBe('headers')
   expect(usageLabel('spend_limit')).toBe('Dépense')
   expect(usageBar(50, 10)).toEqual({ filled: 5, empty: 5 })
   expect([usageColor(53, 70), usageColor(75, 70), usageColor(95, 70)]).toEqual(['blue', 'yellow', 'red'])
@@ -189,4 +190,22 @@ test('session de teammate : ancêtres du processus, shells intermédiaires ignor
   expect(isTeammateSession(['agent-1', undefined, undefined], '')).toBe(true)
   expect(isTeammateSession(none, '/bin/bash -c source x\n/home/u/claude/versions/2.1 --agent-id a@t --agent-name dev --team-name t\ntmux')).toBe(true)
   expect(isTeammateSession(none, 'sh -c grep -- --agent-name foo\nclaude --dangerously-skip-permissions')).toBe(false)
+})
+
+test('consommation : endpoint du compte (session, semaine, limite par modèle), gravité', () => {
+  const json = {
+    five_hour: { utilization: 72 },
+    limits: [
+      { kind: 'weekly_scoped', group: 'weekly', percent: 21, severity: 'normal', resets_at: '2026-10-14T10:00:00+00:00', scope: { model: { id: null, display_name: 'Fable' }, surface: null }, is_active: false },
+      { kind: 'weekly_all', group: 'weekly', percent: 97, severity: 'critical', resets_at: '2026-10-14T10:00:00+00:00', scope: null, is_active: true },
+      { kind: 'session', group: 'session', percent: 72, severity: 'normal', resets_at: '2026-10-13T13:00:00+00:00', scope: null, is_active: false },
+    ],
+  }
+  const u = parseAccountUsage(json, 1)
+  expect(u?.source).toBe('account')
+  expect(u?.windows.map(w => `${w.label} ${w.percentUsed}`)).toEqual(['Session 72', 'Semaine 97', 'Fable sem. 21'])
+  expect(usageColor(97, 70, 'critical')).toBe('red')
+  expect(usageColor(21, 70, 'normal')).toBe('blue')
+  expect(parseAccountUsage({ five_hour: {} }, 1)).toBe(null)
+  expect(parseAccountUsage(null, 1)).toBe(null)
 })

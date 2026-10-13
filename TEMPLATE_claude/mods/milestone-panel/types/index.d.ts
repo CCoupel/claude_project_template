@@ -14,15 +14,21 @@ export type View = {
 }
 
 export type UsageWindow = {
-  /** Fenêtre telle que rapportée par l'API (`five_hour`, `seven_day`, `spend_limit`…). */
+  /** Fenêtre telle que rapportée (`session`, `weekly_all`, `weekly_scoped` ; ou `five_hour`, `seven_day` via les en-têtes). */
   kind: string
+  /** Libellé court affiché : « Session », « Semaine », « Fable sem. »… */
+  label: string
   /** 0 à 100 (au-delà sur un plafond de dépense dépassé). */
   percentUsed: number
   /** Réinitialisation, ISO 8601 ; absent quand l'API ne la donne pas. */
   resetsAt: string | null
+  /** Gravité rapportée par l'endpoint d'utilisation (`normal`, `warning`, `critical`), null via les en-têtes. */
+  severity: string | null
 }
 export type Usage = {
   windows: UsageWindow[]
+  /** `account` : endpoint d'utilisation du compte (toutes les limites, dont par modèle) ; `headers` : en-têtes de la dernière réponse. */
+  source: 'account' | 'headers' | null
   /** Dernière mesure reçue (ms), 0 avant la première. */
   updatedAt: number
 }
