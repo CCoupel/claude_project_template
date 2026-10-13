@@ -145,8 +145,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 ├── gitignore-for-projects       # Copié en .gitignore par /init-project
 │
 ├── mods/                        # Mods Claude Code, déployés dans .claude/skills/<mod>/
-│   ├── milestone-panel/         # Panneau latéral : issues du milestone en cours par phase
-│   └── usage-panel/             # Ligne de statut : consommation du compte Claude (session, semaine, par modèle, réinitialisation)
+│   └── milestone-panel/         # Panneau latéral : consommation du compte Claude + issues du milestone en cours par phase
 │
 ├── commands/                    # Commandes slash
 │   ├── start-session.md
@@ -669,24 +668,12 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 
 ### Panneau milestone (mod)
 
-Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/panel-milestone`, qui à tout moment **recharge** le panneau : état remis à zéro, relecture GitHub immédiate, redessin, et résumé en réponse), **uniquement dans la session du team-leader** (les sessions de teammates ne l'ouvrent pas)
+Le mod `milestone-panel` affiche à droite du terminal (à partir de 144 colonnes ; sinon `/panel-milestone`, qui à tout moment **recharge** le panneau : état remis à zéro, relecture GitHub et consommation immédiates, redessin, et résumé en réponse), **uniquement dans la session du team-leader** (les sessions de teammates ne l'ouvrent pas — détection par les options `--agent-name`/`--team-name` d'un processus ancêtre, en remontant toute la chaîne), **en tête la consommation du compte Claude** — une ligne par fenêtre de quota rapportée par l'API (« Session » 5 h, « Semaine » 7 j, limites par modèle si l'API les rapporte), avec barre, pourcentage et réinitialisation en heure locale (« 15:00 », « demain 12:00 », « mer. 12:00 », « 42 min ») ; barre bleue, orange au-delà de `warnPercent` (70 % par défaut), rouge à partir de 90 % ; mêmes chiffres que `/usage`, poussés par le moteur à chaque mesure et relus toutes les minutes — puis
 les issues **ouvertes** du milestone en cours, groupées par label de phase, du plus avancé (`DONE`, `EN QA`, `EN REVIEW`, `EN COURS`, `PRET`, `PLANNING`) au backlog sans phase en dernier, `BLOQUE` en rouge. Le titre du milestone est suivi d'une barre d'avancement segmentée dans l'ordre de développement (fermées en violet, puis chaque phase présente — `DONE` compris — à la couleur de son label, puis non démarrées ; le pourcentage compte fermées + `DONE`), les issues sont regroupées par lot (label `LOT-N`, GITHUB.md §9.11 ; les sous-lots `LOT-N.M` sont regroupés sous le lot parent, sans distinction) quand le milestone en porte, lots triés par avancement (phase moyenne de leurs issues : un lot entièrement `DONE` passe avant un lot `DONE` + `EN REVIEW` ; puis phase la plus avancée, puis numéro), issues sans lot en dernier, chaque phase reprend la couleur de son label GitHub et s'affiche en une ligne par issue (`LOT  PHASE : #n titre`, libellés alignés, écrits uniquement sur la première ligne de leur groupe) et les lignes s'adaptent à la largeur du panneau.
 Le milestone en cours est le premier milestone ouvert (échéance, puis SemVer) qui porte une issue en phase ; sinon un milestone encore ouvert dont toutes les issues sont fermées (CI verte) reste le milestone en cours, signalé « — publication » pendant la publication/le déploiement PROD, jusqu'à sa clôture ; à défaut,
 le panneau liste les milestones ouverts avec leur avancement, les milestones sans version (`vX.0.x`, `vx.x.x`) en dernier, puis par progression décroissante puis par version croissante, une ligne par milestone (`barre  %  fermées/total  titre`) ; l'heure de mise à jour est sur la ligne de titre. Il se rafraîchit 10 s après chaque
 `gh issue edit/close/reopen/create` du teamleader (délai de propagation GitHub, relecture unique de vérification),
 puis toutes les minutes, après toute commande Bash et après chaque délégation du team-leader (`SendMessage`, `Agent`). Délais réglables via la config du mod (`propagationDelaySec`, `refreshIntervalSec`). Nécessite `gh`.
-
-### Ligne de consommation (mod)
-
-Le mod `usage-panel` **épingle sous le prompt** du team-leader (jamais dans une session de teammate) une ligne de statut
-permanente avec les fenêtres de quota du compte Claude telles que l'API les rapporte : **Session** (5 h), **Semaine** (7 j)
-et les limites hebdomadaires distinctes par modèle (ex. « Fable sem. »), avec pourcentage et heure de réinitialisation
-(« 15:00 », « demain 12:00 », « mer. 12:00 », « 42 min ») et sa barre de progression — `Session █████░░░░░ 53 % (15:00)  ·  Semaine █████████▌ 95 % (mer. 12:00)  ·  …`.
-Marque ⚠ au-delà du seuil configurable (`warnPercent`, 70 % par défaut), 🔴 à partir de 90 % ; un **toast** signale en plus
-chaque franchissement de seuil vers le haut (durée `toastSec`, 8 s). La ligne est mise à jour à chaque mesure poussée par le
-moteur (après chaque tour, et dès qu'une fenêtre bouge d'un point) et toutes les minutes. `/panel-usage` relit, affiche le
-toast et répond avec le détail (libellés complets). Mêmes chiffres que `/usage` ; sans abonnement (clé API), rien n'est
-affiché. Le panneau milestone garde seul la place à droite.
 
 ### Validation
 
