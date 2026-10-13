@@ -1,7 +1,7 @@
 {
   "name": "milestone-panel",
   "version": "0.1.0",
-  "description": "Panneau latéral : issues ouvertes du milestone en cours groupées par phase, ou avancement des milestones.",
+  "description": "Panneau latéral : consommation du compte Claude en tête, puis issues ouvertes du milestone en cours groupées par phase, ou avancement des milestones.",
   "types": "./types/index.d.ts",
   "userConfig": {
     "propagationDelaySec": {
@@ -15,6 +15,12 @@
       "title": "Rafraîchissement périodique (s)",
       "description": "Relecture de sécurité, indépendante des événements.",
       "default": 60
+    },
+    "warnPercent": {
+      "type": "number",
+      "title": "Seuil d'alerte consommation (%)",
+      "description": "Au-delà, la barre de consommation passe en orange ; en rouge à partir de 90 %.",
+      "default": 70
     }
   }
 }
