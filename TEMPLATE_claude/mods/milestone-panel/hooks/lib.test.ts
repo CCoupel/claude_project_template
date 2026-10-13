@@ -143,3 +143,18 @@ test('milestones sans version (vX.0.x, vx.x.x) en dernier, même avec une progre
   )
   expect(v.milestones.map(x => x.title)).toEqual(['v11.2.2', 'v11.3 — Ambiance', 'vX.0.x — DNS', 'vx.x.x — Scoring'])
 })
+
+test('milestone dont toutes les issues sont fermées mais encore ouvert : en cours (publication)', () => {
+  const m = (title: string, open: number, closed: number) => ({ title, due_on: null, open_issues: open, closed_issues: closed })
+  const v = buildView([m('v11.2.1', 0, 8), m('v11.3', 3, 0)], [], 1)
+  expect(v.current).toBe('v11.2.1')
+  expect(v.isReleasing).toBe(true)
+  const w = buildView(
+    [m('v11.2.1', 0, 8), m('v11.3', 3, 0)],
+    [{ number: 1, title: 'a', labels: lab('EN COURS'), milestone: { title: 'v11.3' } }],
+    1,
+  )
+  expect(w.current).toBe('v11.3')
+  expect(w.isReleasing).toBe(false)
+  expect(buildView([m('v11.3', 3, 0), m('v12', 0, 0)], [], 1).current).toBe(null)
+})

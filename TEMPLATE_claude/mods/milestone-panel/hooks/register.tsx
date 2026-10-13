@@ -8,7 +8,7 @@ import type { Expectation } from './lib'
 const PANE = 'milestone-panel'
 const RETRY_MS = 15_000
 
-const empty: View = { current: null, issues: [], milestones: [], colors: {}, updatedAt: 0, error: null }
+const empty: View = { current: null, issues: [], milestones: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
 const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
 
 let pending: { cancel: () => void } | null = null
@@ -205,6 +205,7 @@ export const register: Register = (on, options) => {
           <Box flexDirection="column">
             <Text wrap="truncate-end">
               <Text bold color="cyan">{`Milestone ${v.current}`}</Text>
+              {v.isReleasing && <Text bold color="yellow">{' — publication'}</Text>}
               <Text dimColor>{maj}</Text>
             </Text>
             {cur && progress(cur.closed, byPhase, v.issues.length - startedCount)}

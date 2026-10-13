@@ -3,6 +3,8 @@ export type MilestoneRow = { title: string; open: number; closed: number }
 export type View = {
   /** Milestone en cours, ou null quand aucun n'a d'issue en phase. */
   current: string | null
+  /** Vrai quand le milestone en cours n'a plus d'issue ouverte : publication / déploiement PROD en cours. */
+  isReleasing: boolean
   issues: Issue[]
   milestones: MilestoneRow[]
   /** Couleur GitHub (hex sans #) de chaque label du dépôt. */

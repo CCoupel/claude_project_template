@@ -57,6 +57,8 @@ const phaseOf = (i: RawIssue) =>
 /**
  * Milestone en cours = le premier milestone ouvert (échéance, puis SemVer)
  * qui porte au moins une issue ouverte avec un label de phase.
+ * À défaut : un milestone encore ouvert dont toutes les issues sont fermées (CI verte) est en publication /
+ * déploiement PROD — il reste le milestone en cours (`isReleasing`), jusqu'à sa clôture.
  */
 export const buildView = (
   rawMilestones: RawMilestone[],
@@ -68,7 +70,11 @@ export const buildView = (
   const started = new Set(
     rawIssues.filter(i => i.milestone && phaseOf(i)).map(i => i.milestone!.title),
   )
-  const current = sorted.find(m => started.has(m.title))?.title ?? null
+  const working = sorted.find(m => started.has(m.title))?.title ?? null
+  const releasing = working
+    ? null
+    : (sorted.find(m => m.open_issues === 0 && m.closed_issues > 0)?.title ?? null)
+  const current = working ?? releasing
   const issues: Issue[] = current
     ? rawIssues
         .filter(i => i.milestone?.title === current)
@@ -100,7 +106,7 @@ export const buildView = (
       open: m.open_issues,
       closed: m.closed_issues,
     }))
-  return { current, issues, milestones, colors, updatedAt: now, error: null }
+  return { current, isReleasing: releasing !== null, issues, milestones, colors, updatedAt: now, error: null }
 }
 
 export const groupByPhase = (issues: Issue[]) =>
