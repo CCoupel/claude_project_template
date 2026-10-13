@@ -1,7 +1,7 @@
 {
   "name": "usage-panel",
   "version": "0.1.0",
-  "description": "Panneau latéral : consommation du compte Claude (session en cours, semaine, limites par modèle) avec l'heure de réinitialisation.",
+  "description": "Bandeau au-dessus du prompt : consommation du compte Claude (session en cours, semaine, limites par modèle) avec l'heure de réinitialisation.",
   "types": "./types/index.d.ts",
   "userConfig": {
     "warnPercent": {

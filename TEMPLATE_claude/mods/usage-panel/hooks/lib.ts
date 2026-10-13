@@ -4,6 +4,7 @@ export type RateLimit = { kind: string; percentUsed: number; resetsAt?: string }
 
 const MODELS: Record<string, string> = { opus: 'Opus', sonnet: 'Sonnet', haiku: 'Haiku', fable: 'Fable', mythos: 'Mythos' }
 const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+const DAYS_SHORT = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.']
 
 /** Libellé français d'une fenêtre de quota, à partir de son `kind`. */
 export function labelOf(kind: string): string {
@@ -13,6 +14,17 @@ export function labelOf(kind: string): string {
   if (k.includes('five_hour') || k.includes('5h')) return prefix ? `${prefix}— session` : 'Session actuelle'
   if (k.includes('seven_day') || k.includes('7d') || k.includes('week')) return prefix ? `${prefix}cette semaine` : 'Cette semaine'
   if (k.includes('spend')) return 'Plafond de dépense'
+  return kind
+}
+
+/** Libellé court pour le bandeau : « Session », « Semaine », « Fable sem. ». */
+export function shortLabelOf(kind: string): string {
+  const k = kind.toLowerCase()
+  const model = Object.keys(MODELS).find(m => k.includes(m))
+  const prefix = model ? `${MODELS[model]} ` : ''
+  if (k.includes('five_hour') || k.includes('5h')) return prefix ? `${prefix}session` : 'Session'
+  if (k.includes('seven_day') || k.includes('7d') || k.includes('week')) return prefix ? `${prefix}sem.` : 'Semaine'
+  if (k.includes('spend')) return 'Dépense'
   return kind
 }
 
@@ -53,6 +65,23 @@ export function formatReset(resetsAt: string | null, now: number): string {
   const isTomorrow = t.getFullYear() === tomorrow.getFullYear() && t.getMonth() === tomorrow.getMonth() && t.getDate() === tomorrow.getDate()
   if (isTomorrow) return `Réinitialisation demain ${hm}`
   return `Réinitialisation le ${DAYS[t.getDay()]} ${hm}`
+}
+
+/** Forme courte de `formatReset` pour le bandeau : « 15:00 », « demain 12:00 », « mer. 12:00 », « 42 min ». */
+export function formatResetShort(resetsAt: string | null, now: number): string {
+  if (!resetsAt) return ''
+  const t = new Date(resetsAt)
+  if (Number.isNaN(t.getTime())) return ''
+  const diffMin = Math.round((t.getTime() - now) / 60_000)
+  if (diffMin <= 0) return 'imminent'
+  if (diffMin < 60) return `${diffMin} min`
+  const d = new Date(now)
+  const hm = `${two(t.getHours())}:${two(t.getMinutes())}`
+  const dayOf = (x: Date) => x.getFullYear() * 10_000 + x.getMonth() * 100 + x.getDate()
+  const tomorrow = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)
+  if (dayOf(t) === dayOf(d)) return hm
+  if (dayOf(t) === dayOf(tomorrow)) return `demain ${hm}`
+  return `${DAYS_SHORT[t.getDay()]} ${hm}`
 }
 
 /** Couleur de la barre selon le seuil d'alerte configuré. */

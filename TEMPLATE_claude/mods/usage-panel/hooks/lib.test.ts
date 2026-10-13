@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { bar, buildView, colorOf, formatReset, isTeammateSession, labelOf } from './lib'
+import { bar, buildView, colorOf, formatReset, formatResetShort, isTeammateSession, labelOf, shortLabelOf } from './lib'
 
 test('libellés et ordre des fenêtres', () => {
   const v = buildView(
@@ -16,6 +16,7 @@ test('libellés et ordre des fenêtres', () => {
   expect(v.costUsd).toBe(1.5)
   expect(labelOf('spend_limit')).toBe('Plafond de dépense')
   expect(labelOf('inconnu')).toBe('inconnu')
+  expect(v.windows.map(w => shortLabelOf(w.kind))).toEqual(['Session', 'Semaine', 'Fable sem.'])
 })
 
 test('heure de réinitialisation : même jour, demain, autre jour, moins d’une heure', () => {
@@ -25,6 +26,10 @@ test('heure de réinitialisation : même jour, demain, autre jour, moins d’une
   expect(formatReset(new Date(2026, 9, 15, 12, 0).toISOString(), now)).toBe('Réinitialisation le jeudi 12:00')
   expect(formatReset(new Date(2026, 9, 13, 12, 12).toISOString(), now)).toBe('Réinitialisation dans 42 min')
   expect(formatReset(null, now)).toBe('')
+  expect(formatResetShort(new Date(2026, 9, 13, 15, 0).toISOString(), now)).toBe('15:00')
+  expect(formatResetShort(new Date(2026, 9, 14, 12, 0).toISOString(), now)).toBe('demain 12:00')
+  expect(formatResetShort(new Date(2026, 9, 15, 12, 0).toISOString(), now)).toBe('jeu. 12:00')
+  expect(formatResetShort(new Date(2026, 9, 13, 12, 12).toISOString(), now)).toBe('42 min')
 })
 
 test('couleur et barre', () => {

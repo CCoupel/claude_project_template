@@ -2,10 +2,11 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { View } from '../types'
-import { bar, buildView, colorOf, formatReset, isTeammateSession } from './lib'
+import { bar, buildView, colorOf, formatReset, formatResetShort, isTeammateSession, shortLabelOf } from './lib'
 
-const PANE = 'usage-panel'
-const TITLE = 'Consommation'
+// Bandeau d'une ligne au-dessus du prompt (AbovePrompt), pas un panneau : il cohabite avec le panneau
+// milestone sans onglet. `/panel-usage` le recharge et répond avec les valeurs relues.
+const BAR_W = 10
 const empty: View = { windows: [], costUsd: null, updatedAt: 0 }
 const view = atom({ plugin: 'usage-panel', key: 'view' } as const, empty)
 
@@ -31,29 +32,27 @@ export const register: Register = (on, options) => {
   const warnPercent = Number((options as any)?.userConfig?.warnPercent ?? 70)
 
   on('session.start', async ($, e, next) => {
-    // Panneau réservé au team-leader : une session de teammate ne l'ouvre ni ne le rafraîchit.
+    // Bandeau réservé au team-leader : une session de teammate ne l'affiche ni ne le rafraîchit.
     isTeammate = await detectTeammate($).catch(() => false)
     if (isTeammate) return next(e)
-    await $.command.register({ name: 'panel-usage', description: 'Ouvre ou recharge le panneau de consommation du compte Claude' })
-    void $.ui.open({ id: PANE, title: TITLE, rows: 10 })
+    await $.command.register({ name: 'panel-usage', description: 'Recharge le bandeau de consommation du compte Claude' })
     void refresh($)
-    // Les heures de réinitialisation avancent (« dans N min ») même sans nouvelle mesure.
+    // Les heures de réinitialisation avancent (« 42 min ») même sans nouvelle mesure.
     $.clock.every(60_000, () => void refresh($))
     return next(e)
   })
 
-  // /panel-usage = reload : état remis à zéro, panneau rouvert, mesure relue (attendue), redessin forcé.
+  // /panel-usage = reload : état remis à zéro, mesure relue (attendue), redessin forcé.
   on('command.run', { command: 'panel-usage' }, async $ => {
-    if (isTeammate) return { text: 'Panneau réservé au team-leader.' }
+    if (isTeammate) return { text: 'Bandeau réservé au team-leader.' }
     await update($, view, () => empty)
-    await $.ui.open({ id: PANE, title: TITLE, rows: 10 })
     await refresh($)
     $.ui.invalidate('ui.render')
     const v = await read($, view)
-    if (v.windows.length === 0) return { text: 'Panneau de consommation rechargé : aucune limite rapportée.' }
+    if (v.windows.length === 0) return { text: 'Bandeau de consommation rechargé : aucune limite rapportée.' }
     const now = await $.clock.now()
     const lines = v.windows.map(w => `${w.label} : ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || 'réinitialisation inconnue'})`)
-    return { text: `Panneau de consommation rechargé.\n${lines.join('\n')}` }
+    return { text: `Bandeau de consommation rechargé.\n${lines.join('\n')}` }
   })
 
   // Mesure poussée par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point.
@@ -64,43 +63,50 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (isTeammate || e.props.hasSurvey) return next(e)
     const v = await read($, view)
+    if (v.windows.length === 0) return next(e)
+    const { Box, Text } = $.ui.resolve(e)
     const now = await $.clock.now()
-    const columns = (e.viewport as { columns?: number } | undefined)?.columns ?? 40
-    const width = Math.max(8, Math.min(30, columns - 10))
+    const columns = e.props.bodyColumns ?? 80
 
-    if (v.updatedAt === 0) return <Text dimColor>Chargement…</Text>
-    if (v.windows.length === 0)
+    const cells = v.windows.map(w => {
+      const label = shortLabelOf(w.kind)
+      const pct = `${Math.round(w.percentUsed)} %`
+      const reset = formatResetShort(w.resetsAt, now)
+      const width = label.length + 1 + pct.length + 1 + BAR_W + (reset ? 1 + reset.length : 0)
+      return { label, pct, reset, width, color: colorOf(w.percentUsed, warnPercent), bar: bar(w.percentUsed, BAR_W) }
+    })
+    const SEP = '  │  '
+    const oneLine = cells.reduce((a, c) => a + c.width, 0) + SEP.length * (cells.length - 1) <= columns
+
+    // Arbre construit par une fonction (pas un composant) : les éléments viennent de la table de la surface.
+    const cell = (c: (typeof cells)[number]) => (
+      <Text wrap="truncate-end">
+        <Text bold>{c.label}</Text>
+        <Text color={c.color} bold>{` ${c.pct} `}</Text>
+        <Text color={c.color}>{'█'.repeat(c.bar.filled)}</Text>
+        <Text dimColor>{'░'.repeat(c.bar.empty)}</Text>
+        {c.reset !== '' && <Text dimColor>{` ${c.reset}`}</Text>}
+      </Text>
+    )
+
+    // Une seule ligne quand elle tient dans la largeur ; sinon une ligne par fenêtre.
+    if (oneLine)
       return (
-        <Box flexDirection="column">
-          <Text dimColor>Aucune limite rapportée (pas d'abonnement, ou aucune réponse reçue).</Text>
-          {v.costUsd !== null && <Text dimColor>{`Coût session : ${v.costUsd.toFixed(2)} $`}</Text>}
+        <Box>
+          {cells.map((c, k) => (
+            <Box>
+              {k > 0 && <Text dimColor>{SEP}</Text>}
+              {cell(c)}
+            </Box>
+          ))}
         </Box>
       )
-
     return (
       <Box flexDirection="column">
-        {v.windows.map(w => {
-          const c = colorOf(w.percentUsed, warnPercent)
-          const b = bar(w.percentUsed, width)
-          const reset = formatReset(w.resetsAt, now)
-          return (
-            <Box flexDirection="column" marginBottom={1}>
-              <Text wrap="truncate-end" bold>{w.label}</Text>
-              <Text wrap="truncate-end">
-                <Text color={c}>{'█'.repeat(b.filled)}</Text>
-                <Text dimColor>{'░'.repeat(b.empty)}</Text>
-                <Text color={c} bold>{` ${Math.round(w.percentUsed)} %`}</Text>
-              </Text>
-              {reset !== '' && <Text wrap="truncate-end" dimColor>{reset}</Text>}
-            </Box>
-          )
-        })}
-        <Text wrap="truncate-end" dimColor>
-          {`${v.costUsd !== null ? `Coût session ${v.costUsd.toFixed(2)} $ · ` : ''}maj ${new Date(v.updatedAt).toTimeString().slice(0, 5)}`}
-        </Text>
+        {cells.slice(0, Math.max(1, e.props.maxRows ?? cells.length)).map(c => cell(c))}
       </Box>
     )
   })
