@@ -31,6 +31,14 @@ const compareTitles = (a: string, b: string) => {
   return 0
 }
 
+// Milestone sans version définitive (`vX.0.x`, `vx.x.x`) : un segment du numéro est un `x`, il passe en dernier.
+const isUnversioned = (title: string) =>
+  title
+    .split(/\s/)[0]
+    .replace(/^v/i, '')
+    .split('.')
+    .some(seg => /^x$/i.test(seg))
+
 const compareMilestones = (a: RawMilestone, b: RawMilestone) => {
   if (a.due_on && b.due_on && a.due_on !== b.due_on) return a.due_on < b.due_on ? -1 : 1
   if (a.due_on && !b.due_on) return -1
@@ -73,11 +81,25 @@ export const buildView = (
           isBlocked: i.labels.some(l => l.name === 'BLOQUE'),
         }))
     : []
-  const milestones: MilestoneRow[] = sorted.map(m => ({
-    title: m.title,
-    open: m.open_issues,
-    closed: m.closed_issues,
-  }))
+  // Liste affichée quand aucun milestone n'est en cours : sans version (`x`) en dernier, puis par progression
+  // décroissante, puis par version croissante.
+  const pct = (m: RawMilestone) => {
+    const total = m.open_issues + m.closed_issues
+    return total === 0 ? 0 : m.closed_issues / total
+  }
+  const milestones: MilestoneRow[] = [...sorted]
+    .sort(
+      (a, b) =>
+        Number(isUnversioned(a.title)) - Number(isUnversioned(b.title)) ||
+        pct(b) - pct(a) ||
+        compareTitles(a.title, b.title) ||
+        a.title.localeCompare(b.title),
+    )
+    .map(m => ({
+      title: m.title,
+      open: m.open_issues,
+      closed: m.closed_issues,
+    }))
   return { current, issues, milestones, colors, updatedAt: now, error: null }
 }
 

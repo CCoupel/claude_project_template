@@ -192,6 +192,7 @@ export const register: Register = (on, options) => {
     const lotGroups = groupByLot(v.issues)
     const hasLots = lotGroups.some(g => g.lot !== null)
     const LOT_W = Math.max(...lotGroups.map(g => (g.lot ?? 'SANS LOT').length))
+    const maj = ` · maj ${new Date(v.updatedAt).toTimeString().slice(0, 5)}`
     const cur = v.milestones.find(m => m.title === v.current)
     const byPhase: Record<string, number> = {}
     for (const i of v.issues) if (i.phase !== 'SANS PHASE') byPhase[i.phase] = (byPhase[i.phase] ?? 0) + 1
@@ -199,11 +200,13 @@ export const register: Register = (on, options) => {
 
     return (
       <Box flexDirection="column">
-        <Text dimColor>{`maj ${new Date(v.updatedAt).toTimeString().slice(0, 5)}`}</Text>
         {v.error && T({ color: 'red' }, `gh: ${v.error}`)}
         {v.current ? (
           <Box flexDirection="column">
-            {T({ bold: true, color: 'cyan' }, `Milestone ${v.current}`)}
+            <Text wrap="truncate-end">
+              <Text bold color="cyan">{`Milestone ${v.current}`}</Text>
+              <Text dimColor>{maj}</Text>
+            </Text>
             {cur && progress(cur.closed, byPhase, v.issues.length - startedCount)}
             {lotGroups.flatMap(lg =>
               groupByPhase(lg.issues).flatMap((g, gi) =>
@@ -228,14 +231,26 @@ export const register: Register = (on, options) => {
           </Box>
         ) : (
           <Box flexDirection="column">
-            {T({ bold: true }, 'Aucun milestone en cours')}
+            <Text wrap="truncate-end">
+              <Text bold>Aucun milestone en cours</Text>
+              <Text dimColor>{maj}</Text>
+            </Text>
             {v.milestones.length === 0 && <Text dimColor>Aucun milestone ouvert.</Text>}
-            {v.milestones.map(m => (
-              <Box flexDirection="column" marginTop={1}>
-                {T({ bold: true, color: 'cyan' }, m.title)}
-                {progress(m.closed, {}, m.open)}
-              </Box>
-            ))}
+            {v.milestones.map(m => {
+              // Une ligne par milestone : « barre  %  fermées/total  titre », le titre étant tronqué en dernier.
+              const total = m.open + m.closed
+              const n = total === 0 ? 0 : Math.round((m.closed / total) * 10)
+              const pct = total === 0 ? 0 : Math.round((m.closed / total) * 100)
+              return (
+                <Text wrap="truncate-end">
+                  <Text color="#a371f7">{'█'.repeat(n)}</Text>
+                  <Text dimColor>{'░'.repeat(10 - n)}</Text>
+                  <Text bold>{` ${String(pct).padStart(3)}%`}</Text>
+                  <Text dimColor>{` ${m.closed}/${total} `}</Text>
+                  <Text bold color="cyan">{m.title}</Text>
+                </Text>
+              )
+            })}
           </Box>
         )}
       </Box>
