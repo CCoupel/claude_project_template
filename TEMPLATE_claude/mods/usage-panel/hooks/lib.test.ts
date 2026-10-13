@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { bar, buildView, colorOf, formatReset, labelOf } from './lib'
+import { bar, buildView, colorOf, formatReset, isTeammateSession, labelOf } from './lib'
 
 test('libellés et ordre des fenêtres', () => {
   const v = buildView(
@@ -33,4 +33,10 @@ test('couleur et barre', () => {
   expect(colorOf(95, 70)).toBe('red')
   expect(bar(50, 20)).toEqual({ filled: 10, empty: 10 })
   expect(bar(130, 20)).toEqual({ filled: 20, empty: 0 })
+})
+
+test('session de teammate détectée par l’environnement ou la ligne de commande du parent', () => {
+  expect(isTeammateSession([undefined, undefined, undefined], 'claude --resume')).toBe(false)
+  expect(isTeammateSession(['agent-1', undefined, undefined], '')).toBe(true)
+  expect(isTeammateSession([undefined, undefined, undefined], 'claude --agent-name dev-backend --team-name x')).toBe(true)
 })

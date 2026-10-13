@@ -678,13 +678,13 @@ puis toutes les minutes, après toute commande Bash et après chaque délégatio
 
 ### Panneau consommation (mod)
 
-Le mod `usage-panel` affiche dans un panneau « Consommation » (ouvert au démarrage à partir de 144 colonnes ; sinon `/panel-usage`, qui à tout moment **recharge** le panneau et répond avec les valeurs relues)
+Le mod `usage-panel` affiche dans un panneau « Consommation » (ouvert au démarrage à partir de 144 colonnes ; sinon `/panel-usage`, qui à tout moment **recharge** le panneau et répond avec les valeurs relues), **uniquement dans la session du team-leader** comme le panneau milestone,
 les fenêtres de quota du compte Claude telles que l'API les rapporte à chaque réponse : **session actuelle** (5 h), **cette semaine**
 (7 j) et les limites hebdomadaires distinctes par modèle (ex. « Fable cette semaine »), chacune avec sa barre, son pourcentage
 et son heure de réinitialisation (« à 15:00 », « demain 12:00 », « le mercredi 12:00 », « dans 42 min »). Barre bleue, orange
 au-delà du seuil configurable (`warnPercent`, 70 % par défaut), rouge à partir de 90 %. Le coût de la session (USD) et l'heure de
 mise à jour sont en pied. Les valeurs sont poussées par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point ;
-sans abonnement (clé API), le panneau l'indique. Mêmes chiffres que `/usage` et la ligne de statut.
+sans abonnement (clé API), le panneau l'indique. Mêmes chiffres que `/usage` et la ligne de statut. Les deux panneaux partagent l'emplacement à droite sous forme d'**onglets** (« Milestone », « Consommation ») : un seul est affiché, un clic sur l'onglet, ou Tab puis Entrée, bascule sur l'autre.
 
 ### Validation
 

@@ -2,12 +2,24 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { View } from '../types'
-import { bar, buildView, colorOf, formatReset } from './lib'
+import { bar, buildView, colorOf, formatReset, isTeammateSession } from './lib'
 
 const PANE = 'usage-panel'
 const TITLE = 'Consommation'
 const empty: View = { windows: [], costUsd: null, updatedAt: 0 }
 const view = atom({ plugin: 'usage-panel', key: 'view' } as const, empty)
+
+let isTeammate = false
+
+async function detectTeammate($: any) {
+  const env = await Promise.all([
+    $.env.get('CLAUDE_CODE_AGENT_ID'),
+    $.env.get('CLAUDE_CODE_AGENT_NAME'),
+    $.env.get('CLAUDE_CODE_TEAM_NAME'),
+  ])
+  const res = await $.process.run(['sh', '-c', 'tr "\\0" " " < /proc/$PPID/cmdline 2>/dev/null'])
+  return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
+}
 
 async function refresh($: any) {
   const u = await $.session.usage()
@@ -19,6 +31,9 @@ export const register: Register = (on, options) => {
   const warnPercent = Number((options as any)?.userConfig?.warnPercent ?? 70)
 
   on('session.start', async ($, e, next) => {
+    // Panneau réservé au team-leader : une session de teammate ne l'ouvre ni ne le rafraîchit.
+    isTeammate = await detectTeammate($).catch(() => false)
+    if (isTeammate) return next(e)
     await $.command.register({ name: 'panel-usage', description: 'Ouvre ou recharge le panneau de consommation du compte Claude' })
     void $.ui.open({ id: PANE, title: TITLE, rows: 10 })
     void refresh($)
@@ -29,6 +44,7 @@ export const register: Register = (on, options) => {
 
   // /panel-usage = reload : état remis à zéro, panneau rouvert, mesure relue (attendue), redessin forcé.
   on('command.run', { command: 'panel-usage' }, async $ => {
+    if (isTeammate) return { text: 'Panneau réservé au team-leader.' }
     await update($, view, () => empty)
     await $.ui.open({ id: PANE, title: TITLE, rows: 10 })
     await refresh($)
@@ -42,6 +58,7 @@ export const register: Register = (on, options) => {
 
   // Mesure poussée par le moteur après chaque tour et dès qu'une fenêtre bouge d'un point.
   on('session.measure', async ($, e, next) => {
+    if (isTeammate) return next(e)
     const now = await $.clock.now()
     await update($, view, () => buildView(e.rateLimits ?? [], e.cost?.usd ?? null, now))
     return next(e)

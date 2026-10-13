@@ -68,3 +68,11 @@ export function bar(percent: number, width: number): { filled: number; empty: nu
   const filled = Math.round((p / 100) * width)
   return { filled, empty: width - filled }
 }
+
+/**
+ * Session de teammate (spawn par le team-leader) : variables d'environnement d'agent/team posées,
+ * ou ligne de commande du processus parent portant --agent-id/--agent-name/--team-name/--parent-session-id.
+ * Même détection que milestone-panel.
+ */
+export const isTeammateSession = (env: Array<string | undefined>, cmdline: string) =>
+  env.some(v => !!v) || /(^|\s)--(agent-id|agent-name|team-name|parent-session-id)(\s|=|$)/.test(cmdline)
