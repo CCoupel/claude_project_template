@@ -353,7 +353,9 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 >   `^LOT-[0-9]+(\.[0-9]+)?$` pour etre reconnu.
 > - **Numerotation continue a partir de 1, = ordre d'execution** (`LOT-1` est traite et livre en premier).
 > - **Exhaustif et exclusif** : chaque issue ouverte du milestone figure dans **un seul** lot ; aucune issue sans lot.
->   Lister les issues sous la forme `#<numero>` (la table est relue pour poser les labels).
+>   Lister les issues sous la forme `#<numero>` : le teamleader recopie cette table, telle quelle, dans l'ordre unique
+>   de labels envoye a `deployer` au GATE 2 (`commands/context/GITHUB.md` §9.0) — une issue absente ou en double
+>   dans la table l'est aussi sur GitHub.
 > - **Criteres de decoupage, par priorite** :
 >   1. **Autonomie** : si une issue depend d'une autre, elles sont dans le **meme** lot, ou la dependance est dans un
 >      lot **anterieur** ; aucune dependance vers un lot posterieur.
