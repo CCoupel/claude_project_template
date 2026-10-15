@@ -464,6 +464,14 @@ $ARGUMENTS = "Ajouter mode X"  -> Action: workflow normal (pas de mot-cle)
 
 Pour personnaliser le comportement d'une commande ou d'un agent au niveau de règles partagées, créer/éditer le compagnon `context/X.md` correspondant — jamais `context/X.template.md`.
 
+- **Modèle et effort** : chaque agent (teamleader compris) a un `model:` et un `effort:` dans le frontmatter de son
+  `xxx.template.md` — c'est la valeur par défaut du template. Le compagnon `xxx.md` peut commencer par un frontmatter
+  ne contenant que `model:` et/ou `effort:` pour les **surcharger** (toute autre clé y est ignorée) ; une spécification
+  `generic.<nom>.md` peut en porter un de la même façon pour son instance. Résolution et application au spawn :
+  `agents/context/TEAMMATES_PROTOCOL.md` section 7. Pour le teamleader, les valeurs résolues sont écrites par
+  `/init-project` dans `.claude/settings.json` (`model`, `effortLevel`) — ne pas les éditer là : modifier le compagnon
+  `teamleader.md` puis relancer `/init-project` (mises à jour).
+
 ---
 
 ## 14. Maquettes

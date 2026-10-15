@@ -69,18 +69,38 @@ Extraire :
 - Regles critiques du projet
 - Corrections de comportement a appliquer
 
+### Etape 3bis — Modele et effort du teamleader
+
+Resoudre les valeurs attendues (`TEAMMATES_PROTOCOL.md` section 7) : frontmatter de `.claude/agents/teamleader.md`
+s'il existe, sinon de `.claude/agents/teamleader.template.md`. Les comparer a `.claude/settings.json`
+(`model`, `effortLevel`) et au modele de la session courante :
+
+- `settings.json` differe des valeurs resolues → afficher une ligne « settings.json en retard — relancer
+  `/init-project` (mises a jour) » et continuer ;
+- la session ne tourne pas avec le modele/effort attendus (ou ne peut pas le verifier pour l'effort) → afficher une
+  seule fois les commandes a taper : `/model <modele>` et `/effort <effort>`, puis continuer. Ne jamais tenter de
+  changer soi-meme le modele.
+
 ### Etape 4 — Creation de la TEAM et spawn de tous les teammates
 
 **Sans demander confirmation** :
 
 1. **TeamCreate** avec le nom `{TEAM_NAME}` (defini dans CLAUDE.md)
 
-2. **Spawner les teammates permanents en parallèle** — lire la liste dans CLAUDE.md section "Agents Disponibles", colonne `Spawn = permanent` :
+2. **Resoudre modele et effort de chaque teammate** (`TEAMMATES_PROTOCOL.md` section 7) : frontmatter du compagnon
+   `.claude/agents/<nom>.md` (instance generique : `generic.<nom>.md` puis `generic.md`) s'il en a un, sinon
+   frontmatter de `.claude/agents/<nom>.template.md`. Les passer **explicitement** au spawn — sans cela le teammate
+   herite du modele et de l'effort de la session du teamleader.
+
+3. **Spawner les teammates permanents en parallèle** — lire la liste dans CLAUDE.md section "Agents Disponibles", colonne `Spawn = permanent` :
 
 ```
 Pour chaque agent avec Spawn = permanent :
 Task({
   name: "<nom-canonique>",
+  subagent_type: "<nom-canonique>",
+  model: <modele resolu>,
+  effort: <effort resolu>,
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.template.md
            (et .claude/agents/<nom>.md s'il existe — adaptations projet).
            Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
@@ -93,6 +113,9 @@ Pour une **instance générique** (fichier = `generic.template.md` + `generic.<n
 ```
 Task({
   name: "<nom>",
+  subagent_type: "generic",
+  model: <modele resolu>,
+  effort: <effort resolu>,
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md, puis .claude/agents/generic.template.md
            puis ta spécification .claude/agents/generic.<nom>.md (obligatoire).
            Tu es l'instance `<nom>` et fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
@@ -102,7 +125,7 @@ Task({
 
 > Les agents `ponctuel` (ex: `security`, `infra`) sont spawned à la demande par leur commande dédiée — ne pas les inclure ici.
 
-3. **Attendre les ACTIF de tous les teammates** avant de continuer.
+4. **Attendre les ACTIF de tous les teammates** avant de continuer.
 
 > Après cette étape, le teamleader n'utilise plus que `SendMessage` — aucun nouveau spawn pendant la session.
 

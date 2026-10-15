@@ -101,6 +101,11 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 > elles ne font partie d'aucune phase de `/feature`/`/bugfix` — leur livrable est validé par le CDP
 > (voir "Validation Systématique des Livrables") avant d'être présenté à l'utilisateur.
 >
+> Tout spawn (teammates au `/start-session`, agents ponctuels, sous-agents ci-dessous) passe explicitement
+> `subagent_type`, `model` et `effort` résolus — compagnon `<nom>.md` > `<nom>.template.md`, sous-agents = valeurs
+> de leur coordinateur (`TEAMMATES_PROTOCOL.md` section 7). Un spawn sans ces paramètres ferait tourner l'agent
+> au modèle et à l'effort de la session du teamleader.
+>
 > `sub-planner-1..N` : instances temporaires de `implementation-planner`, spawnées par le CDP
 > uniquement sur demande explicite du `planner` (`PLANNER NEED SUBPLANNERS`), vivantes le temps
 > de la Phase Plan uniquement. Pas une ligne fixe de la table — voir `implementation-planner.md`

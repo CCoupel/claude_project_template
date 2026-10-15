@@ -1232,6 +1232,9 @@ done
 Remplir chaque section avec les reponses de l'Etape 5c (specification **non vide** — un agent sans
 specification repond `BLOQUE` au demarrage). Le fichier est **tracke git**, jamais ecrase par la sync
 (le compagnon `generic.md` sans nom reste, lui, un compagnon classique du template `generic.template.md`).
+Si l'instance justifie un autre modele ou effort que `generic.template.md` (`sonnet` / `medium`), ajouter en tete
+de la specification un frontmatter ne contenant que `model:` et/ou `effort:` (ex. `opus` pour un redacteur de
+documents longs) — resolu au spawn, voir `agents/context/TEAMMATES_PROTOCOL.md` section 7.
 
 Ajouter une ligne par instance dans la table `## Agents Disponibles` de `CLAUDE.md` :
 `| <name> | <role> | .claude/agents/generic.template.md + .claude/agents/generic.<name>.md | <spawn> |`.
@@ -1676,16 +1679,33 @@ refus de l'utilisateur).
 
 Les règles critiques du teamleader sont dans `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL`) — elles survivent aux compactages nativement via le chargement natif de CLAUDE.md.
 
-Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json` si absent :
+Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json` si absent, puis y écrire le **modèle et
+l'effort du teamleader** résolus depuis les frontmatters (`.claude/agents/teamleader.md` compagnon s'il en a un,
+sinon `.claude/agents/teamleader.template.md` — règle `agents/context/TEAMMATES_PROTOCOL.md` section 7). Les
+autres clés de `settings.json` ne sont jamais touchées ; `model` et `effortLevel` sont **dérivées** (toute édition
+manuelle est écrasée à la prochaine sync — la surcharge se fait dans le compagnon) :
 
 ```bash
-if [ ! -f .claude/settings.json ]; then
-  cp TEMPLATE_claude/settings.json .claude/settings.json
-  echo "✓ .claude/settings.json créé"
+[ -f .claude/settings.json ] || { cp TEMPLATE_claude/settings.json .claude/settings.json; echo "✓ .claude/settings.json créé"; }
+
+# Frontmatter : lignes entre le premier '---' et le suivant ; valeur d'une clé (vide si absente)
+fm_val() { awk -v k="$2" 'NR==1&&$0!="---"{exit} NR>1&&$0=="---"{exit} NR>1&&$1==k":"{print $2; exit}' "$1" 2>/dev/null; }
+TL_MODEL=$(fm_val .claude/agents/teamleader.md model);   [ -n "$TL_MODEL" ]  || TL_MODEL=$(fm_val .claude/agents/teamleader.template.md model)
+TL_EFFORT=$(fm_val .claude/agents/teamleader.md effort); [ -n "$TL_EFFORT" ] || TL_EFFORT=$(fm_val .claude/agents/teamleader.template.md effort)
+
+if [ "$TL_EFFORT" = "max" ]; then
+  # effortLevel n'accepte pas max : retirer la clé, l'utilisateur tape /effort max au lancement
+  jq --arg m "$TL_MODEL" '.model=$m | del(.effortLevel)' .claude/settings.json > .claude/settings.json.tmp
+  echo "  effort max : taper /effort max au lancement de chaque session"
 else
-  echo "  .claude/settings.json déjà présent — non écrasé"
+  jq --arg m "$TL_MODEL" --arg e "$TL_EFFORT" '.model=$m | .effortLevel=$e' .claude/settings.json > .claude/settings.json.tmp
 fi
+mv .claude/settings.json.tmp .claude/settings.json
+echo "✓ .claude/settings.json — teamleader : $TL_MODEL / $TL_EFFORT"
 ```
+
+> Les teammates n'ont rien ici : leur modèle/effort (frontmatter du template, surchargé par le compagnon) est résolu
+> et passé explicitement au spawn par `/start-session`.
 
 #### Memoire projet et squelettes lus au demarrage (derniere etape)
 
@@ -1775,6 +1795,7 @@ Configuration :
 - Environnements : <ENVIRONMENTS>  (ex: QUALIF -> PROD)
 
 Memoire projet : .claude/memory/MEMORY.md initialisee (si absente)
+Teamleader : <modele> / <effort> ecrits dans .claude/settings.json (surcharge : compagnon .claude/agents/teamleader.md)
 Cadrage : docs/CADRAGE.md — <workshop|brief : N elements deduits, N precises>   (si workshop ou brief)
 Agents generiques : <NOM> (.claude/agents/generic.<NOM>.md), ...   (si declares)
 
@@ -2568,16 +2589,11 @@ echo "✓ CLAUDE.md — bloc TEAMLEADER_PROTOCOL mis à jour"
 
 #### Etape d6b — Synchroniser settings.json
 
-Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json` si absent :
-
-```bash
-if [ ! -f .claude/settings.json ]; then
-  cp TEMPLATE_claude/settings.json .claude/settings.json
-  echo "✓ .claude/settings.json créé"
-else
-  echo "  .claude/settings.json déjà présent — non écrasé"
-fi
-```
+Appliquer la sous-section **"Settings Claude Code"** (section Finalisation) : création de `.claude/settings.json`
+s'il est absent, puis écriture des clés dérivées `model` / `effortLevel` du teamleader (compagnon
+`teamleader.md` > `teamleader.template.md`). Les autres clés sont conservées. Afficher l'ancienne et la nouvelle
+valeur si elles diffèrent — un changement ici n'est effectif qu'au prochain lancement de la session (le rappeler
+dans le rapport).
 
 Puis appliquer la sous-section **"Memoire projet et squelettes lus au demarrage"** (creation idempotente de
 `.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` s'ils sont absents).
