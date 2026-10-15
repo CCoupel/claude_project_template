@@ -52,6 +52,9 @@ ou de préparation du projet — passé avec la commande, collé dans la convers
 `docs/BRIEF.md` / un `README.md` descriptif — dont il déduit une **proposition de cadrage** puis ne pose que des
 **questionnaires de précision** sur ce que le texte ne dit pas, valeurs déduites en option recommandée), le
 **workshop de cadrage** (21 questions en 6 phases, par choix guidés) ou le **questionnaire rapide** (stack seule).
+Dans les deux premiers, les **solutions existantes** ne sont pas demandées : Claude les cherche sur le web, présente un
+tableau sourcé (3 à 5 solutions, couverture des cas d'usage v1, limites, modèle), et fait seulement valider le
+**différenciateur** — ou l'adoption d'une solution existante si elle couvre déjà tout le besoin.
 Brief et workshop produisent la **fiche de cadrage** `docs/CADRAGE.md` (brief d'origine verbatim + valeurs finales
 avec leur provenance), relue par le planner et le marketing ; un projet avec code existant peut aussi être cadré
 depuis un brief (stack détectée, phases produit déduites). Pour un **nouveau projet** (aucun code détecté) avec
