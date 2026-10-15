@@ -60,7 +60,11 @@ a) Brief de projet (recommande si un brief est disponible)
      manquant ou propose (valeur deduite en option recommandee), une confirmation
      groupee par phase pour les elements deduits.
 b) Workshop de cadrage
-   → Entretien guide en 6 phases, par choix guides (21 questions)
+   → Entretien guide en 6 phases, par choix guides (21 questions). La question 8
+     (solutions existantes, differenciateur) n'est pas posee : Claude cherche sur le web
+     les solutions qui repondent deja au besoin, presente un tableau source, et fait
+     seulement valider le differenciateur (ou l'adoption d'une solution existante).
+     Meme regle en mode brief.
 c) Questionnaire rapide
    → Stack technique seule, sans cadrage produit
 d) Annuler

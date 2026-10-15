@@ -728,11 +728,38 @@ Mener un entretien structure en 6 phases.
 5. Comment le projet compte-t-il resoudre ce probleme ?
 6. Quels sont les 3 cas d'usage principaux de la v1 ?
 7. Quels cas d'usage sont explicitement hors perimetre (v1) ?
-8. Existe-t-il des solutions concurrentes ? Qu'est-ce qui differencie ce projet ?
+8. Solutions existantes et differenciateur — RECHERCHE A LA CHARGE DE CLAUDE, pas une question :
+   voir "Recherche des solutions existantes" ci-dessous. L'utilisateur ne fait que valider le
+   differenciateur propose.
 ```
 
 > Conserver les reponses 2, 5, 6 et 7 : elles alimentent les issues de base du milestone `v0.1.0`
 > (section "Premier milestone v0.1.0 et issues de base" de la finalisation) — une issue par cas d'usage v1.
+
+**Recherche des solutions existantes (q8)** — apres les reponses 2, 5 et 6, avant la phase 3 :
+
+1. **Chercher** (outil `WebSearch`, 2 a 4 requetes construites depuis le probleme central, les cas d'usage v1
+   et le public cible ; en francais puis en anglais) les solutions qui repondent deja au besoin : produits du
+   marche, services SaaS, projets open source, fonctions d'outils generalistes (tableur, formulaires, messagerie).
+   Retenir 3 a 5 solutions au plus, les plus proches du besoin — jamais une liste exhaustive.
+2. **Presenter** dans le chat un tableau `Solution | Type (SaaS / open source / outil generaliste) | Couvre les
+   cas d'usage v1 (lesquels) | Limite par rapport au besoin | Modele (gratuit / payant / inconnu)`, suivi d'une
+   ligne par solution citant sa source (URL). Pas d'affirmation sans source : une caracteristique non verifiee
+   est marquee « a verifier ». Pas de prix chiffre sans page consultee.
+3. **Deduire le differenciateur** : ce que le projet apporte que les solutions retenues ne couvrent pas (ou
+   couvrent mal) — formule en une phrase a partir du tableau, jamais invente. Si une solution couvre deja
+   l'ensemble des cas d'usage v1 au meme public, le dire explicitement : c'est une information de cadrage
+   majeure, pas un echec.
+4. **Faire valider** via `AskUserQuestion` « Differenciateur du projet ? » : le differenciateur deduit en option
+   "(Recommande)", 1 a 2 alternatives tirees du tableau (ex. « meme couverture mais gratuit / auto-heberge »,
+   « integration a <outil existant> »), et, si une solution couvre tout, l'option « Adopter <solution> plutot que
+   developper » — a transmettre telle quelle dans la fiche si elle est choisie (le projet peut s'arreter la).
+5. **Consigner** le tableau et le differenciateur valide dans `docs/CADRAGE.md`, section « 2. Solution »,
+   sous-section « Solutions existantes » — le marketing s'en sert pour le positionnement.
+
+Sans acces reseau (`WebSearch` indisponible ou vide) : le dire en une ligne, poser la question 8 a
+l'utilisateur sous sa forme classique (solutions connues + differenciateur, via `AskUserQuestion` avec
+« Autre »), et marquer la sous-section « Solutions existantes — recherche non effectuee (hors ligne) ».
 
 **Phase 3 — Parties prenantes et utilisateurs**
 ```
@@ -801,6 +828,10 @@ Regles de deduction :
 - Les 3 cas d'usage v1 (q6) sont les actions concretes decrites par le brief, dans son ordre ; au-dela de 3
   explicites, garder les 3 premiers et proposer les suivants en « roadmap » (issues `roadmap` seulement).
 - Le hors-perimetre (q7) ne contient que ce que le brief exclut ou reporte explicitement ; sinon `manquant`.
+- Les solutions existantes et le differenciateur (q8) ne sont **jamais** deduits du brief seul : appliquer la
+  « Recherche des solutions existantes » de l'Option a (WebSearch, tableau, validation du differenciateur). Les
+  concurrents que le brief nomme sont ajoutes au tableau, verifies comme les autres ; le differenciateur que le
+  brief avance est l'option "(Recommande)" s'il tient face au tableau, sinon il est reformule et le brief est cite.
 - La stack (etapes 2-10) : `deduit` uniquement si nommee ; une suggestion du brief (« plutot Node ») est
   `propose` ; absente → `manquant`, et c'est le questionnaire standard qui tranche.
 - Contraintes reglementaires (q16) : `propose` RGPD des que des donnees de personnes physiques sont manipulees ;
@@ -846,14 +877,16 @@ le marketing. Distincte de `MARKETING/CADRAGE.md` (cadrage du site, sur `gh-page
 
 ## Fiche de cadrage
 ### 1. Probleme        (q1-q4)
-### 2. Solution        (q5-q8 — cas d'usage v1 numerotes, hors perimetre, differenciateurs)
+### 2. Solution        (q5-q8 — cas d'usage v1 numerotes, hors perimetre, differenciateur valide)
+#### Solutions existantes   (tableau de la recherche q8 + sources ; ou « recherche non effectuee (hors ligne) »)
 ### 3. Parties prenantes (q9-q12)
 ### 4. Contraintes et risques (q13-q17)
 ### 5. Stack et architecture (resume des etapes 1-10)
 ### 6. Conventions d'equipe (q18-q21)
 ```
 
-Chaque ligne de la fiche porte sa provenance entre crochets : `[brief]`, `[precision]` ou `[workshop]`.
+Chaque ligne de la fiche porte sa provenance entre crochets : `[brief]`, `[precision]`, `[workshop]` ou
+`[recherche]` (solutions existantes et differenciateur, avec leurs sources).
 
 ---
 
