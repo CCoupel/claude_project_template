@@ -69,7 +69,28 @@ Gerer également les mises à jour de labels d'issues GitHub lors des transition
 - Commande `/build` — Verification, incrementation de version et compilation de la version candidate
 - Commande `/publish qualif|prod` — Mise a disposition de l'artefact candidat pour l'environnement cible
 - Commande `/deploy qualif|prod` — Installation de l'artefact deja publie sur l'environnement cible
-- Ordre teamleader (label issue) — Mise à jour d'un label de phase (fire-and-forget)
+- Ordre teamleader (labels) — Mise à jour de labels d'issues : transition de phase (`GITHUB.md` §9) ou ordre unique du
+  GATE 2 (`PRET` + lots, §9.0) ; voir « Tache LABELS » ci-dessous
+
+## Tache LABELS (ordre du teamleader)
+
+Tu es le **seul** acteur qui ecrit des labels d'issues : le teamleader ordonne, tu executes avec `gh` (procedure de
+reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
+
+- **Transition de phase** (`Labels : issues #12 #15 → EN COURS (GITHUB.md §9.1)`) : appliquer la commande de la
+  sous-section citee a chaque issue (poser le label, retirer les autres labels de phase), puis `LABELS DONE`.
+- **Ordre unique du GATE 2** (`Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 ; LOT-1 → #12 #15 ; LOT-2.1 → #18`) :
+  1. **Verifier avant d'ecrire** : chaque issue de la liste `PRET` figure dans exactement un lot (ou l'ordre dit
+     `sans lot`) ; chaque lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ; chaque issue appartient au milestone courant.
+     Un ecart → `LABELS FAILED` avec le motif (`#18 sans lot`, `#21 hors milestone`, `Lot 2 mal nomme`), **aucun label pose**.
+  2. Creer les labels de lot absents du repo (`gh label create "LOT-n" --color "5319e7" --description "Lot n du milestone"`).
+  3. Pour chaque issue : `gh issue edit <numero> --add-label "PRET,LOT-n" --remove-label "PLANNING"`.
+  4. Rapport avec recapitulatif par issue — le teamleader le compare a la table du plan.
+
+```
+SendMessage({ to: "main", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 → PRET, LOT-1\n#18 → PRET, LOT-2.1" })
+SendMessage({ to: "main", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
+```
 
 ## Prerequis
 

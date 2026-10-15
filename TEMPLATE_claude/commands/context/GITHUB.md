@@ -415,8 +415,8 @@ fait a cet instant.** Il change donc **au retour** du teammate (DONE/FAILED/BLOQ
 l'utilisateur** (GATE), jamais seulement a l'envoi de l'ordre suivant : une issue en attente de lancement n'est pas
 `EN COURS`, elle est `PRET`.
 
-**Label de lot (decoupage du milestone par le planner) :** `LOT-1`, `LOT-2`… — pose par le CDP (via `deployer`, §9.11)
-sur chaque issue du lot, apres validation du plan (GATE 2). Ce n'est **pas** un label de phase : il se superpose a la
+**Label de lot (decoupage du milestone par le planner) :** `LOT-1`, `LOT-2`… — pose par le CDP (via `deployer`, ordre unique
+du GATE 2 avec `PRET`, §9.0 et §9.11) sur chaque issue de chaque lot, apres validation du plan (GATE 2). Ce n'est **pas** un label de phase : il se superpose a la
 phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot. Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est l'unite de livraison ; le panneau regroupe par lot parent `LOT-N`).
 
 Regles :
@@ -484,14 +484,32 @@ Si un outil GitHub MCP est disponible (`mcp__plugin_github_github__issue_write`)
 est la procédure de référence. Toute transition retire les autres labels de phase. La fermeture d'une issue suit
 §9.5 ; la clôture du milestone reste soumise à la validation utilisateur (GATE 4).
 
-### 9.0 Transition vers `PRET` (GATE 2 validé)
+### 9.0 Transition vers `PRET` + pose des lots (GATE 2 validé) — un seul ordre
 
-Pose a la validation du plan par l'utilisateur, sur **toutes** les issues du milestone ; elles passent a `EN COURS`
-lot par lot, a l'ordre DEV (§9.1).
+A la validation du plan par l'utilisateur, le CDP envoie a `deployer` **un seul ordre** qui pose `PRET` sur **toutes**
+les issues du milestone **et** le label de lot de chacune (§9.11), construit a partir de la table « Lots » du plan
+valide (`_work/reports/plan-[timestamp].md`). Les issues passent ensuite a `EN COURS` lot par lot, a l'ordre DEV (§9.1).
+
+**Forme de l'ordre** (une ligne, tous les lots du plan, chaque issue de `ISSUE_NUMS[]` presente une fois) :
+
+```
+SendMessage({ to: "deployer", content: "Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 #19 ; LOT-1 → #12 #15 ; LOT-2.1 → #18 ; LOT-2.2 → #19" })
+```
+
+Milestone a issue unique (pas de table « Lots ») : `Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 ; sans lot`.
+
+**Verifications de `deployer` avant d'executer** (refus = `LABELS FAILED` + motif, aucun label pose) :
+- chaque issue de la liste `PRET` apparait dans **exactement un** lot (ou l'ordre dit `sans lot`) ;
+- chaque nom de lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ;
+- les issues listees appartiennent au milestone courant (`gh issue view <numero> --json milestone`).
 
 ```bash
-gh issue edit <numero> --add-label "PRET" --remove-label "PLANNING"
+gh label create "LOT-1" --color "5319e7" --description "Lot 1 du milestone"   # pour chaque lot absent du repo
+gh issue edit <numero> --add-label "PRET,LOT-1" --remove-label "PLANNING"      # pour chaque issue, avec son lot
 ```
+
+Rapport attendu : `LABELS DONE` avec le recapitulatif `#numero → PRET, LOT-n` par issue (le CDP le compare a la
+table du plan avant le premier ordre DEV ; tout ecart = nouvel ordre correctif, pas de DEV).
 
 ### 9.1 Transition vers `EN COURS` (ordre DEV du lot envoyé, ou cycle correctif)
 
@@ -612,19 +630,24 @@ gh label create "ABANDONNE" --color "cfd3d7" --description "Abandonnee, ne sera 
 
 ### 9.11 Lots du milestone (`LOT-N`)
 
-Quand le plan du planner decoupe le milestone en lots independants (table « Lots » du plan), le CDP ordonne a `deployer` de
-poser le label de chaque lot sur ses issues, **apres GATE 2** et avant le premier ordre DEV. Les labels de phase
-s'appliquent ensuite par lot. Les lots sont traites **un a la fois**, dans l'ordre (`LOT-1`, `LOT-2`…) : le lot en cours est
+Le planner decide du decoupage (table « Lots » du plan) ; le CDP le **recopie** dans l'ordre unique du GATE 2 (§9.0) ;
+`deployer` **execute** — c'est le seul acteur qui ecrit des labels (section 9). Les labels de **tous** les lots sont poses
+en une fois, apres GATE 2 et avant le premier ordre DEV, jamais lot par lot. Les labels de phase s'appliquent ensuite
+par lot. Les lots sont traites **un a la fois**, dans l'ordre (`LOT-1`, `LOT-2`…) : le lot en cours est
 `EN COURS`/`EN REVIEW`/`EN QA`/`DONE`, les suivants restent `PRET` jusqu'a la fermeture des issues du lot precedent (CI verte, §9.5b).
 
-Nommage strict `LOT-<entier>` (`^LOT-[0-9]+$`, sans zero devant) : c'est ce que reconnait le panneau `milestone-panel`
-pour regrouper les issues par lot. Chaque issue du milestone porte un seul label de lot.
+Nommage strict `LOT-<entier>` ou `LOT-<entier>.<entier>` (`^LOT-[0-9]+(\.[0-9]+)?$`, sans zero devant) : c'est ce que
+reconnait le panneau `milestone-panel` pour regrouper les issues par lot (sous-lots sous leur lot parent). Chaque issue du
+milestone porte un seul label de lot.
+
+**Re-decoupage** (plan revu : issue entrante, GATE 2 repasse) : le CDP envoie un ordre de la meme forme, limite aux
+issues dont le lot change ou qui n'en ont pas encore (`Labels lots (GITHUB.md §9.11) : LOT-3 → #21 ; #18 : LOT-2.1 → LOT-2.2`).
+Les lots deja livres (issues fermees) ne sont jamais renumerotes ; un nouveau lot prend le numero suivant.
 
 ```bash
-gh label create "LOT-1" --color "5319e7" --description "Lot 1 du milestone"   # si absent (sous-lot : "LOT-2.1")
-gh issue edit <numero> --add-label "LOT-1"
-# Re-decoupage (plan revu) : retirer l'ancien lot
-gh issue edit <numero> --add-label "LOT-2" --remove-label "LOT-1"
+gh label create "LOT-2.1" --color "5319e7" --description "Lot 2.1 du milestone"   # si absent
+gh issue edit <numero> --add-label "LOT-3"                                          # issue entrante
+gh issue edit <numero> --add-label "LOT-2.2" --remove-label "LOT-2.1"               # changement de lot
 ```
 
 ### 9.12 Moment des transitions : au retour du teammate ou a la validation
@@ -638,7 +661,7 @@ l'etat reel meme quand le teamleader attend (GATE, teammate parallele, lot en fi
 |-----------|-----------------------------------------------|
 | Demande de plan (Phase 1) | `PLANNING` (§ table) |
 | Planner `DONE` (plan rendu) | aucun : `PLANNING` jusqu'a la validation (le plan peut etre refuse) |
-| GATE 2 valide | `PRET` sur toutes les issues (§9.0) ; `LOT-N` poses (§9.11) |
+| GATE 2 valide | un seul ordre : `PRET` sur toutes les issues + `LOT-N` de chacune (§9.0, table « Lots » du plan) ; `LABELS DONE` verifie avant le premier ordre DEV |
 | Ordre DEV d'un lot | `EN COURS` sur les issues de ce lot (§9.1) |
 | DEV `DONE` (tous les dev de l'issue) | `EN REVIEW` (§9.2) |
 | TEST-WRITER `DONE` (review parallele) | + `EN QA` (§9.3, `EN REVIEW` conserve) |
