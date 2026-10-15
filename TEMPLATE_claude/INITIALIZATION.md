@@ -42,6 +42,35 @@ b) Initialiser manuellement (questionnaire complet)
 c) Annuler l'initialisation
 ```
 
+(Si un brief est disponible — voir ci-dessous — une option supplementaire cadre le produit depuis ce brief,
+la stack restant celle detectee.)
+
+**Si le projet est vide**, Claude propose :
+
+```
+Ce projet ne contient pas encore de code.
+
+a) Brief de projet (recommande si un brief est disponible)
+   → Un texte de presentation ou de preparation du projet : passe avec la commande
+     (/init-project <texte ou chemin>), colle dans la conversation avant la commande,
+     ou lu dans BRIEF.md, docs/BRIEF.md ou un README.md descriptif.
+     Claude en deduit une proposition de cadrage (21 questions du workshop + stack,
+     chaque valeur marquee deduit / propose / manquant, rien d'invente), l'affiche,
+     puis ne pose que des questionnaires de precision : une question par element
+     manquant ou propose (valeur deduite en option recommandee), une confirmation
+     groupee par phase pour les elements deduits.
+b) Workshop de cadrage
+   → Entretien guide en 6 phases, par choix guides (21 questions)
+c) Questionnaire rapide
+   → Stack technique seule, sans cadrage produit
+d) Annuler
+```
+
+Brief et workshop ecrivent la **fiche de cadrage** `docs/CADRAGE.md` (brief d'origine verbatim, puis une
+sous-section par phase avec les valeurs finales et leur provenance `[brief]`, `[precision]` ou `[workshop]`) ;
+elle alimente les issues de base du milestone `v0.1.0` (une issue par cas d'usage v1) et sert de reference
+au planner et au marketing. `project-config.json` → `initialized_from` = `brief`, `workshop` ou `manual`.
+
 ### Etape 0a : Analyse Automatique (si option a)
 
 Claude analyse les fichiers pour deduire :

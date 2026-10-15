@@ -26,7 +26,8 @@ jamais du texte brut listant des lettres dans le chat :
   jamais en texte dans le chat : 2 a 4 options pertinentes deduites du contexte detecte (README, manifestes,
   reponses precedentes), la saisie libre passant par "Autre". Jusqu'a 4 questions groupees par appel (une phase
   = 1 a 2 appels). Les listes numerotees des phases ci-dessous sont le **contenu** des questions, pas un
-  format d'affichage.
+  format d'affichage. Avec un brief (Option a-bis), seules les precisions manquantes sont posees ; la
+  reception du brief lui-meme (texte long colle dans le message suivant) est la seule saisie libre admise.
 - Toute confirmation (« Confirmer ou modifier ? », validation d'un plan, d'un diff, d'un pipeline) suit la meme
   regle : jamais `[O/n]`, `(o/n)` ni « dis-moi » en texte.
 
@@ -46,7 +47,7 @@ jamais du texte brut listant des lettres dans le chat :
     |
     |-- Code detecte --> Proposer analyse auto ou manuel
     |
-    |-- Projet vide --> Workshop ou questionnaire
+    |-- Projet vide --> Workshop, brief (texte de presentation) ou questionnaire
     |
     v
 [CONFIGURATION] --> Questions ou deduction
@@ -668,6 +669,9 @@ Technologies detectees :
 AskUserQuestion : "Comment veux-tu initialiser le projet ?"
 - Initialiser avec cette configuration (Recommande) — utilise directement les technologies
   detectees ci-dessus, aucune question supplementaire
+- Initialiser avec cette configuration et cadrer depuis le brief — stack detectee + cadrage
+  produit deduit du brief disponible (Option a-bis, phases 1-4 et 6 seulement)   ← uniquement
+  si un brief est disponible (voir "Detection d'un brief")
 - Initialiser manuellement — reprend chaque technologie via le questionnaire complet (etapes
   2 a 10), utile si une detection est incorrecte ou incomplete
 - Annuler — n'initialise rien, quitte /init-project
@@ -681,12 +685,31 @@ Ce projet ne contient pas encore de code.
 Comment souhaitez-vous initialiser le projet ?
 
 AskUserQuestion : "Comment souhaites-tu initialiser le projet ?"
-- Workshop de cadrage (Recommande) — entretien guide en 6 phases pour definir vision,
-  objectifs, stack et contraintes ; genere un CLAUDE.md complet et project-config.json
+- Brief de projet — fournir (ou utiliser) un texte de presentation du projet ; le cadrage et la
+  stack en sont deduits, seules les precisions manquantes sont demandees (Option a-bis)
+  → "(Recommande)" si un brief est disponible (voir ci-dessous), sinon sur le workshop
+- Workshop de cadrage — entretien guide en 6 phases pour definir vision, objectifs, stack et
+  contraintes, sans texte prealable (Option a)
 - Questionnaire rapide — questions directes sur la stack technique uniquement, sans phase de
   cadrage produit
 - Annuler — n'initialise rien, quitte /init-project
 ```
+
+### Detection d'un brief
+
+Un **brief** est un texte de presentation ou de preparation du projet (note d'intention, cahier des charges
+sommaire, compte rendu de reunion, fiche d'idee). Il est **disponible** si l'une de ces sources existe, dans
+cet ordre de priorite :
+
+1. le texte passe avec la commande (`/init-project <texte ou chemin de fichier>`) ;
+2. un texte colle dans la conversation **avant** `/init-project` (message de l'utilisateur de plus de ~5 lignes
+   decrivant le projet) ;
+3. un fichier `BRIEF.md`, `docs/BRIEF.md` ou `docs/CADRAGE.md` (section « Brief d'origine ») a la racine ;
+4. sur un projet vide, un `README.md` qui decrit le projet (plus qu'un titre).
+
+Brief disponible → l'option correspondante est marquee "(Recommande)" et sa description cite la source
+(« brief detecte : docs/BRIEF.md, 42 lignes »). Jamais de deduction silencieuse : le brief n'est exploite
+qu'apres ce choix explicite.
 
 ### Option a : Workshop de Cadrage
 
@@ -741,7 +764,96 @@ Mener un entretien structure en 6 phases.
 21. Standards qualite specifiques ?
 ```
 
-A la fin du workshop, generer `CLAUDE.md` complet, `project-config.json`, et les agents.
+A la fin du workshop, ecrire la **fiche de cadrage** (`docs/CADRAGE.md`, format ci-dessous), puis generer
+`CLAUDE.md` complet, `project-config.json`, et les agents.
+
+### Option a-bis : Brief de projet
+
+Meme resultat que le workshop (les 21 reponses des phases 1-6 + la stack des etapes 1-10), obtenu en
+**trois temps** : lecture du brief → **proposition de cadrage** deduite → **questionnaires de precision**
+limites a ce que le brief ne dit pas. L'utilisateur confirme ou corrige, il ne redige pas.
+
+**1. Obtenir le brief**
+
+- Source detectee (voir "Detection d'un brief") → la lire, confirmer en une ligne (« Brief : docs/BRIEF.md,
+  42 lignes »). Plusieurs sources → AskUserQuestion « Quel brief utiliser ? » (une option par source, 4 max).
+- Aucune source → AskUserQuestion : "Comment fournir le brief ?"
+  - Le coller dans le prochain message (Recommande) — attendre le message suivant de l'utilisateur, qui est
+    le brief integral (seule exception a la regle « jamais de texte libre » : un texte long ne tient pas
+    dans l'option « Autre »)
+  - Indiquer un chemin de fichier — via « Autre » ; fichier absent ou vide → reposer la question
+  - Revenir au workshop — Option a
+- Conserver le texte **verbatim** : il devient la section « Brief d'origine » de `docs/CADRAGE.md`
+  (`mkdir -p docs`, ne jamais ecraser une section « Brief d'origine » existante : en ajouter une datee).
+
+**2. Proposition de cadrage**
+
+Pour chacune des 21 questions des phases 1-6 et pour chaque etape de stack (1 a 10), deduire une valeur
+et lui attribuer un statut :
+
+| Statut | Regle |
+|--------|-------|
+| `deduit` | Dit explicitement par le brief (reformulation permise, pas d'ajout) |
+| `propose` | Inference raisonnable a partir du brief (ex. « acces par lien » → application web ; « benevoles » → utilisateurs peu techniques) — toujours a confirmer |
+| `manquant` | Le brief ne permet rien de solide ; **ne jamais inventer** un chiffre, un nom, une date, une contrainte reglementaire ou une techno |
+
+Regles de deduction :
+- Les 3 cas d'usage v1 (q6) sont les actions concretes decrites par le brief, dans son ordre ; au-dela de 3
+  explicites, garder les 3 premiers et proposer les suivants en « roadmap » (issues `roadmap` seulement).
+- Le hors-perimetre (q7) ne contient que ce que le brief exclut ou reporte explicitement ; sinon `manquant`.
+- La stack (etapes 2-10) : `deduit` uniquement si nommee ; une suggestion du brief (« plutot Node ») est
+  `propose` ; absente → `manquant`, et c'est le questionnaire standard qui tranche.
+- Contraintes reglementaires (q16) : `propose` RGPD des que des donnees de personnes physiques sont manipulees ;
+  tout autre regime (HDS, PCI-DSS...) seulement s'il est nomme.
+
+Afficher la proposition en un tableau par phase (`Question | Valeur | Statut`) dans le chat — c'est le seul
+affichage texte de cette option ; il precede les questions et sert de reference pendant les precisions.
+
+**3. Questionnaires de precision**
+
+Un appel `AskUserQuestion` par phase (jusqu'a 4 questions par appel, scinder si plus), construit ainsi :
+
+- Elements `manquant` → une question chacun, 2 a 4 options plausibles tirees du contexte du brief (jamais une
+  option vide ou « je ne sais pas » : la saisie libre est « Autre »), sans "(Recommande)" sauf defaut evident.
+- Elements `propose` → une question chacun, la valeur deduite en option "(Recommande)" + 1 a 3 alternatives.
+- Elements `deduit` → **pas de question individuelle** : une seule question de cloture par phase
+  « Confirmer les elements deduits de la phase N ? » avec les options « Confirmer (Recommande) » et
+  « Corriger un point » (le point corrige est saisi via « Autre », puis la question est reposee).
+- Une phase entierement `deduit` tient donc en une question ; une phase entierement `manquant` revient au
+  workshop pour cette phase.
+- Phase 5 (stack) : enchainer les etapes 1 a 10 **normalement**, en placant la valeur `deduit`/`propose` en
+  option "(Recommande)" et en sautant une etape seulement si sa valeur est `deduit` et confirmee dans la
+  question de cloture de la phase 5.
+- Code existant + brief (Etape 0, deuxieme option) : phases 1, 2, 3, 4 et 6 seulement ; la phase 5 est la
+  configuration detectee.
+
+A la fin : mettre a jour `docs/CADRAGE.md` (section « Fiche de cadrage », une sous-section par phase avec les
+valeurs finales et, pour chaque valeur, sa provenance : `brief`, `precision` ou `workshop`), puis generer
+`CLAUDE.md` complet, `project-config.json` (`initialized_from` = `brief`) et les agents. Les reponses 2, 5, 6
+et 7 alimentent les issues de base du milestone `v0.1.0` exactement comme pour le workshop.
+
+### Fiche de cadrage — `docs/CADRAGE.md`
+
+Produite par les options a et a-bis (jamais par le questionnaire rapide), trackee git, relue par le planner et
+le marketing. Distincte de `MARKETING/CADRAGE.md` (cadrage du site, sur `gh-pages`).
+
+```markdown
+# Cadrage — <PROJECT_NAME>
+
+> Produit par /init-project (<workshop|brief>, <date>). Source des issues de base du milestone v0.1.0.
+
+## Brief d'origine                      ← option a-bis uniquement, texte verbatim
+
+## Fiche de cadrage
+### 1. Probleme        (q1-q4)
+### 2. Solution        (q5-q8 — cas d'usage v1 numerotes, hors perimetre, differenciateurs)
+### 3. Parties prenantes (q9-q12)
+### 4. Contraintes et risques (q13-q17)
+### 5. Stack et architecture (resume des etapes 1-10)
+### 6. Conventions d'equipe (q18-q21)
+```
+
+Chaque ligne de la fiche porte sa provenance entre crochets : `[brief]`, `[precision]` ou `[workshop]`.
 
 ---
 
@@ -977,7 +1089,7 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
   "description": "<DESCRIPTION>",
   "version": "0.1.0",
   "initialized_at": "<TIMESTAMP>",
-  "initialized_from": "analysis|manual|workshop",
+  "initialized_from": "analysis|manual|workshop|brief",
   "template_version": { "tag": "<LATEST_TAG>", "commit": "<LATEST_COMMIT>" },
   "src_dir": "<SRC_DIR>",
   "version_file": "<VERSION_FILE>",
@@ -1494,7 +1606,7 @@ socle, pour que la premiere session commence directement par `/feature #<n>`.
 
 **Conditions (toutes requises, sinon sauter l'etape sans question et le dire dans le Message de Fin) :**
 
-- Etape 0 : **projet vide** (aucun code detecte → `initialized_from` = `workshop` ou `manual`). Code existant →
+- Etape 0 : **projet vide** (aucun code detecte → `initialized_from` = `workshop`, `brief` ou `manual`). Code existant →
   ne rien creer : le projet a deja une histoire, `/milestone new` reste la voie.
 - Remote GitHub configure (Etape 1, question 3) et `gh auth status` OK.
 - Aucun milestone (ouvert ou ferme) et aucun tag `v*` (local ou distant) : sinon `v0.1.0` n'est pas le premier
@@ -1519,7 +1631,7 @@ TAGS=$(( $(git tag --list 'v*' | wc -l) + $(git ls-remote --tags origin 'v*' | w
 | 2 | `Pipeline CI/CD de release` | Premier run vert du pipeline genere/audite (contrat `agents/infra.md` §3bis, C1-C11), script `commands.ci` | CI/CD ≠ "Aucun" (Etape 7) |
 | 3 | `Publication et deploiement <ENV>` | `publish.mode` et `deploy.mechanism` du premier environnement (`infrastructure.environments[0]`, ex. QUALIF) operationnels de bout en bout | au moins un environnement (Etape 8) |
 | 4 | `Documentation initiale (README)` | Objectif, installation, lancement, tests, contribution | toujours |
-| 5+ | Un cas d'usage v1 par issue | Titre = cas d'usage (workshop, q6) ; corps = probleme central (q2), solution (q5), hors perimetre (q7) ; labels `feature` + `roadmap` | `initialized_from` = `workshop` (questionnaire rapide : les ajouter ensuite via `/backlog`) |
+| 5+ | Un cas d'usage v1 par issue | Titre = cas d'usage (q6, fiche `docs/CADRAGE.md`) ; corps = probleme central (q2), solution (q5), hors perimetre (q7) ; labels `feature` + `roadmap` | `initialized_from` = `workshop` ou `brief` (questionnaire rapide : les ajouter ensuite via `/backlog`) |
 
 Afficher la liste (titres, labels) puis AskUserQuestion :
 `"Creer le milestone v0.1.0 avec ces N issues sur https://github.com/<REPO> ?"`
@@ -1600,6 +1712,7 @@ BRANCH=$(git branch --show-current 2>/dev/null); BRANCH=${BRANCH:-main}
 - **Branche** : ${BRANCH}
 - **Travail en cours** : aucun — projet initialise par /init-project
 - **Issues actives** : aucune
+- **Cadrage produit** : docs/CADRAGE.md (si present — workshop ou brief)
 
 ## Regles critiques
 
@@ -1662,6 +1775,7 @@ Configuration :
 - Environnements : <ENVIRONMENTS>  (ex: QUALIF -> PROD)
 
 Memoire projet : .claude/memory/MEMORY.md initialisee (si absente)
+Cadrage : docs/CADRAGE.md — <workshop|brief : N elements deduits, N precises>   (si workshop ou brief)
 Agents generiques : <NOM> (.claude/agents/generic.<NOM>.md), ...   (si declares)
 
 Audit contexte (/context-audit) : N ecarts corriges (Auto), N arbitres, N laisses — voir `git diff`
@@ -1725,13 +1839,16 @@ Changements disponibles :
 AskUserQuestion : "Le projet est deja initialise — que veux-tu faire ?"
 - Appliquer les mises a jour detectees (Recommande si seuls des [+]/[~]/[!] sont listes) —
   synchronise commandes/agents/contextes depuis TEMPLATE_claude/, conserve project-config.json
-- Reconfigurer completement — relance tout le questionnaire/workshop, ecrase project-config.json
-  existant
+- Reconfigurer completement — relance tout le questionnaire/workshop (ou l'Option a-bis si un brief est
+  disponible), ecrase project-config.json existant
 - Re-analyser le code — relance la detection automatique de stack pour rafraichir le diagnostic
   avant de choisir
 - Annuler — ne modifie rien
 (Pour modifier un seul parametre precis sans tout reconfigurer — preciser via "Autre". Ex : ajouter une
-instance d'agent generique → Etape 5c puis "2bis. Agents generiques" uniquement, sans toucher au reste)
+instance d'agent generique → Etape 5c puis "2bis. Agents generiques" uniquement, sans toucher au reste ;
+cadrer ou recadrer le produit depuis un brief → Option a-bis seule, phases 1-4 et 6, stack inchangee :
+`docs/CADRAGE.md` cree ou mis a jour, et les cas d'usage v1 nouveaux proposes comme issues via `/backlog`,
+jamais de milestone `v0.1.0` cree ici)
 ```
 
 ### Option d : Appliquer les mises a jour detectees

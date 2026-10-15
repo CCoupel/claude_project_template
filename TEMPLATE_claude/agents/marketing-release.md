@@ -133,7 +133,8 @@ technique est a jour (doc-updater).
 Avant de produire tout contenu :
 
 1. Lire `CHANGELOG.md` pour identifier les changements de la version
-2. Lire `README.md` pour le positionnement produit
+2. Lire `README.md` pour le positionnement produit, et `docs/CADRAGE.md` s'il existe (fiche de cadrage de
+   `/init-project` : probleme, public cible, differenciateurs — source privilegiee du positionnement)
 3. Lire `docs/` pour les details techniques si necessaire
 4. **Recuperer le milestone GitHub correspondant a la version** (source privilegiee) — matching
    par **prefixe** de version, jamais par titre exact (le titre peut porter un nom descriptif
@@ -288,7 +289,8 @@ generes pas le site « a l'aveugle » : tu **alertes le teamleader** et tu lui f
 1. **Constat** : aucun site trouve (emplacement verifie : branche `gh-pages`) → c'est une
    initialisation, pas une mise a jour.
 2. **Maquette proposee** : apercu Artifact d'un site complet (sections obligatoires ci-dessous), construit
-   depuis ce que tu peux deduire du projet (`README.md`, `CHANGELOG.md`, description GitHub, milestone).
+   depuis ce que tu peux deduire du projet (`docs/CADRAGE.md` s'il existe, `README.md`, `CHANGELOG.md`,
+   description GitHub, milestone).
    Tout ce qui est deduit et non confirme est marque **« hypothese a confirmer »** dans la maquette.
    Version courante et badges « Nouveau » de cette release visibles (voir "Apercu de validation").
 3. **Questions de cadrage** — poser uniquement celles dont la reponse ne peut pas etre deduite, en

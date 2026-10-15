@@ -149,6 +149,9 @@ Ce raisonnement structure les phases et l'ordre des tâches du plan. Il ne figur
 ### 1. Comprendre la Demande
 
 - Identifier l'objectif principal
+- Lire `docs/CADRAGE.md` s'il existe (fiche de cadrage produite par `/init-project` : probleme, cas d'usage v1,
+  hors perimetre, parties prenantes, contraintes) — une demande qui contredit le hors-perimetre ou une
+  contrainte de la fiche est signalee au teamleader avant de planifier, jamais arbitree en silence
 - Clarifier les ambiguites avec l'utilisateur si necessaire
 - Definir les criteres d'acceptation
 
