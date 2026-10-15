@@ -47,11 +47,18 @@ Ouvrir le projet dans Claude Code et lancer `/init-project`.
 
 `/init-project` fetche automatiquement `TEMPLATE_claude/` depuis GitHub,
 détecte la stack et génère la configuration complète. Sans remote `origin`, il demande le repo GitHub (existant,
-ou à créer via `gh repo create`). Pour un **nouveau projet** (aucun code détecté) avec un remote GitHub, il crée
-les labels de phase, puis le **premier milestone `v0.1.0`** et ses **issues de base** (squelette du projet, pipeline
-CI/CD, publication/déploiement du premier environnement, README, et une issue par cas d'usage v1 du workshop de
-cadrage) après validation de la liste — jamais sur un projet avec code existant, déjà doté de milestones ou de tags,
-ni lors d'une mise à jour. Il se termine par un **audit du contexte** :
+ou à créer via `gh repo create`). Sur un **projet vide**, trois entrées : le **brief** (un texte de présentation
+ou de préparation du projet — passé avec la commande, collé dans la conversation, ou lu dans `BRIEF.md` /
+`docs/BRIEF.md` / un `README.md` descriptif — dont il déduit une **proposition de cadrage** puis ne pose que des
+**questionnaires de précision** sur ce que le texte ne dit pas, valeurs déduites en option recommandée), le
+**workshop de cadrage** (21 questions en 6 phases, par choix guidés) ou le **questionnaire rapide** (stack seule).
+Brief et workshop produisent la **fiche de cadrage** `docs/CADRAGE.md` (brief d'origine verbatim + valeurs finales
+avec leur provenance), relue par le planner et le marketing ; un projet avec code existant peut aussi être cadré
+depuis un brief (stack détectée, phases produit déduites). Pour un **nouveau projet** (aucun code détecté) avec
+un remote GitHub, il crée les labels de phase, puis le **premier milestone `v0.1.0`** et ses **issues de base**
+(squelette du projet, pipeline CI/CD, publication/déploiement du premier environnement, README, et une issue par
+cas d'usage v1 de la fiche de cadrage) après validation de la liste — jamais sur un projet avec code existant,
+déjà doté de milestones ou de tags, ni lors d'une mise à jour. Il se termine par un **audit du contexte** :
 commit d'init (point de retour), puis `/context-audit` complet — placeholders non remplacés, références
 cassées, incohérences `project-config.json` ↔ `CLAUDE.md` ↔ agents. Les corrections `Auto` ne sont pas committées :
 relire `git diff`.
@@ -98,6 +105,7 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
 | `contracts/CHANGELOG.md` | Changelog des contrats (squelette créé par `/init-project`) | Oui |
+| `docs/CADRAGE.md` | Fiche de cadrage produit (brief d'origine + valeurs finales par phase), écrite par `/init-project` en mode brief ou workshop ; lue par le planner et le marketing | Oui |
 
 > **Après un `git clone`/`git pull`** sur un projet déjà initialisé, les fichiers gitignorés
 > ci-dessus (`TEMPLATE_claude/`, commandes, agents template) sont absents jusqu'au prochain
