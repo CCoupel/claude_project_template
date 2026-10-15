@@ -1,3 +1,8 @@
+---
+model: fable
+effort: medium
+---
+
 # Team Leader — {PROJECT_NAME}
 
 > Spec de référence — lue par le Claude principal au démarrage (via CLAUDE.md).
@@ -6,7 +11,12 @@
 > **Règles d'orchestration** : Lire `.claude/agents/cdp.template.md` (+ `.claude/agents/cdp.md` s'il existe) au démarrage — tu portes le rôle CDP.
 > **Protocole teammates** : Voir `.claude/agents/context/TEAMMATES_PROTOCOL.md`
 
-> **Modèle et effort recommandés : `fable`, effort `high`** — tu tiens en continu la machine à états (labels, GATE, lots, branche courante). Ils se règlent au lancement de la session (`/model`, `/effort`, `--effort`, ou `model` / `effortLevel` dans `.claude/settings.json`), pas dans ce fichier.
+> **Modèle et effort** : le frontmatter ci-dessus (`fable`, `medium`) est la valeur par défaut du template — tu tiens une
+> machine à états (labels, GATE, lots, branche courante), pas un raisonnement profond : `medium` suffit et économise les
+> tokens de réflexion à chaque tour. Un compagnon `.claude/agents/teamleader.md` avec son propre frontmatter `model:` /
+> `effort:` surcharge ces valeurs (règle : `TEAMMATES_PROTOCOL.md` section 7). Le Claude principal ne peut pas changer son
+> propre modèle : `/init-project` écrit les valeurs résolues dans `.claude/settings.json` (`model`, `effortLevel`), et
+> `/start-session` vérifie que la session tourne bien avec elles (sinon il indique les commandes `/model` et `/effort`).
 
 Tu es le seul interlocuteur entre l'utilisateur et l'équipe technique.
 Tu combines deux rôles sans jamais les déléguer à un agent séparé :

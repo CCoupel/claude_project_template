@@ -236,3 +236,39 @@ L'échange direct (planner/code-reviewer/qa ↔ leurs sous-agents) reste **fichi
 - **Jalons** : un sous-agent envoie ses jalons `EN COURS` (format section 4b) à son **coordinateur**, pas au teamleader.
   Le coordinateur les agrège en **un seul jalon** pour le teamleader (ex. `QA EN COURS — sub-qa 2/3 terminés (unit OK, integration en cours) — 412/612 tests, 2 KO`).
 - Aucun autre échange direct entre teammates n'est autorisé : toute autre demande passe par le teamleader.
+
+---
+
+## 7. Modèle et effort — résolution au spawn
+
+Chaque agent, teamleader compris, a un `model:` et un `effort:` dans le frontmatter de son `<nom>.template.md` :
+c'est la **valeur par défaut du template**. Un compagnon `<nom>.md` peut commencer par un frontmatter ne contenant
+que `model:` et/ou `effort:` pour la **surcharger** (toute autre clé y est ignorée). Résolution, par priorité :
+
+1. frontmatter du compagnon `<nom>.md` (instance générique : `generic.<nom>.md`, puis `generic.md`) ;
+2. frontmatter du template `<nom>.template.md`.
+
+**Au spawn**, celui qui spawne (le teamleader, seul à le faire) lit ces frontmatters et passe les valeurs résolues
+**explicitement** à l'outil : `Task({ name, subagent_type: "<nom>", model: <résolu>, effort: <résolu>, prompt })`.
+Jamais d'héritage implicite : un spawn sans `model`/`effort` fait tourner le teammate au modèle et à l'effort de la
+session du teamleader, ce qui annule tout le réglage ci-dessous.
+
+- **Sous-agents temporaires** (`sub-planner-N`, `sub-reviewer-<dimension>`, `sub-qa-<scope>`) : valeurs résolues de
+  leur coordinateur (`planner`, `code-reviewer`, `qa`), sauf valeur explicite dans la demande de spawn.
+- **Teamleader** : le Claude principal ne peut pas changer son propre modèle ; `/init-project` écrit les valeurs
+  résolues (`teamleader.md` > `teamleader.template.md`) dans `.claude/settings.json` (`model`, `effortLevel`), et
+  `/start-session` vérifie que la session tourne avec elles. Ne pas éditer `settings.json` à la main : modifier le
+  compagnon puis relancer `/init-project` (mises à jour).
+
+Valeurs par défaut du template :
+
+| Agent | Modèle | Effort | Pourquoi |
+|-------|--------|--------|----------|
+| teamleader | `fable` | `medium` | Tient une machine à états à chaque tour : la capacité compte, pas la profondeur de réflexion |
+| `planner` | `fable` | `high` | Une fois par milestone ; porte lots, contrats et ordre — une erreur coûte des cycles à toute l'équipe |
+| `infra` | `opus` | `medium` | Validation à chaque déploiement ; la profondeur ne sert qu'à l'audit initial du pipeline |
+| `security` | `sonnet` | `high` | Ponctuel (`/secu`), rare donc marginal |
+| `code-reviewer` | `sonnet` | `medium` | À chaque lot, jusqu'à 3 cycles, plus les sous-reviewers : le `high` le plus coûteux du pipeline |
+| `dev-*`, `test-writer`, `qa`, `pr-reviewer`, `deployer`, `generic` | `sonnet` | `medium` | Exécution bornée par un plan et des contrats |
+| `marketing` | `sonnet` | `low` | Rédaction depuis des données GitHub |
+| `doc-updater` | `haiku` | `low` | Mise à jour de documents |

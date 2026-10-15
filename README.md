@@ -126,6 +126,9 @@ Ne pas les éditer — elles sont écrasées à la prochaine sync, sans compagno
 .claude/agents/cdp.md            ← adaptations projet, tracké git, jamais écrasé
 ```
 
+Le compagnon peut commencer par un frontmatter limité à `model:` et/ou `effort:` pour surcharger le modèle et
+l'effort du template (voir « Modèles et effort par agent » ci-dessous) ; toute autre clé y est ignorée.
+
 **Contextes partagés** (`context/COMMON.md`, `context/GITHUB.md`... référencés par les commandes
 et les agents) : même convention que les agents, un compagnon optionnel par fichier :
 
@@ -247,18 +250,30 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `marketing` | Communication de release depuis les données GitHub |
 | `<nom>` (`generic`) | Agent générique pour les projets non-dev (ex. rédacteur PowerPoint) — voir ci-dessous |
 
-**Modèles et effort par agent** (champs `model:` — alias qui suivent la dernière version de la famille — et `effort:` du frontmatter) :
+**Modèles et effort par agent** (champs `model:` — alias qui suivent la dernière version de la famille — et `effort:` du frontmatter de chaque `*.template.md`, teamleader compris) — valeurs par défaut du template :
 
 | Agent | Modèle | Effort |
 |-------|--------|--------|
-| `planner` | `fable` | `high` — il porte la structure du milestone (lots, contrats, ordre) |
-| `infra` | `opus` | `high` — pipeline CI/release : rare mais coûteux à rater |
-| `code-reviewer`, `security` | `sonnet` | `high` — la profondeur trouve les points majeurs |
+| teamleader | `fable` | `medium` — il tient une machine à états à chaque tour : la capacité compte, pas la profondeur de réflexion |
+| `planner` | `fable` | `high` — une fois par milestone, il porte la structure (lots, contrats, ordre) |
+| `infra` | `opus` | `medium` — validation à chaque déploiement ; la profondeur ne sert qu'à l'audit initial du pipeline |
+| `security` | `sonnet` | `high` — ponctuel (`/secu`), rare donc marginal |
+| `code-reviewer` | `sonnet` | `medium` — à chaque lot, jusqu'à 3 cycles plus les sous-reviewers : l'effort le plus fréquent du pipeline |
 | `dev-*`, `test-writer`, `qa`, `pr-reviewer`, `deploy`, `generic` | `sonnet` | `medium` |
 | `doc-updater` | `haiku` | `low` |
 | `marketing` | `sonnet` | `low` |
 
-Le **teamleader** est la session principale : son modèle et son effort se choisissent au lancement (`/model`, `/effort`, `--effort`, ou `model` / `effortLevel` dans `.claude/settings.json`). Recommandé : `fable` en effort `high` (il tient la machine à états labels/GATE/lots en continu). `effortLevel` n'accepte pas `max` : pour `max`, utiliser `/effort max`.
+**Surcharge par projet** : le compagnon `xxx.md` d'un agent (ou la spécification `generic.<nom>.md` d'une instance)
+peut commencer par un frontmatter ne contenant que `model:` et/ou `effort:` — il prime sur le template. Au
+`/start-session`, le teamleader résout ces valeurs et les passe **explicitement** au spawn (`subagent_type`, `model`,
+`effort`) ; sans cela un teammate hériterait du modèle et de l'effort de la session. Les sous-agents temporaires
+héritent de leur coordinateur. Règle complète : `agents/context/TEAMMATES_PROTOCOL.md` section 7.
+
+Le **teamleader** est la session principale et ne peut pas changer son propre modèle : `/init-project` (init et
+mises à jour) écrit les valeurs résolues (`teamleader.md` compagnon > `teamleader.template.md`) dans
+`.claude/settings.json` (`model`, `effortLevel` — clés dérivées, ne pas les éditer à la main), et `/start-session`
+vérifie que la session tourne avec elles, sinon affiche les commandes `/model` et `/effort` à taper. `effortLevel`
+n'accepte pas `max` : pour `max`, la clé est retirée et il faut taper `/effort max` au lancement.
 
 #### Agents génériques (projets non-dev)
 
