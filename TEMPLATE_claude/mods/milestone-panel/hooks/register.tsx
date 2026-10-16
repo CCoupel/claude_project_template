@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage, View } from '../types'
-import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor } from './lib'
+import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageCacheDecision, usageCachePath, usageColor } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -13,6 +13,10 @@ const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
 const noUsage: Usage = { windows: [], source: null, updatedAt: 0, error: null }
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const USAGE_THROTTLE_MS = 20_000
+// Cache partagé : frais sous 90 s (le launcher le relit toutes les 60 s), appels suspendus 60 s après un échec.
+const USAGE_FRESH_MS = 90_000
+const USAGE_BACKOFF_MS = 60_000
+let cachePath: string | null | undefined
 let lastUsageAt = 0
 const usage = atom({ plugin: 'milestone-panel', key: 'usage' } as const, noUsage)
 
@@ -39,16 +43,40 @@ async function detectTeammate($: any) {
   return isTeammateSession(env, res.exitCode === 0 ? res.stdout : '')
 }
 
-// Consommation du compte : d'abord l'endpoint d'utilisation du compte (même source que la page « Utilisation »
-// du site — session, semaine, et limites hebdomadaires par modèle comme Fable), via le credential tenu par
-// l'hôte ($.session.authorize → $.http.fetch, le secret ne transite jamais par le mod) ; à défaut (clé API,
-// passerelle, hors ligne), les en-têtes de la dernière réponse ($.session.usage().rateLimits).
-// Relue au démarrage, à chaque reload, toutes les minutes, et après chaque mesure du moteur (20 s mini entre deux).
+// Consommation du compte : la même source que la page « Utilisation » du site (session, semaine, et limites
+// hebdomadaires par modèle comme Fable), endpoint `/api/oauth/usage`. Pour ne pas multiplier les appels (launcher +
+// un panneau par projet), un cache est partagé : `~/.cache/claude-launcher/usage.json`, alimenté par le launcher toutes
+// les 60 s. Le panneau le lit ; il n'appelle l'endpoint lui-même (credential tenu par l'hôte : $.session.authorize →
+// $.http.fetch, le secret ne transite jamais par le mod) que si le cache manque ou a plus de 90 s, et l'y réécrit pour
+// le launcher et les autres projets. Un échec récent noté par quiconque (`.err` < 60 s : 429, token expiré) suspend
+// les appels. À défaut de données du compte (clé API, passerelle, hors ligne), les en-têtes de la dernière réponse
+// ($.session.usage().rateLimits). Relue au démarrage, à chaque reload, toutes les minutes, et après chaque mesure du
+// moteur (20 s mini entre deux).
+async function statMtime($: any, path: string) {
+  const s = await $.fs.stat(path).catch(() => null)
+  return s && s.kind === 'file' && s.size > 0 ? (s.mtimeMs as number) : null
+}
+
 async function refreshUsage($: any, isForced = false) {
   const now = await $.clock.now()
   if (!isForced && now - lastUsageAt < USAGE_THROTTLE_MS) return
   lastUsageAt = now
+  if (cachePath === undefined) cachePath = usageCachePath(await $.env.get('XDG_CACHE_HOME'), await $.env.get('HOME'))
   let error = 'pas de credential OAuth (clé API, passerelle ou non connecté)'
+  if (cachePath) {
+    const [cacheAt, errAt] = await Promise.all([statMtime($, cachePath), statMtime($, `${cachePath}.err`)])
+    const decision = usageCacheDecision(cacheAt, errAt, now, USAGE_FRESH_MS, USAGE_BACKOFF_MS)
+    if (decision === 'cache') {
+      const parsed = await $.fs.read(cachePath).then((t: string) => parseAccountUsage(JSON.parse(t), cacheAt!)).catch(() => null)
+      if (parsed && parsed.windows.length > 0) {
+        await update($, usage, () => parsed)
+        return
+      }
+    } else if (decision === 'backoff') {
+      error = (await $.fs.read(`${cachePath}.err`).catch(() => '')) || 'échec récent de l’endpoint'
+      return fallbackUsage($, now, error)
+    }
+  }
   try {
     const auth = await $.session.authorize()
     if (auth?.kind === 'bearer') {
@@ -56,15 +84,32 @@ async function refreshUsage($: any, isForced = false) {
       const parsed = res.ok ? parseAccountUsage(JSON.parse(res.text), now) : null
       if (parsed && parsed.windows.length > 0) {
         await update($, usage, () => parsed)
+        // Données fraîches mises à disposition du launcher et des autres projets ; `.err` vidé (= pas d'échec).
+        if (cachePath) {
+          await $.fs.write(cachePath, res.text).catch(() => undefined)
+          if (await statMtime($, `${cachePath}.err`)) await $.fs.write(`${cachePath}.err`, '').catch(() => undefined)
+        }
         return
       }
-      error = res.ok ? 'réponse sans tableau `limits`' : `HTTP ${res.status}`
+      error = res.ok ? 'réponse sans tableau `limits`'
+        : res.status === 429 ? 'trop d’appels à l’endpoint, nouvel essai dans 60 s'
+        : res.status === 401 || res.status === 403 ? 'non authentifié — lancer claude puis /login'
+        : `endpoint indisponible (HTTP ${res.status})`
+      // Échec partagé : les autres sessions et le launcher patientent au lieu de réessayer chacun.
+      if (cachePath) await $.fs.write(`${cachePath}.err`, error).catch(() => undefined)
     }
   } catch (e) {
     error = e instanceof Error ? e.message : String(e)
   }
-  // Repli sur les en-têtes de la dernière réponse — sans jamais effacer des fenêtres du compte déjà obtenues
-  // (la limite par modèle, ex. Fable, n'y figure pas) : on les garde et on note l'échec.
+  await fallbackUsage($, now, error)
+  // Nouvel essai rapide après un échec (le throttle normal attend 20 s, le timer une minute) ; le backoff partagé
+  // le transforme en simple relecture du cache tant que l'échec est récent.
+  $.clock.after(5_000, () => void refreshUsage($, true).catch(() => undefined))
+}
+
+// Repli sur les en-têtes de la dernière réponse — sans jamais effacer des fenêtres du compte déjà obtenues
+// (la limite par modèle, ex. Fable, n'y figure pas) : on les garde et on note l'échec.
+async function fallbackUsage($: any, now: number, error: string) {
   const u = await $.session.usage()
   const limits = u.rateLimits ?? []
   await update($, usage, prev =>
@@ -72,8 +117,6 @@ async function refreshUsage($: any, isForced = false) {
       ? mergeHeaders(prev, limits, now, error)
       : { ...buildUsage(limits, now), error },
   )
-  // Nouvel essai rapide après un échec (le throttle normal attend 20 s, le timer une minute).
-  $.clock.after(5_000, () => void refreshUsage($, true).catch(() => undefined))
 }
 
 async function gh($: any, argv: string[]) {

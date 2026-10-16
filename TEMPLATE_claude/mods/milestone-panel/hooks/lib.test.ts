@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageColor, usageLabel } from './lib'
+import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageCacheDecision, usageCachePath, usageColor, usageLabel } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -221,4 +221,22 @@ test('consommation : un échec passager de l’endpoint garde les fenêtres du c
   expect(u.error).toBe('HTTP 503')
   expect(u.windows.map(w => `${w.label} ${w.percentUsed}`)).toEqual(['Session 80', 'Semaine 98', 'Fable sem. 21'])
   expect(u.windows[0].resetsAt).toBe('2026-10-13T13:00:00+00:00')
+})
+
+test('cache de consommation partagé : XDG_CACHE_HOME, sinon ~/.cache, sinon aucun', () => {
+  expect(usageCachePath('/x/cache', '/home/u')).toBe('/x/cache/claude-launcher/usage.json')
+  expect(usageCachePath(undefined, '/home/u')).toBe('/home/u/.cache/claude-launcher/usage.json')
+  expect(usageCachePath('', '/home/u')).toBe('/home/u/.cache/claude-launcher/usage.json')
+  expect(usageCachePath(undefined, undefined)).toBe(null)
+})
+
+test('cache frais lu sans appel ; échec récent = backoff ; sinon appel', () => {
+  const now = 1_000_000
+  expect(usageCacheDecision(now - 30_000, null, now, 90_000, 60_000)).toBe('cache')
+  // le cache frais prime même après un échec d'une autre session
+  expect(usageCacheDecision(now - 30_000, now - 10_000, now, 90_000, 60_000)).toBe('cache')
+  expect(usageCacheDecision(now - 120_000, now - 10_000, now, 90_000, 60_000)).toBe('backoff')
+  expect(usageCacheDecision(null, now - 10_000, now, 90_000, 60_000)).toBe('backoff')
+  expect(usageCacheDecision(now - 120_000, now - 70_000, now, 90_000, 60_000)).toBe('fetch')
+  expect(usageCacheDecision(null, null, now, 90_000, 60_000)).toBe('fetch')
 })
