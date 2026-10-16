@@ -83,6 +83,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `dev-backend` | `dev-backend` | Backend (stack detectee) |
 | `dev-frontend` | `dev-frontend` | Frontend (stack detectee) |
 | `dev-firmware` | `dev-firmware` | Firmware (si configure) |
+| `dev-<cat>-<suffixe>` | `dev-<cat>-<suffixe>` | Instance supplementaire d'un agent DEV (ex. `dev-firmware-capteur`) — perimetre dans son compagnon |
 | `test-writer` | `test-writer` | Scripts de tests + procedures manuelles QA |
 | `code-reviewer` | `code-reviewer` | Revue de code |
 | `qa` | `qa` | Execution des tests et validation |
@@ -317,7 +318,7 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | Catégorie | Agents | Règle |
 |-----------|--------|-------|
 | **Clearables** | `planner`, `code-reviewer`, `qa`, `doc-updater`, `security`, `infra`, `deployer`, `marketing`, `pr-reviewer` | CLEAR systématique avant chaque dispatch |
-| **Contexte préservé** | `dev-backend`, `dev-frontend`, `dev-firmware`, `dev-plugin`, `test-writer` | Jamais clearer mid-feature — seulement entre features (retour Phase 1) |
+| **Contexte préservé** | `dev-*` (toutes instances), `test-writer` | Jamais clearer mid-feature — seulement entre features (retour Phase 1) |
 
 ### Procédure CLEAR
 

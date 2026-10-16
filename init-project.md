@@ -277,8 +277,13 @@ chaque copie soit surveillee, resynchronisee et sa derive de version visible, el
    ```json
    "agents": {
      "registry": [
-       { "name": "dev-firmware", "source": "templates/dev-firmware-esp32.md",
-         "tag": "v3.22.0", "commit": "<sha du commit>", "sha256": "<empreinte de la source>" },
+       { "name": "dev-firmware-capteur", "source": "templates/dev-firmware-esp32.md",
+         "tag": "v3.22.0", "commit": "<sha du commit>", "sha256": "<empreinte de la source>",
+         "role": "Firmware capteur (ESP32)", "paths": ["firmware/sensor/**"] },
+       { "name": "dev-firmware-passerelle", "source": "templates/dev-firmware-esp32.md", "…": "…",
+         "role": "Firmware passerelle (ESP32)", "paths": ["firmware/gateway/**"] },
+       { "name": "dev-backend", "source": "templates/dev-generic.md", "…": "…",
+         "role": "Backend (Rust/Axum)" },
        { "name": "qa", "source": "agents/qa.md", "tag": "v3.22.0", "commit": "…", "sha256": "…",
          "pinned": true }
      ]
@@ -291,6 +296,8 @@ chaque copie soit surveillee, resynchronisee et sa derive de version visible, el
    | `source` | Chemin du template source, relatif a `TEMPLATE_claude/` |
    | `tag` / `commit` | Version du template d'ou provient la copie deployee |
    | `sha256` | Empreinte du contenu **brut** de la source (avant en-tete et placeholders). Detecte la derive par agent : seul un agent dont la source a reellement change est propose en mise a jour, pas chaque agent a chaque release. Vide = version inconnue (projet anterieur au registre) |
+   | `role` | Agents de stack : role affiche dans la table `## Agents Disponibles` (defaut : libelle de la categorie + techno) |
+   | `paths` | Optionnel — **perimetre** de l'agent (globs). Obligatoire pour les instances multiples d'une meme categorie ; repris dans le compagnon `## Perimetre` et utilise par le planner pour assigner les taches |
    | `pinned` | Optionnel, pose **a la main** par l'utilisateur : `true` = agent fige a sa version, jamais mis a jour par la synchronisation (exception assumee — les versions restent alignees par defaut) |
 
 2. **marquee d'un en-tete de provenance** insere juste apres le frontmatter de la copie (diagnostic
@@ -317,9 +324,18 @@ reconfiguration et a la migration) :
 | `dev-frontend` | `stack.frontend.framework` = `vue` / `nuxt` | `templates/dev-frontend-vue.md` |
 | `dev-firmware` | `stack.firmware` non nul et ESP32 | `templates/dev-firmware-esp32.md` |
 | `dev-plugin` | `stack.plugin` non nul (toute plateforme) | `templates/dev-plugin.md` |
+| `dev-<categorie>` | Stack renseignee **sans template dedie** (reponse « Autre » : Rust, Java, STM32, Raspberry Pi, Flutter, natif mobile...) — y compris `stack.mobile` → `dev-mobile` | `templates/dev-generic.md` |
 
-Stack renseignee mais **sans template** (reponse « Autre » : Rust, STM32, Flutter...) → aucune entree,
-signalee `[?] dev-<categorie> — <techno> : aucun template de stack, pas d'agent dev genere`.
+`dev-generic` ne contient aucune techno : son **compagnon** `<name>.md` est **obligatoire** et porte la stack
+(`## Stack`, `## Toolchain et commandes`, `## Perimetre`, `## Conventions`) — cree par `ensure_companion` a partir
+des reponses de l'Etape 5d ; sans lui, l'agent repond `BLOQUE`.
+
+**Instances multiples** : une categorie presente plusieurs fois (deux firmwares, deux backends...) donne une
+entree par composant, nommee `dev-<categorie>-<suffixe>` (kebab-case, ex. `dev-firmware-capteur`), toutes
+avec la `source` de la categorie ci-dessus, un `role` et un perimetre `paths` disjoints. Il n'y a alors **pas**
+d'entree `dev-<categorie>` seule. Chaque instance a sa propre copie `<name>.template.md` (frontmatter `name:`
+reecrit au nom de l'instance — c'est son `subagent_type` au spawn) et son propre compagnon : spawn, modele/effort
+et synchronisation sont ceux de n'importe quel agent, sans cas particulier.
 
 ### Fonctions
 
@@ -339,8 +355,12 @@ deploy_agent() {
   local sha; sha=$(src_sha "$file")
   local h="<!-- template-source: ${source} @ ${tag} (${commit:0:7}) sha256:${sha:0:12} — copie generee par /init-project, ne pas editer : adapter dans le compagnon ${name}.md -->"
   # En-tete apres le frontmatter (2e ligne "---"), ou en premiere ligne si pas de frontmatter
-  awk -v h="$h" 'NR==1 && $0!="---" {print h; done=1} {print} NR>1 && $0=="---" && !done {print h; done=1}' \
-    "$file" > ".claude/agents/${name}.template.md"
+  # Frontmatter : "name:" reecrit au nom deploye (instances multiples : chaque copie = son propre subagent_type)
+  awk -v h="$h" -v n="$name" '
+    NR==1 && $0!="---" {print h; done=1}
+    NR>1 && !done && /^name:/ {print "name: " n; next}
+    {print}
+    NR>1 && $0=="---" && !done {print h; done=1}' "$file" > ".claude/agents/${name}.template.md"
   echo "  ✓ .claude/agents/${name}.template.md  ← ${source} @ ${tag}"
 }
 
@@ -355,6 +375,32 @@ registry_set() {
 registry_del() {
   jq --arg n "$1" '.agents.registry |= map(select(.name != $n))' "$CFG" > _work/tmp/registry/cfg.tmp \
     && mv _work/tmp/registry/cfg.tmp "$CFG"
+}
+
+# registry_meta NAME ROLE [PATHS_JSON] — role et perimetre d'un agent de stack (ex. '["firmware/sensor/**"]')
+registry_meta() {
+  jq --arg n "$1" --arg r "$2" --argjson p "${3:-null}" '
+    .agents.registry |= map(if .name == $n then . + {role: $r} + (if $p == null then {} else {paths: $p} end) else . end)' \
+    "$CFG" > _work/tmp/registry/cfg.tmp && mv _work/tmp/registry/cfg.tmp "$CFG"
+}
+
+# ensure_companion NAME — cree le squelette du compagnon .claude/agents/NAME.md s'il est absent (jamais ecrase).
+# Requis pour dev-generic (stack) et pour les instances avec perimetre ; Claude remplit ensuite les sections
+# avec les reponses de l'Etape 5d (un squelette vide fait repondre BLOQUE a dev-generic).
+ensure_companion() {
+  local f=".claude/agents/$1.md" e source role paths
+  [ -f "$f" ] && return
+  e=$(jq -c --arg n "$1" '.agents.registry[] | select(.name==$n)' "$CFG")
+  source=$(jq -r '.source' <<<"$e"); role=$(jq -r '.role // ""' <<<"$e")
+  paths=$(jq -r '(.paths // []) | map("- `" + . + "`") | join("\n")' <<<"$e")
+  [ "$source" = "templates/dev-generic.md" ] || [ -n "$paths" ] || return
+  { echo "# $1 — ${role}"; echo
+    if [ "$source" = "templates/dev-generic.md" ]; then
+      echo "## Stack"; echo; echo "## Toolchain et commandes"; echo; fi
+    echo "## Perimetre"; echo; [ -n "$paths" ] && { echo "$paths"; echo; }
+    echo "## Conventions"; echo
+  } > "$f"
+  echo "  ✓ $f cree (a completer — compagnon tracke git)"
 }
 
 # deploy_and_register NAME SOURCE — derniere version (TEMPLATE_claude/ fetche) + registre
@@ -440,7 +486,11 @@ registry_report() {
     elif [ "$pinned" = "true" ]; then etat="📌 epingle (${FETCH_TAG} dispo)"
     else etat="⚠ en retard → ${FETCH_TAG}"; fi
     [ "$pinned" = "true" ] && [ "$etat" = "🟢 a jour" ] && etat="🟢 a jour 📌"
-    comp=$([ -f ".claude/agents/${name}.md" ] && echo "✓ ${name}.md" || echo "—")
+    if [ -f ".claude/agents/${name}.md" ]; then comp="✓ ${name}.md"
+    # Compagnon obligatoire : dev-generic (stack) et instances avec perimetre
+    elif [ "$source" = "templates/dev-generic.md" ] || jq -e --arg n "$name" '.agents.registry[] | select(.name==$n) | .paths' "$CFG" >/dev/null; then
+      comp="✗ ${name}.md manquant (obligatoire)"
+    else comp="—"; fi
     echo "| ${teammate:-$name} | ${name}.template.md | ${source} | ${tag} | ${etat} | ${comp} |"
   done
   # Instances d'agents generiques : template commun generic + specification (compagnon obligatoire)
@@ -1261,6 +1311,46 @@ Puis « Ajouter une autre instance ? ». Les reponses alimentent `agents.generic
 
 ---
 
+## Etape 5d : Agents de developpement — instances multiples et stacks sans template
+
+Recapituler les agents de stack deduits des etapes 2 a 5b avec la **table de correspondance stack → agent de
+stack** (section "Registre des agents") et les afficher : `dev-backend ← templates/dev-backend-go.md`, ...
+Une reponse « Autre » (Rust, STM32, Flutter...) donne un agent `dev-<categorie>` base sur `dev-generic`.
+
+Pre-remplir depuis la detection de l'Etape 0 : plusieurs racines de composant d'une meme categorie (ex. deux
+`platformio.ini`, deux `go.mod`, plusieurs `package.json` serveur) → proposer directement les instances.
+
+```
+AskUserQuestion : "Un meme type de composant est-il present plusieurs fois dans le projet ?"
+- Non, un agent par categorie (Recommande si rien n'a ete detecte) — un seul dev-backend, dev-firmware...
+- Oui — plusieurs composants d'une meme categorie (ex. firmware capteur + firmware passerelle) : un agent
+  par composant, chacun avec son perimetre
+```
+
+Si **Oui**, pour chaque composant (boucler tant que l'utilisateur en ajoute, puis « Ajouter un autre composant ? ») :
+
+```
+AskUserQuestion (texte libre via "Autre") :
+- Categorie et template — options issues de la table de correspondance (ex. "firmware — dev-firmware-esp32")
+- Suffixe du nom (kebab-case) → agent dev-<categorie>-<suffixe>, unique dans la team (ex. dev-firmware-capteur)
+- Role en une ligne (ex. "Firmware capteur — acquisition et envoi LoRa")
+- Perimetre : dossiers/globs dont l'agent est responsable (ex. firmware/sensor/**) — disjoints entre instances
+```
+
+Pour chaque agent base sur **`dev-generic`** (stack « Autre »), completer sa specification de stack — deduite
+du code detecte a l'Etape 0 si possible, sinon demandee (texte libre via "Autre") :
+
+```
+- Stack : langage, version, framework, cible (ex. "Rust 1.80, Axum, Linux x86_64")
+- Toolchain et commandes : build, tests (complets / rapides / cibles), lint, format, audit — commandes exactes
+- Conventions : structure du projet, style, gestion d'erreurs (optionnel)
+```
+
+Les reponses alimentent `agents.registry[]` (`name`, `source`, `role`, `paths`) et les compagnons `<name>.md`
+(voir "2. Agents dev-* et registre des agents").
+
+---
+
 ## Etape 6 : Base de Donnees
 
 ```
@@ -1493,10 +1583,23 @@ deployes a l'etape 4 du fetch, y sont inscrits aussi :
 for f in TEMPLATE_claude/agents/*.md; do
   registry_set "$(basename "$f" .md)" "agents/$(basename "$f")" "$(src_sha "$f")" "$FETCH_TAG" "$FETCH_COMMIT"
 done
-# Agents de stack : une ligne par agent retenu dans la table de correspondance, ex. :
-deploy_and_register dev-backend  templates/dev-backend-go.md
-deploy_and_register dev-firmware templates/dev-firmware-esp32.md
+# Agents de stack : une ligne par agent retenu (Etape 5d), puis role, perimetre et compagnon, ex. :
+deploy_and_register dev-backend templates/dev-generic.md
+registry_meta       dev-backend "Backend (Rust/Axum)"
+deploy_and_register dev-firmware-capteur templates/dev-firmware-esp32.md
+registry_meta       dev-firmware-capteur "Firmware capteur (ESP32)" '["firmware/sensor/**"]'
+deploy_and_register dev-firmware-passerelle templates/dev-firmware-esp32.md
+registry_meta       dev-firmware-passerelle "Firmware passerelle (ESP32)" '["firmware/gateway/**"]'
+for n in $(jq -r '.agents.registry[] | select(.source | startswith("templates/")) | .name' "$CFG"); do
+  ensure_companion "$n"
+done
 ```
+
+Remplir ensuite chaque compagnon cree avec les reponses de l'Etape 5d (`## Stack` et `## Toolchain et commandes`
+**non vides** pour `dev-generic`, `## Perimetre` pour une instance) — trackes git, jamais ecrases par la sync.
+Ajouter une ligne par agent de stack dans la table `## Agents Disponibles` de `CLAUDE.md` :
+`| <name> | <role> | .claude/agents/<name>.template.md | permanent |` (la ligne `dev-<categorie>` du template est
+retiree quand la categorie a des instances).
 
 En **reconfiguration** (stack modifiee), meme procedure : un agent de stack dont la `source` change (ex.
 Node.js → Go) est redeploye avec `deploy_and_register` ; un agent de stack retire de la stack est supprime
@@ -2169,6 +2272,10 @@ AskUserQuestion : "Le projet est deja initialise — que veux-tu faire ?"
 - Annuler — ne modifie rien
 (Pour modifier un seul parametre precis sans tout reconfigurer — preciser via "Autre". Ex : ajouter une
 instance d'agent generique → Etape 5c puis "2bis. Agents generiques" uniquement, sans toucher au reste ;
+ajouter un agent de developpement, ou scinder un agent dev en instances (ex. dev-firmware → dev-firmware-capteur +
+dev-firmware-passerelle) → Etape 5d puis "2. Agents dev-* et registre des agents" uniquement : l'agent scinde est
+retire (`rm .claude/agents/<name>.template.md`, `registry_del <name>`), son compagnon eventuel est propose comme
+base des compagnons des instances puis supprime apres confirmation ;
 cadrer ou recadrer le produit depuis un brief → Option a-bis seule, phases 1-4 et 6, stack inchangee :
 `docs/CADRAGE.md` cree ou mis a jour, et les cas d'usage v1 nouveaux proposes comme issues via `/backlog`,
 jamais de milestone `v0.1.0` cree ici)
@@ -2427,6 +2534,11 @@ changee depuis la version enregistree, ou version inconnue), `MANQUANT` (copie a
 `EPINGLE` (source changee mais agent fige par `pinned`, non mis a jour), `INCHANGE`, `RELIQUAT` (source
 retiree du template, ou copie deployee hors registre).
 
+Agents de stack **manquants** : pour chaque categorie renseignee dans `stack` (`backend`, `frontend`, `mobile`,
+`firmware`, `plugin`) sans aucun agent `dev-<categorie>` ni `dev-<categorie>-*` au registre (typiquement une
+stack « Autre » initialisee avant le repli `dev-generic`) → signaler `[?]` dans le rapport d4 et proposer
+l'Etape 5d pour cette categorie seule (jamais d'ajout automatique : le compagnon de stack demande des reponses).
+
 #### Etape d3b — Comparer la table "Agents Disponibles" (teammates)
 
 > ⚠ **SCOPE STRICT** : cette comparaison (et sa mise à jour en d5d) ne porte que sur le
@@ -2456,6 +2568,10 @@ while read -r n; do [[ -n "$n" ]] && EXPECTED_TEAMMATES+=("$n"); done < <(jq -r 
 # Role = .role, Fichier = generic.template.md + generic.<nom>.md, Spawn = .spawn)
 while read -r n; do [[ -n "$n" ]] && EXPECTED_TEAMMATES+=("$n"); done < <(jq -r '.agents.generic[]?.name' .claude/project-config.json)
 ```
+
+Ligne attendue d'un agent de stack (registre) : `| <name> | <role> | .claude/agents/<name>.template.md | permanent |`,
+`<role>` = `agents.registry[].role` (a defaut, le role de la ligne `dev-<categorie>` du template) — une ligne par
+instance.
 
 **Lire la table courante** dans le `CLAUDE.md` du projet (section entre `## Agents Disponibles`
 et le prochain `---`) et la table source dans `TEMPLATE_claude/CLAUDE_TEMPLATE.md` (même
@@ -2496,6 +2612,7 @@ Synchronisation depuis github.com/<repo>
   [📌] qa          epingle v3.18.0 (source modifiee depuis)    ← non mis a jour
   [=] code-reviewer                      ← inchange (x7...)
   [!] old-agent                          ← RELIQUAT (absent du nouveau template)
+  [?] dev-backend  — Rust : aucun agent de stack → repli dev-generic disponible (Etape 5d)
 
   Contextes (agents/context/ et commands/context/) :
   [~] TEAMMATES_PROTOCOL — <explication courte>   ← modifie

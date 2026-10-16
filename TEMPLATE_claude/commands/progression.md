@@ -15,7 +15,8 @@ vers les teammates et compile le tableau.
 
 ## Execution
 
-Le teamleader envoie une demande de statut à chaque agent actif **en parallele** (un seul message) :
+Le teamleader envoie une demande de statut à chaque agent actif **en parallele** (un seul message) — les agents
+`dev-*` sont ceux de la table `## Agents Disponibles` de `CLAUDE.md` (une ligne par instance, ex. `dev-firmware-capteur`) :
 
 ```
 SendMessage({ to: "planner",       content: "Donne-moi ton statut de progression." })

@@ -161,6 +161,21 @@ Apres le build, verifier que le serveur demarre correctement :
 
 ---
 
+## Instances et Perimetre
+
+Un projet peut avoir **plusieurs agents DEV issus du meme template** (ex. `dev-firmware-capteur` et
+`dev-firmware-passerelle`, tous deux bases sur `dev-firmware-esp32`), declares au registre des agents
+(`project-config.json` → `agents.registry[]`, champs `role` et `paths`). Chaque instance a son propre
+`<nom>.template.md` et son compagnon `<nom>.md`, qui definit son **perimetre** (`## Perimetre` : dossiers/globs).
+
+- Ton nom canonique est celui de ton fichier (`name:` du frontmatter) — c'est lui que tu utilises dans tes rapports
+- Si ton compagnon definit un perimetre : ne modifier **aucun** fichier hors perimetre ; une tache qui en sort →
+  `BLOQUE` en citant le fichier et l'instance competente si elle est identifiable
+- Un fichier partage entre instances (contrat, header commun) se modifie selon `contracts/` (contract-first),
+  jamais par deux instances dans le meme batch
+
+---
+
 ## Coordination Entre Agents DEV
 
 ### Ordre d'Execution Standard
@@ -174,6 +189,7 @@ Le backend DOIT etre complete AVANT le frontend si :
 ### Parallelisation Possible
 
 Frontend et autres agents peuvent etre parallelises APRES le backend si les modifications sont independantes.
+Plusieurs instances d'une meme categorie (ex. deux `dev-firmware-*`) se parallelisent si leurs perimetres sont disjoints.
 
 ---
 

@@ -148,6 +148,16 @@ le template a réellement changé est proposé en mise à jour, avec `version en
 les agents de stack `dev-*` sont resynchronisés comme les autres, et une copie manquante est restaurée à sa
 version. `"pinned": true` (posé à la main) fige un agent à sa version — exception, les versions restent
 alignées par défaut. Les projets antérieurs au registre sont migrés automatiquement à la première sync.
+**Plusieurs agents d'un même type et stacks sans template** (étape 5d de `/init-project`) :
+- un composant présent plusieurs fois (deux firmwares, deux backends...) donne un agent par composant,
+  `dev-<catégorie>-<suffixe>`, basé sur le même template : chaque instance a sa copie `<nom>.template.md`
+  (frontmatter `name:` réécrit — c'est son `subagent_type`), son entrée au registre avec `role` et périmètre
+  `paths`, et son compagnon `<nom>.md` (`## Perimetre`) ; le planner assigne chaque tâche à l'instance dont le
+  périmètre couvre les fichiers ;
+- une stack « Autre » (Rust, Java, STM32, Raspberry Pi, Flutter, mobile natif...) utilise le template de repli
+  `templates/dev-generic.md`, sans techno : la stack, la toolchain (commandes exactes), le périmètre et les
+  conventions sont dans le compagnon `<nom>.md`, **obligatoire** (sinon l'agent répond `BLOQUE`).
+
 Chaque init / sync / réinstallation se termine par un **tableau des teammates** : nom, fichier, template source,
 version actuelle (celle de la copie déployée), état (`🟢 a jour`, `⚠ en retard → <cible>`, `📌 epingle (<cible> dispo)`) et présence d'un compagnon `<nom>.md` (ou de la
 spécification `generic.<nom>.md` pour une instance générique).
@@ -239,6 +249,8 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
     ├── dev-frontend-react.md
     ├── dev-frontend-vue.md
     ├── dev-firmware-esp32.md
+    ├── dev-plugin.md
+    ├── dev-generic.md            # repli pour une stack sans template (Rust, STM32, Flutter...) — stack dans le compagnon
     ├── environments/             # Templates publish/deploy par mécanisme (promote, rebuild-ci,
     │                             # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
     └── workflows/
@@ -262,6 +274,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 | `dev-backend` | Développement backend (stack détectée) |
 | `dev-frontend` | Développement frontend (stack détectée) |
 | `dev-firmware` | Développement firmware (si configuré) |
+| `dev-<cat>-<suffixe>` | Instance supplémentaire d'un agent dev (ex. `dev-firmware-capteur` + `dev-firmware-passerelle`), chacune avec son périmètre |
 | `test-writer` | Tests TDD depuis le plan/contrats (en parallèle du DEV) — unit/integration/E2E/perf + procédures QA |
 | `code-reviewer` | Revue de code (qualité, sécurité OWASP, performance) + vérification couverture des contrats |
 | `qa` | Exécution des tests et validation (unit/integration/E2E/perf) |
@@ -931,7 +944,8 @@ Mettre à jour `TEMPLATE_claude/.template-source.json` dans votre fork :
 
 1. Créer `TEMPLATE_claude/templates/dev-backend-rust.md`
 2. Ajouter sa ligne à la table « Correspondance stack → agent de stack » de la section "Registre des agents"
-   de `init-project.md` (le registre se charge ensuite du déploiement et de la synchronisation)
+   de `init-project.md` (le registre se charge ensuite du déploiement et de la synchronisation). En attendant
+   un template dédié, une stack est déjà couverte par le repli `dev-generic.md` + compagnon de stack
 
 ### Pipeline CI/CD de release
 

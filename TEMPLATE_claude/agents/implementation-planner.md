@@ -328,6 +328,10 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 | dev-frontend | <description precise> | `src/` |
 
 > **Regles de construction de l'arbre :**
+> - Agents DEV disponibles = lignes `dev-*` de la table `## Agents Disponibles` de `CLAUDE.md` (une par instance).
+>   Plusieurs instances d'une meme categorie (ex. `dev-firmware-capteur`, `dev-firmware-passerelle`) : assigner chaque
+>   tache a l'instance dont le **perimetre** (colonne Role, `agents.registry[].paths`, compagnon `<nom>.md`) couvre ses
+>   fichiers ; une tache a cheval → la scinder par instance, contrat commun d'abord
 > - test-writer est toujours dans le Batch 1, jamais retarde
 > - Si backend seul : 1 batch (dev-backend + test-writer)
 > - Si backend + frontend independants : 1 batch (dev-backend + dev-frontend + test-writer)
