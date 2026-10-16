@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage, View } from '../types'
-import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageCacheDecision, usageCachePath, usageColor } from './lib'
+import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageThresholds } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -13,9 +13,7 @@ const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
 const noUsage: Usage = { windows: [], source: null, updatedAt: 0, error: null }
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const USAGE_THROTTLE_MS = 20_000
-// Cache partagé : frais sous 3 min (le launcher le relit toutes les 2 min), appels suspendus 5 min après un échec.
-const USAGE_FRESH_MS = 180_000
-const USAGE_BACKOFF_MS = 300_000
+// Cache partagé : seuils dérivés de `USAGE_REFRESH_SEC` du launcher (~/.config/claude-launcher.conf), repli 5 min.
 let cachePath: string | null | undefined
 let lastUsageAt = 0
 const usage = atom({ plugin: 'milestone-panel', key: 'usage' } as const, noUsage)
@@ -46,9 +44,9 @@ async function detectTeammate($: any) {
 // Consommation du compte : la même source que la page « Utilisation » du site (session, semaine, et limites
 // hebdomadaires par modèle comme Fable), endpoint `/api/oauth/usage`. Pour ne pas multiplier les appels (launcher +
 // un panneau par projet), un cache est partagé : `~/.cache/claude-launcher/usage.json`, alimenté par le launcher toutes
-// les 2 min. Le panneau le lit ; il n'appelle l'endpoint lui-même (credential tenu par l'hôte : $.session.authorize →
-// $.http.fetch, le secret ne transite jamais par le mod) que si le cache manque ou a plus de 3 min, et l'y réécrit pour
-// le launcher et les autres projets. Un échec récent noté par quiconque (`.err` < 5 min : 429, token expiré) suspend
+// les `USAGE_REFRESH_SEC` s (config du launcher, 2 min par défaut). Le panneau le lit ; il n'appelle l'endpoint lui-même (credential tenu par l'hôte : $.session.authorize →
+// $.http.fetch, le secret ne transite jamais par le mod) que si le cache manque ou a plus de 1,5 × cet intervalle (5 min × 1,5 si la config est illisible), et l'y réécrit pour
+// le launcher et les autres projets. Un échec récent noté par quiconque (`.err` < max(5 min, 2 × intervalle) : 429, token expiré) suspend
 // les appels. À défaut de données du compte (clé API, passerelle, hors ligne), les en-têtes de la dernière réponse
 // ($.session.usage().rateLimits). Relue au démarrage, à chaque reload, toutes les minutes, et après chaque mesure du
 // moteur (20 s mini entre deux).
@@ -65,7 +63,9 @@ async function refreshUsage($: any, isForced = false) {
   let error = 'pas de credential OAuth (clé API, passerelle ou non connecté)'
   if (cachePath) {
     const [cacheAt, errAt] = await Promise.all([statMtime($, cachePath), statMtime($, `${cachePath}.err`)])
-    const decision = usageCacheDecision(cacheAt, errAt, now, USAGE_FRESH_MS, USAGE_BACKOFF_MS)
+    const conf = await $.fs.read(`${await $.env.get('HOME')}/.config/claude-launcher.conf`).catch(() => null)
+    const { freshMs, backoffMs } = usageThresholds(parseUsageRefreshSec(conf))
+    const decision = usageCacheDecision(cacheAt, errAt, now, freshMs, backoffMs)
     if (decision === 'cache') {
       const parsed = await $.fs.read(cachePath).then((t: string) => parseAccountUsage(JSON.parse(t), cacheAt!)).catch(() => null)
       if (parsed && parsed.windows.length > 0) {
