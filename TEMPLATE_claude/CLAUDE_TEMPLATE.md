@@ -48,7 +48,10 @@
 | `infra` | Infrastructure (si configurée) | `.claude/agents/infra.template.md` | ponctuel |
 
 > **Agents `dev-*`** : une ligne par agent de stack inscrit au registre des agents (`agents.registry[]` de
-> `project-config.json`) — les lignes des stacks non configurées sont retirées.
+> `project-config.json`) — les lignes des stacks non configurées sont retirées. Plusieurs instances d'une même
+> catégorie (ex. `| dev-firmware-capteur | Firmware capteur (ESP32) — firmware/sensor/** | .claude/agents/dev-firmware-capteur.template.md | permanent |`)
+> ont chacune leur ligne, leur rôle et leur périmètre ; une stack sans template dédié utilise `dev-generic`
+> (stack définie par le compagnon `<nom>.md`, obligatoire).
 
 > **Fichier** pointe vers le `.template.md` — géré par sync, toujours présent. Un compagnon
 > `.md` (sans suffixe) peut exister à côté pour des adaptations projet ; il est optionnel et

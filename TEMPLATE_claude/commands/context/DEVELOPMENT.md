@@ -23,6 +23,8 @@ Analyser les fichiers du plan :
 |-- Fichiers backend -> dev-backend
 |-- Fichiers frontend -> dev-frontend
 |-- Fichiers firmware -> dev-firmware (si applicable)
+|-- Plusieurs instances d'une categorie (ex. dev-firmware-capteur / dev-firmware-passerelle)
+|     -> l'instance dont le perimetre (agents.registry[].paths, compagnon <nom>.md) couvre les fichiers
 |-- Mixte -> Voir section 3
 ```
 

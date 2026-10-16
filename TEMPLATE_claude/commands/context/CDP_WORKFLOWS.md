@@ -50,6 +50,7 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | Dev — Backend seul | `dev-backend` |
 | Dev — Frontend seul | `dev-frontend` |
 | Dev — Les deux | `dev-backend` + `dev-frontend` (parallèle si indépendants) |
+| Dev — instances multiples | chaque `dev-<cat>-<suffixe>` concerné, selon son périmètre (parallèle si périmètres disjoints) |
 | Review | `code-reviewer` + `test-writer` (parallèle) |
 | QA | `qa` — par défaut en parallèle de Review (voir `QUALITY.md` section 12), dès `test-writer` DONE |
 | Doc | `doc-updater` |

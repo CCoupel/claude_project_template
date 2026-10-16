@@ -54,6 +54,8 @@ TEMPLATE_claude/             # Racine de tous les composants template
     ├── dev-frontend-react.md
     ├── dev-frontend-vue.md
     ├── dev-firmware-esp32.md
+    ├── dev-plugin.md
+    ├── dev-generic.md        # repli stack « Autre » — stack définie par le compagnon
     ├── environments/         # Templates publish/deploy par mecanisme (promote, rebuild-ci,
     │                         # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
     └── workflows/
