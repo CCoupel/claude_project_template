@@ -13,9 +13,9 @@ const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
 const noUsage: Usage = { windows: [], source: null, updatedAt: 0, error: null }
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const USAGE_THROTTLE_MS = 20_000
-// Cache partagé : frais sous 90 s (le launcher le relit toutes les 60 s), appels suspendus 60 s après un échec.
-const USAGE_FRESH_MS = 90_000
-const USAGE_BACKOFF_MS = 60_000
+// Cache partagé : frais sous 3 min (le launcher le relit toutes les 2 min), appels suspendus 5 min après un échec.
+const USAGE_FRESH_MS = 180_000
+const USAGE_BACKOFF_MS = 300_000
 let cachePath: string | null | undefined
 let lastUsageAt = 0
 const usage = atom({ plugin: 'milestone-panel', key: 'usage' } as const, noUsage)
@@ -46,9 +46,9 @@ async function detectTeammate($: any) {
 // Consommation du compte : la même source que la page « Utilisation » du site (session, semaine, et limites
 // hebdomadaires par modèle comme Fable), endpoint `/api/oauth/usage`. Pour ne pas multiplier les appels (launcher +
 // un panneau par projet), un cache est partagé : `~/.cache/claude-launcher/usage.json`, alimenté par le launcher toutes
-// les 60 s. Le panneau le lit ; il n'appelle l'endpoint lui-même (credential tenu par l'hôte : $.session.authorize →
-// $.http.fetch, le secret ne transite jamais par le mod) que si le cache manque ou a plus de 90 s, et l'y réécrit pour
-// le launcher et les autres projets. Un échec récent noté par quiconque (`.err` < 60 s : 429, token expiré) suspend
+// les 2 min. Le panneau le lit ; il n'appelle l'endpoint lui-même (credential tenu par l'hôte : $.session.authorize →
+// $.http.fetch, le secret ne transite jamais par le mod) que si le cache manque ou a plus de 3 min, et l'y réécrit pour
+// le launcher et les autres projets. Un échec récent noté par quiconque (`.err` < 5 min : 429, token expiré) suspend
 // les appels. À défaut de données du compte (clé API, passerelle, hors ligne), les en-têtes de la dernière réponse
 // ($.session.usage().rateLimits). Relue au démarrage, à chaque reload, toutes les minutes, et après chaque mesure du
 // moteur (20 s mini entre deux).
@@ -92,7 +92,7 @@ async function refreshUsage($: any, isForced = false) {
         return
       }
       error = res.ok ? 'réponse sans tableau `limits`'
-        : res.status === 429 ? 'trop d’appels à l’endpoint, nouvel essai dans 60 s'
+        : res.status === 429 ? 'trop d’appels à l’endpoint, nouvel essai dans 5 min'
         : res.status === 401 || res.status === 403 ? 'non authentifié — lancer claude puis /login'
         : `endpoint indisponible (HTTP ${res.status})`
       // Échec partagé : les autres sessions et le launcher patientent au lieu de réessayer chacun.
