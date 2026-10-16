@@ -232,11 +232,11 @@ test('cache de consommation partagé : XDG_CACHE_HOME, sinon ~/.cache, sinon auc
 
 test('cache frais lu sans appel ; échec récent = backoff ; sinon appel', () => {
   const now = 1_000_000
-  expect(usageCacheDecision(now - 30_000, null, now, 90_000, 60_000)).toBe('cache')
+  expect(usageCacheDecision(now - 30_000, null, now, 180_000, 300_000)).toBe('cache')
   // le cache frais prime même après un échec d'une autre session
-  expect(usageCacheDecision(now - 30_000, now - 10_000, now, 90_000, 60_000)).toBe('cache')
-  expect(usageCacheDecision(now - 120_000, now - 10_000, now, 90_000, 60_000)).toBe('backoff')
-  expect(usageCacheDecision(null, now - 10_000, now, 90_000, 60_000)).toBe('backoff')
-  expect(usageCacheDecision(now - 120_000, now - 70_000, now, 90_000, 60_000)).toBe('fetch')
-  expect(usageCacheDecision(null, null, now, 90_000, 60_000)).toBe('fetch')
+  expect(usageCacheDecision(now - 30_000, now - 10_000, now, 180_000, 300_000)).toBe('cache')
+  expect(usageCacheDecision(now - 240_000, now - 10_000, now, 180_000, 300_000)).toBe('backoff')
+  expect(usageCacheDecision(null, now - 10_000, now, 180_000, 300_000)).toBe('backoff')
+  expect(usageCacheDecision(now - 400_000, now - 350_000, now, 180_000, 300_000)).toBe('fetch')
+  expect(usageCacheDecision(null, null, now, 180_000, 300_000)).toBe('fetch')
 })
