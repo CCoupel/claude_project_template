@@ -148,6 +148,9 @@ le template a réellement changé est proposé en mise à jour, avec `version en
 les agents de stack `dev-*` sont resynchronisés comme les autres, et une copie manquante est restaurée à sa
 version. `"pinned": true` (posé à la main) fige un agent à sa version — exception, les versions restent
 alignées par défaut. Les projets antérieurs au registre sont migrés automatiquement à la première sync.
+Chaque init / sync / réinstallation se termine par un **tableau des teammates** : nom, fichier, template source,
+version déployée, état (`a jour`, `📌 epingle`, `⚠ en retard`) et présence d'un compagnon `<nom>.md` (ou de la
+spécification `generic.<nom>.md` pour une instance générique).
 
 **Contextes partagés** (`context/COMMON.md`, `context/GITHUB.md`... référencés par les commandes
 et les agents) : même convention que les agents, un compagnon optionnel par fichier :

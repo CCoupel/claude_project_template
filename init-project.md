@@ -417,12 +417,44 @@ registry_sync() {
       MANQUANT) if [ "$(jq -r --arg n "$name" '.agents.registry[] | select(.name==$n) | .pinned // false' "$CFG")" = "true" ]
                 then restore_one "$name"; else deploy_and_register "$name" "$source"; fi ;;
       EPINGLE)  echo "  📌 $name epingle a $info — non mis a jour (retirer \"pinned\" pour le resynchroniser)" ;;
-      RELIQUAT) [ "$1" = "--reliquats" ] && { rm -f ".claude/agents/${name}.template.md"; registry_del "$name"
+      RELIQUAT) [ "$1" = "--reliquats" ] && [[ "$source" != templates/* ]] && { rm -f ".claude/agents/${name}.template.md"; registry_del "$name"
                   echo "  ✗ .claude/agents/${name}.template.md supprime (reliquat)"; } ;;
     esac
   done <<<"$all"
 }
+
+# registry_report — tableau final des teammates : version deployee, etat, compagnon
+registry_report() {
+  local name source tag pinned sha teammate etat comp n gtag
+  echo "| Teammate | Fichier | Source | Version | Etat | Compagnon |"
+  echo "|----------|---------|--------|---------|------|-----------|"
+  jq -r '.agents.registry[]? | [.name, .source, .tag, (.pinned // false), .sha256] | @tsv' "$CFG" |
+  while IFS=$'\t' read -r name source tag pinned sha; do
+    # Nom canonique (SendMessage) lu dans la table "Agents Disponibles" de CLAUDE.md
+    # (a defaut — agent hors table, ex. teamleader — le nom du fichier ; generic = template commun des instances)
+    teammate=$(grep '^| ' CLAUDE.md 2>/dev/null | grep -F ".claude/agents/${name}.template.md" \
+      | head -1 | cut -d'|' -f2 | tr -d ' `')
+    [ "$name" = "generic" ] && teammate="(commun aux instances)"
+    if [ -f "TEMPLATE_claude/$source" ] && [ "$(src_sha "TEMPLATE_claude/$source")" = "$sha" ]; then etat="a jour"
+    elif [ "$pinned" = "true" ]; then etat="📌 epingle"
+    else etat="⚠ en retard"; fi
+    [ "$pinned" = "true" ] && [ "$etat" = "a jour" ] && etat="a jour 📌"
+    comp=$([ -f ".claude/agents/${name}.md" ] && echo "✓ ${name}.md" || echo "—")
+    echo "| ${teammate:-$name} | ${name}.template.md | ${source} | ${tag} | ${etat} | ${comp} |"
+  done
+  # Instances d'agents generiques : template commun generic + specification (compagnon obligatoire)
+  gtag=$(jq -r '.agents.registry[]? | select(.name=="generic") | .tag' "$CFG")
+  jq -r '.agents.generic[]?.name' "$CFG" | while read -r n; do
+    comp=$([ -s ".claude/agents/generic.${n}.md" ] && echo "✓ generic.${n}.md (spec)" || echo "✗ generic.${n}.md manquante")
+    echo "| ${n} | generic.template.md | agents/generic.md | ${gtag:-—} | (voir generic) | ${comp} |"
+  done
+}
 ```
+
+Le **rapport final** de chaque chemin (init, option d, reinstallation, migration v1/v2) se termine par
+`registry_report` : un tableau des teammates avec la version deployee de chaque agent, son etat (`a jour`,
+`📌 epingle`, `⚠ en retard` — ex. sync partielle ou annulee) et la presence d'un compagnon `<nom>.md`
+(adaptations projet ; pour une instance generique, sa specification `generic.<nom>.md`).
 
 > Un `RELIQUAT` d'agent de **stack** (`source` = `templates/...` retire du template, ex. template renomme)
 > n'est jamais supprime sans confirmation explicite : le signaler et demander (re-pointer vers le nouveau
@@ -528,7 +560,8 @@ anterieur au registre" (les agents de stack, gitignores, sont alors redeployes d
 
 Dans les deux cas, enchainer ensuite sur le deploiement standard (etape 4 de la procedure de
 fetch) et la detection de doublons/conflits (d5b/d5c) si des fichiers compagnons `*.md` existent
-deja localement (customisations projet preservees, jamais ecrasees).
+deja localement (customisations projet preservees, jamais ecrasees). Terminer par le tableau des
+teammates (`registry_report`).
 
 ---
 
@@ -783,6 +816,8 @@ Migration → v3 terminee.
     ✓ .claude/memory/
     ✓ .claude/agents/dev-*.md (si presents)
     ✓ .claude/agents/*.md et context/*.md compagnons (si presents)
+
+  Teammates : tableau registry_report (version, etat, compagnon)
 ```
 
 ---
@@ -2082,6 +2117,9 @@ Prochaine etape : /start-session, puis /feature #<n> sur la premiere issue du mi
 Bonne utilisation de Claude Code !
 ```
 
+Puis afficher le tableau des teammates (`registry_report`, section "Registre des agents") : version deployee,
+etat et compagnon de chaque agent.
+
 ---
 
 ## Reinitialisation (projet v3)
@@ -2919,4 +2957,15 @@ Synchronisation terminee.
     ✓ .claude/memory/
     ✓ .claude/agents/dev-*.md   (compagnons — jamais modifiés par la sync ; les copies dev-*.template.md sont,
                                   elles, resynchronisées via le registre comme les autres agents)
+
+  Teammates (registre des agents — sortie de registry_report) :
+  | Teammate     | Fichier                  | Source                          | Version | Etat         | Compagnon   |
+  |--------------|--------------------------|---------------------------------|---------|--------------|-------------|
+  | planner      | implementation-planner.… | agents/implementation-planner.md| v3.22.0 | a jour       | —           |
+  | dev-firmware | dev-firmware.template.md | templates/dev-firmware-esp32.md | v3.22.0 | a jour       | ✓ dev-firmware.md |
+  | qa           | qa.template.md           | agents/qa.md                    | v3.18.0 | 📌 epingle   | ✓ qa.md     |
+  | ...
 ```
+
+Le tableau des teammates est **toujours affiche en dernier** (sortie de `registry_report`, section "Registre
+des agents"), meme si aucun agent n'a change — c'est l'etat de reference de l'equipe apres la synchronisation.
