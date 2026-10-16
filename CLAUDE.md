@@ -101,7 +101,7 @@ Ils sont copiés tels quels dans `.claude/` — le dossier `TEMPLATE_claude/` su
 ### Ajouter un template de stack
 
 1. Créer `TEMPLATE_claude/templates/dev-backend-rust.md` (suivre le format existant)
-2. Référencer dans `TEMPLATE_claude/commands/init-project.md` section "Génération des agents"
+2. Ajouter sa ligne à la table « Correspondance stack → agent de stack » de `init-project.md`, section "Registre des agents"
 
 ### Pipeline CI/CD de release
 

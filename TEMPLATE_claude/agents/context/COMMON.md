@@ -305,6 +305,8 @@ Chaque agent doit :
 Chaque agent `xxx.template.md` peut avoir un fichier compagnon `xxx.md` dans le même dossier.
 **Si ce fichier existe, le lire après le fichier `.template.md`** — il contient les règles et adaptations spécifiques au projet.
 Pour toute modification du comportement de cet agent, écrire dans `xxx.md` (jamais dans `xxx.template.md`).
+L'en-tête `<!-- template-source: … -->` d'un `xxx.template.md` indique son template d'origine et sa version
+(registre des agents `agents.registry[]` de `project-config.json`, tenu par `/init-project`).
 
 Les fichiers `context/` partagés (`context/COMMON.md`, `context/GITHUB.md`, `context/DEV_COMMON.md`...) suivent le même pattern : `context/X.template.md` (sync) + `context/X.md` compagnon optionnel (tracké git). Le lire après le `.template.md` s'il existe. Pour adapter une règle partagée au projet, écrire dans le compagnon `context/X.md`, jamais dans `context/X.template.md`.
 

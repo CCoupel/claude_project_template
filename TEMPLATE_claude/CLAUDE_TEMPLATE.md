@@ -38,6 +38,7 @@
 | `dev-backend` | Backend ({BACKEND_TECH}) | `.claude/agents/dev-backend.template.md` | permanent |
 | `dev-frontend` | Frontend ({FRONTEND_TECH}) | `.claude/agents/dev-frontend.template.md` | permanent |
 | `dev-plugin` | Plugin ({PLUGIN_PLATFORM}) | `.claude/agents/dev-plugin.template.md` | permanent |
+| `dev-firmware` | Firmware embarqué | `.claude/agents/dev-firmware.template.md` | permanent |
 | `test-writer` | Scripts de tests + procédures QA | `.claude/agents/test-writer.template.md` | permanent |
 | `code-reviewer` | Revue de code | `.claude/agents/code-reviewer.template.md` | permanent |
 | `qa` | Exécution des tests et validation | `.claude/agents/qa.template.md` | permanent |
@@ -45,6 +46,9 @@
 | `deployer` | Build + Publication + Déploiement QUALIF/PROD | `.claude/agents/deploy.template.md` | permanent |
 | `security` | Audit sécurité | `.claude/agents/security.template.md` | ponctuel |
 | `infra` | Infrastructure (si configurée) | `.claude/agents/infra.template.md` | ponctuel |
+
+> **Agents `dev-*`** : une ligne par agent de stack inscrit au registre des agents (`agents.registry[]` de
+> `project-config.json`) — les lignes des stacks non configurées sont retirées.
 
 > **Fichier** pointe vers le `.template.md` — géré par sync, toujours présent. Un compagnon
 > `.md` (sans suffixe) peut exister à côté pour des adaptations projet ; il est optionnel et
