@@ -298,6 +298,31 @@ export function mergeHeaders(prev: Usage, limits: RateLimit[], now: number, erro
   return { ...prev, windows, updatedAt: now, error }
 }
 
+/**
+ * Cache de consommation partagé avec le launcher (CCoupel/Claude-Launcher) et les autres projets :
+ * réponse brute de `/api/oauth/usage`, sa date de modification faisant foi ; `<cache>.err` (non vide) = dernier échec.
+ */
+export function usageCachePath(xdgCacheHome: string | undefined, home: string | undefined): string | null {
+  const base = xdgCacheHome || (home ? `${home}/.cache` : '')
+  return base ? `${base}/claude-launcher/usage.json` : null
+}
+
+/**
+ * Qui appelle l'endpoint : personne tant que le cache a moins de `freshMs` (le launcher le relit toutes les 60 s),
+ * ni moins de `backoffMs` après un échec enregistré par quiconque (429, token expiré) ; sinon cette session.
+ */
+export function usageCacheDecision(
+  cacheMtime: number | null,
+  errMtime: number | null,
+  now: number,
+  freshMs: number,
+  backoffMs: number,
+): 'cache' | 'backoff' | 'fetch' {
+  if (cacheMtime !== null && now - cacheMtime < freshMs) return 'cache'
+  if (errMtime !== null && now - errMtime < backoffMs) return 'backoff'
+  return 'fetch'
+}
+
 const two = (n: number) => String(n).padStart(2, '0')
 
 /** Réinitialisation en forme courte : « 15:00 » le jour même, « demain 12:00 », « mer. 12:00 », « 42 min ». Heure locale. */
