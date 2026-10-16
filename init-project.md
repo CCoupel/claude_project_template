@@ -53,7 +53,7 @@ jamais du texte brut listant des lettres dans le chat :
 [CONFIGURATION] --> Questions ou deduction
     |
     v
-[GENERATION] --> project-config.json + agents dev-*
+[GENERATION] --> project-config.json + agents dev-* + registre des agents
     |
     v
 [PLACEHOLDERS] --> Substituer {VAR} dans commandes et agents deployes
@@ -97,9 +97,9 @@ puis deploiera les commandes et agents dans `.claude/`.
 |-----------|-------------|--------------|
 | **TEMPLATE** | `TEMPLATE_claude/` (racine projet) | Fetche depuis GitHub, gitignore, jamais edite manuellement |
 | **COMMANDES** | `.claude/commands/*.md` | Depuis `TEMPLATE_claude/commands/*.md`, déployé en `*.md` — gitignore, pas de compagnon |
-| **AGENTS TEMPLATE** | `.claude/agents/*.template.md` | Depuis `TEMPLATE_claude/agents/*.md`, déployé en `*.template.md` — gitignore |
+| **AGENTS TEMPLATE** | `.claude/agents/*.template.md` | Depuis `TEMPLATE_claude/agents/*.md` (agents communs) ou `TEMPLATE_claude/templates/dev-*.md` (agents de stack), déployé en `*.template.md` avec un en-tete de provenance — gitignore. Chaque copie est inscrite au **registre des agents** (`project-config.json` → `agents.registry[]`, voir section dediee) |
 | **CONTEXTES PARTAGES** | `.claude/{commands,agents}/context/*.template.md` + compagnon `.claude/{commands,agents}/context/*.md` optionnel | Depuis `TEMPLATE_claude/{commands,agents}/context/*.md` — meme convention template/compagnon que les agents |
-| **PROJET** | `.claude/CLAUDE.md`, `project-config.json`, `memory/`, `agents/dev-*.md`, specifications `agents/generic.<nom>.md`, compagnons `agents/*.md` et `context/*.md` | Trackes dans git, jamais ecrases |
+| **PROJET** | `.claude/CLAUDE.md`, `project-config.json` (dont le registre des agents), `memory/`, compagnons `agents/dev-*.md`, specifications `agents/generic.<nom>.md`, compagnons `agents/*.md` et `context/*.md` | Trackes dans git, jamais ecrases |
 
 ---
 
@@ -117,8 +117,11 @@ TEMPLATE_BRANCH_DEFAULT = "main"
 ### Quand fetcher
 
 - **Premiere initialisation** : toujours
-- **Pre-menu de reinitialisation** : toujours (silencieusement, avant l'analyse)
-- **Reinitialisation option d)** : appliquer les changements detectes (fetch deja fait au pre-menu)
+- **Pre-menu de reinitialisation** : toujours (silencieusement, avant l'analyse) — **etapes 1 a 3
+  uniquement** : rien n'est deploye dans `.claude/` ni le registre des agents modifie avant le choix de
+  l'utilisateur (sinon le diff calcule ensuite serait toujours vide)
+- **Reinitialisation option d)** : appliquer les changements detectes (fetch deja fait au pre-menu) —
+  deploiement (d5) puis etape 5 ci-dessous
 
 ### Procedure de fetch
 
@@ -180,6 +183,8 @@ gh api repos/$TEMPLATE_REPO/git/trees/$FETCH_COMMIT?recursive=1 \
 
 Les commandes sont déployées en `*.md` — directement invocables comme `/xxx`, jamais éditées manuellement.
 Les agents sont déployés en `*.template.md` — les adaptations projet vont dans des fichiers `*.md` compagnons (voir COMMON.md §13).
+Le déploiement des agents passe **toujours** par les fonctions de la section "Registre des agents" (en-tête de
+provenance + inscription au registre) — jamais par un `cp` direct.
 Les contextes partagés (`context/COMMON.md`, `context/GITHUB.md`...) suivent la même convention que les agents : déployés en `*.template.md`, avec un compagnon `*.md` optionnel pour les adaptations projet (voir COMMON.md §13).
 
 ```bash
@@ -192,12 +197,19 @@ for src in TEMPLATE_claude/commands/*.md; do
   echo "  ✓ $dest"
 done
 
-# Agents : déployé en *.template.md
-for src in TEMPLATE_claude/agents/*.md; do
-  dest=".claude/agents/$(basename $src .md).template.md"
-  cp "$src" "$dest"
-  echo "  ✓ $dest"
-done
+# Agents : déployé en *.template.md, avec en-tête de provenance (section "Registre des agents")
+if jq -e '.agents.registry' .claude/project-config.json >/dev/null 2>&1; then
+  # Projet deja initialise (reinstallation) : chaque agent du registre, agents de stack compris.
+  # AGENTS_MODE=restore → version enregistree (reinstallation a l'identique, epingles compris) ;
+  # AGENTS_MODE=sync    → derniere version (hors epingles), registre mis a jour.
+  [ "${AGENTS_MODE:-restore}" = "sync" ] && registry_sync || registry_restore
+else
+  # Premiere initialisation : agents communs seulement — les agents de stack (dev-*) sont deployes
+  # et l'ensemble inscrit au registre a la "Generation de la Configuration" (section 2)
+  for src in TEMPLATE_claude/agents/*.md; do
+    deploy_agent "$(basename "$src" .md)" "agents/$(basename "$src")"
+  done
+fi
 
 # Contextes partagés : même convention que les agents — déployé en *.template.md,
 # compagnon *.md optionnel pour les adaptations projet (jamais créé automatiquement)
@@ -250,6 +262,194 @@ if [ -f .claude/project-config.json ]; then
   echo "✓ project-config.json : template_version mis a jour ($FETCH_TAG - $FETCH_COMMIT)"
 fi
 ```
+
+---
+
+## Registre des agents (provenance et version)
+
+Chaque agent deploye (`.claude/agents/<nom>.template.md`) est une **copie** d'un template source de
+`TEMPLATE_claude/` — agent commun (`agents/<nom>.md`) ou agent de stack (`templates/dev-*.md`). Pour que
+chaque copie soit surveillee, resynchronisee et sa derive de version visible, elle est :
+
+1. **inscrite au registre** `agents.registry[]` de `project-config.json` (tracke git — la source de verite,
+   qui survit a un clone frais contrairement aux copies gitignorees) :
+
+   ```json
+   "agents": {
+     "registry": [
+       { "name": "dev-firmware", "source": "templates/dev-firmware-esp32.md",
+         "tag": "v3.22.0", "commit": "<sha du commit>", "sha256": "<empreinte de la source>" },
+       { "name": "qa", "source": "agents/qa.md", "tag": "v3.22.0", "commit": "…", "sha256": "…",
+         "pinned": true }
+     ]
+   }
+   ```
+
+   | Champ | Sens |
+   |-------|------|
+   | `name` | Nom du fichier deploye `.claude/agents/<name>.template.md` (= nom canonique de l'agent, sauf `generic`) |
+   | `source` | Chemin du template source, relatif a `TEMPLATE_claude/` |
+   | `tag` / `commit` | Version du template d'ou provient la copie deployee |
+   | `sha256` | Empreinte du contenu **brut** de la source (avant en-tete et placeholders). Detecte la derive par agent : seul un agent dont la source a reellement change est propose en mise a jour, pas chaque agent a chaque release. Vide = version inconnue (projet anterieur au registre) |
+   | `pinned` | Optionnel, pose **a la main** par l'utilisateur : `true` = agent fige a sa version, jamais mis a jour par la synchronisation (exception assumee — les versions restent alignees par defaut) |
+
+2. **marquee d'un en-tete de provenance** insere juste apres le frontmatter de la copie (diagnostic
+   lisible dans le fichier lui-meme ; un commentaire HTML ne perturbe ni le frontmatter `model:`/`effort:`
+   ni la lecture de l'agent) :
+
+   ```
+   <!-- template-source: templates/dev-firmware-esp32.md @ v3.22.0 (1a2b3c4) sha256:5d6e7f8a9b0c — copie generee par /init-project, ne pas editer : adapter dans le compagnon dev-firmware.md -->
+   ```
+
+**Agents attendus** = tous les agents communs de `TEMPLATE_claude/agents/*.md` (un nouvel agent du
+template est donc ajoute automatiquement) + les agents de stack inscrits au registre (choisis a la
+"Generation de la Configuration", section 2, ou a la migration ci-dessous selon la table suivante).
+
+**Correspondance stack → agent de stack** (unique table de reference — utilisee a l'init, a la
+reconfiguration et a la migration) :
+
+| Agent (`name`) | Condition dans `project-config.json` | `source` |
+|----------------|--------------------------------------|----------|
+| `dev-backend` | `stack.backend.language` = `go` | `templates/dev-backend-go.md` |
+| `dev-backend` | `stack.backend.language` = `javascript` / `typescript` / Node.js | `templates/dev-backend-node.md` |
+| `dev-backend` | `stack.backend.language` = `python` | `templates/dev-backend-python.md` |
+| `dev-frontend` | `stack.frontend.framework` = `react` / `next` | `templates/dev-frontend-react.md` |
+| `dev-frontend` | `stack.frontend.framework` = `vue` / `nuxt` | `templates/dev-frontend-vue.md` |
+| `dev-firmware` | `stack.firmware` non nul et ESP32 | `templates/dev-firmware-esp32.md` |
+| `dev-plugin` | `stack.plugin` non nul (toute plateforme) | `templates/dev-plugin.md` |
+
+Stack renseignee mais **sans template** (reponse « Autre » : Rust, STM32, Flutter...) → aucune entree,
+signalee `[?] dev-<categorie> — <techno> : aucun template de stack, pas d'agent dev genere`.
+
+### Fonctions
+
+Definies une fois, utilisees par l'etape 4 du fetch, la "Generation de la Configuration", la
+reinstallation et l'option d. `TEMPLATE_REPO`, `FETCH_TAG` et `FETCH_COMMIT` viennent de la procedure de fetch.
+
+```bash
+CFG=.claude/project-config.json
+mkdir -p _work/tmp/registry
+
+# Empreinte d'une source : sha256 du contenu brut du template
+src_sha() { sha256sum "$1" | cut -d' ' -f1; }
+
+# deploy_agent NAME SOURCE [FICHIER] [TAG] [COMMIT] — copie + en-tete de provenance (n'ecrit pas le registre)
+deploy_agent() {
+  local name="$1" source="$2" file="${3:-TEMPLATE_claude/$2}" tag="${4:-$FETCH_TAG}" commit="${5:-$FETCH_COMMIT}"
+  local sha; sha=$(src_sha "$file")
+  local h="<!-- template-source: ${source} @ ${tag} (${commit:0:7}) sha256:${sha:0:12} — copie generee par /init-project, ne pas editer : adapter dans le compagnon ${name}.md -->"
+  # En-tete apres le frontmatter (2e ligne "---"), ou en premiere ligne si pas de frontmatter
+  awk -v h="$h" 'NR==1 && $0!="---" {print h; done=1} {print} NR>1 && $0=="---" && !done {print h; done=1}' \
+    "$file" > ".claude/agents/${name}.template.md"
+  echo "  ✓ .claude/agents/${name}.template.md  ← ${source} @ ${tag}"
+}
+
+# registry_set NAME SOURCE SHA TAG COMMIT — ajoute/met a jour l'entree (conserve "pinned"), registre trie
+registry_set() {
+  jq --arg n "$1" --arg s "$2" --arg h "$3" --arg t "$4" --arg c "$5" '
+    (.agents.registry // []) as $r
+    | .agents.registry = ( ($r | map(select(.name != $n)))
+        + [ (($r | map(select(.name == $n)) | .[0]) // {}) + {name:$n, source:$s, tag:$t, commit:$c, sha256:$h} ]
+        | sort_by(.name) )' "$CFG" > _work/tmp/registry/cfg.tmp && mv _work/tmp/registry/cfg.tmp "$CFG"
+}
+registry_del() {
+  jq --arg n "$1" '.agents.registry |= map(select(.name != $n))' "$CFG" > _work/tmp/registry/cfg.tmp \
+    && mv _work/tmp/registry/cfg.tmp "$CFG"
+}
+
+# deploy_and_register NAME SOURCE — derniere version (TEMPLATE_claude/ fetche) + registre
+deploy_and_register() {
+  deploy_agent "$1" "$2" && registry_set "$1" "$2" "$(src_sha "TEMPLATE_claude/$2")" "$FETCH_TAG" "$FETCH_COMMIT"
+}
+
+# restore_one NAME — redeploie exactement la version enregistree. Source locale si son empreinte
+# correspond, sinon fetch du fichier au commit enregistre. Version inconnue (sha256 vide) → derniere.
+restore_one() {
+  local e source tag commit sha file
+  e=$(jq -c --arg n "$1" '.agents.registry[] | select(.name==$n)' "$CFG")
+  source=$(jq -r '.source' <<<"$e"); tag=$(jq -r '.tag' <<<"$e")
+  commit=$(jq -r '.commit' <<<"$e"); sha=$(jq -r '.sha256 // ""' <<<"$e")
+  [ -z "$sha" ] && { deploy_and_register "$1" "$source"; return; }
+  file="TEMPLATE_claude/$source"
+  if [ ! -f "$file" ] || [ "$(src_sha "$file")" != "$sha" ]; then
+    file="_work/tmp/registry/$1.md"
+    gh api "repos/$TEMPLATE_REPO/contents/TEMPLATE_claude/$source?ref=$commit" --jq '.content' | base64 -d > "$file"
+  fi
+  deploy_agent "$1" "$source" "$file" "$tag" "$commit"
+}
+registry_restore() { for n in $(jq -r '.agents.registry[]?.name' "$CFG"); do restore_one "$n"; done; }
+
+# registry_status — une ligne "STATUT NAME SOURCE VERSION_ENREGISTREE" par agent
+registry_status() {
+  local name source e reg_sha reg_tag pinned f n
+  { for f in TEMPLATE_claude/agents/*.md; do echo "$(basename "$f" .md) agents/$(basename "$f")"; done
+    jq -r '.agents.registry[]? | "\(.name) \(.source)"' "$CFG"
+  } | sort -u -k1,1 | while read -r name source; do
+    e=$(jq -c --arg n "$name" '.agents.registry[]? | select(.name==$n)' "$CFG")
+    [ -n "$e" ] || e='{}'
+    reg_sha=$(jq -r '.sha256 // ""' <<<"$e"); reg_tag=$(jq -r '.tag // "-"' <<<"$e")
+    pinned=$(jq -r '.pinned // false' <<<"$e")
+    if   [ ! -f "TEMPLATE_claude/$source" ]; then echo "RELIQUAT $name $source $reg_tag"   # source retiree du template
+    elif [ "$e" = "{}" ]; then echo "NOUVEAU $name $source -"
+    elif [ ! -f ".claude/agents/${name}.template.md" ]; then echo "MANQUANT $name $source $reg_tag"
+    elif [ "$(src_sha "TEMPLATE_claude/$source")" = "$reg_sha" ]; then echo "INCHANGE $name $source $reg_tag"
+    elif [ "$pinned" = "true" ]; then echo "EPINGLE $name $source $reg_tag"
+    else echo "MODIFIE $name $source ${reg_tag:-inconnue}"
+    fi
+  done
+  # Copies deployees ni agent commun ni inscrites au registre (ex. agent d'une stack retiree)
+  for f in .claude/agents/*.template.md; do
+    [ -f "$f" ] || continue; n=$(basename "$f" .template.md)
+    [ -f "TEMPLATE_claude/agents/$n.md" ] && continue
+    jq -e --arg n "$n" '.agents.registry[]? | select(.name==$n)' "$CFG" >/dev/null || echo "RELIQUAT $n - hors-registre"
+  done
+}
+
+# registry_sync [--reliquats] — applique les statuts : NOUVEAU/MODIFIE → derniere version ;
+# MANQUANT → derniere version, ou version enregistree si epingle ; EPINGLE → rien ;
+# RELIQUAT → supprime (copie + entree) uniquement avec --reliquats
+registry_sync() {
+  local all st name source info
+  all=$(registry_status)   # calcule AVANT toute ecriture du registre
+  while read -r st name source info; do
+    case "$st" in
+      NOUVEAU|MODIFIE) deploy_and_register "$name" "$source" ;;
+      MANQUANT) if [ "$(jq -r --arg n "$name" '.agents.registry[] | select(.name==$n) | .pinned // false' "$CFG")" = "true" ]
+                then restore_one "$name"; else deploy_and_register "$name" "$source"; fi ;;
+      EPINGLE)  echo "  📌 $name epingle a $info — non mis a jour (retirer \"pinned\" pour le resynchroniser)" ;;
+      RELIQUAT) [ "$1" = "--reliquats" ] && { rm -f ".claude/agents/${name}.template.md"; registry_del "$name"
+                  echo "  ✗ .claude/agents/${name}.template.md supprime (reliquat)"; } ;;
+    esac
+  done <<<"$all"
+}
+```
+
+> Un `RELIQUAT` d'agent de **stack** (`source` = `templates/...` retire du template, ex. template renomme)
+> n'est jamais supprime sans confirmation explicite : le signaler et demander (re-pointer vers le nouveau
+> template de la table ci-dessus, ou supprimer). Les placeholders sont appliques apres le deploiement,
+> comme pour tous les `*.template.md` (section "4. Application des placeholders").
+
+### Migration — projet anterieur au registre
+
+Declenchee des que `HAS_CONFIG=yes` et que `agents.registry` est absent de `project-config.json`
+(projet initialise avant le registre), **avant tout deploiement d'agent** : a l'entree de l'option d
+(avant d2), avant l'etape 4 de la reinstallation, et en fin de migration v1/v2 → v3. Au pre-menu, rien
+n'est ecrit : le rapport annonce seulement `[⇪] registre des agents absent — sera cree (N agents, dont dev-*)`.
+
+```bash
+# Agents communs : version de la copie deployee inconnue → sha256 vide = MODIFIE, redeployes une fois
+for f in TEMPLATE_claude/agents/*.md; do
+  registry_set "$(basename "$f" .md)" "agents/$(basename "$f")" "" "inconnue" ""
+done
+```
+
+Agents de stack : pour chaque categorie configuree dans `stack`, determiner la `source` avec la table de
+correspondance ci-dessus et l'inscrire de meme (`registry_set dev-<cat> templates/<source> "" inconnue ""`).
+Si la valeur de stack est ambigue mais qu'une copie `.claude/agents/dev-<cat>.template.md` existe,
+l'identifier en comparant son frontmatter (`name`/`description`) aux `TEMPLATE_claude/templates/dev-*.md` ;
+si l'ambiguite persiste → AskUserQuestion (une option par template candidat). Corrige au passage les
+agents de stack jamais resynchronises jusqu'ici (ex. `dev-firmware`) : ils sont desormais suivis comme
+les autres, et redeployes a la version courante par la synchronisation qui suit.
 
 ---
 
@@ -316,11 +516,15 @@ ce clone — ils sont gitignores et ne se recuperent pas avec git. Comment les r
 ```
 
 - **Reinstaller a l'identique** → `FETCH_TAG=$PINNED_TAG`, `FETCH_COMMIT=$PINNED_COMMIT`, puis
-  etapes 3-5 de la procedure de fetch. `template_version` dans `project-config.json` ne change
-  pas (deja a cette valeur).
-- **Mettre a jour** → `FETCH_TAG=$LATEST_TAG`, `FETCH_COMMIT=$LATEST_COMMIT`, puis etapes 3-5 —
-  strictement equivalent a une reinitialisation normale (Option d), `template_version` est mis
-  a jour vers la nouvelle version.
+  etapes 3-5 de la procedure de fetch avec `AGENTS_MODE=restore`. `template_version` dans
+  `project-config.json` ne change pas (deja a cette valeur), le registre des agents non plus : chaque
+  agent — agents de stack `dev-*` et agents epingles compris — est restaure a la version qu'il enregistre.
+- **Mettre a jour** → `FETCH_TAG=$LATEST_TAG`, `FETCH_COMMIT=$LATEST_COMMIT`, puis etapes 3-5 avec
+  `AGENTS_MODE=sync` — strictement equivalent a une reinitialisation normale (Option d),
+  `template_version` et le registre des agents sont mis a jour vers la nouvelle version (hors epingles).
+
+Avant l'etape 4, si `agents.registry` est absent → section "Registre des agents", "Migration — projet
+anterieur au registre" (les agents de stack, gitignores, sont alors redeployes depuis la stack configuree).
 
 Dans les deux cas, enchainer ensuite sur le deploiement standard (etape 4 de la procedure de
 fetch) et la detection de doublons/conflits (d5b/d5c) si des fichiers compagnons `*.md` existent
@@ -527,13 +731,19 @@ fi
 
 Puis appliquer la section **"Site marketing — worktree `gh-pages`"** (migration d'un `MARKETING/` suivi).
 
+### Etape M3b — Registre des agents
+
+Appliquer la section "Registre des agents (provenance et version)", "Migration — projet anterieur au
+registre", puis `registry_sync` : agents communs et agents de stack (`dev-*`) sont redeployes a la version
+fetchee en M1, avec leur en-tete de provenance, et inscrits au registre de `project-config.json`.
+
 ### Etape M4 — Commiter la migration
 
 M2 a désindexé les `*.md` agents via `git rm --cached`. Re-tracker les fichiers compagnons agents
 et contextes qui existent sur disque (customisations projet à préserver) avant de commiter.
 
 ```bash
-git add .gitignore TEMPLATE_claude/.template-source.json
+git add .gitignore TEMPLATE_claude/.template-source.json .claude/project-config.json
 # Re-tracker les companions agents désindexés par M2 (hors dev-* et *.template.md)
 for f in .claude/agents/*.md; do
   [[ -f "$f" ]] || continue
@@ -551,7 +761,8 @@ git commit -m "chore(claude): Migrate to v3 template architecture (TEMPLATE_clau
 - TEMPLATE_claude/ fetched from GitHub, gitignored at root
 - .claude/ now contains only project-specific files
 - Untracked legacy template files from .claude/
-- Agent and context companion files re-tracked after cache cleanup"
+- Agent and context companion files re-tracked after cache cleanup
+- Agents registry (agents.registry[]) created in project-config.json"
 ```
 
 ### Etape M5 — Rapport
@@ -561,7 +772,8 @@ Migration → v3 terminee.
 
   TEMPLATE_claude/ fetche depuis CCoupel/claude_project_template
   Commandes deployees dans .claude/commands/
-  Agents template deployes dans .claude/agents/
+  Agents template deployes dans .claude/agents/ (en-tete de provenance, dev-* compris)
+  Registre des agents cree : project-config.json → agents.registry[] (N agents, <tag>)
   Contextes partages deployes dans .claude/agents/context/ et .claude/commands/context/
 
   Fichiers PROJET preserves :
@@ -1188,10 +1400,14 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
     "idle_warning_interval_minutes": 5,
     "generic": [
       { "name": "redacteur-pptx", "role": "Redaction de presentations PowerPoint", "spawn": "permanent" }
-    ]
+    ],
+    "registry": []
   }
 }
 ```
+
+> `agents.registry` : registre des agents deployes (provenance et version de chaque copie) — cree vide ici,
+> rempli par la section "2. Agents dev-*" ci-dessous. Format et fonctions : section "Registre des agents".
 
 > `agents.generic` : instances d'agents generiques (Etape 5c) — `[]` ou absent si aucune. Chaque `name`
 > est unique et correspond a un fichier `.claude/agents/generic.<name>.md`.
@@ -1226,20 +1442,28 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question 9bis) ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question 9 pour chaque environnement, sauf personnalisation explicite |
 | Nom de fichier des environnements | `infrastructure.environments[].name` normalise : minuscules, espaces/underscores → tirets (ex. `PRE-PROD` → `pre-prod`) — utilise pour `.claude/agents/environments/{publish,deploy}.<nom>.template.md` (section 3bis) |
 
-### 2. Agents dev-*
+### 2. Agents dev-* et registre des agents
 
-| Stack | Template Source | Destination |
-|-------|-----------------|-------------|
-| Go | `TEMPLATE_claude/templates/dev-backend-go.md` | `.claude/agents/dev-backend.template.md` |
-| Node.js | `TEMPLATE_claude/templates/dev-backend-node.md` | `.claude/agents/dev-backend.template.md` |
-| Python | `TEMPLATE_claude/templates/dev-backend-python.md` | `.claude/agents/dev-backend.template.md` |
-| React | `TEMPLATE_claude/templates/dev-frontend-react.md` | `.claude/agents/dev-frontend.template.md` |
-| Vue.js | `TEMPLATE_claude/templates/dev-frontend-vue.md` | `.claude/agents/dev-frontend.template.md` |
-| ESP32 | `TEMPLATE_claude/templates/dev-firmware-esp32.md` | `.claude/agents/dev-firmware.template.md` |
-| Plugin (toute plateforme) | `TEMPLATE_claude/templates/dev-plugin.md` | `.claude/agents/dev-plugin.template.md` |
+Les agents de stack sont choisis avec la **table de correspondance stack → agent de stack** de la section
+"Registre des agents" (`dev-backend`, `dev-frontend`, `dev-firmware`, `dev-plugin` — une stack sans template
+est signalee `[?]`, aucun agent genere). Chacun est deploye en `.claude/agents/<name>.template.md`, avec un
+compagnon `.md` optionnel pour les adaptations projet, et inscrit au registre ; les agents communs, deja
+deployes a l'etape 4 du fetch, y sont inscrits aussi :
 
-> Même convention que les agents génériques (§ précédent) : déployé en `.template.md`,
-> avec un compagnon `.md` optionnel pour les adaptations projet.
+```bash
+# Agents communs (deja deployes avec leur en-tete a l'etape 4 du fetch) → registre
+for f in TEMPLATE_claude/agents/*.md; do
+  registry_set "$(basename "$f" .md)" "agents/$(basename "$f")" "$(src_sha "$f")" "$FETCH_TAG" "$FETCH_COMMIT"
+done
+# Agents de stack : une ligne par agent retenu dans la table de correspondance, ex. :
+deploy_and_register dev-backend  templates/dev-backend-go.md
+deploy_and_register dev-firmware templates/dev-firmware-esp32.md
+```
+
+En **reconfiguration** (stack modifiee), meme procedure : un agent de stack dont la `source` change (ex.
+Node.js → Go) est redeploye avec `deploy_and_register` ; un agent de stack retire de la stack est supprime
+(`rm .claude/agents/<name>.template.md` puis `registry_del <name>`), son compagnon eventuel etant signale
+comme orphelin (d1e).
 
 ### 2bis. Agents generiques (projets non-dev)
 
@@ -1838,9 +2062,10 @@ Audit contexte (/context-audit) : N ecarts corriges (Auto), N arbitres, N laisse
 Milestone v0.1.0 : N issues de base — https://github.com/<org>/<repo>/milestone/<numero>
   (nouveau projet avec remote GitHub ; sinon "non cree — <raison>")
 
-Agents generes :
-- .claude/agents/dev-backend.template.md
-- .claude/agents/dev-frontend.template.md
+Agents generes (registre : project-config.json → agents.registry[], <tag>) :
+- .claude/agents/dev-backend.template.md   ← templates/dev-backend-<stack>.md
+- .claude/agents/dev-frontend.template.md  ← templates/dev-frontend-<stack>.md
+- [?] dev-<categorie> — <techno> : aucun template de stack   (si stack « Autre »)
 
 Commandes disponibles :
 - /feature, /bugfix, /hotfix, /refactor
@@ -1867,12 +2092,15 @@ Si `project-config.json` + `TEMPLATE_claude/` existent :
 
 Avant d'afficher le menu :
 
-**1. Fetcher silencieusement le template depuis GitHub** (procedure "Fetch du Template depuis GitHub").
+**1. Fetcher silencieusement le template depuis GitHub** (procedure "Fetch du Template depuis GitHub",
+etapes 1 a 3 seulement — aucun deploiement avant le choix de l'utilisateur).
 Si le fetch echoue (pas de reseau, gh non auth) → continuer avec le template local en place,
 afficher un avertissement discret : `⚠ Fetch GitHub impossible — analyse basee sur le template local (sync du <date>).`
 
 **2. Calculer les changements** entre `TEMPLATE_claude/` (maintenant a jour) et les fichiers deployes
-(`.claude/commands/`, `.claude/agents/`). Meme logique que l'etape d3 ci-dessous.
+(`.claude/commands/`, `.claude/agents/`). Meme logique que l'etape d3 ci-dessous — pour les agents,
+`registry_status` (section "Registre des agents") : la version enregistree de chaque agent est affichee
+(`[~] qa — v3.18.0 → <tag> : <explication>`, `[📌] dev-firmware — epingle v3.18.0`).
 
 Pour chaque fichier MODIFIE, lire les deux versions et generer une explication courte
 (1 ligne max) decrivant ce qui a change.
@@ -1909,6 +2137,12 @@ jamais de milestone `v0.1.0` cree ici)
 
 > Le fetch GitHub a deja ete effectue au pre-menu — `TEMPLATE_claude/` est a jour.
 > Cette option calcule le diff precis et deploie les changements dans `.claude/`.
+
+#### Etape d0 — Registre des agents
+
+Si `agents.registry` est absent de `project-config.json` → section "Registre des agents", "Migration —
+projet anterieur au registre", avant toute autre etape. Le registre est ensuite la reference des etapes
+d2, d3, d3b et d5 pour les agents.
 
 #### Etape d1c — Audit du pipeline CI/CD de release
 
@@ -1989,9 +2223,9 @@ done
 
 #### Etape d1d — Vérification des fichiers d'environnement
 
-> ⚠ **SCOPE STRICT** : cette étape **crée uniquement les fichiers manquants** — comme
-> `dev-backend.template.md` (jamais resynchronisé automatiquement par l'option d, voir note
-> d3b), les fichiers `.claude/agents/environments/*.template.md` déjà présents ne sont **jamais**
+> ⚠ **SCOPE STRICT** : cette étape **crée uniquement les fichiers manquants** — contrairement aux
+> agents (y compris `dev-*`, resynchronisés via le registre des agents), les fichiers
+> `.claude/agents/environments/*.template.md` déjà présents ne sont **jamais**
 > modifiés ici, même si leur source `TEMPLATE_claude/templates/environments/` a changé. C'est un
 > filet de sécurité (éviter qu'`agents/deploy.md` référence un fichier inexistant), pas une
 > synchronisation complète — limitation assumée, à signaler dans le rapport si applicable.
@@ -2041,7 +2275,7 @@ les constats alimentent le rapport d4 et sont traités à l'étape d5 / vérifi�
 `docs/mockup/INDEX.md`, `docs/tests/INDEX.md` (s'ils existent).
 
 **Racines** (points d'entrée, jamais orphelins) : `CLAUDE.md` (tables « Agents Disponibles » et « Commandes
-Disponibles »), `project-config.json` (`stack.*` → `dev-*`, `agents.generic[]` → `generic.<nom>.md`,
+Disponibles »), `project-config.json` (`agents.registry[]` → `<name>.template.md`, `agents.generic[]` → `generic.<nom>.md`,
 `infrastructure.environments[]` → `environments/{publish,deploy}.<env>.*`, chemins `version_file`,
 `pipeline`, `commands.*`), `settings.json` (hooks → scripts), fichiers template déployés
 (`*.template.md`, `commands/*.md`) tant que leur source existe dans `TEMPLATE_claude/`.
@@ -2071,8 +2305,8 @@ done
 - compagnon `xxx.md` (agents, `agents/context/`, `commands/context/`) dont `xxx.template.md` n'existe plus
   ni dans `.claude/` ni dans `TEMPLATE_claude/` (template supprimé ou renommé — **à relier au nouveau nom si
   un renommage est détectable**) ;
-- `generic.<nom>.md` dont `<nom>` n'est plus dans `agents.generic[]` ; `dev-*.md` dont la stack n'est plus
-  configurée ;
+- `generic.<nom>.md` dont `<nom>` n'est plus dans `agents.generic[]` ; `dev-*.md` dont l'agent n'est plus
+  inscrit au registre des agents ;
 - `environments/*.<env>.*` dont `<env>` n'est plus dans `infrastructure.environments[]` ;
 - agent déployé (`.template.md`) ou fichier de `agents/` absent de la table `Agents Disponibles` ;
 - `*.template.md` déployé dont la source a disparu de `TEMPLATE_claude/` (reliquat, voir d3).
@@ -2090,11 +2324,10 @@ EXPECTED_COMMANDS=$(for f in TEMPLATE_claude/commands/*.md; do
   basename "$f" .md
 done)
 
-# Noms attendus pour les agents, hors dev-*
-EXPECTED_AGENTS=$(for f in TEMPLATE_claude/agents/*.md; do
-  basename "$f" .md
-done)
 ```
+
+Agents : pas de liste a calculer ici — les agents attendus (communs + agents de stack inscrits) et
+leur statut viennent de `registry_status` (etape d3).
 
 #### Etape d3 — Comparer avec les fichiers deployes
 
@@ -2111,9 +2344,9 @@ DEPLOYED_COMMANDS=$(
   | sort -u
 )
 
-# Agents template déployés (*.template.md uniquement — les *.md et dev-*.md sont des fichiers projet)
-DEPLOYED_AGENTS=$(ls .claude/agents/*.template.md 2>/dev/null \
-  | xargs -I{} basename {} .template.md)
+# Agents : statut par agent depuis le registre (section "Registre des agents") — agents communs ET
+# agents de stack (dev-*), comparaison par empreinte de la source (insensible aux placeholders)
+AGENTS_STATUS=$(registry_status)
 
 # Contextes partagés (agents/context/ et commands/context/) — déployés en *.template.md
 # Comparer chaque fichier source avec le fichier déployé
@@ -2148,6 +2381,11 @@ Pour chaque fichier compare, determiner le statut :
 | `INCHANGE` | Present dans les deux, contenu identique |
 | `RELIQUAT` | Present dans DEPLOYED, absent de EXPECTED |
 
+Agents — statuts de `registry_status` : `NOUVEAU` (agent commun ajoute au template), `MODIFIE` (source
+changee depuis la version enregistree, ou version inconnue), `MANQUANT` (copie absente — redeployee),
+`EPINGLE` (source changee mais agent fige par `pinned`, non mis a jour), `INCHANGE`, `RELIQUAT` (source
+retiree du template, ou copie deployee hors registre).
+
 #### Etape d3b — Comparer la table "Agents Disponibles" (teammates)
 
 > ⚠ **SCOPE STRICT** : cette comparaison (et sa mise à jour en d5d) ne porte que sur le
@@ -2158,8 +2396,8 @@ Pour chaque fichier compare, determiner le statut :
 > les agents eux-mêmes.
 
 **Calculer les lignes attendues**, selon la stack déjà configurée dans `project-config.json`
-(les agents génériques sont toujours attendus, les agents `dev-*` seulement si la stack
-correspondante est configurée) :
+(les agents communs sont toujours attendus, les agents `dev-*` seulement s'ils sont inscrits au
+registre des agents) :
 
 ```bash
 BACKEND_LANG=$(jq -r '.stack.backend.language // ""'   .claude/project-config.json)
@@ -2171,9 +2409,8 @@ FRONTEND_TECH="${FRONTEND_FW:-$FRONTEND_LANG}"
 
 # Toujours attendus, independants de la stack
 EXPECTED_TEAMMATES=(planner test-writer code-reviewer qa doc-updater deployer security infra)
-[[ -n "$BACKEND_LANG"    ]] && EXPECTED_TEAMMATES+=(dev-backend)
-[[ -n "$FRONTEND_LANG"   ]] && EXPECTED_TEAMMATES+=(dev-frontend)
-[[ -n "$PLUGIN_PLATFORM" ]] && EXPECTED_TEAMMATES+=(dev-plugin)
+# Agents de stack : ceux inscrits au registre (dev-backend, dev-frontend, dev-firmware, dev-plugin...)
+while read -r n; do [[ -n "$n" ]] && EXPECTED_TEAMMATES+=("$n"); done < <(jq -r '.agents.registry[]? | select(.source | startswith("templates/")) | .name' .claude/project-config.json)
 # Instances d'agents generiques declarees dans project-config.json (ligne attendue :
 # Role = .role, Fichier = generic.template.md + generic.<nom>.md, Spawn = .spawn)
 while read -r n; do [[ -n "$n" ]] && EXPECTED_TEAMMATES+=("$n"); done < <(jq -r '.agents.generic[]?.name' .claude/project-config.json)
@@ -2210,8 +2447,12 @@ Synchronisation depuis github.com/<repo>
   [=] backlog                            ← inchange (x12...)
   [!] old-command                        ← RELIQUAT (absent du nouveau template)
 
-  Agents :
-  [~] cdp       — <explication courte>   ← modifie
+  Agents (registre — version enregistree → version fetchee) :
+  [~] cdp          v3.18.0 → v3.22.0 — <explication courte>   ← modifie
+  [~] dev-firmware v3.15.1 → v3.22.0 — <explication courte>   ← modifie (agent de stack)
+  [+] new-agent    — → v3.22.0                                ← nouveau
+  [↺] security     v3.22.0                                    ← manquant (copie restauree)
+  [📌] qa          epingle v3.18.0 (source modifiee depuis)    ← non mis a jour
   [=] code-reviewer                      ← inchange (x7...)
   [!] old-agent                          ← RELIQUAT (absent du nouveau template)
 
@@ -2262,13 +2503,9 @@ for src in TEMPLATE_claude/commands/*.md; do
   fi
 done
 
-for src in TEMPLATE_claude/agents/*.md; do
-  dest=".claude/agents/$(basename $src .md).template.md"
-  if ! cmp -s "$src" "$dest" 2>/dev/null; then
-    cp "$src" "$dest"
-    echo "  ✓ agents/$(basename $src .md).template.md mis a jour"
-  fi
-done
+# Agents (communs ET de stack) : NOUVEAU/MODIFIE/MANQUANT deployes avec en-tete de provenance et
+# inscrits au registre, EPINGLE laisses a leur version — section "Registre des agents"
+registry_sync
 
 # Contextes partagés — copier fichier par fichier pour reporter les changements, déployé en *.template.md
 for src in TEMPLATE_claude/agents/context/*.md TEMPLATE_claude/commands/context/*.md; do
@@ -2305,6 +2542,9 @@ gh api "repos/$TEMPLATE_REPO/contents/init-project.md?ref=$LATEST_COMMIT" \
 echo "  ✓ .claude/commands/init-project.md mis à jour (depuis le tag $LATEST_TAG)"
 ```
 
+Puis **etape 5 de la procedure de fetch** (`.template-source.json` et `template_version`), non executee au
+pre-menu.
+
 **Option A uniquement — Supprimer les reliquats :**
 
 ```bash
@@ -2317,12 +2557,12 @@ for name in $DEPLOYED_COMMANDS; do
   fi
 done
 
-# Supprimer les agents reliquats
-for name in $DEPLOYED_AGENTS; do
-  if ! echo "$EXPECTED_AGENTS" | grep -q "^${name}$"; then
-    rm ".claude/agents/${name}.template.md"
-    echo "  ✗ .claude/agents/${name}.template.md supprime (reliquat)"
-  fi
+# Supprimer les agents reliquats (copie + entree du registre). Un reliquat d'agent de STACK
+# (source templates/... retiree du template) n'est supprime qu'apres confirmation — voir "Registre des agents"
+grep '^RELIQUAT' <<<"$AGENTS_STATUS" | while read -r _ name source info; do
+  [[ "$source" == templates/* ]] && { echo "  ? ${name} : template de stack ${source} retire — confirmation requise"; continue; }
+  rm -f ".claude/agents/${name}.template.md"; registry_del "$name"
+  echo "  ✗ .claude/agents/${name}.template.md supprime (reliquat)"
 done
 
 # Supprimer les contextes reliquats (source disparue de TEMPLATE_claude/)
@@ -2659,7 +2899,8 @@ specifique a la synchronisation ; `/context-audit` y ajoute les incoherences et 
 Synchronisation terminee.
 
   Commandes mises a jour            : N
-  Agents mis a jour                 : N
+  Agents mis a jour                 : N (dont N agents de stack dev-*) — registre agents.registry[] a <tag>
+  Agents epingles (non mis a jour)  : N (<nom> @ <tag>, ...)
   Reliquats supprimes               : N
   Doublons compagnons retires       : N (etape d5b)
   Conflits compagnons arbitres      : N (etape d5c)
@@ -2676,5 +2917,6 @@ Synchronisation terminee.
     ✓ .claude/project-config.json (hors migration ponctuelle du schema `infrastructure`, voir
       section "Migration du schema `infrastructure`" — champs projet non touches sinon)
     ✓ .claude/memory/
-    ✓ .claude/agents/dev-*.md   (jamais modifiés par la sync de la table Agents Disponibles)
+    ✓ .claude/agents/dev-*.md   (compagnons — jamais modifiés par la sync ; les copies dev-*.template.md sont,
+                                  elles, resynchronisées via le registre comme les autres agents)
 ```

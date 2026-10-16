@@ -84,7 +84,7 @@ TEMPLATE_claude/           │     ├── commands/
 ├── templates/                   │   ├── *.md          ← adaptations projet par agent (tracké git)
 │   └── workflows/               │   ├── context/*.template.md ← sync (gitignore)
 ├── INITIALIZATION.md            │   ├── context/*.md  ← adaptations projet par contexte (tracké git)
-├── CLAUDE_TEMPLATE.md           │   └── dev-*.md      ← généré stack (tracké git)
+├── CLAUDE_TEMPLATE.md           │   └── dev-*.template.md ← agent de stack, sync via le registre (gitignore)
 └── .template-source.json        ├── CLAUDE.md         ← généré (tracké git)
                                  ├── project-config.json ← généré (tracké git)
                                  └── memory/           ← tracké git (MEMORY.md initialisé en fin d'init)
@@ -99,14 +99,13 @@ TEMPLATE_claude/           │     ├── commands/
 |---------|----------------------|----------|
 | `TEMPLATE_claude/` | Source template | Non (gitignore) |
 | `.claude/commands/*.md` | Commandes template (jamais éditées, invocables `/xxx`) | Non (gitignore) |
-| `.claude/agents/*.template.md` | Agents template (jamais édités) | Non (gitignore) |
-| `.claude/agents/*.md` | Adaptations projet par agent | Oui |
-| `.claude/agents/dev-*.md` | Agents projet (stack-spécifique) | Oui |
+| `.claude/agents/*.template.md` | Agents template (jamais édités) — agents communs et agents de stack `dev-*`, chacun avec un en-tête de provenance (template source + version) | Non (gitignore) |
+| `.claude/agents/*.md` | Adaptations projet par agent (compagnons, `dev-*.md` compris) | Oui |
 | `.claude/agents/generic.<nom>.md` | Spécification d'une instance d'agent générique (projets non-dev, ex. rédacteur PowerPoint) — le template commun est `generic.template.md` ; plusieurs instances possibles, déclarées dans `project-config.json` → `agents.generic[]` | Oui |
 | `.claude/agents/environments/{publish,deploy}.<env>.md` | Fichiers publish/deploy par environnement (mécanisme spécifique, un par tâche × environnement) | Oui |
 | `.claude/{agents,commands}/context/*.template.md` | Contextes partagés template (jamais édités) | Non (gitignore) |
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
-| `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet | Oui |
+| `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet — `project-config.json` porte aussi le **registre des agents** (`agents.registry[]`) | Oui |
 | `contracts/CHANGELOG.md` | Changelog des contrats (squelette créé par `/init-project`) | Oui |
 | `docs/CADRAGE.md` | Fiche de cadrage produit (brief d'origine + valeurs finales par phase), écrite par `/init-project` en mode brief ou workshop ; lue par le planner et le marketing | Oui |
 
@@ -115,7 +114,8 @@ TEMPLATE_claude/           │     ├── commands/
 > `/init-project` — c'est manuel, géré au niveau de l'ouverture de projet (ex. le launcher).
 > `project-config.json.template_version` (tracké git) retient la version exacte du template
 > utilisée : `/init-project` la détecte et propose de **réinstaller à l'identique** (pas de mise
-> à jour forcée) plutôt que de refaire une migration v1/v2 → v3.
+> à jour forcée) plutôt que de refaire une migration v1/v2 → v3. Le registre des agents restaure de même
+> chaque agent — agents de stack `dev-*` et agents épinglés compris — à la version qu'il enregistre.
 
 ### Séparation template / projet
 
@@ -131,6 +131,23 @@ Ne pas les éditer — elles sont écrasées à la prochaine sync, sans compagno
 
 Le compagnon peut commencer par un frontmatter limité à `model:` et/ou `effort:` pour surcharger le modèle et
 l'effort du template (voir « Modèles et effort par agent » ci-dessous) ; toute autre clé y est ignorée.
+
+**Registre des agents — provenance et version** : chaque `*.template.md` est une copie d'un template source
+(`TEMPLATE_claude/agents/<nom>.md` pour les agents communs, `TEMPLATE_claude/templates/dev-*.md` pour les agents
+de stack) inscrite dans `project-config.json` → `agents.registry[]` :
+
+```json
+{ "name": "dev-firmware", "source": "templates/dev-firmware-esp32.md",
+  "tag": "v3.22.0", "commit": "<sha>", "sha256": "<empreinte de la source>" }
+```
+
+La copie porte le même renseignement dans un en-tête après son frontmatter
+(`<!-- template-source: templates/dev-firmware-esp32.md @ v3.22.0 (…) sha256:… -->`). `/init-project` suit
+ainsi chaque agent individuellement : l'empreinte de la source détecte la dérive par agent (seul un agent dont
+le template a réellement changé est proposé en mise à jour, avec `version enregistrée → nouvelle version`),
+les agents de stack `dev-*` sont resynchronisés comme les autres, et une copie manquante est restaurée à sa
+version. `"pinned": true` (posé à la main) fige un agent à sa version — exception, les versions restent
+alignées par défaut. Les projets antérieurs au registre sont migrés automatiquement à la première sync.
 
 **Contextes partagés** (`context/COMMON.md`, `context/GITHUB.md`... référencés par les commandes
 et les agents) : même convention que les agents, un compagnon optionnel par fichier :
@@ -770,9 +787,10 @@ Pour récupérer les nouvelles fonctionnalités du template dans un projet exist
 
 Fetche la dernière version de `TEMPLATE_claude/` et :
 - Écrase les commandes (`*.md`), agents template (`*.template.md`) et contextes partagés template (`context/*.template.md`)
+  — pour les agents (communs et `dev-*`), selon le registre des agents : seuls ceux dont la source a changé, hors épinglés
 - Met à jour le bloc `<!-- BEGIN/END TEAMLEADER_PROTOCOL -->` dans `CLAUDE.md` sans toucher au reste
 - Compare la table `## Agents Disponibles` de `CLAUDE.md` à la structure attendue (agents génériques
-  + agents `dev-*` selon la stack configurée) et la met à jour — documentation uniquement, cette
+  + agents `dev-*` inscrits au registre des agents) et la met à jour — documentation uniquement, cette
   comparaison ne crée/modifie/supprime jamais `.claude/agents/*.md`
 - Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL` + table `Agents Disponibles`) et `.claude/settings.json`
 - Crée s'ils sont absents `.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` (jamais écrasés)
@@ -909,7 +927,8 @@ Mettre à jour `TEMPLATE_claude/.template-source.json` dans votre fork :
 ### Ajouter un template de stack
 
 1. Créer `TEMPLATE_claude/templates/dev-backend-rust.md`
-2. Référencer dans `init-project.md` section "Agents dev-*"
+2. Ajouter sa ligne à la table « Correspondance stack → agent de stack » de la section "Registre des agents"
+   de `init-project.md` (le registre se charge ensuite du déploiement et de la synchronisation)
 
 ### Pipeline CI/CD de release
 
