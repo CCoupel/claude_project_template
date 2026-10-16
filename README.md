@@ -149,7 +149,7 @@ les agents de stack `dev-*` sont resynchronisés comme les autres, et une copie 
 version. `"pinned": true` (posé à la main) fige un agent à sa version — exception, les versions restent
 alignées par défaut. Les projets antérieurs au registre sont migrés automatiquement à la première sync.
 Chaque init / sync / réinstallation se termine par un **tableau des teammates** : nom, fichier, template source,
-version déployée, état (`a jour`, `📌 epingle`, `⚠ en retard`) et présence d'un compagnon `<nom>.md` (ou de la
+version actuelle (celle de la copie déployée), état (`🟢 a jour`, `⚠ en retard → <cible>`, `📌 epingle (<cible> dispo)`) et présence d'un compagnon `<nom>.md` (ou de la
 spécification `generic.<nom>.md` pour une instance générique).
 
 **Contextes partagés** (`context/COMMON.md`, `context/GITHUB.md`... référencés par les commandes

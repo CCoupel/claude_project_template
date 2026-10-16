@@ -435,10 +435,11 @@ registry_report() {
     teammate=$(grep '^| ' CLAUDE.md 2>/dev/null | grep -F ".claude/agents/${name}.template.md" \
       | head -1 | cut -d'|' -f2 | tr -d ' `')
     [ "$name" = "generic" ] && teammate="(commun aux instances)"
-    if [ -f "TEMPLATE_claude/$source" ] && [ "$(src_sha "TEMPLATE_claude/$source")" = "$sha" ]; then etat="a jour"
-    elif [ "$pinned" = "true" ]; then etat="📌 epingle"
-    else etat="⚠ en retard"; fi
-    [ "$pinned" = "true" ] && [ "$etat" = "a jour" ] && etat="a jour 📌"
+    # Version = version de la copie deployee ; la cible (FETCH_TAG) n'est affichee que si elle differe en contenu
+    if [ -f "TEMPLATE_claude/$source" ] && [ "$(src_sha "TEMPLATE_claude/$source")" = "$sha" ]; then etat="🟢 a jour"
+    elif [ "$pinned" = "true" ]; then etat="📌 epingle (${FETCH_TAG} dispo)"
+    else etat="⚠ en retard → ${FETCH_TAG}"; fi
+    [ "$pinned" = "true" ] && [ "$etat" = "🟢 a jour" ] && etat="🟢 a jour 📌"
     comp=$([ -f ".claude/agents/${name}.md" ] && echo "✓ ${name}.md" || echo "—")
     echo "| ${teammate:-$name} | ${name}.template.md | ${source} | ${tag} | ${etat} | ${comp} |"
   done
@@ -452,8 +453,10 @@ registry_report() {
 ```
 
 Le **rapport final** de chaque chemin (init, option d, reinstallation, migration v1/v2) se termine par
-`registry_report` : un tableau des teammates avec la version deployee de chaque agent, son etat (`a jour`,
-`📌 epingle`, `⚠ en retard` — ex. sync partielle ou annulee) et la presence d'un compagnon `<nom>.md`
+`registry_report` : un tableau des teammates avec la version **actuelle** de chaque agent (celle de la copie
+deployee — un agent dont le template n'a pas change depuis reste a sa version de deploiement tout en etant a
+jour), son etat (`🟢 a jour` ; `⚠ en retard → <cible>` — ex. sync partielle ou annulee ; `📌 epingle (<cible>
+dispo)`, la cible etant la version fetchee) et la presence d'un compagnon `<nom>.md`
 (adaptations projet ; pour une instance generique, sa specification `generic.<nom>.md`).
 
 > Un `RELIQUAT` d'agent de **stack** (`source` = `templates/...` retire du template, ex. template renomme)
@@ -2959,11 +2962,11 @@ Synchronisation terminee.
                                   elles, resynchronisées via le registre comme les autres agents)
 
   Teammates (registre des agents — sortie de registry_report) :
-  | Teammate     | Fichier                  | Source                          | Version | Etat         | Compagnon   |
-  |--------------|--------------------------|---------------------------------|---------|--------------|-------------|
-  | planner      | implementation-planner.… | agents/implementation-planner.md| v3.22.0 | a jour       | —           |
-  | dev-firmware | dev-firmware.template.md | templates/dev-firmware-esp32.md | v3.22.0 | a jour       | ✓ dev-firmware.md |
-  | qa           | qa.template.md           | agents/qa.md                    | v3.18.0 | 📌 epingle   | ✓ qa.md     |
+  | Teammate     | Fichier                  | Source                          | Version | Etat                        | Compagnon   |
+  |--------------|--------------------------|---------------------------------|---------|-----------------------------|-------------|
+  | planner      | implementation-planner.… | agents/implementation-planner.md| v3.20.0 | 🟢 a jour                   | —           |
+  | dev-firmware | dev-firmware.template.md | templates/dev-firmware-esp32.md | v3.22.0 | 🟢 a jour                   | ✓ dev-firmware.md |
+  | qa           | qa.template.md           | agents/qa.md                    | v3.18.0 | 📌 epingle (v3.22.0 dispo)  | ✓ qa.md     |
   | ...
 ```
 
