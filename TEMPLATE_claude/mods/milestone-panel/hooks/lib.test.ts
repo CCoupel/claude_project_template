@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, usageBar, usageCacheDecision, usageCachePath, usageColor, usageLabel } from './lib'
+import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageLabel, usageThresholds } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -239,4 +239,17 @@ test('cache frais lu sans appel ; échec récent = backoff ; sinon appel', () =>
   expect(usageCacheDecision(null, now - 10_000, now, 180_000, 300_000)).toBe('backoff')
   expect(usageCacheDecision(now - 400_000, now - 350_000, now, 180_000, 300_000)).toBe('fetch')
   expect(usageCacheDecision(null, null, now, 180_000, 300_000)).toBe('fetch')
+})
+
+test('intervalle de lecture lu dans la config du launcher, repli 5 min', () => {
+  expect(parseUsageRefreshSec('GITHUB_DIR="x"\nUSAGE_REFRESH_SEC=180\n')).toBe(180)
+  expect(parseUsageRefreshSec('USAGE_REFRESH_SEC="90"  # commentaire')).toBe(90)
+  expect(parseUsageRefreshSec('USAGE_REFRESH_SEC=10')).toBe(60)
+  expect(parseUsageRefreshSec('# USAGE_REFRESH_SEC=30')).toBe(null)
+  expect(parseUsageRefreshSec('USAGE_REFRESH_SEC=abc')).toBe(null)
+  expect(parseUsageRefreshSec('USAGE_REFRESH_SEC=100\nUSAGE_REFRESH_SEC=200')).toBe(200)
+  expect(parseUsageRefreshSec(null)).toBe(null)
+  expect(usageThresholds(120)).toEqual({ freshMs: 180_000, backoffMs: 300_000 })
+  expect(usageThresholds(600)).toEqual({ freshMs: 900_000, backoffMs: 1_200_000 })
+  expect(usageThresholds(null)).toEqual({ freshMs: 450_000, backoffMs: 600_000 })
 })

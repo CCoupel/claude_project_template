@@ -323,6 +323,25 @@ export function usageCacheDecision(
   return 'fetch'
 }
 
+/** Repli quand la config du launcher est absente ou illisible : intervalle de lecture supposé de 5 min. */
+export const USAGE_REFRESH_FALLBACK_SEC = 300
+
+/**
+ * `USAGE_REFRESH_SEC` de `~/.config/claude-launcher.conf` (fichier bash : dernière affectation non commentée,
+ * guillemets tolérés), borné à 60 s minimum ; `null` si absent ou non numérique.
+ */
+export function parseUsageRefreshSec(conf: string | null | undefined): number | null {
+  if (!conf) return null
+  const m = [...conf.matchAll(/^\s*USAGE_REFRESH_SEC=["']?(\d+)["']?\s*(?:#.*)?$/gm)].pop()
+  return m ? Math.max(60, Number(m[1])) : null
+}
+
+/** Seuils dérivés de l'intervalle du launcher : cache frais sous 1,5 × l'intervalle, pause d'au moins 5 min après un échec. */
+export function usageThresholds(refreshSec: number | null): { freshMs: number; backoffMs: number } {
+  const sec = refreshSec ?? USAGE_REFRESH_FALLBACK_SEC
+  return { freshMs: sec * 1500, backoffMs: Math.max(300, sec * 2) * 1000 }
+}
+
 const two = (n: number) => String(n).padStart(2, '0')
 
 /** Réinitialisation en forme courte : « 15:00 » le jour même, « demain 12:00 », « mer. 12:00 », « 42 min ». Heure locale. */
