@@ -13,7 +13,10 @@
 **Validation infra (avant de lancer) :**
 ```
 SendMessage({ to: "infra", content: "
-  Valide que la procedure de deploiement QUALIF est coherente avec l'infrastructure definie.
+  Valide que la procedure de deploiement QUALIF est coherente avec l'infrastructure definie
+  ET que les acces a l'environnement fonctionnent (infra.md Mode Acces : rejoue les sondes
+  SSH / runtime / registre / droits sur la cible et met a jour access.verified dans
+  project-config.json). Aucun acces valide = NOT VALIDATED, rien n'est lance.
   Si l'infrastructure pour QUALIF n'existe pas encore (premier deploiement sur cet
   environnement), la creer avant de valider (voir infra.md Mode Validation etape 0).
   Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans _work/reports/infra-[timestamp].md
@@ -146,7 +149,10 @@ Selon la reponse utilisateur :
 **Validation infra (avant de lancer) :**
 ```
 SendMessage({ to: "infra", content: "
-  Valide que la procedure de deploiement PROD est coherente avec l'infrastructure definie.
+  Valide que la procedure de deploiement PROD est coherente avec l'infrastructure definie
+  ET que les acces a l'environnement fonctionnent (infra.md Mode Acces : rejoue les sondes
+  SSH / runtime / registre / droits sur la cible et met a jour access.verified dans
+  project-config.json). Aucun acces valide = NOT VALIDATED, rien n'est lance.
   Si l'infrastructure pour PROD n'existe pas encore (premier deploiement sur cet
   environnement), la creer avant de valider (voir infra.md Mode Validation etape 0).
   Retourne : VALIDATED / NOT VALIDATED + ecarts detectes dans _work/reports/infra-[timestamp].md

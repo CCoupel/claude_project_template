@@ -1436,7 +1436,7 @@ executer et l'attendre.
 
 | Mecanisme | Elements a demander | Variables secretes (noms seulement → `<env>.env.example`) |
 |-----------|--------------------|------------------|
-| `docker-compose` / `vps` | hote, utilisateur, port SSH, **runtime** (`docker` ou `podman`, compose inclus), repertoire cible et droits d'ecriture, registre d'images | `SSH_KEY_PATH`, `REGISTRY_USER`, `REGISTRY_PASSWORD` |
+| `docker-compose` / `vps` | hote (vide = deploiement local), utilisateur, port SSH, **runtime** (`docker` ou `podman`, compose inclus), repertoire cible et droits d'ecriture, registre d'images, **services a deployer** (liste ; vide = tous — ecrit dans `deploy.services`, les autres services du compose ne sont jamais touches) | `SSH_KEY_PATH`, `REGISTRY_USER`, `REGISTRY_PASSWORD` |
 | `kubernetes` / `helm` | contexte kube, namespace, registre | `KUBE_CONTEXT`, `KUBECONFIG` |
 | `serverless` / `paas` / `cloud-run` | compte/projet/region, CLI de la plateforme | jetons de la section 3bis |
 | `publish.mode = promote` | registre ou depot de stockage de l'artefact et droit de push | `REGISTRY_USER`, `REGISTRY_PASSWORD` |
@@ -1543,7 +1543,7 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
         "name": "QUALIF",
         "order": 1,
         "publish": { "mode": "promote", "target": "build/qualif_v{X.Y.Z}/" },
-        "deploy":  { "mechanism": "docker-compose", "target": "docker-compose.qualif.yml" },
+        "deploy":  { "mechanism": "docker-compose", "target": "docker-compose.qualif.yml", "services": ["api", "web"] },
         "access":  {
           "method": "ssh", "host": "qualif.example.com", "user": "deploy", "port": 22,
           "runtime": "podman", "registry": "registry.example.com",
@@ -1636,7 +1636,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
 | `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question 9bis) ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question 9 pour chaque environnement, sauf personnalisation explicite |
-| `infrastructure.environments[].access` | Etape 8b : coordonnees non sensibles d'acces (`method`, `host`, `user`, `port`, `runtime`, `registry`/`context`...), **noms** des variables secretes (`credentials_env`) et resultat des sondes (`verified.status` : `ok` / `failed` / `skipped` / `unknown`). Jamais de valeur secrete. Lu par le preflight de `agents/deploy.md` |
+| `infrastructure.environments[].access` | Etape 8b : coordonnees non sensibles d'acces (`method`, `host`, `user`, `port`, `runtime`, `registry`/`context`...), **noms** des variables secretes (`credentials_env`) et resultat des sondes (`verified.status` : `ok` / `failed` / `skipped` / `unknown`). Jamais de valeur secrete. Lu par le preflight de `agents/deploy.md` et par les fichiers `deploy.<env>` (runtime, hote, port). `deploy.services` (optionnel) : seuls ces services/unites sont deployes |
 | Nom de fichier des environnements | `infrastructure.environments[].name` normalise : minuscules, espaces/underscores → tirets (ex. `PRE-PROD` → `pre-prod`) — utilise pour `.claude/agents/environments/{publish,deploy}.<nom>.template.md` (section 3bis) |
 
 ### 2. Agents dev-* et registre des agents

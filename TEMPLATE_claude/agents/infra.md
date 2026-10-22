@@ -266,7 +266,9 @@ Quand le teamleader appelle en mode validation :
    ensuite (étape 3-4) doit remonter en NOT VALIDATED.
 0bis. **Rejouer les sondes d'acces** de l'environnement (Mode Acces, etape 2) : les acces valides au
    cadrage peuvent avoir change (cle revoquee, hote deplace, droits retires). Un echec = NOT VALIDATED
-   avec l'erreur brute — jamais une decouverte au milieu du DEPLOY.
+   avec l'erreur brute — jamais une decouverte au milieu du DEPLOY. Le resultat est reecrit dans
+   `infrastructure.environments[<env>].access.verified` (`status`, `at`, `checks`) : c'est ce champ
+   que lit le prerequis de `deployer` (`agents/deploy.md`, « Avant PUBLISH / DEPLOY »).
 1. Lire la procédure de déploiement (fichiers CI/CD, docker-compose, Helm) — la mécanique
    concrète propre à l'environnement est dans
    `.claude/agents/environments/{publish,deploy}.<env>.template.md` (voir `agents/deploy.md`,
