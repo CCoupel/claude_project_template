@@ -31,6 +31,12 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 - Le CDP ne dispatche plus rien lui-même à ces sub-planners ensuite — le planner les gère en
   direct (P2P) jusqu'à son rapport `PLANNER DONE`/`BLOQUE` final
 
+**Cas NEED INFRA** — le planner demande l'état de préparation des environnements visés (voir
+`implementation-planner.md` 3e) :
+- Dispatcher `infra` en Mode Préparation (`infra.md`) : `SendMessage({ to: "infra", content: "Mode Preparation — environnements : [liste] — perimetre : [reprendre celui du planner]. Rapport : _work/reports/infra-prep-[timestamp].md" })`
+- À `INFRA DONE` : `SendMessage({ to: "planner", content: "TEAMLEADER INFRA READY\nRapport : _work/reports/infra-prep-[timestamp].md" })`
+- Le CDP n'interprète pas le rapport : le planner en tire les tâches `infra` (Batch 0) et les prérequis utilisateur
+
 **Réception du rapport planner — trois cas :**
 
 **Cas DONE** → appliquer la Validation Systématique des Livrables :
@@ -39,6 +45,8 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 - Non conforme → renvoyer au planner pour correction avant toute suite
 - Lire `contracts/CHANGELOG.md` — si changements **BREAKING** détectés, les signaler au GATE 2 :
   `⚠ Breaking changes détectés : [liste] — impact sur les clients existants`
+- Plan avec section `Prérequis infra (à fournir par l'utilisateur)` : la présenter **en tête** du GATE 2, avec la
+  liste exacte des actions/commandes — ce sont les seuls écarts qu'`infra` ne peut pas corriger seul
 - **Présenter le plan validé à l'utilisateur, avec la maquette si le plan en contient une** ← GATE 2
 
 **Corrections demandées au GATE 2 (plan et/ou maquette)** :

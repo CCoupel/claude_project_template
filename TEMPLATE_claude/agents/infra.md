@@ -249,6 +249,31 @@ applique cette section lui-meme avec le role `infra`.
 4. Si l'utilisateur n'a pas lui-meme la main sur l'environnement : fournir la liste exacte des
    commandes a faire executer par l'administrateur, et attendre le retour.
 
+### Mode Preparation (planification)
+
+Appele par le teamleader a la demande du planner (`PLANNER NEED INFRA`, voir
+`implementation-planner.md` 3e) quand le milestone touche au deploiement. But : savoir **avant
+d'ecrire une ligne de code** si les environnements vises sont prets, et chiffrer leur mise en
+conformite pour que le planner l'integre au plan. Lecture seule : rien n'est cree ni modifie ici.
+
+1. Lire le perimetre transmis (livrables, services, config ou secrets touches, environnements vises).
+2. **Acces** : rejouer les sondes du Mode Acces pour chaque environnement vise (ignorer ceux dont
+   `access.verified` est `ok` et recent **et** dont le perimetre n'est pas touche) ; mettre a jour
+   `access.verified`.
+3. **Artefacts** : pour chaque environnement vise, `deploy.target` / `publish.target`, Dockerfile,
+   compose, chart, pipeline existent et couvrent le perimetre (nouveau service, nouvelle variable,
+   nouveau livrable) ; ecarts avec les fichiers `.claude/agents/environments/*.<env>`.
+4. Ecrire `_work/reports/infra-prep-[YYYYMMDD-HHmmss].md`, ecarts classes en deux types :
+   - **AUTONOME** — `infra` le corrige seul (creer/adapter compose, Dockerfile, chart, pipeline,
+     variables de `<env>.env.example`) : tache a integrer au plan, avec fichiers et estimation ;
+   - **UTILISATEUR** — hors de portee (cle SSH a installer, droit registre, ouverture reseau, acces
+     a obtenir de l'administrateur) : action precise, ou commandes exactes a faire executer, a placer
+     **en tete** du plan.
+5. `SendMessage({ to: "main", content: "INFRA DONE\nRapport : _work/reports/infra-prep-[YYYYMMDD-HHmmss].md" })`
+
+Ce mode ne remplace pas la Validation avant deploy (ci-dessous) : un ecart apparu pendant le
+developpement y est toujours detecte.
+
 ### Mode Validation (avant deploy)
 
 Quand le teamleader appelle en mode validation :
@@ -266,7 +291,9 @@ Quand le teamleader appelle en mode validation :
    ensuite (étape 3-4) doit remonter en NOT VALIDATED.
 0bis. **Rejouer les sondes d'acces** de l'environnement (Mode Acces, etape 2) : les acces valides au
    cadrage peuvent avoir change (cle revoquee, hote deplace, droits retires). Un echec = NOT VALIDATED
-   avec l'erreur brute — jamais une decouverte au milieu du DEPLOY.
+   avec l'erreur brute — jamais une decouverte au milieu du DEPLOY. Le resultat est reecrit dans
+   `infrastructure.environments[<env>].access.verified` (`status`, `at`, `checks`) : c'est ce champ
+   que lit le prerequis de `deployer` (`agents/deploy.md`, « Avant PUBLISH / DEPLOY »).
 1. Lire la procédure de déploiement (fichiers CI/CD, docker-compose, Helm) — la mécanique
    concrète propre à l'environnement est dans
    `.claude/agents/environments/{publish,deploy}.<env>.template.md` (voir `agents/deploy.md`,

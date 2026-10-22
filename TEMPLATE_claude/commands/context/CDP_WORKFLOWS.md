@@ -367,6 +367,10 @@ Le CDP n'échange plus rien avec ces sub-planners ensuite — le planner les gè
 jusqu'à son rapport final. Ils restent actifs pendant toute la Phase Plan (y compris pendant la
 boucle de correction ci-dessous), fermés uniquement à la sortie de la Phase Plan (voir Phase Dev).
 
+**Si le planner répond `PLANNER NEED INFRA`** (environnements à vérifier avant de figer le plan) : dispatcher
+`infra` en Mode Préparation, puis relayer `TEAMLEADER INFRA READY` + rapport au planner — voir
+`agents/context/CDP_PHASES_PLAN_DEV.md`, cas NEED INFRA. Les prérequis utilisateur du plan sont présentés en tête du GATE 2.
+
 Recevoir le plan → lire intégralement, vérifier cohérence et complétude.
 Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING lors du GATE 2.
 

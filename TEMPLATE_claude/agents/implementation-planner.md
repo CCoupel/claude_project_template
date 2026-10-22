@@ -47,7 +47,7 @@ Rapport : _work/reports/plan-ambiguities-[YYYYMMDD-HHmmss].md" })
 SendMessage({ to: "main", content: "PLANNER FAILED\nRaison : [description]\nAction requise : [clarification]" })
 ```
 
-Un quatrième état existe, non terminal — voir "Délégation à des Sous-Planners" ci-dessous.
+Deux états non terminaux existent — voir "Délégation à des Sous-Planners" et "3e. Préparation infra" ci-dessous.
 
 ## Délégation à des Sous-Planners (optionnel)
 
@@ -173,6 +173,32 @@ Ce raisonnement structure les phases et l'ordre des tâches du plan. Il ne figur
 | Documentation | Mise a jour necessaire ? |
 | Infrastructure | Nouveaux services ? Changements config ? |
 
+### 3e. Preparation infra (si le milestone touche au deploiement)
+
+Un environnement non pret decouvert au deploy coute un cycle entier. Si la ligne « Infrastructure » du
+tableau ci-dessus est concernee (nouveau livrable ou service, changement de configuration ou de secrets,
+nouvel environnement), ou si `infrastructure.environments[].access.verified.status` d'un environnement
+vise n'est pas `ok`, demander l'etat de preparation **avant** de figer le plan :
+
+```
+SendMessage({ to: "main", content: "
+PLANNER NEED INFRA
+Environnements vises : [QUALIF, PROD...]
+Perimetre : [livrables / services / variables / secrets touches]
+" })
+```
+
+Attendre `TEAMLEADER INFRA READY` + chemin du rapport `_work/reports/infra-prep-*.md` (le teamleader
+fait travailler `infra` en Mode Preparation, `infra.md`). Puis integrer :
+- ecarts **AUTONOME** → taches `infra` en **Batch 0** de l'arbre d'execution (avant tout), avec leurs
+  fichiers ;
+- ecarts **UTILISATEUR** → section `## Prerequis infra (a fournir par l'utilisateur)` placee en tete du
+  plan (action precise ou commandes a faire executer), reprise dans ton rapport DONE pour que le
+  teamleader les presente au GATE 2 ;
+- aucun ecart → une ligne « Infra : prete (acces et artefacts verifies le <date>) » dans le Resume.
+
+Milestone sans impact deploiement et acces deja `ok` : ne pas solliciter `infra`.
+
 ### 3b. Creer les Contrats API (Contract-First)
 
 **Avant tout code**, si la feature implique une nouvelle API ou un changement de protocole,
@@ -285,6 +311,9 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 - Complete / remplace : <maquettes actives referencees, ou "aucune">
 - Contraintes `DECISIONS.md` appliquees : <liste, ou "aucune">
 - Si aucune maquette : <justification en une ligne>
+
+## Prerequis infra (a fournir par l'utilisateur)
+[Omettre si aucun — voir 3e. Preparation infra]
 
 ## Resume
 <Description en 2-3 phrases>

@@ -101,6 +101,8 @@ SendMessage({ to: "main", content: "LABELS FAILED\nMotif : #18 sans lot dans l'o
 
 ### Avant PUBLISH (QUALIF ou PROD)
 - [ ] Un candidat (`/build`) existe pour la version a publier
+- [ ] `infrastructure.environments[<env>].access.verified.status == "ok"` (registre/depot de
+      publication joignable — meme regle et meme conduite que pour DEPLOY ci-dessous)
 - [ ] PROD uniquement : documentation a jour, CHANGELOG mis a jour, publication QUALIF deja
       validee pour ce candidat — **sauf hotfix**, ou PUBLISH PROD part directement du BUILD
       (voir Mode Teammates)
@@ -110,7 +112,8 @@ SendMessage({ to: "main", content: "LABELS FAILED\nMotif : #18 sans lot dans l'o
 - [ ] `infrastructure.environments[<env>].access.verified.status == "ok"` dans `.claude/project-config.json`
       (acces valides au cadrage, `/init-project` Etape 8b). Absent, `failed`, `skipped` ou `unknown` :
       STOP, remonter au teamleader « acces <env> non valide » — ne pas tenter le DEPLOY ; la
-      validation se refait via `/init-project` (sync, etape d1f) ou `infra` (Mode Acces)
+      validation se refait via `infra` (Mode Acces, appele par la « Validation infra » du CDP
+      avant chaque PUBLISH/DEPLOY) ou `/init-project` (sync, etape d1f)
 
 ## Tache BUILD
 
