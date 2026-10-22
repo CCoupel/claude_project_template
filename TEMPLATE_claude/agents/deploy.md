@@ -107,6 +107,10 @@ SendMessage({ to: "main", content: "LABELS FAILED\nMotif : #18 sans lot dans l'o
 
 ### Avant DEPLOY (QUALIF ou PROD)
 - [ ] Une publication (`/publish <env>`) existe pour la version et l'environnement a deployer
+- [ ] `infrastructure.environments[<env>].access.verified.status == "ok"` dans `.claude/project-config.json`
+      (acces valides au cadrage, `/init-project` Etape 8b). Absent, `failed`, `skipped` ou `unknown` :
+      STOP, remonter au teamleader « acces <env> non valide » — ne pas tenter le DEPLOY ; la
+      validation se refait via `/init-project` (sync, etape d1f) ou `infra` (Mode Acces)
 
 ## Tache BUILD
 

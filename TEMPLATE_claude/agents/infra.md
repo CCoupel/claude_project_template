@@ -226,6 +226,29 @@ docker-compose -f docker-compose.yml config
 act --dry-run  # si act est installe
 ```
 
+### Mode Acces (cadrage des environnements)
+
+Appele par `/init-project` (Etape 8b, ou etape d1f d'une synchronisation) pour chaque entree d'
+`infrastructure.environments[]` : un environnement injoignable ou mal configure doit etre decouvert au
+cadrage, jamais au premier deploiement. Pendant l'init, aucun teammate n'est actif — `/init-project`
+applique cette section lui-meme avec le role `infra`.
+
+1. **Collecter** les elements d'acces non sensibles selon `deploy.mechanism` / `publish.mode` : hote,
+   utilisateur, port SSH, runtime (`docker` ou `podman`, compose inclus), repertoire cible, registre
+   d'images, contexte/namespace kube, compte/projet de la plateforme, droit de push du depot. Les
+   secrets ne sont jamais saisis : seuls leurs **noms** de variables sont notes (`credentials_env`),
+   les valeurs vivent dans `<env>.env` (gitignore).
+2. **Tester** en lecture seule, un resultat par sonde : SSH sans mot de passe (`BatchMode`, timeout),
+   runtime present et utilisable par cet utilisateur (`docker info` / `podman info`, `compose version`),
+   repertoire cible ecrivable, login/pull/push du registre, `kubectl auth can-i`, `whoami` de la CLI
+   plateforme, `gh api ... .permissions.push` pour `rebuild-ci`. Aucun deploiement, aucune ressource creee.
+3. **Verdict** par environnement : `ok` / `failed` (erreur brute + correctif precis : cle a installer,
+   groupe `docker` a ajouter, port a ouvrir, droit a demander a l'administrateur) / `skipped` /
+   `unknown`. Ecrit dans `infrastructure.environments[].access.verified` (`status`, `at`, `checks`).
+   Un environnement non `ok` est signale a l'utilisateur, jamais presente comme pret.
+4. Si l'utilisateur n'a pas lui-meme la main sur l'environnement : fournir la liste exacte des
+   commandes a faire executer par l'administrateur, et attendre le retour.
+
 ### Mode Validation (avant deploy)
 
 Quand le teamleader appelle en mode validation :
@@ -241,6 +264,9 @@ Quand le teamleader appelle en mode validation :
    Helm, CI/CD) — puis poursuivre la validation normalement. Ne jamais escalader à l'utilisateur
    pour une simple absence (attendu au premier déploiement) — seule une **incohérence** détectée
    ensuite (étape 3-4) doit remonter en NOT VALIDATED.
+0bis. **Rejouer les sondes d'acces** de l'environnement (Mode Acces, etape 2) : les acces valides au
+   cadrage peuvent avoir change (cle revoquee, hote deplace, droits retires). Un echec = NOT VALIDATED
+   avec l'erreur brute — jamais une decouverte au milieu du DEPLOY.
 1. Lire la procédure de déploiement (fichiers CI/CD, docker-compose, Helm) — la mécanique
    concrète propre à l'environnement est dans
    `.claude/agents/environments/{publish,deploy}.<env>.template.md` (voir `agents/deploy.md`,
