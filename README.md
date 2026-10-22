@@ -443,6 +443,13 @@ Aucune validation n'est demandée après la CI d'un lot. Le GATE 4 (PROD) n'a li
 
 Question et options exactes de chaque gate : `TEMPLATE_claude/agents/cdp.md` (tableau des points de validation).
 
+**Accès aux environnements** : `/init-project` (Étape 8b) collecte pour chaque environnement les éléments d'accès
+non sensibles (hôte, utilisateur, port SSH, runtime docker/podman, registre, contexte kube...) et **teste** les accès
+en lecture seule avec le rôle `infra` (SSH, runtime, droits sur la cible, registre, CLI plateforme). Le résultat est
+enregistré dans `infrastructure.environments[].access` (jamais de secret — seulement les noms des variables de
+`<env>.env`). Un accès non validé bloque `/deploy <env>` (preflight de `deployer`) ; la synchronisation d'un projet
+existant le détecte (étape d1f) et propose de le valider, et `infra` rejoue les sondes en Mode Validation.
+
 > **Limitation connue** : cette orchestration (Gates 4/4b/4c) n'est câblée que pour la chaîne
 > à 2 environnements QUALIF→PROD. Un environnement supplémentaire déclaré dans
 > `infrastructure.environments[]` (DEV, PRE-PROD...) se publie/déploie manuellement via
