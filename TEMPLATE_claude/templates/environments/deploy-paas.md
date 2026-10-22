@@ -16,16 +16,21 @@ publication ici (principe BORE, `agents/infra.md` section 3).
 | `RAILWAY_TOKEN` | Variante Railway |
 | `RENDER_API_KEY` | Variante Render |
 
-Une seule des trois selon la plateforme retenue pour {DEPLOY_TARGET}.
+Une seule des trois selon la plateforme : `access.platform` (`heroku` / `railway` / `render`) vient de `project-config.json` (`/init-project` Etape 8b).
 
 ```bash
 # 1. Verification
 # Une publication ({ENV_NAME}) valide doit exister pour $VERSION.
 
-# 2. Install — adapter a la plateforme retenue pour {DEPLOY_TARGET}
-HEROKU_API_KEY="$HEROKU_API_KEY" heroku container:release web -a {DEPLOY_TARGET}
-# ou (Railway) : RAILWAY_TOKEN="$RAILWAY_TOKEN" railway up --service {DEPLOY_TARGET}
-# ou (Render) : render deploys create {DEPLOY_TARGET} --image "{PUBLISH_TARGET}:$VERSION" --api-key "$RENDER_API_KEY"
+# 2. Install — plateforme validee au cadrage (access.platform)
+ENV_JSON=$(jq -c --arg n "{ENV_NAME}" '.infrastructure.environments[] | select(.name==$n)' .claude/project-config.json)
+acc() { echo "$ENV_JSON" | jq -r ".access.$1 // empty"; }   # coordonnees validees au cadrage (/init-project Etape 8b)
+case "$(acc platform)" in
+  heroku)  HEROKU_API_KEY="$HEROKU_API_KEY" heroku container:release web -a {DEPLOY_TARGET} ;;
+  railway) RAILWAY_TOKEN="$RAILWAY_TOKEN" railway up --service {DEPLOY_TARGET} ;;
+  render)  render deploys create {DEPLOY_TARGET} --image "{PUBLISH_TARGET}:$VERSION" --api-key "$RENDER_API_KEY" ;;
+  *)       echo "access.platform absent ou inconnu pour {ENV_NAME} — relancer /init-project (Etape 8b)"; exit 1 ;;
+esac
 
 # 3. Verification post-deploy
 # Smoke : commande du projet (tests tag `smoke` de tests/INDEX.md), sinon simple /health

@@ -1437,8 +1437,8 @@ executer et l'attendre.
 | Mecanisme | Elements a demander | Variables secretes (noms seulement → `<env>.env.example`) |
 |-----------|--------------------|------------------|
 | `docker-compose` / `vps` | hote (vide = deploiement local), utilisateur, port SSH, **runtime** (`docker` ou `podman`, compose inclus), repertoire cible et droits d'ecriture, registre d'images, **services a deployer** (liste ; vide = tous — ecrit dans `deploy.services`, les autres services du compose ne sont jamais touches) | `SSH_KEY_PATH`, `REGISTRY_USER`, `REGISTRY_PASSWORD` |
-| `kubernetes` / `helm` | contexte kube, namespace, registre | `KUBE_CONTEXT`, `KUBECONFIG` |
-| `serverless` / `paas` / `cloud-run` | compte/projet/region, CLI de la plateforme | jetons de la section 3bis |
+| `kubernetes` / `helm` | contexte kube, namespace, registre, **deployments a mettre a jour** (`deploy.services`, vide = `app`) | `KUBE_CONTEXT`, `KUBECONFIG` |
+| `serverless` / `paas` / `cloud-run` | **plateforme** (`access.platform` : aws/vercel/netlify, heroku/railway/render, gcp), compte/projet (`access.project`), region (`access.region`), CLI de la plateforme | jetons de la section 3bis |
 | `publish.mode = promote` | registre ou depot de stockage de l'artefact et droit de push | `REGISTRY_USER`, `REGISTRY_PASSWORD` |
 | `publish.mode = rebuild-ci` | droit de pousser un tag sur le depot, secrets configures cote CI | — |
 

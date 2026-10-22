@@ -17,16 +17,22 @@ publication ici (principe BORE, `agents/infra.md` section 3).
 | `VERCEL_TOKEN` | Variante Vercel |
 | `NETLIFY_AUTH_TOKEN` | Variante Netlify |
 
-Une seule des trois selon la plateforme retenue pour {DEPLOY_TARGET}.
+Une seule des trois selon la plateforme : `access.platform` (`aws` / `vercel` / `netlify`) et `access.region` viennent de `project-config.json` (`/init-project` Etape 8b).
 
 ```bash
 # 1. Verification
 # Une publication ({ENV_NAME}) valide doit exister pour $VERSION.
 
-# 2. Install — adapter a la plateforme retenue pour {DEPLOY_TARGET}
-AWS_PROFILE="$AWS_PROFILE" aws lambda update-function-code --function-name {DEPLOY_TARGET} --s3-bucket {PUBLISH_TARGET} --s3-key "app-$VERSION.zip"
-# ou (Vercel) : vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
-# ou (Netlify) : netlify deploy --prod --dir=dist --auth="$NETLIFY_AUTH_TOKEN"
+# 2. Install — plateforme validee au cadrage (access.platform)
+ENV_JSON=$(jq -c --arg n "{ENV_NAME}" '.infrastructure.environments[] | select(.name==$n)' .claude/project-config.json)
+acc() { echo "$ENV_JSON" | jq -r ".access.$1 // empty"; }   # coordonnees validees au cadrage (/init-project Etape 8b)
+REGION=$(acc region)
+case "$(acc platform)" in
+  aws)     AWS_PROFILE="$AWS_PROFILE" aws lambda update-function-code ${REGION:+--region "$REGION"} --function-name {DEPLOY_TARGET} --s3-bucket {PUBLISH_TARGET} --s3-key "app-$VERSION.zip" ;;
+  vercel)  vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" ;;
+  netlify) netlify deploy --prod --dir=dist --auth="$NETLIFY_AUTH_TOKEN" ;;
+  *)       echo "access.platform absent ou inconnu pour {ENV_NAME} — relancer /init-project (Etape 8b)"; exit 1 ;;
+esac
 
 # 3. Verification post-deploy
 # Smoke : commande du projet (tests tag `smoke` de tests/INDEX.md), sinon simple /health
