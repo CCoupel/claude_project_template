@@ -90,7 +90,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `security` | `security` | Audit securite |
 | `doc-updater` | `doc-updater` | Documentation |
 | `deployer` | `deploy` | Build + Publication + Deploiement QUALIF/PROD |
-| `infra` | `infra` | Validation infra + procedures deploy |
+| `infra` | `infra` | Preparation infra a la planification (`PLANNER NEED INFRA`) + validation infra + procedures deploy |
 | `marketing` | `marketing-release` | Communication de release |
 | `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
 

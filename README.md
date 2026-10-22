@@ -448,7 +448,9 @@ non sensibles (hôte, utilisateur, port SSH, runtime docker/podman, registre, co
 en lecture seule avec le rôle `infra` (SSH, runtime, droits sur la cible, registre, CLI plateforme). Le résultat est
 enregistré dans `infrastructure.environments[].access` (jamais de secret — seulement les noms des variables de
 `<env>.env`). Un accès non validé bloque `/deploy <env>` (preflight de `deployer`) ; la synchronisation d'un projet
-existant le détecte (étape d1f) et propose de le valider, et `infra` rejoue les sondes lors de la « Validation infra » du CDP, avant chaque PUBLISH/DEPLOY (Phases 5 et 6), puis
+existant le détecte (étape d1f) et propose de le valider, et `infra` intervient dès la planification (Mode Préparation, sur demande du planner via `PLANNER NEED INFRA` quand le milestone
+touche au déploiement ou qu'un accès n'est pas validé) : les écarts qu'il peut corriger seul deviennent des tâches en Batch 0, ceux qui
+demandent l'utilisateur ou un administrateur sont présentés en tête du GATE 2. Il rejoue ensuite les sondes lors de la « Validation infra » du CDP, avant chaque PUBLISH/DEPLOY (Phases 5 et 6), puis
 met à jour `access.verified`. Les fichiers `deploy.<env>` lisent ces accès (runtime docker/podman, hôte local ou distant,
 port SSH) et `deploy.services` (optionnel) limite le déploiement aux seuls services nécessaires.
 
