@@ -79,6 +79,9 @@ reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
 
 - **Transition de phase** (`Labels : issues #12 #15 → EN COURS (GITHUB.md §9.1)`) : appliquer la commande de la
   sous-section citee a chaque issue (poser le label, retirer les autres labels de phase), puis `LABELS DONE`.
+- **Validation humaine** (`Labels validation humaine (GITHUB.md §9.13) : +VALID-HUMAINE #12 ; -VALID-HUMAINE #15`) :
+  creer le label s'il est absent, puis `gh issue edit <numero> --add-label "VALID-HUMAINE"` (`+`) ou
+  `--remove-label "VALID-HUMAINE"` (`-`) ; ne toucher a aucun label de phase ni de lot ; `LABELS DONE`.
 - **Ordre unique du GATE 2** (`Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 ; LOT-1 → #12 #15 ; LOT-2.1 → #18`) :
   1. **Verifier avant d'ecrire** : chaque issue de la liste `PRET` figure dans exactement un lot (ou l'ordre dit
      `sans lot`) ; chaque lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ; chaque issue appartient au milestone courant.

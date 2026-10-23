@@ -159,5 +159,8 @@ SendMessage({ to: "dev-backend", content: "
 " })
 ```
 
+- **Retour `TEST-WRITER DONE`** (dès réception, avant REVIEW) : lire sa ligne `Validation humaine` et envoyer à `deployer`
+  l'ordre `Labels validation humaine` (`GITHUB.md` §9.13) ; attendre `LABELS DONE`. Ce label décide du GATE LOT
+  (règle « Validation humaine ou automatique » de `cdp.md`).
 - DONE → Phase REVIEW (test-writer a déjà produit ses livrables)
 - FAILED → escalade utilisateur (conflits non résolvables automatiquement) ← GATE 2b

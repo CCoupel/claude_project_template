@@ -20,6 +20,15 @@ test('milestone en cours = premier milestone avec une issue en phase', () => {
   expect(v.issues.find(i => i.number === 1)?.isBlocked).toBe(true)
 })
 
+test('label VALID-HUMAINE : validation humaine requise', () => {
+  const issues = [
+    { number: 1, title: 'a', labels: lab('EN QA', 'LOT-1', 'VALID-HUMAINE'), milestone: { title: 'v1.3.0' } },
+    { number: 2, title: 'b', labels: lab('EN QA', 'LOT-2'), milestone: { title: 'v1.3.0' } },
+  ]
+  const v = buildView(ms, issues, 1)
+  expect(v.issues.map(i => i.needsHuman)).toEqual([true, false])
+})
+
 test('aucun milestone en cours : liste triée par progression puis par version', () => {
   const v = buildView(ms, [], 1)
   expect(v.current).toBe(null)

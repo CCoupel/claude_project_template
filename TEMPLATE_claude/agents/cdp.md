@@ -295,13 +295,46 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 1.5 | Planner BLOQUE ou FAILED | "Comment lever cette ambiguite bloquante ?" — une `AskUserQuestion` par ambiguite identifiee (option par interpretation possible + description de son impact sur le plan) |
 | GATE 2   | Plan valide par CDP | "Valides-tu ce plan et ces contrats API ?" — Oui, valider (Recommandé) : le DEV demarre sur cette base / Non : je revois le plan avant de redemander validation |
 | GATE 2b  | Conflit merge non resolvable | "Comment resoudre ce conflit backend/frontend ?" — une option par strategie de resolution proposee, description = ce qui change concretement pour chaque camp |
-| GATE LOT | Milestone avec lots : lot QA valide et deploye en QUALIF (apres Phase 5) | "Lot LOT-N conforme en QUALIF — la suite ?" — Valider le lot et passer au suivant (Recommandé) : push, CI, fermeture des issues du lot, lot suivant / Valider le lot et publier le milestone en PROD : publication anticipee, lots restants deplaces vers un autre milestone (dernier lot : « Valider et publier en PROD ») / Refuser : retour DEV (Cas A) ou PLAN (Cas B) avec l'ecart decrit. **Aucune** validation apres la CI du lot. Deroulement : `commands/context/GITHUB.md` §9.5b |
+| GATE LOT | Milestone avec lots : lot QA valide et deploye en QUALIF (apres Phase 5) ; **auto-valide si aucune issue `VALID-HUMAINE`** (aucune question) ; sinon synthese + chemin + ouverture Chrome de la procedure (regles ci-dessous) | "Lot LOT-N conforme en QUALIF — la suite ?" — Valider le lot et passer au suivant (Recommandé) : push, CI, fermeture des issues du lot, lot suivant / Valider le lot et publier le milestone en PROD : publication anticipee, lots restants deplaces vers un autre milestone (dernier lot : « Valider et publier en PROD ») / Refuser : retour DEV (Cas A) ou PLAN (Cas B) avec l'ecart decrit. **Aucune** validation apres la CI du lot. Deroulement : `commands/context/GITHUB.md` §9.5b |
 | GATE 3   | 3 cycles atteints | "3 cycles ont echoue sans validation QA — comment continuer ?" — Continuer (Recommandé) : un cycle supplementaire, meme scope / Abandonner : retour au CDP pour redefinir le scope |
-| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED | "QUALIF conforme — lancer le deploiement PROD ?" — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate : retour DEV avec l'ecart decrit. La commande `/deploy prod` equivaut a « Oui » |
+| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED ; **toujours pose** ; synthese + chemin + ouverture Chrome pour les scenarios `HUMAIN` restants (regles ci-dessous) | "QUALIF conforme — lancer le deploiement PROD ?" — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate : retour DEV avec l'ecart decrit. La commande `/deploy prod` equivaut a « Oui » |
 | GATE 4b  | Infra QUALIF invalide | "Comment proceder face a cette incoherence infra/procedure QUALIF (voir rapport) ?" — une option par correction possible, description = ce qu'elle implique |
 | GATE 4c  | Infra PROD invalide | "Infra PROD incoherente avec la procedure (voir rapport) — confirmes-tu le retour en Phase DEV ?" — Oui, retour Phase DEV (Recommandé) : aucune correction en PROD, on repart du DEV / Non : je veux d'abord voir le detail de l'ecart |
 | GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Valides-tu cette maquette de communication pour v[X.Y] ?" — Oui, valider (Recommandé) : publication telle quelle / Non : je precise les ajustements attendus |
 | GATE 4e  | Aucun site marketing existant (`MARKETING BLOQUE` avec questions de cadrage) | "Aucun site marketing n'existe — comment veux-tu l'initialiser ?" — questions de cadrage (public cible, ton, structure) presentees avec la maquette proposee |
+
+### Validation humaine ou automatique (label `VALID-HUMAINE`) — définition unique
+
+La **définition des tests** décide si l'utilisateur doit valider : chaque scénario de procédure est marqué
+`AUTO` ou `HUMAIN` par le `test-writer` (`agents/test-writer.md`). Une issue est **à validation humaine** si l'un de
+ses scénarios est `HUMAIN` (ou si rien n'est marqué : sens sûr) ; elle porte alors le label `VALID-HUMAINE`
+(`commands/context/GITHUB.md` §9.13). Un lot l'est si au moins une de ses issues l'est.
+
+- **GATE LOT, aucune issue du lot en `VALID-HUMAINE`** : pas de question ni d'ouverture Chrome. Le lot est validé
+  par le verdict `qa` (qui a joué les scénarios `AUTO` en automatisé). Le CDP consigne dans son compte rendu
+  « Lot LOT-N auto-valide (aucun scenario HUMAIN) » et enchaîne : push, CI, fermeture des issues, lot suivant.
+- **GATE LOT, au moins une issue en `VALID-HUMAINE`** : GATE LOT classique, avec la présentation ci-dessous
+  limitée aux scénarios `HUMAIN`.
+- **GATE 4 : jamais sauté**, même si le dernier lot était auto-validé. Il récapitule le milestone (issues, lots
+  auto-validés / validés par l'utilisateur, résultats QA). Sans scénario `HUMAIN` restant : simple confirmation
+  « publier en PROD ? », sans ouverture de document.
+
+### GATE de validation par tests (GATE LOT, GATE 4) — présentation obligatoire
+
+Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide en exécutant des tests
+(procédures manuelles `tests/procedures/<theme>/<lot>/*.md`, du lot ou du milestone), le CDP, dans cet ordre :
+
+1. **Synthèse de ce qu'il faut tester** (scénarios `HUMAIN` seulement ; les `AUTO` sont couverts par QA) : une ligne par scénario (nom + résultat attendu clé), prérequis et accès
+   nécessaires, URL/binaire de la QUALIF. Jamais le document recopié en entier.
+2. **Chemin du document de tests** : chemin relatif au repo de chaque procédure concernée (et du rapport QA),
+   rappelé aussi dans le texte de la question.
+3. **Ouverture automatique dans Chrome** : ouvrir chaque procédure via les outils `mcp__claude-in-chrome__*`
+   (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL `file://` du document ; sous WSL :
+   `file://` + `wslpath -m <chemin absolu>`). Plusieurs procédures : un onglet chacune (5 max, le reste est
+   seulement listé). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, afficher le chemin absolu et le dire
+   dans la synthèse. Ne jamais ouvrir de fichier hors du repo du projet.
+
+Aucune procédure manuelle pour le périmètre (tests 100 % automatisés) : le préciser dans la synthèse, sans ouverture.
 
 > **Limitation connue** : cette orchestration (Phases 5/6, GATE 4/4b/4c/4d) est cablee pour une
 > chaine fixe a 2 environnements (QUALIF puis PROD). Un environnement supplementaire declare

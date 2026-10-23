@@ -150,6 +150,8 @@ Format d'une procedure :
 
 ### Scenario 1 — [Nom du scenario nominal]
 
+**Validation** : AUTO | HUMAIN — **Issues** : #[num] [#num...]
+
 **Objectif** : Verifier que [comportement attendu]
 
 | Etape | Action | Resultat Attendu | Resultat Obtenu | OK ? |
@@ -175,6 +177,15 @@ Format d'une procedure :
 
 [Espace pour observations]
 ```
+
+**Marquage `Validation` (obligatoire sur chaque scenario)** — c'est lui qui decide si l'utilisateur doit valider le lot :
+- `AUTO` : le scenario ne consiste qu'a executer des commandes et lire leur sortie, ou lire le contenu d'un fichier.
+  L'utilisateur n'y apporte aucune valeur ajoutee : le scenario **doit aussi exister en test automatise**
+  (integration/E2E) et c'est `qa` qui le joue. Si l'equivalent automatise manque, l'ecrire.
+- `HUMAIN` : le scenario exige un jugement qu'un script ne peut pas porter (rendu visuel, UX, lisibilite d'un texte,
+  coherence metier, comparaison a une maquette).
+- Dans le doute (ex. « verifier que le fichier genere est correct » sans critere mesurable) → `HUMAIN`.
+- `Issues` : les issues du plan couvertes par le scenario (un scenario peut en couvrir plusieurs).
 
 ### 4. Commit
 
@@ -277,7 +288,11 @@ Frameworks : [frameworks detectes]
 TEST-WRITER DONE
 Fichiers : [liste des fichiers de tests et procedures]
 SHA : [sha]
+Validation humaine : #12 oui (scenarios 2, 3) ; #15 non ; [une ligne par issue du plan]
 ```
+
+`Validation humaine` : une issue est `oui` si au moins un de ses scenarios est `HUMAIN` (ou si elle n'a aucun
+scenario marque) ; sinon `non`. Le CDP s'en sert pour poser le label `VALID-HUMAINE` (`GITHUB.md` §9.13).
 
 **Erreur** :
 ```

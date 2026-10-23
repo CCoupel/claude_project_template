@@ -1,4 +1,4 @@
-export type Issue = { number: number; title: string; phase: string; /** Lot parent (`LOT-2` pour `LOT-2` ou `LOT-2.1`). */ lot: string | null; /** Label de lot tel que posé sur l'issue (couleur GitHub). */ lotLabel: string | null; isBlocked: boolean }
+export type Issue = { number: number; title: string; phase: string; /** Lot parent (`LOT-2` pour `LOT-2` ou `LOT-2.1`). */ lot: string | null; /** Label de lot tel que posé sur l'issue (couleur GitHub). */ lotLabel: string | null; isBlocked: boolean; /** Label `VALID-HUMAINE` : validation humaine requise. */ needsHuman: boolean }
 export type MilestoneRow = { title: string; open: number; closed: number }
 export type View = {
   /** Milestone en cours, ou null quand aucun n'a d'issue en phase. */
