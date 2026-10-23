@@ -417,7 +417,9 @@ l'utilisateur** (GATE), jamais seulement a l'envoi de l'ordre suivant : une issu
 
 **Label de lot (decoupage du milestone par le planner) :** `LOT-1`, `LOT-2`… — pose par le CDP (via `deployer`, ordre unique
 du GATE 2 avec `PRET`, §9.0 et §9.11) sur chaque issue de chaque lot, apres validation du plan (GATE 2). Ce n'est **pas** un label de phase : il se superpose a la
-phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot. Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est l'unite de livraison ; le panneau regroupe par lot parent `LOT-N`).
+phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot. **Label de validation humaine :** `VALID-HUMAINE` — pose par le CDP (via `deployer`, §9.13) sur chaque issue dont au moins un scenario de test est `HUMAIN`. Superpose a la phase, jamais retire par une transition ; son absence = issue auto-validable (la QA suffit). Un lot est « a validation humaine » si l'une de ses issues le porte.
+
+Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est l'unite de livraison ; le panneau regroupe par lot parent `LOT-N`).
 
 Regles :
 - Les labels de phase (`PLANNING` → `PRET` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
@@ -552,7 +554,7 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
 
 Les lots sont traites **un a la fois**. Quand la QA valide le lot (`DONE`), il est deploye en QUALIF (Phase 5) puis
 presente a l'utilisateur (question et options : point « GATE LOT » du tableau de `agents/cdp.md`, avec le lien de la
-QUALIF et du rapport QA). Il n'y a **aucune** validation apres la CI du lot.
+QUALIF et du rapport QA ; **lot sans issue `VALID-HUMAINE` : auto-valide, GATE LOT sans question** ; sinon synthese des tests, chemin de la procedure et ouverture dans Chrome : regle « GATE de validation par tests » de `agents/cdp.md`). Il n'y a **aucune** validation apres la CI du lot.
 
 ```
 QA valide → label DONE → Phase 5 (BUILD, PUBLISH QUALIF, DEPLOY QUALIF) → GATE LOT : l'utilisateur teste et valide
@@ -649,6 +651,22 @@ gh label create "LOT-2.1" --color "5319e7" --description "Lot 2.1 du milestone" 
 gh issue edit <numero> --add-label "LOT-3"                                          # issue entrante
 gh issue edit <numero> --add-label "LOT-2.2" --remove-label "LOT-2.1"               # changement de lot
 ```
+
+### 9.13 Label `VALID-HUMAINE` (validation humaine requise)
+
+Source : ligne `Validation humaine` du `TEST-WRITER DONE` (`agents/test-writer.md`). Au retour du test-writer, le CDP
+envoie a `deployer` un ordre unique (`Labels validation humaine (GITHUB.md §9.13) : +VALID-HUMAINE #12 ; -VALID-HUMAINE #15`) ;
+`deployer` execute et rapporte `LABELS DONE`. Il recalcule a chaque nouveau `TEST-WRITER DONE` (correctif, re-decoupage §9.11) :
+ajout **et** retrait, pour que le label reflete toujours les procedures a jour.
+
+```bash
+gh label create "VALID-HUMAINE" --color "fbca04" --description "Validation humaine requise (scenario de test HUMAIN)"   # si absent
+gh issue edit <numero> --add-label "VALID-HUMAINE"
+gh issue edit <numero> --remove-label "VALID-HUMAINE"
+```
+
+Le label est pose avant l'ordre DEV du lot concerne au plus tard (le test-writer est toujours dispatche en Batch 1) ;
+sans label au GATE LOT, le lot est auto-valide : le CDP verifie donc le `TEST-WRITER DONE` du lot avant d'auto-valider.
 
 ### 9.12 Moment des transitions : au retour du teammate ou a la validation
 

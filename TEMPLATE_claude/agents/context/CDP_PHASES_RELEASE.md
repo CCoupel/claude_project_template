@@ -55,7 +55,7 @@ SendMessage({ to: "doc-updater", content: "
 
 > **Milestone avec lots** : la Phase 5 s'exécute **pour chaque lot** (BUILD, PUBLISH QUALIF, DEPLOY QUALIF, NR et
 > DOC selon les règles ci-dessous), puis le **GATE LOT** (question et options : tableau des points de validation de
-> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire. Le GATE 4 (PROD) n'a lieu qu'une
+> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Le GATE 4 (PROD) n'a lieu qu'une
 > fois : après le dernier lot, ou sur la publication anticipée. Refus du lot : Cas A / Cas B ci-dessous, sans
 > réouverture (issues non encore fermées).
 
@@ -96,8 +96,11 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 ### Methode de test
 [Prerequis, donnees de test, acces requis — depuis le fichier de procedure]
 
+**Document de tests** : [chemin(s) de `tests/procedures/...` — ouvert(s) automatiquement dans Chrome]
+
 ```
 
+Avant la question : ouvrir la/les procedure(s) a scenarios `HUMAIN` dans Chrome (regle « GATE de validation par tests » de `cdp.md`).
 Apres ce resume (texte informatif), poser **via `AskUserQuestion`** : « QUALIF conforme — lancer le deploiement
 PROD ? » — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate :
 retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/deploy prod` reste un equivalent de « Oui ».

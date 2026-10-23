@@ -344,7 +344,8 @@ export const register: Register = (on, options) => {
     // Une ligne par issue : « LOT  PHASE : #n titre » ; lot et phase ne sont écrits que sur leur première ligne.
     const lotGroups = groupByLot(v.issues)
     const hasLots = lotGroups.some(g => g.lot !== null)
-    const LOT_W = Math.max(...lotGroups.map(g => (g.lot ?? 'SANS LOT').length))
+    // 👤 (2 unités UTF-16, 2 colonnes) suffixe le lot s'il requiert une validation humaine.
+    const LOT_W = Math.max(...lotGroups.map(g => (g.lot ?? 'SANS LOT').length + (g.issues.some(x => x.needsHuman) ? 2 : 0)))
     const maj = ` · maj ${new Date(v.updatedAt).toTimeString().slice(0, 5)}`
     const cur = v.milestones.find(m => m.title === v.current)
     const byPhase: Record<string, number> = {}
@@ -369,7 +370,7 @@ export const register: Register = (on, options) => {
                   <Text wrap="truncate-end">
                     {hasLots && (
                       <Text bold color={lg.lot ? hex(lg.issues.find(i => i.lotLabel)?.lotLabel ?? lg.lot, 'magenta') : 'gray'}>
-                        {(gi === 0 && k === 0 ? (lg.lot ?? 'SANS LOT') : '').padEnd(LOT_W + 1)}
+                        {(gi === 0 && k === 0 ? `${lg.lot ?? 'SANS LOT'}${lg.issues.some(x => x.needsHuman) ? '👤' : ''}` : '').padEnd(LOT_W + 1)}
                       </Text>
                     )}
                     <Text bold color={phaseColor(g.phase)}>
@@ -377,7 +378,7 @@ export const register: Register = (on, options) => {
                     </Text>
                     <Text dimColor>{': '}</Text>
                     <Text color={i.isBlocked ? 'red' : undefined}>
-                      {`${i.isBlocked ? '⛔' : ''}#${i.number} ${i.title}`}
+                      {`${i.isBlocked ? '⛔' : ''}${i.needsHuman ? '👤' : ''}#${i.number} ${i.title}`}
                     </Text>
                   </Text>
                 )),

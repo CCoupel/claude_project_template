@@ -85,6 +85,7 @@ export const buildView = (
           lot: lotOf(i),
           lotLabel: lotLabelOf(i),
           isBlocked: i.labels.some(l => l.name === 'BLOQUE'),
+          needsHuman: i.labels.some(l => l.name === 'VALID-HUMAINE'),
         }))
     : []
   // Liste affichée quand aucun milestone n'est en cours : sans version (`x`) en dernier, puis par progression
