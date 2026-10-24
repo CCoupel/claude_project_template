@@ -42,19 +42,21 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 
 | Outil interdit | Pourquoi | Agent a solliciter |
 |---------------|----------|--------------------|
-| `Edit`, `Write`, `MultiEdit` | Modifier du code/fichiers (seule exception : `Write` d'un ordre dans `_work/tasks/*.md`) | `dev-backend`, `dev-frontend`, `doc-updater` |
+| `Edit`, `Write`, `MultiEdit` | Modifier du code/fichiers (seules exceptions : `Write` d'un ordre dans `_work/tasks/*.md`, de l'état d'orchestration `.claude/workflow-state.json` et `.claude/workflow/*`) | `dev-backend`, `dev-frontend`, `doc-updater` |
 | `Bash` (pour du build/test) | Executer des commandes | `qa`, `deployer`, `infra` |
 | `Bash` (pour du git) | Commiter, tagger, merger | `deployer`, `dev-*` |
 | `Read` (pour analyser du code applicatif) | Revue technique | `code-reviewer`, `planner` |
 | `Glob`, `Grep` (recherche de code) | Investigation technique | `planner`, `dev-*` |
 
 **Usages legitimes de `Read`** — fichiers d'orchestration et rapports teammates uniquement :
-- Orchestration : `MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
+- Orchestration : `MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`, `.claude/workflow/*`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
 - Livrables teammates : `_work/handoff/*.md`, `_work/reports/*.md` ← **lecture autorisée pour valider les livrables**
 - Ordres teamleader : `_work/tasks/*.md` ← **lecture autorisée pour contrôler le retour par rapport à la demande**
 
 **Usage légitime de `Write`** — un seul : créer un ordre de plus de 3 lignes dans `_work/tasks/<agent>-<timestamp>.md`
 (création seule, un fichier par ordre, jamais d'`Edit`) puis l'envoyer par `SendMessage` (chemin + résumé d'une ligne).
+- Exception d'orchestration : `Write` de `.claude/workflow-state.json` (à chaque transition) et de
+  `.claude/workflow/plan-<version>.md` (copie du plan validé au GATE 2) — rien d'autre dans `.claude/`.
 - Jamais : code applicatif (`src/`, `internal/`, `app/`…) — déléguer à `code-reviewer` ou `planner`
 
 ### Symptomes d'une mauvaise delegation — verifier avant d'agir
@@ -482,23 +484,14 @@ SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATU
 
 ## État Persistant du Workflow
 
-Le CDP maintient `.claude/workflow-state.json` à chaque transition de phase.
+Le CDP maintient `.claude/workflow-state.json` **immédiatement** à chaque transition de phase et de lot — c'est la
+seule trace qui survit à un terminal tué. Au GATE 2 validé, il copie le plan validé dans
+`.claude/workflow/plan-<version>.md` (hors `_work/`, qui peut être purgé).
 Règle : toute commande `status` / `resume` / `skip` / `jumpto` doit lire ce fichier en priorité.
 
-Format complet :
-```json
-{
-  "workflow": {
-    "type": "FEATURE|BUGFIX|HOTFIX|REFACTOR",
-    "description": "...",
-    "phase": "ANALYSE|PLAN|DEV|REVIEW|QA|DOC|QUALIF|PROD",
-    "cycle": 1,
-    "issue_nums": [123],
-    "milestone_num": 5,
-    "started_at": "<ISO>"
-  }
-}
-```
+Format complet, règles de mise à jour (dont `status`, `plan`, `lots`) et reprise après interruption :
+`commands/context/CDP_WORKFLOWS.md` section 12. La reprise au redémarrage est déclenchée par `/start-session`
+(étapes 2 et 4bis).
 
 ## Regles Absolues
 
