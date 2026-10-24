@@ -290,7 +290,7 @@ spécialisés, valide leurs livrables et reporte la progression.
 
 | Agent | Modèle | Effort |
 |-------|--------|--------|
-| teamleader | `fable` | `medium` — il tient une machine à états à chaque tour : la capacité compte, pas la profondeur de réflexion |
+| teamleader | `opus` | `medium` — il tient une machine à états à chaque tour : la capacité compte, pas la profondeur de réflexion |
 | `planner` | `fable` | `high` — une fois par milestone, il porte la structure (lots, contrats, ordre) |
 | `infra` | `opus` | `medium` — validation à chaque déploiement ; la profondeur ne sert qu'à l'audit initial du pipeline |
 | `security` | `sonnet` | `high` — ponctuel (`/secu`), rare donc marginal |
