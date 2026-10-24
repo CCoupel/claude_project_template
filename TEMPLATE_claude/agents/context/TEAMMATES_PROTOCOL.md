@@ -265,7 +265,7 @@ Valeurs par défaut du template :
 
 | Agent | Modèle | Effort | Pourquoi |
 |-------|--------|--------|----------|
-| teamleader | `fable` | `medium` | Tient une machine à états à chaque tour : la capacité compte, pas la profondeur de réflexion |
+| teamleader | `opus` | `medium` | Tient une machine à états à chaque tour : la capacité compte, pas la profondeur de réflexion |
 | `planner` | `fable` | `high` | Une fois par milestone ; porte lots, contrats et ordre — une erreur coûte des cycles à toute l'équipe |
 | `infra` | `opus` | `medium` | Validation à chaque déploiement ; la profondeur ne sert qu'à l'audit initial du pipeline |
 | `security` | `sonnet` | `high` | Ponctuel (`/secu`), rare donc marginal |

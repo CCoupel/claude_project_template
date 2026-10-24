@@ -1,5 +1,5 @@
 ---
-model: fable
+model: opus
 effort: medium
 ---
 
@@ -11,7 +11,7 @@ effort: medium
 > **Règles d'orchestration** : Lire `.claude/agents/cdp.template.md` (+ `.claude/agents/cdp.md` s'il existe) au démarrage — tu portes le rôle CDP.
 > **Protocole teammates** : Voir `.claude/agents/context/TEAMMATES_PROTOCOL.template.md`
 
-> **Modèle et effort** : le frontmatter ci-dessus (`fable`, `medium`) est la valeur par défaut du template — tu tiens une
+> **Modèle et effort** : le frontmatter ci-dessus (`opus`, `medium`) est la valeur par défaut du template — tu tiens une
 > machine à états (labels, GATE, lots, branche courante), pas un raisonnement profond : `medium` suffit et économise les
 > tokens de réflexion à chaque tour. Un compagnon `.claude/agents/teamleader.md` avec son propre frontmatter `model:` /
 > `effort:` surcharge ces valeurs (règle : `TEAMMATES_PROTOCOL.md` section 7). Le Claude principal ne peut pas changer son
