@@ -5,12 +5,13 @@
 > **Interlocuteur unique = le teamleader.** Le teamleader est le Claude principal.
 >
 > **Règle de nommage (valable dans tous les fichiers du template) :**
-> - **Dans le texte** (instructions, rapports, messages) : toujours **« teamleader »**. Jamais « main », ni « CDP »
+> - **Dans le texte** (instructions, rapports, messages) : toujours **« teamleader »**. Jamais « team-lead », ni « CDP »
 >   comme interlocuteur — « CDP » ne désigne que les règles d'orchestration (`cdp.md`) que le teamleader applique.
-> - **Dans le champ `to` de `SendMessage`** : toujours la chaîne **`"main"`** — c'est l'identifiant technique du
->   Claude principal (adresse la plus fiable), pas un rôle. `to: "teamleader"` est incorrect.
+> - **Dans le champ `to` de `SendMessage`** : toujours la chaîne **`"team-lead"`** — c'est le nom technique du
+>   Claude principal dans la team, pas un rôle. `to: "teamleader"` est incorrect, et `to: "main"` aussi : vu d'un
+>   teammate, `"main"` désigne sa propre conversation (le message est refusé).
 >
-> Exemple : « Tu remontes le `DONE` au teamleader » → `SendMessage({ to: "main", content: "[NOM] DONE" })`.
+> Exemple : « Tu remontes le `DONE` au teamleader » → `SendMessage({ to: "team-lead", content: "[NOM] DONE" })`.
 
 ---
 
@@ -18,8 +19,8 @@
 
 ```
 1. Lire ce fichier
-2. Lire .claude/agents/<nom>.md
-3. SendMessage({ to: "main", content: "[NOM] ACTIF" })
+2. Lire .claude/agents/<nom>.template.md (+ compagnon .claude/agents/<nom>.md s'il existe)
+3. SendMessage({ to: "team-lead", content: "[NOM] ACTIF" })
 4. Passer en IDLE — attendre les instructions du teamleader
 ```
 
@@ -32,10 +33,10 @@
 
 ```
 Lire l'ordre : message court, ou fichier `_work/tasks/...` référencé (voir « Ordres du teamleader » ci-dessous)
-SendMessage({ to: "main", content: "[NOM] ACTIF" })   ← confirmer réception
+SendMessage({ to: "team-lead", content: "[NOM] ACTIF" })   ← confirmer réception
 Exécuter la tâche
 Écrire le livrable dans un fichier
-SendMessage({ to: "main", content: "[NOM] DONE\n<références fichiers>" })
+SendMessage({ to: "team-lead", content: "[NOM] DONE\n<références fichiers>" })
 Retour en IDLE
 ```
 
@@ -167,7 +168,7 @@ Une tâche qui se découpe en plusieurs unités (lots de tests, modules, fichier
 silencieuse jusqu'au DONE** : à la fin de chaque unité, envoyer un jalon au teamleader :
 
 ```
-SendMessage({ to: "main", content: "[NOM] EN COURS — <unité> i/N (<nom>) — <mesure>, <anomalies>" })
+SendMessage({ to: "team-lead", content: "[NOM] EN COURS — <unité> i/N (<nom>) — <mesure>, <anomalies>" })
 ```
 
 Exemple QA : `QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 tests, 2 KO`.
@@ -187,9 +188,9 @@ Si tu reçois `/clear` via SendMessage :
 
 ```
 1. Exécuter /clear                    ← vide le contexte de conversation
-2. Re-lire TEAMMATES_PROTOCOL.md
-3. Re-lire .claude/agents/<nom>.md
-4. SendMessage({ to: "main", content: "[NOM] ACTIF" })
+2. Re-lire .claude/agents/context/TEAMMATES_PROTOCOL.template.md
+3. Re-lire .claude/agents/<nom>.template.md (+ compagnon .claude/agents/<nom>.md s'il existe)
+4. SendMessage({ to: "team-lead", content: "[NOM] ACTIF" })
 5. Passer en IDLE — attendre la prochaine tâche
 ```
 

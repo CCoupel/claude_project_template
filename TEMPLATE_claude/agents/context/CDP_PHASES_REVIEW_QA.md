@@ -23,7 +23,7 @@ SendMessage({ to: "code-reviewer", content: "
 Checklist — voir `code-reviewer.md` section "Délégation à des Sous-Reviewers") :
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "code-reviewer" comme
-coordinateur — jamais "main") → mémoriser SUBREVIEWER_NAMES[]
+coordinateur — jamais "team-lead") → mémoriser SUBREVIEWER_NAMES[]
 SendMessage({ to: "code-reviewer", content: "TEAMLEADER SUBREVIEWERS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-reviewers ensuite — code-reviewer les gère en direct (P2P)
@@ -58,7 +58,7 @@ SendMessage({ to: "qa", content: "
 à des Sous-QA") :
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "qa" comme coordinateur
-— jamais "main") → mémoriser SUBAGENT_NAMES[]
+— jamais "team-lead") → mémoriser SUBAGENT_NAMES[]
 SendMessage({ to: "qa", content: "TEAMLEADER SUBAGENTS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-qa ensuite — `qa` les gère en direct (P2P) jusqu'à son

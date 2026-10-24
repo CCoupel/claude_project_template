@@ -19,13 +19,13 @@ L'ordre specifie les composants/pages/hooks a implementer et les contrats API a 
 Apres l'implementation, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "main", content: "**DEV-FRONTEND TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
+SendMessage({ to: "team-lead", content: "**DEV-FRONTEND TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
 ```
 
 **Reception d'un bugfix** : avant d'implémenter, identifier la cause racine et envoyer un diagnostic :
 
 ```
-SendMessage({ to: "main", content: "**DEV-FRONTEND DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
+SendMessage({ to: "team-lead", content: "**DEV-FRONTEND DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
 ```
 
 Puis implémenter et envoyer le rapport TERMINE habituel.

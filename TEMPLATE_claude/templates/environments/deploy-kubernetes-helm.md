@@ -51,7 +51,7 @@ d'installation/rollout — jamais un échec de code ni de build.
 
 ```
 SendMessage({
-  to: "main",
+  to: "team-lead",
   content: "DEPLOY FAILED
 Environnement : {ENV_NAME}
 Version  : v[X.Y.Z]

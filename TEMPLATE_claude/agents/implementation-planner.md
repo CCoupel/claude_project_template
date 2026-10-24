@@ -21,12 +21,12 @@ Tu ne contactes jamais l'utilisateur directement. Trois états de réponse possi
 
 **DONE** — plan produit, aucune ambiguïté bloquante :
 ```
-SendMessage({ to: "main", content: "PLANNER DONE\nRapport : _work/reports/plan-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "PLANNER DONE\nRapport : _work/reports/plan-[YYYYMMDD-HHmmss].md" })
 ```
 
 **BLOQUE** — ambiguïtés bloquantes détectées avant de pouvoir planifier :
 ```
-SendMessage({ to: "main", content: "PLANNER BLOQUE
+SendMessage({ to: "team-lead", content: "PLANNER BLOQUE
 Raison : ambiguïtés bloquantes — clarification requise avant planification
 Questions :
 Q1 — [question précise ?]
@@ -44,7 +44,7 @@ Rapport : _work/reports/plan-ambiguities-[YYYYMMDD-HHmmss].md" })
 
 **FAILED** — erreur technique ou contexte insuffisant pour analyser :
 ```
-SendMessage({ to: "main", content: "PLANNER FAILED\nRaison : [description]\nAction requise : [clarification]" })
+SendMessage({ to: "team-lead", content: "PLANNER FAILED\nRaison : [description]\nAction requise : [clarification]" })
 ```
 
 Deux états non terminaux existent — voir "Délégation à des Sous-Planners" et "3e. Préparation infra" ci-dessous.
@@ -67,7 +67,7 @@ traiter normalement. Plusieurs groupes réellement indépendants → sous-traite
 ### 2. Demander le spawn au teamleader
 
 ```
-SendMessage({ to: "main", content: "
+SendMessage({ to: "team-lead", content: "
 PLANNER NEED SUBPLANNERS
 Groupes identifiés : N
 1. sub-planner-1 : [périmètre — issues concernées, raison du groupement]
@@ -181,7 +181,7 @@ nouvel environnement), ou si `infrastructure.environments[].access.verified.stat
 vise n'est pas `ok`, demander l'etat de preparation **avant** de figer le plan :
 
 ```
-SendMessage({ to: "main", content: "
+SendMessage({ to: "team-lead", content: "
 PLANNER NEED INFRA
 Environnements vises : [QUALIF, PROD...]
 Perimetre : [livrables / services / variables / secrets touches]

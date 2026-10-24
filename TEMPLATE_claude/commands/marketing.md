@@ -286,7 +286,7 @@ Task({
   name: "marketing-release",
   subagent_type: "marketing-release",
   model: <modèle résolu>, effort: <effort résolu>,   // TEAMMATES_PROTOCOL.md section 7 : compagnon marketing-release.md > marketing-release.template.md
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/marketing-release.template.md (et .claude/agents/marketing-release.md s'il existe — adaptations projet). Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.template.md puis .claude/agents/marketing-release.template.md (et .claude/agents/marketing-release.md s'il existe — adaptations projet). Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
 })
 ```
 

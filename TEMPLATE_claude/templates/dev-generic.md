@@ -20,7 +20,7 @@ fichier ne definit **aucune techno** : elle est definie par ton **compagnon** `.
 Ton nom canonique (`dev-backend`, `dev-firmware-stm32`...) t'est donne au spawn. **Tu lis toujours, dans cet ordre** :
 
 ```
-1. .claude/agents/context/TEAMMATES_PROTOCOL.md
+1. .claude/agents/context/TEAMMATES_PROTOCOL.template.md
 2. .claude/agents/<nom>.template.md   (ce fichier)
 3. .claude/agents/<nom>.md            (ton compagnon — OBLIGATOIRE)
 ```
@@ -45,13 +45,13 @@ L'ordre specifie les fonctionnalites a implementer et les contrats a respecter (
 Apres l'implementation, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "main", content: "**<NOM> TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
+SendMessage({ to: "team-lead", content: "**<NOM> TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
 ```
 
 **Reception d'un bugfix** : avant d'implementer, identifier la cause racine et envoyer un diagnostic :
 
 ```
-SendMessage({ to: "main", content: "**<NOM> DIAGNOSTIC** — Cause : [cause racine identifiee] — Fix prevu : [approche de correction]" })
+SendMessage({ to: "team-lead", content: "**<NOM> DIAGNOSTIC** — Cause : [cause racine identifiee] — Fix prevu : [approche de correction]" })
 ```
 
 Puis implementer et envoyer le rapport TERMINE habituel.

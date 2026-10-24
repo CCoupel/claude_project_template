@@ -24,7 +24,7 @@ Apres les tests, tu ecris le rapport dans `_work/reports/qa-[YYYYMMDD-HHmmss].md
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "main", content: "QA DONE\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "QA DONE\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -55,7 +55,7 @@ spawn/fermeture.
 ### 1. Demander le spawn au teamleader
 
 ```
-SendMessage({ to: "main", content: "
+SendMessage({ to: "team-lead", content: "
 QA NEED SUBAGENTS
 Scopes : N
 1. sub-qa-unit : tests unitaires
@@ -110,7 +110,7 @@ Comme le code-reviewer (pas de boucle de correction en direct comme pour le plan
 la liste dans le rapport DONE pour fermeture immediate par le teamleader.
 
 ```
-SendMessage({ to: "main", content: "
+SendMessage({ to: "team-lead", content: "
 QA DONE
 Rapport : _work/reports/qa-[timestamp].md
 Sub-qa a fermer : sub-qa-unit, sub-qa-integration
@@ -182,7 +182,7 @@ lots (`tests/<famille>/<theme>/<lot>/`, paquets pour les unitaires) et executer 
 `commands.test_targeted` (`{TARGETS}` = dossier du lot). A la fin de **chaque lot**, envoyer au teamleader :
 
 ```
-SendMessage({ to: "main", content: "QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 tests, 2 KO" })
+SendMessage({ to: "team-lead", content: "QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 tests, 2 KO" })
 ```
 
 Nommer les KO des qu'ils apparaissent (lot, test). Sous ~100 tests au total : un seul lot, pas de jalon intermediaire.

@@ -6,10 +6,10 @@ effort: medium
 # Team Leader — {PROJECT_NAME}
 
 > Spec de référence — lue par le Claude principal au démarrage (via CLAUDE.md).
-> Le Claude principal IS le teamleader — les agents l'adressent par `SendMessage({ to: "main" })` (voir `TEAMMATES_PROTOCOL.md`, règle de nommage).
+> Le Claude principal IS le teamleader — les agents l'adressent par `SendMessage({ to: "team-lead" })` (voir `TEAMMATES_PROTOCOL.md`, règle de nommage).
 
 > **Règles d'orchestration** : Lire `.claude/agents/cdp.template.md` (+ `.claude/agents/cdp.md` s'il existe) au démarrage — tu portes le rôle CDP.
-> **Protocole teammates** : Voir `.claude/agents/context/TEAMMATES_PROTOCOL.md`
+> **Protocole teammates** : Voir `.claude/agents/context/TEAMMATES_PROTOCOL.template.md`
 
 > **Modèle et effort** : le frontmatter ci-dessus (`fable`, `medium`) est la valeur par défaut du template — tu tiens une
 > machine à états (labels, GATE, lots, branche courante), pas un raisonnement profond : `medium` suffit et économise les
@@ -50,7 +50,7 @@ des `DONE` : **source unique = bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`** (non 
 ## Rôle 2 — Orchestration de Projet (CDP)
 
 Toutes les règles dans `.claude/agents/cdp.template.md` (+ `.claude/agents/cdp.md` s'il existe).
-Les agents envoient leurs rapports au teamleader via `SendMessage({to: "main"})` (`main` = adresse du teamleader).
+Les agents envoient leurs rapports au teamleader via `SendMessage({to: "team-lead"})` (`team-lead` = adresse du teamleader).
 
 ### Questions à l'utilisateur — Règle Absolue
 

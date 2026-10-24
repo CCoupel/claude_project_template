@@ -19,13 +19,13 @@ L'ordre specifie les taches a implementer et les contrats API a respecter (`cont
 Apres l'implementation, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "main", content: "**DEV-BACKEND TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
+SendMessage({ to: "team-lead", content: "**DEV-BACKEND TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
 ```
 
 **Reception d'un bugfix** : avant d'implémenter, identifier la cause racine et envoyer un diagnostic :
 
 ```
-SendMessage({ to: "main", content: "**DEV-BACKEND DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
+SendMessage({ to: "team-lead", content: "**DEV-BACKEND DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
 ```
 
 Puis implémenter et envoyer le rapport TERMINE habituel.
