@@ -61,6 +61,10 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   " })
   ```
 - Répéter jusqu'à validation explicite de l'utilisateur avant de lancer la Phase 2
+- **Plan validé → le mettre à l'abri** avant tout ordre DEV : copier le rapport du planner dans
+  `.claude/workflow/plan-<version>.md` et mettre à jour `.claude/workflow-state.json` (`plan`, et `lots` si le plan a
+  une table « Lots ») — `_work/` peut être purgé, la reprise après interruption repart de cette copie
+  (`commands/context/CDP_WORKFLOWS.md` section 12)
 - **Plan avec table « Lots »** : avant GATE 2, vérifier que chaque issue du milestone figure dans un seul lot ou sous-lot nommé `LOT-<entier>` ou `LOT-<entier>.<entier>` (sinon renvoyer le plan au planner). Les lots sont traités **un à la fois**, dans l'ordre (`LOT-1`, `LOT-2`…) : cycle complet DEV → REVIEW → QA → Phase 5 (QUALIF) → **GATE LOT** (l'utilisateur teste et valide) → push → CI verte → fermeture des issues du lot (`GITHUB.md` §9.5b), puis lot suivant. Aucune validation après la CI. Les issues des lots non lancés restent `PRET`. Après validation (GATE 2), envoyer à `deployer` **un seul ordre** recopiant la table « Lots » du plan validé : `PRET` sur toutes les issues **et** le lot de chacune, **tous les lots** d'un coup (forme exacte et vérifications : `commands/context/GITHUB.md` §9.0 ; nommage et re-découpage : §9.11). Attendre `LABELS DONE`, comparer son récapitulatif à la table du plan (toute issue sans lot ou mal lotie → ordre correctif) avant le premier ordre DEV
 
 **Maquette au GATE 2** (convention : `context/COMMON.md` section 14) :

@@ -139,12 +139,24 @@ Si aucune team n'est active, passer cette etape.
 
 ### 6. PURGE — Nettoyage du dossier de travail temporaire
 
+Workflow encore en cours (`.claude/workflow-state.json` avec `status` différent de `completed`/`abandoned`, ex. un
+milestone à lots dont il reste des lots) → **purge sélective** : la prochaine session le reprendra
+(`start-session.md` étape 2).
+
 ```bash
-rm -rf _work/
+STATE=.claude/workflow-state.json
+# status absent (etat anterieur a ce champ) : termine si toutes les phases sont completed/skipped
+DONE_Q='(.status // (if ([.phases[]?.status] | length > 0 and all(. == "completed" or . == "skipped"))
+          then "completed" else "in_progress" end)) | IN("completed","abandoned")'
+if [ -f "$STATE" ] && ! jq -e "$DONE_Q" "$STATE" >/dev/null; then
+  rm -rf _work/tmp/ _work/tasks/      # rapports, handoffs, tests-ledger, maquettes conservés
+else
+  rm -rf _work/
+fi
 ```
 
 > `_work/` contient les rapports et handoffs inter-agents de la session (gitignored).
-> Ces fichiers ne sont plus utiles une fois la session terminée.
+> Ils ne sont plus utiles une fois le workflow terminé — tant qu'il ne l'est pas, ils servent à la reprise.
 
 ### 7. RAPPORT — Rapport de Session
 
