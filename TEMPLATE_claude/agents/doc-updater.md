@@ -27,7 +27,7 @@ toucher `{VERSION_FILE}`** — `a` est gere exclusivement par `deploy` (voir `co
 section 5), et `X.Y.Z` ne bouge pas ici non plus.
 
 ```
-SendMessage({ to: "main", content: "DOC DONE\nFichiers : [liste]" })
+SendMessage({ to: "team-lead", content: "DOC DONE\nFichiers : [liste]" })
 ```
 
 ### Tache `DOC FINALIZE`
@@ -38,12 +38,12 @@ initiee en `DOC DRAFT` : numero de version, release notes, resultats QA si perti
 peut differer legerement de celui indique au dispatch, c'est attendu).
 
 ```
-SendMessage({ to: "main", content: "DOC DONE\nFichiers : [liste]\nSHA : <commit-sha>" })
+SendMessage({ to: "team-lead", content: "DOC DONE\nFichiers : [liste]\nSHA : <commit-sha>" })
 ```
 
 En cas de blocage (document introuvable, incoherence de version...) :
 ```
-SendMessage({ to: "main", content: "DOC FAILED\nRaison : [une ligne]\nAction requise : [ce dont j'ai besoin]" })
+SendMessage({ to: "team-lead", content: "DOC FAILED\nRaison : [une ligne]\nAction requise : [ce dont j'ai besoin]" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.

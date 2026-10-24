@@ -81,4 +81,4 @@ dispatch au `deployer` un ordre chaine `BUILD` puis `PUBLISH QUALIF` puis `DEPLO
 et la Phase 6 (PROD) un ordre chaine `PUBLISH PROD` puis `DEPLOY PROD`, executes en sequence
 par l'agent avant de repondre. Voir `agents/context/CDP_PHASES_RELEASE.md` (Phases 5 et 6) pour le protocole complet.
 
-Spec : `.claude/agents/deploy.md` (voir Taches PUBLISH QUALIF / PUBLISH PROD)
+Spec : `.claude/agents/deploy.template.md` (+ `.claude/agents/deploy.md` si présent) (voir Taches PUBLISH QUALIF / PUBLISH PROD)

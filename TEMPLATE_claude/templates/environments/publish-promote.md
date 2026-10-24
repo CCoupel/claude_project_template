@@ -46,7 +46,7 @@ Pas de CI impliquee ici — verification a une ligne, pas de table de classifica
 
 ```
 SendMessage({
-  to: "main",
+  to: "team-lead",
   content: "PUBLISH FAILED
 Environnement : {ENV_NAME}
 Version  : v[X.Y.Z.a]

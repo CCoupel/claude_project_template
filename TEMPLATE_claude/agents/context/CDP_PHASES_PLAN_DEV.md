@@ -26,7 +26,7 @@ interrompues). Nouveau GATE 2 sur le plan mis à jour, puis `LOT-N`/labels comme
 **Cas NEED SUBPLANNERS** — le planner a identifié des groupes indépendants et demande à
 sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous-Planners") :
 - Spawner chaque nom demandé via `Task`/`Agent` (prompt générique fixe, pointant vers `planner`
-  comme coordinateur — jamais `main`) et mémoriser la liste dans `SUBPLANNER_NAMES[]`
+  comme coordinateur — jamais `team-lead`) et mémoriser la liste dans `SUBPLANNER_NAMES[]`
 - Répondre : `SendMessage({ to: "planner", content: "TEAMLEADER SUBPLANNERS READY\nNoms : [liste]" })`
 - Le CDP ne dispatche plus rien lui-même à ces sub-planners ensuite — le planner les gère en
   direct (P2P) jusqu'à son rapport `PLANNER DONE`/`BLOQUE` final

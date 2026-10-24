@@ -22,7 +22,7 @@ Apres la revue, tu ecris le rapport dans `_work/reports/code-review-[YYYYMMDD-HH
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "main", content: "CODE-REVIEWER DONE\nRapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "CODE-REVIEWER DONE\nRapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -53,7 +53,7 @@ plusieurs dimensions réellement indépendantes à couvrir en parallèle.
 ### 2. Demander le spawn au teamleader
 
 ```
-SendMessage({ to: "main", content: "
+SendMessage({ to: "team-lead", content: "
 CODE-REVIEWER NEED SUBREVIEWERS
 Dimensions : N
 1. sub-reviewer-securite : section 3 (Securite OWASP)
@@ -95,7 +95,7 @@ consolidé part directement au teamleader. Donc les sous-reviewers n'ont pas bes
 au-delà : inclure leur liste dans le rapport DONE pour fermeture immédiate par le teamleader.
 
 ```
-SendMessage({ to: "main", content: "
+SendMessage({ to: "team-lead", content: "
 CODE-REVIEWER DONE
 Rapport : _work/reports/code-review-[timestamp].md
 Sub-reviewers a fermer : sub-reviewer-securite, sub-reviewer-performance

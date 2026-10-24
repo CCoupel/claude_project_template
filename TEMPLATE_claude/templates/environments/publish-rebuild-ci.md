@@ -107,7 +107,7 @@ gh run view "$RUN_ID" --log-failed
 
 ```
 SendMessage({
-  to: "main",
+  to: "team-lead",
   content: "PUBLISH FAILED
 Environnement : {ENV_NAME}
 Version  : v[X.Y.Z]

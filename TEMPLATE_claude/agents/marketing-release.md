@@ -49,7 +49,7 @@ resous le milestone et decides seul de la pertinence d'une publication.
      `CHANGELOG.md` : lire la section de la version `vX.Y.Z` fraichement ajoutee par
      doc-updater. Sous-sections `Added`/`Changed`/`Breaking` non vides → continuer ; seulement
      `Fixed`/`Chore` (ou section absente) → rien a publier.
-   - Rien a publier → `SendMessage({ to: "main", content: "MARKETING RIEN A PUBLIER" })`, repasser IDLE. Ne rien generer d'autre.
+   - Rien a publier → `SendMessage({ to: "team-lead", content: "MARKETING RIEN A PUBLIER" })`, repasser IDLE. Ne rien generer d'autre.
 2b. **Detecter le site marketing** (sauf si l'ordre du teamleader est `PREPARE vX.Y.Z — SANS SITE` : ne
    traiter alors aucun site, uniquement release notes/posts). **Le site vit uniquement sur la branche
    `gh-pages`** (voir "Emplacement du site" ci-dessous) — il n'y a pas d'autre emplacement a tester :
@@ -77,7 +77,7 @@ resous le milestone et decides seul de la pertinence d'une publication.
 4. Ecrire un rapport `_work/reports/marketing-[timestamp].md` : resume + apercu (textes courts
    inline pour les posts/release notes, chemin du fichier + **URL de l'apercu Artifact** pour
    le site).
-5. `SendMessage({ to: "main", content: "MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md" })`, repasser IDLE.
+5. `SendMessage({ to: "team-lead", content: "MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md" })`, repasser IDLE.
    (Cas initialisation du site : `MARKETING BLOQUE` + `Questions:` a l'etape 2b, avant tout livrable.)
 
 Si le teamleader redispatche `PREPARE vX.Y.Z` avec des corrections (apres refus utilisateur au GATE 4d),
@@ -108,7 +108,7 @@ worktree de `gh-pages`, pas un dossier de la branche de code. Si le contexte a e
 ce qui doit etre commite — rien n'est perdu puisque `PREPARE` n'a jamais committe.
 
 ```
-SendMessage({ to: "main", content: "**MARKETING TERMINE** — Version : [X.Y.Z] — Livrables : [liste]" })
+SendMessage({ to: "team-lead", content: "**MARKETING TERMINE** — Version : [X.Y.Z] — Livrables : [liste]" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement — la validation de la maquette (GATE 4d) et
@@ -310,7 +310,7 @@ generes pas le site « a l'aveugle » : tu **alertes le teamleader** et tu lui f
 Puis envoyer, au **format unique** de `context/TEAMMATES_PROTOCOL.md` (4 questions maximum par message —
 les plus structurantes d'abord, le reste dans un `MARKETING BLOQUE` suivant) :
 ```
-SendMessage({ to: "main", content: "MARKETING BLOQUE
+SendMessage({ to: "team-lead", content: "MARKETING BLOQUE
 Raison : aucun site marketing — cadrage necessaire
 Rapport : _work/reports/marketing-cadrage-[timestamp].md
 Questions :

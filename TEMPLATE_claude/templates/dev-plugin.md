@@ -19,13 +19,13 @@ L'ordre specifie les fonctionnalites a implementer et les contraintes API hote a
 Apres l'implementation, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "main", content: "**DEV-PLUGIN TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
+SendMessage({ to: "team-lead", content: "**DEV-PLUGIN TERMINE** — [N] fichiers modifies — commits effectues — [points importants]" })
 ```
 
 **Reception d'un bugfix** : avant d'implémenter, identifier la cause racine et envoyer un diagnostic :
 
 ```
-SendMessage({ to: "main", content: "**DEV-PLUGIN DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
+SendMessage({ to: "team-lead", content: "**DEV-PLUGIN DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
 ```
 
 Puis implémenter et envoyer le rapport TERMINE habituel.

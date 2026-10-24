@@ -41,17 +41,17 @@ rapport au teamleader :
 
 ```
 # BUILD
-SendMessage({ to: "main", content: "BUILD DONE\nVersion : [X.Y.Z.a]\nCandidat : [chemin local]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "BUILD DONE\nVersion : [X.Y.Z.a]\nCandidat : [chemin local]\nSHA : <sha>" })
 
 # PUBLISH QUALIF / PROD
-SendMessage({ to: "main", content: "PUBLISH DONE\nEnvironnement : [QUALIF|PROD]\nVersion : [X.Y.Z.a ou X.Y.Z]\nArtefact : [registre/chemin]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "PUBLISH DONE\nEnvironnement : [QUALIF|PROD]\nVersion : [X.Y.Z.a ou X.Y.Z]\nArtefact : [registre/chemin]\nSHA : <sha>" })
 
 # DEPLOY PROD
-SendMessage({ to: "main", content: "DEPLOY DONE\nVersion : [X.Y.Z]\nFichiers : [liste]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "DEPLOY DONE\nVersion : [X.Y.Z]\nFichiers : [liste]\nSHA : <sha>" })
 
 # DEPLOY QUALIF — le binaire a tester DOIT etre inclus, le teamleader le relaie tel quel au GATE 4
 # Chemin toujours relatif a la racine du repo (build/qualif_v.../), jamais a un sous-repertoire
-SendMessage({ to: "main", content: "DEPLOY DONE\nVersion : [X.Y.Z.a]\nBinaire : build/qualif_v[X.Y.Z]/[artefact]-[X.Y.Z.a].[ext]\nSmoke tests : [OK|KO]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "DEPLOY DONE\nVersion : [X.Y.Z.a]\nBinaire : build/qualif_v[X.Y.Z]/[artefact]-[X.Y.Z.a].[ext]\nSmoke tests : [OK|KO]\nSHA : <sha>" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -91,8 +91,8 @@ reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
   4. Rapport avec recapitulatif par issue — le teamleader le compare a la table du plan.
 
 ```
-SendMessage({ to: "main", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 → PRET, LOT-1\n#18 → PRET, LOT-2.1" })
-SendMessage({ to: "main", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
+SendMessage({ to: "team-lead", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 → PRET, LOT-1\n#18 → PRET, LOT-2.1" })
+SendMessage({ to: "team-lead", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
 ```
 
 ## Prerequis
@@ -205,7 +205,7 @@ directement vers `dev`.
 
 ```
 SendMessage({
-  to: "main",
+  to: "team-lead",
   content: "BUILD FAILED
 Version  : v[X.Y.Z.a]
 Probleme : [compilation | packaging]"
@@ -383,7 +383,7 @@ En orchestration teamleader (jamais de contact direct utilisateur) : remonter le
 cloture dans le rapport `DEPLOY DONE` au teamleader, qui le presente a l'utilisateur (meme
 principe que GATE 4) :
 ```
-SendMessage({ to: "main", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture." })
+SendMessage({ to: "team-lead", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture." })
 ```
 
 > La decision de lancer l'agent marketing (`marketing-release`) n'est plus du ressort du

@@ -30,7 +30,7 @@ et sa propre specification :
 Le teamleader te donne ton `<nom>` dans le prompt de spawn. **Tu lis toujours, dans cet ordre** :
 
 ```
-1. .claude/agents/context/TEAMMATES_PROTOCOL.md
+1. .claude/agents/context/TEAMMATES_PROTOCOL.template.md
 2. .claude/agents/generic.template.md   (ce fichier)
 3. .claude/agents/generic.<nom>.md      (ta specification — OBLIGATOIRE)
 ```

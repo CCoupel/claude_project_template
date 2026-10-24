@@ -360,7 +360,7 @@ SendMessage({ to: "planner", content: "
 `implementation-planner.md` section "Délégation à des Sous-Planners") :
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "planner" comme
-coordinateur — jamais "main") → mémoriser SUBPLANNER_NAMES[]
+coordinateur — jamais "team-lead") → mémoriser SUBPLANNER_NAMES[]
 SendMessage({ to: "planner", content: "TEAMLEADER SUBPLANNERS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-planners ensuite — le planner les gère en direct (P2P)
@@ -470,7 +470,7 @@ SendMessage({ to: "test-writer", content: "
 dimension du Checklist — voir `code-reviewer.md` section "Délégation à des Sous-Reviewers") :
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "code-reviewer" comme
-coordinateur — jamais "main") → mémoriser SUBREVIEWER_NAMES[]
+coordinateur — jamais "team-lead") → mémoriser SUBREVIEWER_NAMES[]
 SendMessage({ to: "code-reviewer", content: "TEAMLEADER SUBREVIEWERS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-reviewers ensuite — code-reviewer les gère en direct (P2P).
@@ -523,7 +523,7 @@ SendMessage({ to: "qa", content: "
 justifier la delegation — voir `qa.md` section "Délégation à des Sous-QA") :
 ```
 Spawner chaque nom demandé (Task/Agent, prompt générique pointant vers "qa" comme coordinateur
-— jamais "main") → mémoriser SUBAGENT_NAMES[]
+— jamais "team-lead") → mémoriser SUBAGENT_NAMES[]
 SendMessage({ to: "qa", content: "TEAMLEADER SUBAGENTS READY\nNoms : [liste]" })
 ```
 Le CDP n'échange plus rien avec ces sub-qa ensuite — `qa` les gère en direct (P2P), chacun isolant

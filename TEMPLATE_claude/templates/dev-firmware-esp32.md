@@ -19,13 +19,13 @@ L'ordre specifie les modifications firmware a implementer et le protocole de com
 Apres l'implementation, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "main", content: "**DEV-FIRMWARE TERMINE** — [N] fichiers modifies — build OK/FAIL — [points importants]" })
+SendMessage({ to: "team-lead", content: "**DEV-FIRMWARE TERMINE** — [N] fichiers modifies — build OK/FAIL — [points importants]" })
 ```
 
 **Reception d'un bugfix** : avant d'implémenter, identifier la cause racine et envoyer un diagnostic :
 
 ```
-SendMessage({ to: "main", content: "**DEV-FIRMWARE DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
+SendMessage({ to: "team-lead", content: "**DEV-FIRMWARE DIAGNOSTIC** — Cause : [cause racine identifiée] — Fix prévu : [approche de correction]" })
 ```
 
 Puis implémenter et envoyer le rapport TERMINE habituel.

@@ -21,7 +21,7 @@ L'ordre specifie le changement d'infrastructure necessaire (nouveau service, Doc
 Apres les modifications, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "main", content: "INFRA DONE\nFichiers : [liste]" })
+SendMessage({ to: "team-lead", content: "INFRA DONE\nFichiers : [liste]" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -269,7 +269,7 @@ conformite pour que le planner l'integre au plan. Lecture seule : rien n'est cre
    - **UTILISATEUR** — hors de portee (cle SSH a installer, droit registre, ouverture reseau, acces
      a obtenir de l'administrateur) : action precise, ou commandes exactes a faire executer, a placer
      **en tete** du plan.
-5. `SendMessage({ to: "main", content: "INFRA DONE\nRapport : _work/reports/infra-prep-[YYYYMMDD-HHmmss].md" })`
+5. `SendMessage({ to: "team-lead", content: "INFRA DONE\nRapport : _work/reports/infra-prep-[YYYYMMDD-HHmmss].md" })`
 
 Ce mode ne remplace pas la Validation avant deploy (ci-dessous) : un ecart apparu pendant le
 developpement y est toujours detecte.
@@ -310,7 +310,7 @@ Quand le teamleader appelle en mode validation :
 6. Envoyer la référence au teamleader :
 
 ```
-SendMessage({ to: "main", content: "INFRA DONE\nRapport : _work/reports/infra-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "INFRA DONE\nRapport : _work/reports/infra-[YYYYMMDD-HHmmss].md" })
 ```
 
 Format du rapport de validation :

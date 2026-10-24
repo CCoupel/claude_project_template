@@ -101,7 +101,7 @@ Task({
   subagent_type: "<nom-canonique>",
   model: <modele resolu>,
   effort: <effort resolu>,
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md puis .claude/agents/<nom>.template.md
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.template.md puis .claude/agents/<nom>.template.md
            (et .claude/agents/<nom>.md s'il existe — adaptations projet).
            Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
            Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
@@ -116,7 +116,7 @@ Task({
   subagent_type: "generic",
   model: <modele resolu>,
   effort: <effort resolu>,
-  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.md, puis .claude/agents/generic.template.md
+  prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.template.md, puis .claude/agents/generic.template.md
            puis ta spécification .claude/agents/generic.<nom>.md (obligatoire).
            Tu es l'instance `<nom>` et fais partie de {TEAM_NAME} sur {PROJECT_NAME}.
            Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
