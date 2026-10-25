@@ -55,6 +55,10 @@ MARKETING/
 # Dossier de travail inter-agents (rapports et handoffs temporaires)
 _work/
 
+# Etat local du workflow en cours (copie du plan valide au GATE 2) — survit a la purge de _work/ pour la reprise
+# apres interruption (/start-session). .claude/workflow-state.json, lui, reste tracke.
+.claude/workflow/
+
 # Worktrees git de travail (isolation QA, branches paralleles) — toujours DANS le projet, jamais ../ ni /tmp
 .claude/worktrees/
 

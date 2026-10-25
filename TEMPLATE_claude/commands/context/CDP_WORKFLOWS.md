@@ -815,12 +815,23 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
 {
   "type": "FEATURE",
   "description": "...",
+  "status": "in_progress",
   "branch": "milestone/v1.4.0",
   "version": "X.Y.Z",
   "started_at": "2026-04-26T14:30:00Z",
+  "updated_at": "2026-04-26T16:02:00Z",
   "cycles": 1,
   "issue_nums": [123, 456],
   "milestone_num": 5,
+  "plan": ".claude/workflow/plan-v1.4.0.md",
+  "lots": {
+    "current": "LOT-2",
+    "items": {
+      "LOT-1": { "status": "completed", "issues": [123], "ci_sha": "abc123" },
+      "LOT-2": { "status": "in_progress", "issues": [456], "phase": "qa" },
+      "LOT-3": { "status": "pending", "issues": [789] }
+    }
+  },
   "phases": {
     "clarification":{ "status": "completed", "skipped": false },
     "plan":         { "status": "completed", "report": "_work/reports/plan-xxx.md", "timestamp": "..." },
@@ -850,15 +861,27 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
 > de granularite `resume`/`skip` (section 11 ci-dessus, cf. `COMMON.md` section 12.2) reste la
 > phase globale `deploy` — ces sous-etapes sont informatives, pas des cibles de `resume`/`skip`.
 
+> `status` (racine) : `in_progress` tant que le workflow n'est pas terminé — `/start-session` s'en sert pour détecter
+> une session interrompue (absent = `in_progress`). `lots` n'existe que si le plan validé contient une table
+> « Lots » ; `lots.items.<LOT>.phase` reprend les clés de `phases` (`dev-backend`, `review`, `qa`, `deploy-qualif`…)
+> et les `phases` à partir du DEV décrivent alors le **lot courant** (remises à `pending` au lancement du lot suivant ;
+> `clarification` et `plan` restent `completed`).
+
 ### Règles de mise à jour
+
+Chaque écriture met aussi à jour `updated_at`. Le fichier est écrit **à chaque transition, immédiatement** — c'est
+la seule trace qui survit à un terminal tué.
 
 | Moment | Action CDP |
 |--------|------------|
-| Démarrage workflow | Créer le fichier avec toutes les phases à `pending` |
-| Dispatch d'un agent | Passer la phase à `in_progress` |
+| Démarrage workflow | Créer le fichier avec `status: "in_progress"` et toutes les phases à `pending` |
+| GATE 2 validé | Copier le plan validé dans `.claude/workflow/plan-<version>.md` (lu puis écrit tel quel), renseigner `plan` ; table « Lots » → créer `lots` (tous `pending`) |
+| Dispatch d'un agent | Passer la phase à `in_progress` (avec lots : `lots.current` et sa `phase`) |
 | Réception DONE conforme | Passer la phase à `completed`, enregistrer refs |
 | Renvoi pour correction | Laisser `in_progress`, incrémenter `cycles` |
+| Lot : CI verte après GATE LOT | Lot `completed` + `ci_sha`, lot suivant `in_progress`, phases DEV et suivantes remises à `pending` |
 | Échec définitif | Passer à `failed`, noter la raison |
+| Fin du workflow (dernière phase `completed` — ex. GATE 4 PROD validé — ou abandon confirmé par l'utilisateur) | `status: "completed"` (ou `"abandoned"`) — la prochaine session purge `_work/` normalement |
 
 ### Utilisation par les commandes de contrôle
 
@@ -866,6 +889,19 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
 - `resume <phase>` : lire le fichier, reprendre à la phase indiquée
 - `skip <phase>` : marquer la phase `skipped` et passer à la suivante
 - `jumpto <tache>` : rechercher dans les phases et tâches, se positionner
+
+### Reprise après interruption (terminal tué, crash)
+
+Détection et reprise : `commands/start-session.md` étapes 2 et 4bis. Principes :
+
+- **Sources** : le fichier d'état dit *où on en était* ; git (commits, arbre) et les labels GitHub disent *ce qui est
+  réellement acquis* — en cas d'écart, ils priment et l'état est corrigé avant la reprise.
+- **Granularité** : la phase `in_progress` (du lot courant s'il y a des lots) est rejouée depuis son début ; rien de
+  `completed` n'est rejoué. Les ordres de reprise rappellent les commits déjà présents sur la branche.
+- **Rapports et handoffs** : les chemins `_work/...` de l'état restent valides (purge sélective) ; un fichier
+  manquant rend la phase correspondante à rejouer, pas tout le workflow.
+- **Plan** : toujours relu depuis `plan` (`.claude/workflow/`, gitignored, hors `_work/`) — jamais régénéré si
+  présent.
 
 > **Limite connue** : `SUBPLANNER_NAMES[]`/`SUBREVIEWER_NAMES[]`/`SUBAGENT_NAMES[]` (sous-agents
 > temporaires, voir `context/TEAMMATES_PROTOCOL.md` section 6) ne sont pas persistés dans ce
