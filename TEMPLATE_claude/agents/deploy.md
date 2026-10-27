@@ -332,8 +332,15 @@ de deploiement choisi.
 
 ### Etape 4bis — Notes de release (apres installation PROD reussie)
 
+La CI de release cree deja la GitHub Release du tag avec ses livrables (`agents/infra.md` §3bis C5) : ne pas la
+recreer, seulement y poser les notes. `create` ne sert qu'en repli, pour un pipeline qui ne la cree pas :
+
 ```bash
-gh release create "v$VERSION" --title "v$VERSION" --notes-file RELEASE_NOTES.md
+if gh release view "v$VERSION" >/dev/null 2>&1; then
+  gh release edit "v$VERSION" --notes-file RELEASE_NOTES.md     # release creee par la CI : notes remplacees
+else
+  gh release create "v$VERSION" --verify-tag --title "v$VERSION" --notes-file RELEASE_NOTES.md
+fi
 ```
 
 Puis surveillance post-deploy generique (logs, metriques, alertes — outillage propre au projet,
@@ -397,8 +404,16 @@ de travail n'ont plus d'utilité opérationnelle : le tag est l'ancrage de rollb
 Rollback ci-dessous, qui cible déjà le tag, jamais la branche), et `main` contient déjà tout leur contenu
 (merge `--no-ff`, aucun commit perdu). Nettoyer **en local et en remote** :
 
+**Garde-fou — rien de non merge** : la suppression suppose que `main` contient tout le travail. C'est vrai apres
+un PUBLISH PROD `rebuild-ci` (merge `--no-ff`), **pas** apres un mecanisme sans merge (`promote` en PROD). Avant
+toute suppression, verifier que la branche n'a aucun commit absent de `origin/main` :
+
 ```bash
 git fetch --prune
+# Vide = tout est dans main → suppression autorisee ; sinon NE PAS supprimer : signaler dans le DONE
+# (« milestone/vX.Y.Z : N commits non merges dans main ») — le teamleader demande via AskUserQuestion
+git log --oneline origin/main..milestone/vX.Y.Z
+git log --oneline origin/main..origin/milestone/vX.Y.Z 2>/dev/null
 # La branche courante ne se supprime pas, et deployer ne change pas le HEAD (teamleader seul, voir
 # context/COMMON.md « Branche Courante et Historique ») : si `git branch --show-current` vaut encore
 # milestone/vX.Y.Z → BRANCH REQUEST au teamleader « checkout main + pull » et attendre BRANCH CHANGE DONE
@@ -414,7 +429,9 @@ Règles :
   jamais un worktree actif (`git worktree list`).
 - Branche dont la PR est `CLOSED` **non mergée** ou sans PR avec des commits propres : ne pas supprimer,
   la signaler dans le `DONE` (le teamleader demandera à l'utilisateur via `AskUserQuestion`).
-- Vérifier que le merge vers `main` a réussi **avant** de tagger et de nettoyer.
+- Vérifier que le merge vers `main` a réussi **avant** de tagger et de nettoyer ; le même contrôle
+  `git log origin/main..<branche>` (vide) vaut pour chaque branche du balayage, PR `MERGED` ou non — un squash
+  merge laisse des commits « non mergés » au sens git : dans ce cas seul l'état `MERGED` de la PR fait foi.
 
 > Ne s'applique qu'en cas de succès confirmé. En cas d'échec du rollout, voir le Protocole
 > d'échec DEPLOY PROD ci-dessus — les branches restent intactes (local et remote) pour investigation.
@@ -467,6 +484,8 @@ Rollback PUBLISH ci-dessus plutôt que de corriger au niveau DEPLOY.
 - [ ] Publication PROD (tag `vX.Y.Z`, CI OK) disponible
 - [ ] Plan de rollback pret
 - [ ] Equipe informee du deploiement
+- [ ] Apres succes : GitHub Release du tag completee (`edit` si la CI l'a creee, `create` sinon — Etape 4bis)
+- [ ] Avant nettoyage : `git log origin/main..milestone/vX.Y.Z` vide (sinon branche conservee et signalee — Etape 6)
 
 ## Configuration par Environnement
 
