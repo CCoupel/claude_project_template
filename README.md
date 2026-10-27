@@ -138,7 +138,7 @@ de stack) inscrite dans `project-config.json` → `agents.registry[]` :
 
 ```json
 { "name": "dev-firmware", "source": "templates/dev-firmware-esp32.md",
-  "tag": "v3.22.0", "commit": "<sha>", "sha256": "<empreinte de la source>" }
+  "tag": "v3.28.0", "commit": "<sha>", "sha256": "<empreinte de la source>", "changed_in": "v3.22.0" }
 ```
 
 La copie porte le même renseignement dans un en-tête après son frontmatter
@@ -148,6 +148,12 @@ le template a réellement changé est proposé en mise à jour, avec `version en
 les agents de stack `dev-*` sont resynchronisés comme les autres, et une copie manquante est restaurée à sa
 version. `"pinned": true` (posé à la main) fige un agent à sa version — exception, les versions restent
 alignées par défaut. Les projets antérieurs au registre sont migrés automatiquement à la première sync.
+
+Un agent dont le template n'a pas changé n'est pas redéployé mais **re-tamponné** à chaque sync (`tag`/`commit` et
+en-tête mis à la version synchronisée) : tous les agents à jour affichent la même version, seuls les agents épinglés
+ou en retard s'en écartent. `changed_in` garde la version du dernier changement réel de la source. Les **contextes
+partagés** (`agents/context/`, `commands/context/`) suivent le même mécanisme dans `contexts.registry[]` (en-tête de
+provenance en première ligne, détection de dérive par empreinte, tableau affiché après celui des teammates).
 **Plusieurs agents d'un même type et stacks sans template** (étape 5d de `/init-project`) :
 - un composant présent plusieurs fois (deux firmwares, deux backends...) donne un agent par composant,
   `dev-<catégorie>-<suffixe>`, basé sur le même template : chaque instance a sa copie `<nom>.template.md`

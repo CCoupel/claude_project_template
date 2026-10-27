@@ -211,18 +211,12 @@ else
   done
 fi
 
-# Contextes partagés : même convention que les agents — déployé en *.template.md,
-# compagnon *.md optionnel pour les adaptations projet (jamais créé automatiquement)
-for src in TEMPLATE_claude/agents/context/*.md; do
-  dest=".claude/agents/context/$(basename $src .md).template.md"
-  cp "$src" "$dest"
-  echo "  ✓ $dest"
-done
-for src in TEMPLATE_claude/commands/context/*.md; do
-  dest=".claude/commands/context/$(basename $src .md).template.md"
-  cp "$src" "$dest"
-  echo "  ✓ $dest"
-done
+# Contextes partagés : même convention que les agents — déployé en *.template.md avec en-tête de provenance,
+# compagnon *.md optionnel pour les adaptations projet (jamais créé automatiquement). Registre contexts.registry[]
+# (section "Registre des agents") : projet déjà initialisé → ctx_sync (re-tamponne les inchangés) ;
+# première initialisation → copie seule, inscription à la "Generation de la Configuration" (section 2)
+if [ -f .claude/project-config.json ]; then ctx_sync
+else for s in $(ctx_sources); do ctx_deploy "$s"; done; fi
 
 # Mods Claude Code (panneau milestone…) : chargés automatiquement depuis .claude/skills/<mod>/.
 # Copie complète, générée — gitignorée comme le reste des fichiers template.
@@ -294,7 +288,8 @@ chaque copie soit surveillee, resynchronisee et sa derive de version visible, el
    |-------|------|
    | `name` | Nom du fichier deploye `.claude/agents/<name>.template.md` (= nom canonique de l'agent, sauf `generic`) |
    | `source` | Chemin du template source, relatif a `TEMPLATE_claude/` |
-   | `tag` / `commit` | Version du template d'ou provient la copie deployee |
+   | `tag` / `commit` | Version du template a laquelle la copie deployee correspond. Mise a jour a **chaque** sync, meme si le contenu de l'agent n'a pas change (re-tamponnage) : tous les agents synchronises affichent la meme version |
+   | `changed_in` | Version a laquelle le contenu de la source a change pour la derniere fois (tracabilite ; non affiche dans le tableau des teammates). Conservee tant que `sha256` ne change pas |
    | `sha256` | Empreinte du contenu **brut** de la source (avant en-tete et placeholders). Detecte la derive par agent : seul un agent dont la source a reellement change est propose en mise a jour, pas chaque agent a chaque release. Vide = version inconnue (projet anterieur au registre) |
    | `role` | Agents de stack : role affiche dans la table `## Agents Disponibles` (defaut : libelle de la categorie + techno) |
    | `paths` | Optionnel — **perimetre** de l'agent (globs). Obligatoire pour les instances multiples d'une meme categorie ; repris dans le compagnon `## Perimetre` et utilise par le planner pour assigner les taches |
@@ -364,13 +359,21 @@ deploy_agent() {
   echo "  ✓ .claude/agents/${name}.template.md  ← ${source} @ ${tag}"
 }
 
-# registry_set NAME SOURCE SHA TAG COMMIT — ajoute/met a jour l'entree (conserve "pinned"), registre trie
+# registry_set NAME SOURCE SHA TAG COMMIT [KEY] — ajoute/met a jour l'entree (conserve "pinned"), registre trie.
+# changed_in : conserve si l'empreinte est inchangee, sinon = TAG. KEY = agents (defaut) ou contexts.
 registry_set() {
-  jq --arg n "$1" --arg s "$2" --arg h "$3" --arg t "$4" --arg c "$5" '
-    (.agents.registry // []) as $r
-    | .agents.registry = ( ($r | map(select(.name != $n)))
-        + [ (($r | map(select(.name == $n)) | .[0]) // {}) + {name:$n, source:$s, tag:$t, commit:$c, sha256:$h} ]
+  jq --arg k "${6:-agents}" --arg n "$1" --arg s "$2" --arg h "$3" --arg t "$4" --arg c "$5" '
+    (.[$k].registry // []) as $r
+    | (($r | map(select(.name == $n)) | .[0]) // {}) as $o
+    | .[$k].registry = ( ($r | map(select(.name != $n)))
+        + [ $o + {name:$n, source:$s, tag:$t, commit:$c, sha256:$h,
+                  changed_in: (if $h != "" and $o.sha256 == $h then ($o.changed_in // $o.tag) else $t end)} ]
         | sort_by(.name) )' "$CFG" > _work/tmp/registry/cfg.tmp && mv _work/tmp/registry/cfg.tmp "$CFG"
+}
+
+# stamp_header FICHIER — re-tamponne la ligne de provenance a la version fetchee (contenu inchange)
+stamp_header() {
+  sed -i "s|^\(<!-- template-source: [^ ]*\) @ [^ ]* ([0-9a-f]*)|\1 @ ${FETCH_TAG} (${FETCH_COMMIT:0:7})|" "$1"
 }
 registry_del() {
   jq --arg n "$1" '.agents.registry |= map(select(.name != $n))' "$CFG" > _work/tmp/registry/cfg.tmp \
@@ -452,7 +455,7 @@ registry_status() {
 }
 
 # registry_sync [--reliquats] — applique les statuts : NOUVEAU/MODIFIE → derniere version ;
-# MANQUANT → derniere version, ou version enregistree si epingle ; EPINGLE → rien ;
+# INCHANGE → version re-tamponnee (registre + en-tete) ; MANQUANT → derniere version, ou version enregistree si epingle ; EPINGLE → rien ;
 # RELIQUAT → supprime (copie + entree) uniquement avec --reliquats
 registry_sync() {
   local all st name source info
@@ -460,6 +463,9 @@ registry_sync() {
   while read -r st name source info; do
     case "$st" in
       NOUVEAU|MODIFIE) deploy_and_register "$name" "$source" ;;
+      # Contenu identique a la cible : pas de redeploiement, version re-tamponnee (changed_in conserve)
+      INCHANGE) registry_set "$name" "$source" "$(src_sha "TEMPLATE_claude/$source")" "$FETCH_TAG" "$FETCH_COMMIT"
+                stamp_header ".claude/agents/${name}.template.md" ;;
       MANQUANT) if [ "$(jq -r --arg n "$name" '.agents.registry[] | select(.name==$n) | .pinned // false' "$CFG")" = "true" ]
                 then restore_one "$name"; else deploy_and_register "$name" "$source"; fi ;;
       EPINGLE)  echo "  📌 $name epingle a $info — non mis a jour (retirer \"pinned\" pour le resynchroniser)" ;;
@@ -499,15 +505,80 @@ registry_report() {
     comp=$([ -s ".claude/agents/generic.${n}.md" ] && echo "✓ generic.${n}.md (spec)" || echo "✗ generic.${n}.md manquante")
     echo "| ${n} | generic.template.md | agents/generic.md | ${gtag:-—} | (voir generic) | ${comp} |"
   done
+  ctx_report
+}
+
+# --- Contextes partages (agents/context/, commands/context/) : meme registre, cle "contexts" ---
+# NAME = SOURCE sans .md (ex. agents/context/COMMON) ; copie deployee .claude/<NAME>.template.md.
+ctx_sources() { for f in TEMPLATE_claude/agents/context/*.md TEMPLATE_claude/commands/context/*.md; do
+  [ -f "$f" ] && echo "${f#TEMPLATE_claude/}"; done; }
+
+# ctx_deploy SOURCE — copie + en-tete de provenance (1re ligne : les contextes n'ont pas de frontmatter),
+# inscrite au registre si project-config.json existe deja (sinon : "Generation de la Configuration", section 2)
+ctx_deploy() {
+  local s="$1" n="${1%.md}" sha; sha=$(src_sha "TEMPLATE_claude/$1")
+  mkdir -p ".claude/$(dirname "$s")"
+  { echo "<!-- template-source: ${s} @ ${FETCH_TAG} (${FETCH_COMMIT:0:7}) sha256:${sha:0:12} — copie generee par /init-project, ne pas editer : adapter dans le compagnon $(basename "$s") -->"
+    cat "TEMPLATE_claude/$s"; } > ".claude/${n}.template.md"
+  [ -f "$CFG" ] && registry_set "$n" "$s" "$sha" "$FETCH_TAG" "$FETCH_COMMIT" contexts
+  echo "  ✓ .claude/${n}.template.md  ← ${s} @ ${FETCH_TAG}"
+}
+
+# ctx_status — une ligne "STATUT NAME SOURCE VERSION_ENREGISTREE" par contexte (statuts des agents, sans EPINGLE)
+ctx_status() {
+  local s n e f
+  for s in $(ctx_sources); do
+    n="${s%.md}"; e=$(jq -c --arg n "$n" '.contexts.registry[]? | select(.name==$n)' "$CFG")
+    if   [ -z "$e" ]; then echo "NOUVEAU $n $s -"            # projet anterieur au registre des contextes
+    elif [ ! -f ".claude/${n}.template.md" ]; then echo "MANQUANT $n $s $(jq -r .tag <<<"$e")"
+    elif [ "$(src_sha "TEMPLATE_claude/$s")" = "$(jq -r '.sha256 // ""' <<<"$e")" ]; then echo "INCHANGE $n $s $(jq -r .tag <<<"$e")"
+    else echo "MODIFIE $n $s $(jq -r .tag <<<"$e")"; fi
+  done
+  for f in .claude/agents/context/*.template.md .claude/commands/context/*.template.md; do
+    [ -f "$f" ] || continue; n="${f#.claude/}"; n="${n%.template.md}"
+    [ -f "TEMPLATE_claude/${n}.md" ] || echo "RELIQUAT $n - -"
+  done
+}
+
+# ctx_sync [--reliquats] — NOUVEAU/MODIFIE/MANQUANT → ctx_deploy ; INCHANGE → re-tamponnage ;
+# RELIQUAT → supprime (copie + entree) uniquement avec --reliquats
+ctx_sync() {
+  local all st n s info; all=$(ctx_status)
+  while read -r st n s info; do
+    case "$st" in
+      NOUVEAU|MODIFIE|MANQUANT) ctx_deploy "$s" ;;
+      INCHANGE) registry_set "$n" "$s" "$(src_sha "TEMPLATE_claude/$s")" "$FETCH_TAG" "$FETCH_COMMIT" contexts
+                stamp_header ".claude/${n}.template.md" ;;
+      RELIQUAT) [ "$1" = "--reliquats" ] && { rm -f ".claude/${n}.template.md"
+                  jq --arg n "$n" '.contexts.registry |= map(select(.name != $n))' "$CFG" > _work/tmp/registry/cfg.tmp \
+                    && mv _work/tmp/registry/cfg.tmp "$CFG"; echo "  ✗ .claude/${n}.template.md supprime (reliquat)"; } ;;
+    esac
+  done <<<"$all"
+}
+
+# ctx_report — tableau des contextes partages, appele par registry_report
+ctx_report() {
+  local n s tag sha etat comp
+  echo; echo "| Contexte | Version | Etat | Compagnon |"; echo "|----------|---------|------|-----------|"
+  jq -r '.contexts.registry[]? | [.name, .source, .tag, .sha256] | @tsv' "$CFG" |
+  while IFS=$'\t' read -r n s tag sha; do
+    if [ -f "TEMPLATE_claude/$s" ] && [ "$(src_sha "TEMPLATE_claude/$s")" = "$sha" ]; then etat="🟢 a jour"
+    else etat="⚠ en retard → ${FETCH_TAG}"; fi
+    comp=$([ -f ".claude/${n}.md" ] && echo "✓ $(basename "$n").md" || echo "—")
+    echo "| ${n} | ${tag} | ${etat} | ${comp} |"
+  done
 }
 ```
 
 Le **rapport final** de chaque chemin (init, option d, reinstallation, migration v1/v2) se termine par
 `registry_report` : un tableau des teammates avec la version **actuelle** de chaque agent (celle de la copie
-deployee — un agent dont le template n'a pas change depuis reste a sa version de deploiement tout en etant a
-jour), son etat (`🟢 a jour` ; `⚠ en retard → <cible>` — ex. sync partielle ou annulee ; `📌 epingle (<cible>
+deployee — un agent dont le template n'a pas change est re-tamponne a la version synchronisee, la version de son
+dernier changement restant dans `changed_in`), son etat (`🟢 a jour` ; `⚠ en retard → <cible>` — ex. sync partielle ou annulee ; `📌 epingle (<cible>
 dispo)`, la cible etant la version fetchee) et la presence d'un compagnon `<nom>.md`
-(adaptations projet ; pour une instance generique, sa specification `generic.<nom>.md`).
+(adaptations projet ; pour une instance generique, sa specification `generic.<nom>.md`). Il est suivi du tableau
+des **contextes partages** (`ctx_report`) : meme registre sous la cle `contexts.registry[]` de
+`project-config.json`, memes champs (`name` = chemin sans `.md`, ex. `agents/context/COMMON`), meme en-tete de
+provenance en premiere ligne de la copie, memes statuts que les agents (sans epinglage).
 
 > Un `RELIQUAT` d'agent de **stack** (`source` = `templates/...` retire du template, ex. template renomme)
 > n'est jamais supprime sans confirmation explicite : le signaler et demander (re-pointer vers le nouveau
@@ -1652,6 +1723,10 @@ deployes a l'etape 4 du fetch, y sont inscrits aussi :
 for f in TEMPLATE_claude/agents/*.md; do
   registry_set "$(basename "$f" .md)" "agents/$(basename "$f")" "$(src_sha "$f")" "$FETCH_TAG" "$FETCH_COMMIT"
 done
+# Contextes partages (deja deployes a l'etape 4 du fetch) → registre, cle contexts
+for s in $(ctx_sources); do
+  registry_set "${s%.md}" "$s" "$(src_sha "TEMPLATE_claude/$s")" "$FETCH_TAG" "$FETCH_COMMIT" contexts
+done
 # Agents de stack : une ligne par agent retenu (Etape 5d), puis role, perimetre et compagnon, ex. :
 deploy_and_register dev-backend templates/dev-generic.md
 registry_meta       dev-backend "Backend (Rust/Axum)"
@@ -2642,28 +2717,9 @@ DEPLOYED_COMMANDS=$(
 # agents de stack (dev-*), comparaison par empreinte de la source (insensible aux placeholders)
 AGENTS_STATUS=$(registry_status)
 
-# Contextes partagés (agents/context/ et commands/context/) — déployés en *.template.md
-# Comparer chaque fichier source avec le fichier déployé
-for src in TEMPLATE_claude/agents/context/*.md TEMPLATE_claude/commands/context/*.md; do
-  [ -f "$src" ] || continue
-  subdir=$(echo "$src" | grep -o 'agents/context\|commands/context')
-  dest=".claude/${subdir}/$(basename $src .md).template.md"
-  if [ ! -f "$dest" ]; then
-    statut="NOUVEAU"
-  elif ! cmp -s "$src" "$dest"; then
-    statut="MODIFIE"
-  else
-    statut="INCHANGE"
-  fi
-  # stocker dans CONTEXT_STATUS associatif : clé = "subdir/basename", valeur = statut
-done
-
-# Contextes RELIQUAT : *.template.md déployé dont la source n'existe plus dans TEMPLATE_claude/
-for dest in .claude/agents/context/*.template.md .claude/commands/context/*.template.md; do
-  [ -f "$dest" ] || continue
-  subdir=$(echo "$dest" | grep -o 'agents/context\|commands/context')
-  [ -f "TEMPLATE_claude/${subdir}/$(basename $dest .template.md).md" ] || echo "RELIQUAT $dest"
-done
+# Contextes partagés (agents/context/ et commands/context/) : statut par empreinte de la source, comme les agents
+# (insensible aux placeholders et à l'en-tête) — NOUVEAU / MANQUANT / MODIFIE / INCHANGE / RELIQUAT
+CONTEXT_STATUS=$(ctx_status)
 ```
 
 Pour chaque fichier compare, determiner le statut :
@@ -2809,19 +2865,11 @@ done
 
 # Agents (communs ET de stack) : NOUVEAU/MODIFIE/MANQUANT deployes avec en-tete de provenance et
 # inscrits au registre, EPINGLE laisses a leur version — section "Registre des agents"
-registry_sync
+registry_sync   # INCHANGE re-tamponnes a la version fetchee (changed_in conserve)
 
-# Contextes partagés — copier fichier par fichier pour reporter les changements, déployé en *.template.md
-for src in TEMPLATE_claude/agents/context/*.md TEMPLATE_claude/commands/context/*.md; do
-  [ -f "$src" ] || continue
-  subdir=$(echo "$src" | grep -o 'agents/context\|commands/context')
-  dest=".claude/${subdir}/$(basename $src .md).template.md"
-  mkdir -p ".claude/${subdir}"
-  if ! cmp -s "$src" "$dest" 2>/dev/null; then
-    cp "$src" "$dest"
-    echo "  ✓ ${subdir}/$(basename $dest) mis a jour"
-  fi
-done
+# Contextes partagés : NOUVEAU/MODIFIE/MANQUANT deployes avec en-tete de provenance, INCHANGE re-tamponnes —
+# registre contexts.registry[] (section "Registre des agents")
+ctx_sync
 ```
 
 **Etape systematique — Appliquer les placeholders sur TOUS les fichiers deployes :**
@@ -2869,14 +2917,12 @@ grep '^RELIQUAT' <<<"$AGENTS_STATUS" | while read -r _ name source info; do
   echo "  ✗ .claude/agents/${name}.template.md supprime (reliquat)"
 done
 
-# Supprimer les contextes reliquats (source disparue de TEMPLATE_claude/)
-for dest in .claude/agents/context/*.template.md .claude/commands/context/*.template.md; do
-  [ -f "$dest" ] || continue
-  subdir=$(echo "$dest" | grep -o 'agents/context\|commands/context')
-  if [ ! -f "TEMPLATE_claude/${subdir}/$(basename $dest .template.md).md" ]; then
-    rm "$dest"
-    echo "  ✗ ${subdir}/$(basename $dest) supprime (reliquat)"
-  fi
+# Supprimer les contextes reliquats (source disparue de TEMPLATE_claude/) : copie + entree du registre
+grep '^RELIQUAT' <<<"$CONTEXT_STATUS" | while read -r _ n _ _; do
+  rm -f ".claude/${n}.template.md"
+  jq --arg n "$n" '.contexts.registry |= map(select(.name != $n))' "$CFG" > _work/tmp/registry/cfg.tmp \
+    && mv _work/tmp/registry/cfg.tmp "$CFG"
+  echo "  ✗ .claude/${n}.template.md supprime (reliquat)"
 done
 ```
 
