@@ -305,6 +305,13 @@ peut commencer par un frontmatter ne contenant que `model:` et/ou `effort:` — 
 `effort`) ; sans cela un teammate hériterait du modèle et de l'effort de la session. Les sous-agents temporaires
 héritent de leur coordinateur. Règle complète : `agents/context/TEAMMATES_PROTOCOL.md` section 7.
 
+**Adéquation au projet** : `/init-project` (section 2ter de la génération, étape d6a en synchronisation) confronte
+les réponses de l'init (sécurité, firmware, nombre de composants, déploiement, taille, budget du cadrage) à la grille
+de `TEAMMATES_PROTOCOL.md` §7.1 et affiche un **retour high level** : agents probablement sous- ou sur-dimensionnés,
+avec suggestion et motif. S'il y a au moins une alerte, il demande s'il faut **revoir agent par agent**, appliquer
+les suggestions ou garder les défauts ; les choix sont écrits dans le frontmatter des compagnons. Un agent qui a déjà
+une surcharge projet n'est jamais signalé.
+
 Le **teamleader** est la session principale et ne peut pas changer son propre modèle : `/init-project` (init et
 mises à jour) écrit les valeurs résolues (`teamleader.md` compagnon > `teamleader.template.md`) dans
 `.claude/settings.json` (`model`, `effortLevel` — clés dérivées, ne pas les éditer à la main), et `/start-session`
