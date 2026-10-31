@@ -140,6 +140,22 @@ ici. Cette étape rattrape ce qui a échappé à ce nettoyage : PROD jamais dép
 à la main, session interrompue, PR externe mergée. **Source unique du classement** : `/start-session` (étape 5bis)
 réutilise ce script en lecture seule.
 
+**Délégation** : le teamleader n'exécute aucun `Bash` git (CLAUDE.md « Délégation Stricte »). Il ne fait que
+poser les questions ; le classement, l'affichage des commits et les suppressions sont des ordres à `deployer`.
+L'étape a lieu **avant** la fermeture de la team (étape 5). Aucune team active → étape non exécutée, le signaler
+dans le rapport (« branches résiduelles non vérifiées — prochain `/start-session` »).
+
+1. **Classement** — ordre à `deployer` : `"BRANCHES CLASSIFY : exécute le script de end-session.md étape 4bis
+   (lecture seule) ; pour chaque A_ARBITRER joins git log --oneline origin/main..<branche>"`. Le `DONE` contient
+   la sortie du script et les logs.
+2. **Questions** — le teamleader pose les `AskUserQuestion` ci-dessous à partir de ce `DONE`.
+3. **Suppression** — ordre à `deployer` : `"BRANCHES DELETE : sure <b1> <b2> ; arbitree <b3>"` (`sure` = classée
+   `SURE` ; `arbitree` = `A_ARBITRER` dont l'utilisateur a choisi la suppression). Le `DONE` liste ce qui a été
+   supprimé ; une branche devenue `PROTEGEE`, ou une branche `sure` qui a reçu un commit depuis le classement,
+   n'est pas supprimée et est signalée.
+
+Script de classement (exécuté par `deployer`) :
+
 ```bash
 git fetch --prune --quiet
 CUR=$(git branch --show-current)
@@ -182,22 +198,26 @@ done
 
 **Branches `SURE`** — une question `AskUserQuestion` : `"Branches résiduelles sans travail perdu — supprimer
 (local + remote) ?"`. 1 à 4 branches : `multiSelect: true`, une option par branche. Plus de 4 : options
-**Supprimer les N branches** (Recommandé, liste dans la question) / **Ne rien supprimer**. Puis, pour chaque
-branche retenue, supprimer ce qui existe :
+**Supprimer les N branches** (Recommandé, liste dans la question) / **Ne rien supprimer**. Les branches retenues
+partent dans l'ordre `BRANCHES DELETE`, où `deployer` supprime ce qui existe :
 
 ```bash
+# exécuté par deployer, pour chaque branche de l'ordre (après re-vérification : ni courante, ni worktree,
+# ni milestone ouvert, tip inchangé depuis BRANCHES CLASSIFY)
 git push origin --delete "$b" 2>/dev/null   # si la branche existe en remote
 git branch -D "$b" 2>/dev/null              # si la branche existe en local
 ```
 
 **Branches `A_ARBITRER`** — dans le même appel, jusqu'à 3 questions (une par branche, les suivantes vont au
 rapport) : `"<branche> : N commits absents de main (PR <état>) — que faire ?"` — options : **Conserver**
-(Recommandé) / **Supprimer (N commits perdus)**. Avant la question, afficher `git log --oneline origin/main..<branche>`
-pour que l'utilisateur voie ce qui serait perdu. Récupérer ce travail (merge/cherry-pick dans le milestone actif)
+(Recommandé) / **Supprimer (N commits perdus)**. Avant la question, afficher le `git log --oneline
+origin/main..<branche>` remonté par `deployer` pour que l'utilisateur voie ce qui serait perdu. Une branche
+« Supprimer » rejoint l'ordre `BRANCHES DELETE`. Récupérer ce travail (merge/cherry-pick dans le milestone actif)
 n'est pas du ressort de `/end-session` : le noter dans le rapport (« Pour la prochaine session »).
 
-> Exécuté par le teamleader, propriétaire du HEAD (`agents/context/COMMON.md` « Branche Courante ») : `git branch -D`
-> lui est permis. Une suppression de branche distante ne pousse aucun commit — compatible avec COMMON.md §7.1.
+> `git branch -D` d'une branche non courante est permis à `deployer` pour ce nettoyage (`agents/context/COMMON.md`
+> « Branche Courante », exception nettoyage) : il ne touche pas au HEAD. Une suppression de branche distante ne
+> pousse aucun commit — compatible avec COMMON.md §7.1.
 
 ### 5. TEAM — Fermeture des teammates
 
@@ -277,5 +297,5 @@ Prochaine etape : /review puis /qa
 
 ## Agent
 
-Execution directe — pas de delegation a un agent specialise.
-Coordonne les mises a jour de documentation et de memoire.
+Execution directe par le teamleader pour la coordination, la documentation et la memoire. Les operations git de
+l'etape 4bis (classement et suppression des branches) sont deleguees a `deployer`.

@@ -216,8 +216,9 @@ gh issue list --state open --limit 50 \
 
 ### Etape 5bis — Branches residuelles (lecture seule)
 
-Executer le script de classement de `end-session.md` étape 4bis (source unique — ne pas le dupliquer ici), **sans
-rien supprimer**. Afficher dans la confirmation (étape 6) une ligne par branche `SURE` ou `A_ARBITRER` ; les
+Ordre à `deployer` (le teamleader n'exécute pas de `Bash` git) : `"BRANCHES CLASSIFY : exécute le script de
+end-session.md étape 4bis (lecture seule)"` — source unique, ne pas le dupliquer ici ; **rien n'est supprimé**.
+En parallèle de l'étape 5. Afficher dans la confirmation (étape 6) une ligne par branche `SURE` ou `A_ARBITRER` ; les
 `PROTEGEE` ne s'affichent pas. Aucune branche à signaler → omettre le bloc. Le nettoyage se fait au `/end-session`
 (ou au prochain `/deploy prod`) — un démarrage de session ne supprime jamais de branche.
 
