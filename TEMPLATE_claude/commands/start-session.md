@@ -214,6 +214,13 @@ gh issue list --state open --limit 50 \
   --jq 'sort_by(.milestone.title, .number) | .[] | [.number, .title, ([.labels[].name] | join(",")), (.milestone.title // "—"), ([.assignees[].login] | join(",") | if . == "" then "-" else . end), .updatedAt[:10]] | @tsv'
 ```
 
+### Etape 5bis — Branches residuelles (lecture seule)
+
+Executer le script de classement de `end-session.md` étape 4bis (source unique — ne pas le dupliquer ici), **sans
+rien supprimer**. Afficher dans la confirmation (étape 6) une ligne par branche `SURE` ou `A_ARBITRER` ; les
+`PROTEGEE` ne s'affichent pas. Aucune branche à signaler → omettre le bloc. Le nettoyage se fait au `/end-session`
+(ou au prochain `/deploy prod`) — un démarrage de session ne supprime jamais de branche.
+
 ### Etape 6 — Confirmation a l'utilisateur
 
 
@@ -241,6 +248,10 @@ gh issue list --state open --limit 50 \
 | 35 | ... | refactor | — | - | 2026-01-05 |
 
 _(Si aucune issue ouverte : "Aucune issue ouverte.")_
+
+**Branches residuelles** _(bloc omis si aucune — étape 5bis)_ :
+- `milestone/v1.3.0` — sure (tout est dans main) → nettoyage proposé au `/end-session`
+- `fix/old-login` — ⚠ 3 commits hors main (PR CLOSED) → à arbitrer
 
 ---
 

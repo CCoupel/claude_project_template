@@ -37,6 +37,9 @@ verification de l'etat du projet.
 [GIT] --> S'assurer que tout est commite (jamais de push pendant le dev, voir COMMON.md 7.1)
     |
     v
+[BRANCHES] --> Classer les branches residuelles ; supprimer les sures sur confirmation
+    |
+    v
 [TEAM] --> Fermer tous les teammates (/team-delete --force)
     |
     v
@@ -130,6 +133,72 @@ git stash list
 Si des changements non commites existent :
 - Demander via `AskUserQuestion` (jamais en texte) : `"Changements non commités — que faire ?"` — options : **Commiter** / **Stasher** / **Laisser en l'état**
 
+### 4bis. BRANCHES — Branches residuelles
+
+Le nettoyage normal a lieu en fin de `/deploy prod` (`agents/deploy.md` Étape 6), dont les règles s'appliquent
+ici. Cette étape rattrape ce qui a échappé à ce nettoyage : PROD jamais déployée, mécanisme `promote`, merge fait
+à la main, session interrompue, PR externe mergée. **Source unique du classement** : `/start-session` (étape 5bis)
+réutilise ce script en lecture seule.
+
+```bash
+git fetch --prune --quiet
+CUR=$(git branch --show-current)
+# Branches protegees : milestones GitHub ouverts (titre "X.Y.Z..." ou "vX.Y.Z...") + branches checkoutees dans un worktree
+ACTIVE=$(gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open") | .title' \
+         | grep -oE '^v?[0-9]+\.[0-9]+\.[0-9]+' | sed -E 's|^v?|milestone/v|')
+WT=$(git worktree list --porcelain | sed -n 's|^branch refs/heads/||p')
+NAMES=$( { git for-each-ref --format='%(refname:lstrip=2)' refs/heads
+           git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/origin; } \
+         | sort -u | grep -vxE 'HEAD|main|gh-pages.*' )
+for b in $NAMES; do
+  if [ "$b" = "$CUR" ] || printf '%s\n' "$ACTIVE" "$WT" | grep -qxF "$b"; then
+    echo "PROTEGEE   $b"; continue
+  fi
+  n=0; tips=""
+  for r in "refs/heads/$b" "refs/remotes/origin/$b"; do
+    git show-ref -q --verify "$r" || continue
+    n=$((n + $(git rev-list --count "origin/main..$r"))); tips="$tips $(git rev-parse "$r")"
+  done
+  # PR MERGED : sure seulement si chaque tip (local/remote) est un head de PR mergee
+  # (squash merge = commits "non merges" au sens git ; un commit pousse apres le merge = a arbitrer)
+  merged=$(gh pr list --head "$b" --state merged --json headRefOid -q '.[].headRefOid')
+  pr=$(gh pr list --head "$b" --state all --json state -q '.[0].state')
+  all_merged=1; for t in $tips; do printf '%s\n' "$merged" | grep -qxF "$t" || all_merged=0; done
+  if [ "$n" -eq 0 ] || { [ -n "$merged" ] && [ "$all_merged" -eq 1 ]; }; then
+    echo "SURE       $b"
+  else
+    echo "A_ARBITRER $b  commits_hors_main=$n  PR=${pr:-aucune}"
+  fi
+done
+```
+
+| Classe | Signification | Action |
+|---|---|---|
+| `PROTEGEE` | Branche courante, milestone GitHub encore ouvert, ou checkoutee dans un worktree | Ne jamais toucher |
+| `SURE` | Aucun commit absent de `origin/main`, ou chaque tip est le head d'une PR `MERGED` | Proposer la suppression |
+| `A_ARBITRER` | Commits absents de `main` : PR `CLOSED` non mergée, pas de PR, commits poussés après le merge, milestone livré dont une partie n'a pas rejoint `main` | Ne pas supprimer sans accord explicite |
+
+`main`, `gh-pages*` et `HEAD` sont exclus d'office. Aucune branche → passer l'étape sans message.
+
+**Branches `SURE`** — une question `AskUserQuestion` : `"Branches résiduelles sans travail perdu — supprimer
+(local + remote) ?"`. 1 à 4 branches : `multiSelect: true`, une option par branche. Plus de 4 : options
+**Supprimer les N branches** (Recommandé, liste dans la question) / **Ne rien supprimer**. Puis, pour chaque
+branche retenue, supprimer ce qui existe :
+
+```bash
+git push origin --delete "$b" 2>/dev/null   # si la branche existe en remote
+git branch -D "$b" 2>/dev/null              # si la branche existe en local
+```
+
+**Branches `A_ARBITRER`** — dans le même appel, jusqu'à 3 questions (une par branche, les suivantes vont au
+rapport) : `"<branche> : N commits absents de main (PR <état>) — que faire ?"` — options : **Conserver**
+(Recommandé) / **Supprimer (N commits perdus)**. Avant la question, afficher `git log --oneline origin/main..<branche>`
+pour que l'utilisateur voie ce qui serait perdu. Récupérer ce travail (merge/cherry-pick dans le milestone actif)
+n'est pas du ressort de `/end-session` : le noter dans le rapport (« Pour la prochaine session »).
+
+> Exécuté par le teamleader, propriétaire du HEAD (`agents/context/COMMON.md` « Branche Courante ») : `git branch -D`
+> lui est permis. Une suppression de branche distante ne pousse aucun commit — compatible avec COMMON.md §7.1.
+
 ### 5. TEAM — Fermeture des teammates
 
 Fin de session = fermeture inconditionnelle, y compris les teammates en cours de tâche.
@@ -184,6 +253,7 @@ fi
 - Tests : [PASS|FAIL|N/A]
 - Build : [OK|KO|N/A]
 - Deploy : [PROD vX.Y.Z|staging|non deploye]
+- Branches residuelles : [aucune | N supprimees | <branche> conservee (N commits hors main)]
 ```
 
 ## Exemple
@@ -196,6 +266,7 @@ fi
 [DOC] CHANGELOG.md : a jour ✅
 [MEMOIRE] MEMORY.md mis a jour ✅
 [GIT] Commits locaux sur milestone/v1.4.0 — push differe au prochain deploiement QUALIF ✅
+[BRANCHES] milestone/v1.3.0 (SURE) supprimee local + remote ✅ — fix/old-login conservee (3 commits hors main) ⚠
 [TEAM] /team-delete --force — 2 teammate(s) fermés ✅
 
 --- Rapport de Session ---
