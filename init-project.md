@@ -480,16 +480,26 @@ registry_sync() {
 
 # registry_report — tableau final des teammates : version deployee, etat, compagnon
 registry_report() {
-  local name source tag pinned sha teammate etat comp n gtag
-  echo "| Teammate | Fichier | Source | Version | Etat | Compagnon |"
-  echo "|----------|---------|--------|---------|------|-----------|"
+  local name source tag pinned sha teammate etat comp n gtag line spawn
+  echo "| Teammate | Fichier | Source | Version | Etat | Compagnon | Spawn |"
+  echo "|----------|---------|--------|---------|------|-----------|-------|"
   jq -r '.agents.registry[]? | [.name, .source, .tag, (.pinned // false), .sha256] | @tsv' "$CFG" |
   while IFS=$'\t' read -r name source tag pinned sha; do
     # Nom canonique (SendMessage) lu dans la table "Agents Disponibles" de CLAUDE.md
     # (a defaut — agent hors table, ex. teamleader — le nom du fichier ; generic = template commun des instances)
-    teammate=$(grep '^| ' CLAUDE.md 2>/dev/null | grep -F ".claude/agents/${name}.template.md" \
-      | head -1 | cut -d'|' -f2 | tr -d ' `')
-    [ "$name" = "generic" ] && teammate="(commun aux instances)"
+    line=$(grep '^| ' CLAUDE.md 2>/dev/null | grep -F ".claude/agents/${name}.template.md" | head -1)
+    teammate=$(cut -d'|' -f2 <<<"$line" | tr -d ' `')
+    # Spawn = colonne "Spawn" de la meme ligne : permanent → au /start-session ; ponctuel ou agent hors table
+    # (pr-reviewer, marketing-release...) → a la demande du teamleader ; teamleader/cdp = le Claude principal
+    case "$(cut -d'|' -f5 <<<"$line" | tr -d ' ')" in
+      permanent) spawn="au /start-session" ;;
+      *)         spawn="a la demande du teamleader" ;;
+    esac
+    case "$name" in
+      teamleader) teammate="team-lead"; spawn="— (Claude principal, jamais spawne)" ;;
+      cdp) teammate="team-lead (role CDP)"; spawn="— (spec lue par le Claude principal)" ;;
+      generic) teammate="(commun aux instances)"; spawn="— (voir instances)" ;;
+    esac
     # Version = version de la copie deployee ; la cible (FETCH_TAG) n'est affichee que si elle differe en contenu
     if [ -f "TEMPLATE_claude/$source" ] && [ "$(src_sha "TEMPLATE_claude/$source")" = "$sha" ]; then etat="🟢 a jour"
     elif [ "$pinned" = "true" ]; then etat="📌 epingle (${FETCH_TAG} dispo)"
@@ -500,13 +510,14 @@ registry_report() {
     elif [ "$source" = "templates/dev-generic.md" ] || jq -e --arg n "$name" '.agents.registry[] | select(.name==$n) | .paths' "$CFG" >/dev/null; then
       comp="✗ ${name}.md manquant (obligatoire)"
     else comp="—"; fi
-    echo "| ${teammate:-$name} | ${name}.template.md | ${source} | ${tag} | ${etat} | ${comp} |"
+    echo "| ${teammate:-$name} | ${name}.template.md | ${source} | ${tag} | ${etat} | ${comp} | ${spawn} |"
   done
   # Instances d'agents generiques : template commun generic + specification (compagnon obligatoire)
   gtag=$(jq -r '.agents.registry[]? | select(.name=="generic") | .tag' "$CFG")
-  jq -r '.agents.generic[]?.name' "$CFG" | while read -r n; do
+  jq -r '.agents.generic[]? | [.name, (.spawn // "permanent")] | @tsv' "$CFG" | while IFS=$'\t' read -r n spawn; do
     comp=$([ -s ".claude/agents/generic.${n}.md" ] && echo "✓ generic.${n}.md (spec)" || echo "✗ generic.${n}.md manquante")
-    echo "| ${n} | generic.template.md | agents/generic.md | ${gtag:-—} | (voir generic) | ${comp} |"
+    [ "$spawn" = "permanent" ] && spawn="au /start-session" || spawn="a la demande du teamleader"
+    echo "| ${n} | generic.template.md | agents/generic.md | ${gtag:-—} | (voir generic) | ${comp} | ${spawn} |"
   done
   ctx_report
 }
@@ -577,8 +588,11 @@ Le **rapport final** de chaque chemin (init, option d, reinstallation, migration
 `registry_report` : un tableau des teammates avec la version **actuelle** de chaque agent (celle de la copie
 deployee — un agent dont le template n'a pas change est re-tamponne a la version synchronisee, la version de son
 dernier changement restant dans `changed_in`), son etat (`🟢 a jour` ; `⚠ en retard → <cible>` — ex. sync partielle ou annulee ; `📌 epingle (<cible>
-dispo)`, la cible etant la version fetchee) et la presence d'un compagnon `<nom>.md`
-(adaptations projet ; pour une instance generique, sa specification `generic.<nom>.md`). Il est suivi du tableau
+dispo)`, la cible etant la version fetchee), la presence d'un compagnon `<nom>.md`
+(adaptations projet ; pour une instance generique, sa specification `generic.<nom>.md`) et le **mode de spawn**
+(colonne `Spawn` de la table « Agents Disponibles » de `CLAUDE.md`, `agents.generic[].spawn` pour une instance) :
+`au /start-session` (permanent), `a la demande du teamleader` (ponctuel, ou agent absent de la table comme
+`pr-reviewer`), ou `— (Claude principal)` pour `teamleader`/`cdp`, qui ne sont pas des teammates spawnes. Il est suivi du tableau
 des **contextes partages** (`ctx_report`) : meme registre sous la cle `contexts.registry[]` de
 `project-config.json`, memes champs (`name` = chemin sans `.md`, ex. `agents/context/COMMON`), meme en-tete de
 provenance en premiere ligne de la copie, memes statuts que les agents (sans epinglage).
@@ -3339,11 +3353,13 @@ Synchronisation terminee.
                                   elles, resynchronisées via le registre comme les autres agents)
 
   Teammates (registre des agents — sortie de registry_report) :
-  | Teammate     | Fichier                  | Source                          | Version | Etat                        | Compagnon   |
-  |--------------|--------------------------|---------------------------------|---------|-----------------------------|-------------|
-  | planner      | implementation-planner.… | agents/implementation-planner.md| v3.20.0 | 🟢 a jour                   | —           |
-  | dev-firmware | dev-firmware.template.md | templates/dev-firmware-esp32.md | v3.22.0 | 🟢 a jour                   | ✓ dev-firmware.md |
-  | qa           | qa.template.md           | agents/qa.md                    | v3.18.0 | 📌 epingle (v3.22.0 dispo)  | ✓ qa.md     |
+  | Teammate     | Fichier                  | Source                          | Version | Etat                        | Compagnon   | Spawn                      |
+  |--------------|--------------------------|---------------------------------|---------|-----------------------------|-------------|----------------------------|
+  | team-lead    | teamleader.template.md   | agents/teamleader.md            | v3.22.0 | 🟢 a jour                   | —           | — (Claude principal, jamais spawne) |
+  | planner      | implementation-planner.… | agents/implementation-planner.md| v3.20.0 | 🟢 a jour                   | —           | au /start-session          |
+  | dev-firmware | dev-firmware.template.md | templates/dev-firmware-esp32.md | v3.22.0 | 🟢 a jour                   | ✓ dev-firmware.md | au /start-session    |
+  | qa           | qa.template.md           | agents/qa.md                    | v3.18.0 | 📌 epingle (v3.22.0 dispo)  | ✓ qa.md     | au /start-session          |
+  | security     | security.template.md     | agents/security.md              | v3.22.0 | 🟢 a jour                   | —           | a la demande du teamleader |
   | ...
 ```
 
