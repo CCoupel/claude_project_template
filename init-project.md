@@ -63,6 +63,9 @@ jamais du texte brut listant des lettres dans le chat :
     |              + milestone v0.1.0 et issues de base (nouveau projet avec remote GitHub)
     v
 [AUDIT CONTEXTE] --> commit d'init puis /context-audit (audit complet)
+    |
+    v
+[PUBLICATION] --> commit des corrections de l'audit, report sur main et push (sans question)
 ```
 
 > La phase **FETCH TEMPLATE** est toujours executee en premier.
@@ -2368,6 +2371,9 @@ non remplaces, les references vers un agent non genere et les incoherences entre
    diff de l'audit soit isole et facile a relire ou annuler :
 
    ```bash
+   # Depot sans aucun commit (git init frais, branche par defaut master...) : la premiere branche s'appelle main
+   git rev-parse -q --verify HEAD >/dev/null || git symbolic-ref HEAD refs/heads/main
+   INIT_FROM=$(git rev-parse -q --verify HEAD || echo "")   # point de depart : borne les commits de l'init (etape 7)
    git add -A && git commit -m "chore(claude): init-project" || true   # || true : rien a commiter = ok
    ```
 
@@ -2376,11 +2382,55 @@ non remplaces, les references vers un agent non genere et les incoherences entre
    passent par `AskUserQuestion`, comme d'habitude. Apres un init, `MEMORY.md` est vide : la migration
    MEMORY → docs (2.4) n'a rien a signaler.
 3. **Presenter le rapport "post-init" en tete du message de fin** : ecarts corriges en Auto, ecarts arbitres, ecarts
-   laisses en l'etat. Ne pas committer les corrections de l'audit : l'utilisateur relit `git diff` (le commit
-   d'init sert de point de retour).
+   laisses en l'etat. Les corrections sont commitees a part (etape 7) : `git show HEAD` les montre, le commit
+   d'init reste le point de retour.
 
 Si `/context-audit` est absent de `.claude/commands/` (deploiement incomplet), le signaler dans le rapport et
 continuer — ne jamais bloquer la fin de l'init.
+
+---
+
+### 7. Publication sur `main`
+
+Derniere action, **sans question** : l'init (ou la synchronisation, etape d7b) et l'audit sont termines, le resultat
+part sur `main` et sur GitHub. Section partagee par l'init et le mode « d) Synchroniser » (`INIT_FROM` pose a
+l'etape 6.1 ou d7b).
+
+```bash
+git add -A && git commit -m "chore(claude): context-audit post-init" || true   # sync : "post-sync" ; rien = ok
+BR=$(git branch --show-current)
+
+if ! git remote get-url origin >/dev/null 2>&1; then
+  PUBLISH="local uniquement — pas de remote origin"
+elif [ "$BR" = main ]; then
+  # Rattraper main distant s'il a avance, puis pousser (jamais de --force)
+  git ls-remote --exit-code --heads origin main >/dev/null && git pull --rebase --autostash -q origin main
+  git push -u origin main && PUBLISH="pousse sur origin/main" || PUBLISH="ECHEC push main (voir erreur)"
+else
+  # Branche de travail (ex. milestone en cours) : NE PAS la merger dans main — elle porte du travail non livre,
+  # qui ne rejoint main qu'au deploiement PROD. Seuls les commits de l'init sont reportes sur main.
+  WT=.claude/worktrees/init-main
+  git fetch -q origin main && git worktree add -q --detach "$WT" origin/main
+  if git -C "$WT" cherry-pick ${INIT_FROM:+$INIT_FROM..}"$BR" && git -C "$WT" push origin HEAD:main; then
+    git fetch -q origin main:main 2>/dev/null   # main local a jour (fast-forward, main n'est pas checkout)
+    git push -q -u origin "$BR"                 # la branche de travail garde aussi ces commits
+    PUBLISH="commits d'init reportes sur origin/main (cherry-pick) ; $BR pousse"
+  else
+    git -C "$WT" cherry-pick --abort 2>/dev/null
+    PUBLISH="ECHEC report sur main (conflit ou push refuse) — commits d'init restes sur $BR"
+  fi
+  git worktree remove --force "$WT" 2>/dev/null
+fi
+echo "$PUBLISH"
+```
+
+Regles :
+- **Jamais de `--force`**, jamais de merge de la branche de travail dans `main` : seuls les commits produits par
+  l'init/la sync (`INIT_FROM..HEAD`) y vont. Le merge milestone → `main` reste celui du deploiement PROD.
+- Echec (push refuse par une protection de branche, conflit de rebase/cherry-pick) : ne rien forcer, reporter
+  `PUBLISH` et l'erreur dans le message de fin ; l'utilisateur publie a la main (ex. via une PR).
+- Exception documentee a la regle « seul `deployer` merge vers `main` » (`commands/context/COMMON.md` §6.3) :
+  l'init s'execute hors cycle milestone, avant toute team.
 
 ---
 
@@ -2402,8 +2452,9 @@ Modeles/efforts : <defauts adaptes | N alertes — N surcharges appliquees, N co
 Cadrage : docs/CADRAGE.md — <workshop|brief : N elements deduits, N precises>   (si workshop ou brief)
 Agents generiques : <NOM> (.claude/agents/generic.<NOM>.md), ...   (si declares)
 
-Audit contexte (/context-audit) : N ecarts corriges (Auto), N arbitres, N laisses — voir `git diff`
-  (commit d'init = point de retour)
+Audit contexte (/context-audit) : N ecarts corriges (Auto), N arbitres, N laisses — commit
+  "chore(claude): context-audit post-init" (`git show HEAD` ; commit d'init = point de retour)
+Publication : <PUBLISH>   (etape 7 — ex. "pousse sur origin/main")
 
 Milestone v0.1.0 : N issues de base — https://github.com/<org>/<repo>/milestone/<numero>
   (nouveau projet avec remote GitHub ; sinon "non cree — <raison>")
@@ -3248,10 +3299,14 @@ gh label create "DONE"      --color "0e8a16" --description "Issue livrée et val
 
 #### Etape d7b — Audit du contexte (`/context-audit`)
 
-Meme etape que « 6. Audit du contexte » de l'init : commiter l'etat synchronise (point de retour), puis lancer
+Meme etape que « 6. Audit du contexte » de l'init : commiter l'etat synchronise (point de retour, message
+`chore(claude): sync template <tag>`, `INIT_FROM` pose juste avant comme a l'etape 6.1), puis lancer
 `/context-audit` en audit complet. Les verifications d1e / d5e (graphe, doublons) restent la verification
 specifique a la synchronisation ; `/context-audit` y ajoute les incoherences et references cassees transverses
 (commandes, agents, contextes). Reporter le resultat dans le rapport d8.
+
+Puis appliquer **« 7. Publication sur `main` »** (commit des corrections `chore(claude): context-audit post-sync`,
+report sur `main`, push) et reporter `PUBLISH` dans le rapport d8.
 
 #### Etape d8 — Rapport final
 
@@ -3271,6 +3326,7 @@ Synchronisation terminee.
   CLAUDE.md table Agents Disponibles : mis à jour (N lignes — documentation uniquement)
   Labels GitHub                     : vérifiés (PLANNING, PRET, EN COURS, EN REVIEW, EN QA, DONE)
   Audit contexte (/context-audit)   : N corriges (Auto), N arbitres, N laisses (etape d7b)
+  Publication                       : <PUBLISH> (section 7 — ex. "pousse sur origin/main")
   Schema infrastructure             : [convertit vers environments[] | deja a jour | inchange (refuse)]
   Acces aux environnements          : [<ENV>: ok | <ENV>: non valide (statut) | valides a l'instant (etape d1f)]
 

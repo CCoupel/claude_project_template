@@ -63,8 +63,11 @@ un remote GitHub, il crée les labels de phase, puis le **premier milestone `v0.
 cas d'usage v1 de la fiche de cadrage) après validation de la liste — jamais sur un projet avec code existant,
 déjà doté de milestones ou de tags, ni lors d'une mise à jour. Il se termine par un **audit du contexte** :
 commit d'init (point de retour), puis `/context-audit` complet — placeholders non remplacés, références
-cassées, incohérences `project-config.json` ↔ `CLAUDE.md` ↔ agents. Les corrections `Auto` ne sont pas committées :
-relire `git diff`.
+cassées, incohérences `project-config.json` ↔ `CLAUDE.md` ↔ agents. Les corrections sont committées à part
+(`git show HEAD`), puis tout est **publié sur `main` et poussé**, sans question : sur `main` → push ; sur une autre
+branche (ex. milestone en cours) → seuls les commits de l'init sont reportés sur `main` (cherry-pick dans un worktree),
+la branche n'est jamais mergée. Jamais de `--force` ; un push refusé (protection de branche) est signalé dans le
+message de fin.
 
 ---
 
@@ -835,7 +838,8 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
   comparaison ne crée/modifie/supprime jamais `.claude/agents/*.md`
 - Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL` + table `Agents Disponibles`) et `.claude/settings.json`
 - Crée s'ils sont absents `.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` (jamais écrasés)
-- Termine par le même audit du contexte qu'à l'init (commit de l'état synchronisé, puis `/context-audit` complet)
+- Termine par le même audit du contexte qu'à l'init (commit de l'état synchronisé, puis `/context-audit` complet),
+  puis la même publication sur `main` (commit des corrections, report sur `main`, push)
 
 ### Structure de CLAUDE.md — Zone projet / Zone template
 
