@@ -180,7 +180,9 @@ SendMessage({ to: "deployer", content: "
   verification du rollout) sans attendre de nouvel ordre.
 " })
 
-CLEAR(marketing)
+// marketing est ponctuel (table « Agents Disponibles ») : absent de la team → le spawner (commands/marketing.md,
+// section « Agent ») et attendre ACTIF ; deja actif (release precedente de la session) → CLEAR(marketing)
+SPAWN_OR_CLEAR(marketing)
 SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z]" })
 // Si `marketing.site == false` dans .claude/project-config.json (ordre direct de ne pas avoir de site) :
 // SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — SANS SITE" })

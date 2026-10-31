@@ -490,7 +490,7 @@ registry_report() {
     line=$(grep '^| ' CLAUDE.md 2>/dev/null | grep -F ".claude/agents/${name}.template.md" | head -1)
     teammate=$(cut -d'|' -f2 <<<"$line" | tr -d ' `')
     # Spawn = colonne "Spawn" de la meme ligne : permanent → au /start-session ; ponctuel ou agent hors table
-    # (pr-reviewer, marketing-release...) → a la demande du teamleader ; teamleader/cdp = le Claude principal
+    # (pr-reviewer...) → a la demande du teamleader ; teamleader/cdp = le Claude principal
     case "$(cut -d'|' -f5 <<<"$line" | tr -d ' ')" in
       permanent) spawn="au /start-session" ;;
       *)         spawn="a la demande du teamleader" ;;

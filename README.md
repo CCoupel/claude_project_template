@@ -170,7 +170,7 @@ provenance en première ligne, détection de dérive par empreinte, tableau affi
 Chaque init / sync / réinstallation se termine par un **tableau des teammates** : nom, fichier, template source,
 version actuelle (celle de la copie déployée), état (`🟢 a jour`, `⚠ en retard → <cible>`, `📌 epingle (<cible> dispo)`) et présence d'un compagnon `<nom>.md` (ou de la
 spécification `generic.<nom>.md` pour une instance générique), et **mode de spawn** : `au /start-session`
-(agents `permanent`), `a la demande du teamleader` (`ponctuel` : `security`, `infra`, `pr-reviewer`...), ou
+(agents `permanent`), `a la demande du teamleader` (`ponctuel` : `security`, `infra`, `marketing`, `pr-reviewer`...), ou
 `— (Claude principal)` pour `teamleader` et `cdp`, qui ne sont pas des teammates : ce sont les specs que le Claude
 principal lit pour jouer les deux rôles.
 
