@@ -41,6 +41,17 @@ peut differer legerement de celui indique au dispatch, c'est attendu).
 SendMessage({ to: "team-lead", content: "DOC DONE\nFichiers : [liste]\nSHA : <commit-sha>" })
 ```
 
+### Tache `DOC SESSION`
+
+Recue en fin de session (`/end-session`, ordre dans `_work/tasks/`) : mettre a jour, si l'ordre le demande,
+`CHANGELOG.md` / `docs/` / `README.md`, et **`.claude/memory/MEMORY.md`** avec les valeurs fournies par le
+teamleader (version courante, travail en cours, decisions, issues, points pour la prochaine session — n'inventer
+aucune valeur absente de l'ordre). Commiter (`docs(session): ...`), **sans push**. Ne pas toucher `{VERSION_FILE}`.
+
+```
+SendMessage({ to: "team-lead", content: "DOC DONE\nFichiers : [liste]\nSHA : <commit-sha>" })
+```
+
 En cas de blocage (document introuvable, incoherence de version...) :
 ```
 SendMessage({ to: "team-lead", content: "DOC FAILED\nRaison : [une ligne]\nAction requise : [ce dont j'ai besoin]" })

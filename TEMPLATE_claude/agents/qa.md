@@ -160,6 +160,13 @@ Executer **uniquement** le test de reproduction fourni par le test-writer, sur l
 **doit echouer** : echec = `RED CHECK OK` ; succes = `RED CHECK KO — le test ne reproduit pas le bug`
 (retour au test-writer). Aucun autre test, pas de rapport complet.
 
+### Scope `session` (fin de session, `/end-session`)
+
+Verification legere demandee par le teamleader : `commands.test` puis le build (section 6), sans E2E lents, sans
+couverture ni maquettes, sans rapport complet. Reutiliser le ledger (arbre deja VALIDATED → ne rien rejouer).
+Arbre non commite → `BLOQUE` (tests uniquement sur du code commite). Reponse : `QA DONE — session : tests
+<n>/<total>, build OK|KO` ; un echec n'est pas corrige ici, il est reporte tel quel au rapport de session.
+
 ### Scopes `perf` / `security`
 
 Joues uniquement si le teamleader les transmet (decides par le planner, `test_scopes`). Voir sections 5 (perf) et

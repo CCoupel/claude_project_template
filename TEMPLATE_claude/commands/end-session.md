@@ -22,22 +22,22 @@ verification de l'etat du projet.
 /end-session
     |
     v
-[DOC-CHECK] --> Détecter les changements documentaires → proposer /context-audit
+[ETAT GIT] --> deployer : SESSION STATE (branche, arbre, stash, fichiers de definition modifies)
     |
     v
-[ETAT] --> Verifier l'etat du projet
+[DOC-CHECK] --> Changements documentaires → proposer /context-audit
     |
     v
-[DOC] --> Mettre a jour la documentation
+[ETAT] --> Arbre sale : question → deployer commite ; puis qa : Scope session (tests + build)
     |
     v
-[MEMOIRE] --> Mettre a jour .claude/memory/MEMORY.md
+[DOC + MEMOIRE] --> doc-updater : DOC SESSION (CHANGELOG/docs/README + .claude/memory/MEMORY.md, commit)
     |
     v
-[GIT] --> S'assurer que tout est commite (jamais de push pendant le dev, voir COMMON.md 7.1)
+[GIT] --> deployer : SESSION STATE final (arbre propre ; jamais de push pendant le dev, COMMON.md 7.1)
     |
     v
-[BRANCHES] --> Classer les branches residuelles ; supprimer les sures sur confirmation
+[BRANCHES] --> deployer : classer les branches residuelles ; supprimer les sures sur confirmation
     |
     v
 [TEAM] --> Fermer tous les teammates (/team-delete --force)
@@ -46,24 +46,38 @@ verification de l'etat du projet.
 [RAPPORT] --> Rapport de session
 ```
 
+## Delegation
+
+Le teamleader **coordonne et questionne** ; il n'execute ni `Bash` git/build/test, ni `Edit`/`Write` hors
+`_work/tasks/` (CLAUDE.md « Délégation Stricte »). Toute la commande passe par des ordres aux teammates, encore
+actifs a ce stade (fermes a l'etape 5) :
+
+| Besoin | Ordre | Agent |
+|---|---|---|
+| Etat git, fichiers de definition modifies | `SESSION STATE` | `deployer` |
+| Commiter le travail en attente | `SESSION COMMIT : <message>` | `deployer` |
+| Tests + build de verification | `Scope : session` | `qa` |
+| CHANGELOG, docs, README, `MEMORY.md` | `DOC SESSION` | `doc-updater` |
+| Branches residuelles | `BRANCHES CLASSIFY` / `BRANCHES DELETE` | `deployer` |
+| `git stash` (operation HEAD du checkout principal) | — | teamleader (exception HEAD, `agents/context/COMMON.md` « Branche Courante ») |
+
+**Aucune team active** (session sans `/start-session`) : les etapes deleguees ne peuvent pas s'executer — le
+signaler dans le rapport (« etat non verifie — relancer `/start-session` puis `/end-session` ») et passer aux
+etapes 6-7.
+
 ## Etapes Detaillees
+
+### Préalable — ETAT GIT
+
+**Première action.** Ordre a `deployer` : `SESSION STATE`. Le `DONE` contient (definition dans `agents/deploy.md`
+« Tache SESSION ») : branche courante, `git status --short`, `git log --oneline -5`, `git stash list`, et les
+fichiers de definition modifies depuis `main` (commites ou non) — `CLAUDE.md`, `.claude/agents/`, `.claude/commands/`,
+`TEMPLATE_claude/`. Les etapes 0, 1 et 4 s'appuient sur ce retour.
 
 ### 0. DOC-CHECK — Changements documentaires
 
-**Première action, avant tout le reste.**
-
-Détecter si des fichiers de définition projet ont changé depuis le dernier commit sur main :
-
-```bash
-# Fichiers de définition modifiés (commités ou non)
-git diff --name-only main...HEAD -- \
-  'CLAUDE.md' '.claude/agents/' '.claude/commands/' 'TEMPLATE_claude/' \
-  2>/dev/null
-
-git status --short | grep -E '(CLAUDE\.md|\.claude/(agents|commands)|TEMPLATE_claude/)'
-```
-
-Si des changements sont détectés, afficher **avant de continuer** :
+A partir de la liste des fichiers de definition modifies du `SESSION STATE`. Si elle n'est pas vide, afficher
+**avant de continuer** :
 
 ```
 ⚠️  Changements documentaires détectés :
@@ -85,53 +99,43 @@ Si aucun changement documentaire → passer directement à l'étape 1 sans messa
 
 ### 1. ETAT — Verification du Projet
 
-```bash
-# Etat git
-git status
-git log --oneline -5
+1. **Arbre sale** (`git status --short` non vide dans le `SESSION STATE`) : presenter les fichiers, puis
+   `AskUserQuestion` : `"Changements non commités — que faire ?"` — options : **Commiter** (Recommandé) → ordre
+   `SESSION COMMIT : <message conventionnel>` a `deployer` / **Stasher** → `git stash push -u -m "end-session <date>"`
+   par le teamleader (operation HEAD) / **Laisser en l'état**.
+2. **Tests + build** — ordre a `qa` : `Scope : session` (tests + build, reutilisation du
+   `_work/tests-ledger.md` si l'arbre est deja VALIDATED). Arbre laisse sale → `qa` repond `BLOQUE` (tests
+   uniquement sur du code commite) : noter « tests non joues — arbre non commite » dans le rapport.
 
-# Tests (si applicable)
-{TEST_CMD}
-
-# Build (si applicable)
-{BUILD_CMD}
-```
-
-Verifier :
+Verifier dans les retours :
 - Pas de changements non commites non intentionnels
 - Tests passent
 - Build OK
 
-### 2. DOC — Documentation
+### 2-3. DOC + MEMOIRE — Documentation et memoire projet
 
-Mettre a jour si necessaire :
-- `CHANGELOG.md` : ajouter les changements de la session si pas encore fait
-- `docs/` : mettre a jour les docs techniques impactees
-- `README.md` : si des fonctionnalites majeures ont change
+Ordre a `doc-updater` (fichier `_work/tasks/doc-updater-<timestamp>.md`, ordre de plus de 3 lignes) : `DOC SESSION`,
+avec le contenu que seul le teamleader connait :
 
-### 3. MEMOIRE — Mise a jour de `.claude/memory/MEMORY.md`
+- **Documentation**, si necessaire : `CHANGELOG.md` (changements de la session pas encore notes), `docs/` (docs
+  techniques impactees), `README.md` (si des fonctionnalites majeures ont change).
+- **`.claude/memory/MEMORY.md`** — sections a mettre a jour, valeurs fournies dans l'ordre :
+  - Version courante
+  - Travail en cours (phase actuelle)
+  - Decisions techniques prises pendant la session
+  - Issues GitHub ouvertes / fermees
+  - Points de contexte importants pour la prochaine session
 
-Mettre a jour les sections pertinentes :
-- Version courante
-- Travail en cours (phase actuelle)
-- Decisions techniques prises pendant la session
-- Issues GitHub ouvertes / fermees
-- Points de contexte importants pour la prochaine session
+`doc-updater` ecrit et commite (`docs(session): ...`), sans push. Le teamleader relit `MEMORY.md` (lecture
+autorisee) pour controler le `DONE` par rapport a l'ordre.
 
 ### 4. GIT — Verification Git
 
-```bash
-# S'assurer que tout est commite (PAS de push — voir context/COMMON.md section 7.1 :
-# le premier push des commits dev vers origin a lieu au prochain deploiement QUALIF,
-# jamais avant ; tous les agents partagent le meme clone local)
-git status
+Ordre a `deployer` : `SESSION STATE` (final). L'arbre doit etre propre apres les commits des etapes 1 et 2-3 ;
+**pas de push** — voir `context/COMMON.md` section 7.1 : le premier push des commits dev vers origin a lieu au
+passage des issues en `DONE`, jamais avant ; tous les agents partagent le meme clone local.
 
-# Verifier qu'il n'y a pas de travail en attente
-git stash list
-```
-
-Si des changements non commites existent :
-- Demander via `AskUserQuestion` (jamais en texte) : `"Changements non commités — que faire ?"` — options : **Commiter** / **Stasher** / **Laisser en l'état**
+Arbre encore sale (fichiers apparus depuis l'etape 1) → meme question qu'a l'etape 1.
 
 ### 4bis. BRANCHES — Branches residuelles
 
@@ -281,10 +285,9 @@ fi
 ```
 /end-session
 
-[ETAT] Git : 0 modifications non commitees ✅
-[ETAT] Tests : 47/47 passes ✅
-[DOC] CHANGELOG.md : a jour ✅
-[MEMOIRE] MEMORY.md mis a jour ✅
+[ETAT GIT] deployer SESSION STATE : 0 modifications non commitees ✅
+[ETAT] qa Scope session : tests 47/47 passes, build OK ✅
+[DOC + MEMOIRE] doc-updater DOC SESSION : CHANGELOG.md a jour, MEMORY.md mis a jour, commit a1b2c3d ✅
 [GIT] Commits locaux sur milestone/v1.4.0 — push differe au prochain deploiement QUALIF ✅
 [BRANCHES] milestone/v1.3.0 (SURE) supprimee local + remote ✅ — fix/old-login conservee (3 commits hors main) ⚠
 [TEAM] /team-delete --force — 2 teammate(s) fermés ✅
@@ -297,5 +300,5 @@ Prochaine etape : /review puis /qa
 
 ## Agent
 
-Execution directe par le teamleader pour la coordination, la documentation et la memoire. Les operations git de
-l'etape 4bis (classement et suppression des branches) sont deleguees a `deployer`.
+Le teamleader coordonne et pose les questions ; l'execution est deleguee (voir « Delegation ») : `deployer` (git,
+branches), `qa` (tests, build), `doc-updater` (documentation, memoire).

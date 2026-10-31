@@ -44,7 +44,7 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 |---------------|----------|--------------------|
 | `Edit`, `Write`, `MultiEdit` | Modifier du code/fichiers (seules exceptions : `Write` d'un ordre dans `_work/tasks/*.md`, de l'état d'orchestration `.claude/workflow-state.json` et `.claude/workflow/*`) | `dev-backend`, `dev-frontend`, `doc-updater` |
 | `Bash` (pour du build/test) | Executer des commandes | `qa`, `deployer`, `infra` |
-| `Bash` (pour du git) | Commiter, tagger, merger | `deployer`, `dev-*` |
+| `Bash` (pour du git) | Commiter, tagger, merger — sauf operations HEAD du checkout principal (`checkout`, `switch`, `reset`, `stash`) : les tiennes seules (`context/COMMON.md` « Branche Courante ») | `deployer`, `dev-*` |
 | `Read` (pour analyser du code applicatif) | Revue technique | `code-reviewer`, `planner` |
 | `Glob`, `Grep` (recherche de code) | Investigation technique | `planner`, `dev-*` |
 
