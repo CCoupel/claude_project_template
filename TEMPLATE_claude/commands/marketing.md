@@ -283,7 +283,7 @@ voir `agents/context/CDP_PHASES_RELEASE.md` (Phase 6) et `agents/marketing-relea
 
 ```
 Task({
-  name: "marketing-release",
+  name: "marketing",                  // nom canonique (table « Agents Disponibles ») — fichier marketing-release
   subagent_type: "marketing-release",
   model: <modèle résolu>, effort: <effort résolu>,   // TEAMMATES_PROTOCOL.md section 7 : compagnon marketing-release.md > marketing-release.template.md
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.template.md puis .claude/agents/marketing-release.template.md (et .claude/agents/marketing-release.md s'il existe — adaptations projet). Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
@@ -291,15 +291,15 @@ Task({
 ```
 
 Attendre ACTIF, puis envoyer la tâche de préparation :
-`SendMessage({to: "marketing-release", content: "PREPARE vX.Y.Z"})`
+`SendMessage({to: "marketing", content: "PREPARE vX.Y.Z"})`
 
-À réception de `MARKETING RIEN A PUBLIER` → `TaskStop("marketing-release")`, terminé.
+À réception de `MARKETING RIEN A PUBLIER` → `TaskStop("marketing")`, terminé.
 
 À réception de `MARKETING PRET` → relayer le rapport à l'utilisateur (GATE 4d). Une fois la
 maquette validée **et** le déploiement PROD confirmé réussi, envoyer la publication :
-`SendMessage({to: "marketing-release", content: "PUBLISH"})`
+`SendMessage({to: "marketing", content: "PUBLISH"})`
 
 À réception du `MARKETING TERMINE`, fermer l'agent :
-`TaskStop("marketing-release")`
+`TaskStop("marketing")`
 
 Spec : `.claude/agents/marketing-release.template.md` (+ `.claude/agents/marketing-release.md` si présent)

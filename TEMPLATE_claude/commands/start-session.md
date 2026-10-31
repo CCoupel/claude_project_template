@@ -165,7 +165,8 @@ Task({
 
 4. **Attendre les ACTIF de tous les teammates** avant de continuer.
 
-> Après cette étape, le teamleader n'utilise plus que `SendMessage` — aucun nouveau spawn pendant la session.
+> Après cette étape, le teamleader n'utilise plus que `SendMessage` — aucun nouveau spawn pendant la session, sauf
+> les agents `ponctuel` (spawnés à la demande par leur commande ou leur phase).
 
 ### Etape 4bis — Reprise du workflow interrompu (si `RESUME=1`)
 
@@ -279,5 +280,5 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 - La TEAM est **toujours creee** sans demander confirmation
 - Le nom de la TEAM est **toujours** `{TEAM_NAME}` (defini dans CLAUDE.md)
 - Tous les teammates sont spawned au démarrage et passent en IDLE
-- Pendant la session : **uniquement SendMessage** — aucun nouveau spawn
+- Pendant la session : **uniquement SendMessage** — aucun nouveau spawn, sauf agents `ponctuel` à la demande
 - Les teammates attendent un ordre explicite du teamleader via SendMessage

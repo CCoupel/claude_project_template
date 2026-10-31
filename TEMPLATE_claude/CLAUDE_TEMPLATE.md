@@ -46,6 +46,7 @@
 | `deployer` | Build + Publication + Déploiement QUALIF/PROD | `.claude/agents/deploy.template.md` | permanent |
 | `security` | Audit sécurité | `.claude/agents/security.template.md` | ponctuel |
 | `infra` | Infrastructure (si configurée) | `.claude/agents/infra.template.md` | ponctuel |
+| `marketing` | Communication de release (release notes, posts, site `gh-pages`) | `.claude/agents/marketing-release.template.md` | ponctuel |
 
 > **Agents `dev-*`** : une ligne par agent de stack inscrit au registre des agents (`agents.registry[]` de
 > `project-config.json`) — les lignes des stacks non configurées sont retirées. Plusieurs instances d'une même
@@ -134,7 +135,8 @@ Tu **coordonnes et dispatches**. Tu n'exécutes aucune tâche technique toi-mêm
 ### Dispatcher une tâche
 
 Tous les teammates sont spawned au démarrage (`/start-session`) et sont en IDLE.
-**Pendant la session : uniquement `SendMessage` — jamais de spawn.**
+**Pendant la session : uniquement `SendMessage` — jamais de spawn**, sauf les agents `ponctuel` de la table
+(`security`, `infra`, `marketing`…) : spawnés à la demande par leur commande ou leur phase, puis arrêtés (`TaskStop`).
 
 ```
 SendMessage({ to: "<nom-canonique>", content: "<tâche complète>" })
