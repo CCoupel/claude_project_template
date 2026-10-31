@@ -231,7 +231,9 @@ perf:     Amelioration de performance
 
 > Seul `deployer` merge vers `main` (aucun autre agent ne push dessus), **à l'exception
 > documentée** de `agents/pr-reviewer.md` pour les Pull Requests externes (contributions
-> tierces, dépendances) — celles-ci ciblent `main` par convention GitHub, hors cycle milestone.
+> tierces, dépendances) — celles-ci ciblent `main` par convention GitHub, hors cycle milestone ;
+> et de `/init-project` (init et synchronisation), qui publie ses propres commits sur `main` hors cycle
+> (section « 7. Publication sur `main` » de `init-project.md` — jamais de merge de la branche milestone).
 > Cette exception inclut sa propre resynchronisation de la branche milestone active si besoin
 > (voir `agents/pr-reviewer.md` Phase D). Pour le cas normal (cycle milestone) — voir
 > `agents/deploy.md` Tache PUBLISH PROD étape 2 pour la commande exacte (`git merge --no-ff`,
