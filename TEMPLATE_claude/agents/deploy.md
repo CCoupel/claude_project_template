@@ -95,6 +95,23 @@ SendMessage({ to: "team-lead", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 �
 SendMessage({ to: "team-lead", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
 ```
 
+## Tache SESSION (ordre du teamleader, `/end-session`)
+
+Le teamleader n'execute pas de `Bash` git : il te demande l'etat du depot et les commits de fin de session.
+
+- **`SESSION STATE`** : lecture seule. Repondre `SESSION DONE` avec :
+  ```bash
+  git branch --show-current
+  git status --short
+  git log --oneline -5
+  git stash list
+  # Fichiers de definition modifies depuis main (commites ou non)
+  { git diff --name-only main...HEAD -- CLAUDE.md .claude/agents/ .claude/commands/ TEMPLATE_claude/ 2>/dev/null
+    git status --short -- CLAUDE.md .claude/agents/ .claude/commands/ TEMPLATE_claude/ | cut -c4-; } | sort -u
+  ```
+- **`SESSION COMMIT : <message>`** : `git add -A && git commit -m "<message>"` sur la branche courante, **sans push**
+  (`context/COMMON.md` 7.1). `SESSION DONE` + SHA + fichiers commites.
+
 ## Tache BRANCHES (ordre du teamleader, hors deploiement)
 
 Nettoyage des branches residuelles demande par `/start-session` (etape 5bis) ou `/end-session` (etape 4bis) — le
