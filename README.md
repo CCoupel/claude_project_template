@@ -720,7 +720,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 | Commande | Description |
 |----------|-------------|
 | `/start-session` | Démarre la session, lit la mémoire projet, affiche le milestone actif ; détecte un workflow interrompu (terminal tué) et propose de le reprendre au lieu de purger `_work/` ; signale les branches résiduelles (lecture seule) |
-| `/end-session` | Clôture la session, shutdown propre des agents, met à jour la mémoire ; purge sélective de `_work/` si un workflow reste en cours ; classe les branches résiduelles (protégée / sûre / à arbitrer) et propose de supprimer les sûres en local + remote, jamais sans confirmation |
+| `/end-session` | Clôture la session, shutdown propre des agents, met à jour la mémoire ; purge sélective de `_work/` si un workflow reste en cours ; classe les branches résiduelles (protégée / sûre / à arbitrer) et propose de supprimer les sûres en local + remote, jamais sans confirmation (classement et suppression délégués à `deployer`) |
 | `/team-status` | État de la team (lecture seule) |
 | `/team-delete [--force]` | Ferme les teammates IDLE, ou tous avec `--force` |
 | `/context-audit [scope]` | Audit des fichiers de configuration : doublons, refs cassées, dérive template |

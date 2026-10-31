@@ -45,6 +45,9 @@ un commit precedent. Les autres agents sont **consommateurs** de la branche.
 `git reset`, `git rebase`, `git stash`, `git clean`, `git revert`, `git cherry-pick`, `git merge`,
 `git branch -D`/`-m`, ou tout retour a un commit precedent. Commits (`git add`/`commit`) et `push` de la
 branche courante : autorises.
+**Exception nettoyage (`deployer` seul)** : `git branch -D` et `git push origin --delete` d'une branche **non
+courante**, hors worktree actif, pour le nettoyage des branches residuelles (`agents/deploy.md` Etape 6, ordre
+`BRANCHES DELETE` de `commands/end-session.md` etape 4bis) — le HEAD n'est pas touche.
 
 - **Au demarrage de chaque tache** : verifier `git branch --show-current` contre la branche annoncee
   dans l'ordre du teamleader. Different ou ordre sans branche → **BLOQUE**, ne pas corriger soi-meme.

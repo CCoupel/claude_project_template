@@ -95,6 +95,21 @@ SendMessage({ to: "team-lead", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 �
 SendMessage({ to: "team-lead", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
 ```
 
+## Tache BRANCHES (ordre du teamleader, hors deploiement)
+
+Nettoyage des branches residuelles demande par `/start-session` (etape 5bis) ou `/end-session` (etape 4bis) — le
+teamleader n'execute aucun `Bash` git, il pose les questions ; toi tu classes et tu supprimes. Deux ordres :
+
+- **`BRANCHES CLASSIFY`** : executer le script de classement de `commands/end-session.md` etape 4bis (lecture seule,
+  source unique — ne pas le recopier) ; si l'ordre le demande, joindre `git log --oneline origin/main..<branche>`
+  pour chaque `A_ARBITRER`. `BRANCHES DONE` + sortie brute du script (+ logs).
+- **`BRANCHES DELETE : sure <b1> <b2> ; arbitree <b3>`** : rejouer le classement juste avant, puis pour chaque branche de l'ordre,
+  supprimer local + remote (`git push origin --delete`, `git branch -D` — exception nettoyage de
+  `context/COMMON.md` « Branche Courante »). **Ne pas supprimer** une branche devenue `PROTEGEE` (courante, worktree,
+  milestone ouvert) ni une branche `sure` repassee `A_ARBITRER` (nouveau commit depuis le classement) : la
+  signaler. Une branche `arbitree` = suppression explicitement validee par l'utilisateur malgre ses commits hors
+  `main` : la supprimer (sauf si devenue `PROTEGEE`). Jamais `main`, `gh-pages*`. `BRANCHES DONE` + liste supprimees / ignorees (motif).
+
 ## Prerequis
 
 ### Avant BUILD
