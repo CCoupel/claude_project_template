@@ -76,7 +76,7 @@ git branch --show-current
 
 ### Etape 3 : Implementer
 
-Voir ordre par agent dans `context/PROJECT_CONTEXT.md`.
+Suivre l'ordre et les conventions de ton template de stack (`dev-*.template.md` : « Conventions », « Checklist Implementation ») et de ton compagnon `dev-*.md` (adaptations projet).
 
 ### Etape 4 : Build Final
 

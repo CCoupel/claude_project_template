@@ -341,7 +341,7 @@ rm -f coverage.out coverage.html
 
 ### 10.1 Criteres de Routage
 
-Le routage vers les agents DEV se fait selon les fichiers impactes et le type de modification. Chaque projet definit ses propres criteres dans `context/PROJECT_CONTEXT.md`.
+Le routage vers les agents DEV se fait selon les fichiers impactes et le type de modification. Les criteres sont ceux du projet : role de chaque agent (table « Agents Disponibles » de `CLAUDE.md`), perimetre `paths` du registre (`agents.registry[]` de `.claude/project-config.json`) et section `## Perimetre` du compagnon `dev-*.md`. Le planner s'en sert pour assigner les taches.
 
 ### 10.2 Ordre d'Execution
 
