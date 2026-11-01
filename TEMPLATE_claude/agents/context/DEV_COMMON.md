@@ -3,7 +3,7 @@
 > **Ce fichier contient les regles communes a tous les agents de developpement.**
 > Agents concernes : tous les agents `dev-*`
 >
-> **Prerequis** : Respecter `context/COMMON.md` (regles generales) et `context/PROJECT_CONTEXT.md` (contexte technique)
+> **Prerequis** : Respecter `context/COMMON.md` (regles generales) et le contexte technique : `CLAUDE.md` « Configuration Projet », `.claude/project-config.json`, ton compagnon `dev-*.md` (perimetre, conventions projet)
 
 ---
 

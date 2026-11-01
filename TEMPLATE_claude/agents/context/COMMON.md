@@ -4,7 +4,7 @@
 > Chaque agent doit referencer ce fichier : `@import COMMON.md`
 >
 > **Protocole teammates** : Voir `context/TEAMMATES_PROTOCOL.md` — ACK, progression, rapports, IDLE. À lire obligatoirement au démarrage.
-> **Contexte projet** : Voir `context/PROJECT_CONTEXT.md` pour le stack technique, la structure et les commandes.
+> **Contexte projet** : `CLAUDE.md` (section « Configuration Projet » : stack, build, tests), `.claude/project-config.json` (`commands.*`, environnements, registre des agents) et, pour un agent de stack, son template `dev-*.template.md` + compagnon `dev-*.md` (structure, conventions, périmètre).
 
 ---
 
@@ -317,7 +317,7 @@ Les fichiers `context/` partagés (`context/COMMON.md`, `context/GITHUB.md`, `co
 
 ## References Projet
 
-> **Details complets** : Voir `context/PROJECT_CONTEXT.md`
+> **Details complets** : `CLAUDE.md` (section « Configuration Projet » : stack, build, tests), `.claude/project-config.json` (`commands.*`, environnements, registre des agents)
 
 ### Fichiers Essentiels
 
