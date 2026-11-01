@@ -112,7 +112,7 @@ gh issue list --milestone "$TITLE" --state closed \
 
 # Issues ouvertes dans le prochain milestone (= roadmap "a venir")
 NEXT_TITLE=$(gh api repos/{owner}/{repo}/milestones \
-  --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0].title')
+  --jq '[.[] | select(.state=="open")] | (map(select(.due_on != null)) | sort_by(.due_on) | .[0]) // (sort_by(.number) | .[0]) | .title')   # en cours, sinon plus ancien planifie (GITHUB.md 3.0)
 gh issue list --milestone "$NEXT_TITLE" --state open \
   --json number,title,labels
 ```

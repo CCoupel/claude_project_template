@@ -155,7 +155,7 @@ Avant de produire tout contenu :
 
    # Prochain milestone ouvert (pour la section "ce qui arrive")
    gh api repos/{owner}/{repo}/milestones \
-     --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0] | {title, due_on}'
+     --jq '[.[] | select(.state=="open")] | (map(select(.due_on != null)) | sort_by(.due_on) | .[0]) // (sort_by(.number) | .[0]) | {title, due_on}'   # en cours, sinon plus ancien planifie (GITHUB.md 3.0)
    ```
    Si aucun milestone → utiliser uniquement CHANGELOG.md.
 5. Identifier le type de release :

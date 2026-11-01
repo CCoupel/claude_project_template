@@ -55,7 +55,8 @@ const phaseOf = (i: RawIssue) =>
   i.labels.map(l => l.name).find(n => (PHASES as readonly string[]).includes(n)) ?? null
 
 /**
- * Milestone en cours = le premier milestone ouvert (échéance, puis SemVer)
+ * Milestone en cours = le premier milestone ouvert (due date = date de démarrage du dev, GITHUB.md 3.0 :
+ * démarrés d'abord, du plus ancien ; puis SemVer)
  * qui porte au moins une issue ouverte avec un label de phase.
  * À défaut : un milestone encore ouvert dont toutes les issues sont fermées (CI verte) est en publication /
  * déploiement PROD — il reste le milestone en cours (`isReleasing`), jusqu'à sa clôture.
