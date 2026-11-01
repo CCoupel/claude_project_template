@@ -250,7 +250,7 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 | Moment | Action |
 |--------|--------|
 | Deploy PROD OK (tag `vX.Y.Z`) | `gh issue list --milestone "<title>" --state open --json number,title` |
-| Milestone à 100% (liste vide) | Fermer : `mcp__plugin_github_github__issue_write` (milestone state: closed) + consigner la version livrée dans la description (écriture ponctuelle, `COMMON.md` section 5.7) + informer l'utilisateur |
+| Milestone à 100% (liste vide) | Fermer : `mcp__plugin_github_github__issue_write` (milestone state: closed) + consigner la version livrée dans l'historique de la description (`✅ termine — tag vX.Y.Z`, `GITHUB.md` 3.0bis — jamais d'écrasement de la description) + informer l'utilisateur |
 | Issues encore ouvertes | Alerter l'utilisateur avec la liste des issues restantes et leur label actuel |
 
 ---
@@ -292,7 +292,9 @@ fi
 **Tracer le demarrage sur GitHub** — juste apres ce bloc, a chaque passage (idempotent), ordre a `deployer` :
 `MILESTONE START vX.Y.Z`. Il pose la « Due date » du milestone a la date du jour **si elle est vide**, sans jamais
 l'ecraser (`context/GITHUB.md` 3.0 : due date = date de demarrage du dev ; milestone ouvert avec due date = en
-cours, ferme = termine). Une reprise apres interruption rejoue l'ordre sans effet.
+cours, ferme = termine), et inscrit `▶ en cours` dans l'historique de la description (3.0bis). Une reprise apres
+interruption rejoue l'ordre sans effet. **Chaque transition suivante** (lots, QUALIF, GATE refuses, PROD) ajoute
+une ligne `Milestone : <cible> → <etat>` a l'ordre `deployer` du moment — table des evenements : GITHUB.md 3.0bis.
 
 ### Phase Versionnement
 

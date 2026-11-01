@@ -359,6 +359,9 @@ Continuer directement à l'etape 4.
 
 ### Etape 4 — Cloturer le milestone
 
+Ordre a `deployer` (Tache MILESTONE) : `Milestone : milestone → ✅ termine — cloture manuelle` (historique,
+`context/GITHUB.md` 3.0bis), puis fermeture — sans toucher a la description :
+
 ```bash
 gh api repos/{owner}/{repo}/milestones/<numero> \
   --method PATCH \

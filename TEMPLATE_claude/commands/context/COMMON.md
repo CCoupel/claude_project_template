@@ -193,7 +193,7 @@ Le titre du milestone (`vX.Y.Z` ou `vX.Y.Z — <nom>`, cree par `/milestone new`
 - `a` est supprime de `{VERSION_FILE}`. La version livree est exactement `X.Y.Z` — aucun recalcul, aucune branche conditionnelle.
 
 **A la cloture du milestone (apres deploy PROD reussi)** :
-- La description du milestone est completee une seule fois avec la version effectivement livree (ex: `Release vX.Y.Z — livre, tag vX.Y.Z`). Ecriture ponctuelle a la cloture — la description ne suit jamais l'etat dev en direct, `{VERSION_FILE}` reste la seule source vivante de cet etat.
+- La description du milestone porte son **historique** (etat, lots, journal date — `context/GITHUB.md` 3.0bis), tenu par `deployer` ; la version livree y est consignee a la cloture (`✅ termine — tag vX.Y.Z`). Cet historique trace l'avancement, il ne fixe aucune version : `X.Y.Z` vient du titre, `a` de `{VERSION_FILE}`.
 
 ---
 
