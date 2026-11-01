@@ -34,6 +34,7 @@ SendMessage({ to: "deployer", content: "
   sans attendre de nouvel ordre. Ne rejoue aucun test au BUILD (deja valides par QA).
   [Si `testing.full_regression_at == build` : apres BUILD, attends mon message `NR VALIDATED`
   avant PUBLISH QUALIF.]
+  [Avec lots : Lot : LOT-N — pour l'historique du milestone (GITHUB.md 3.0bis), ecrit par toi apres DEPLOY QUALIF.]
   Retourne : DONE + version publiee/deployee [X.Y.Z.a] + statut des services + smoke tests OK/KO.
 " })
 
@@ -113,6 +114,8 @@ Selon la reponse utilisateur :
   > releve de l'utilisateur : verifier le milestone (100 % des issues fermees)
   Phase 6 (PROD) — les branches residuelles (milestone, PR mergees) sont supprimees en local et en remote en fin de deploiement reussi (`deploy.md`, Etape 6)
 - **NON** →
+  L'ordre labels de ce rejet porte `Milestone : milestone → ▶ en cours — GATE 4 refuse, retour DEV` (Cas A) ou
+  `— retour PLAN` (Cas B) — historique du milestone, `GITHUB.md` 3.0bis.
   **Seules les issues concernees sont rouvertes** — les autres restent fermees. Determiner les issues concernees depuis
   la reponse de l'utilisateur (champ « Autre ») ; si elles ne sont pas designees sans ambiguite, poser un
   `AskUserQuestion` (`multiSelect: true`, une option par issue de `ISSUE_NUMS[]`) avant tout changement.

@@ -82,27 +82,83 @@ reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
 - **Validation humaine** (`Labels validation humaine (GITHUB.md §9.13) : +VALID-HUMAINE #12 ; -VALID-HUMAINE #15`) :
   creer le label s'il est absent, puis `gh issue edit <numero> --add-label "VALID-HUMAINE"` (`+`) ou
   `--remove-label "VALID-HUMAINE"` (`-`) ; ne toucher a aucun label de phase ni de lot ; `LABELS DONE`.
-- **Demarrage d'un milestone** (`MILESTONE START vX.Y.Z`, `context/CDP_WORKFLOWS.md` Phase Init) : poser la date du
-  jour comme « Due date » du milestone **si elle est vide** — jamais l'ecraser (`context/GITHUB.md` 3.0) :
-  ```bash
-  NUM=<numero du milestone, matching par prefixe — GITHUB.md 3.1>
-  DUE=$(gh api repos/{owner}/{repo}/milestones/$NUM --jq '.due_on // ""')
-  [ -z "$DUE" ] && gh api repos/{owner}/{repo}/milestones/$NUM --method PATCH \
-    -f due_on="$(date -u +%Y-%m-%dT12:00:00Z)"   # 12:00 UTC : meme jour affiche quel que soit le fuseau
-  ```
-  Puis `LABELS DONE` avec `vX.Y.Z demarre le <date>` (ou `deja demarre le <date>`).
+- **Demarrage d'un milestone** (`MILESTONE START vX.Y.Z`) et **lignes `Milestone : …`** d'un ordre : voir « Tache
+  MILESTONE » ci-dessous.
 - **Ordre unique du GATE 2** (`Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 ; LOT-1 → #12 #15 ; LOT-2.1 → #18`) :
   1. **Verifier avant d'ecrire** : chaque issue de la liste `PRET` figure dans exactement un lot (ou l'ordre dit
      `sans lot`) ; chaque lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ; chaque issue appartient au milestone courant.
      Un ecart → `LABELS FAILED` avec le motif (`#18 sans lot`, `#21 hors milestone`, `Lot 2 mal nomme`), **aucun label pose**.
   2. Creer les labels de lot absents du repo (`gh label create "LOT-n" --color "5319e7" --description "Lot n du milestone"`).
   3. Pour chaque issue : `gh issue edit <numero> --add-label "PRET,LOT-n" --remove-label "PLANNING"`.
-  4. Rapport avec recapitulatif par issue — le teamleader le compare a la table du plan.
+  4. Historique du milestone (Tache MILESTONE) : chaque lot de l'ordre → `⏳ planifie`.
+  5. Rapport avec recapitulatif par issue — le teamleader le compare a la table du plan.
 
 ```
 SendMessage({ to: "team-lead", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 → PRET, LOT-1\n#18 → PRET, LOT-2.1" })
 SendMessage({ to: "team-lead", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
 ```
+
+## Tache MILESTONE (historique du milestone sur GitHub)
+
+Tu es le seul a ecrire l'etat d'un milestone sur GitHub (`context/GITHUB.md` 3.0) : sa « Due date » (date de
+demarrage) et le **bloc d'historique** de sa description (etat courant, tableau des lots, historique date). Le texte
+de la description hors bloc n'est jamais touche ; la description n'est jamais reecrite autrement.
+
+Declencheurs (liste complete des evenements : `context/GITHUB.md` 3.0bis) :
+- **`MILESTONE START vX.Y.Z`** (Phase Init) : due date = aujourd'hui **si vide** (jamais ecrasee), puis evenement
+  `milestone → ▶ en cours`. `LABELS DONE` avec `vX.Y.Z demarre le <date>` (ou `deja demarre le <date>`).
+- **Ligne `Milestone : <cible> → <etat> [— <detail>]`** dans n'importe quel ordre du teamleader (labels, QUALIF…) :
+  l'appliquer apres le reste de l'ordre, et la reprendre dans le `DONE`.
+- **Tes propres etapes** : DEPLOY QUALIF reussi, PUBLISH PROD lance, echec/rollback PROD, cloture (Etape 5) — sans
+  attendre d'ordre (etats et details : 3.0bis).
+
+```bash
+# milestone_history CIBLE ETAT DATE [DETAIL] — lit la description sur stdin, ecrit la nouvelle sur stdout.
+# Bloc entre marqueurs, regenere a chaque appel ; texte hors bloc conserve. Meme etat que l'etat courant
+# de la cible → description inchangee (idempotent : une reprise rejoue l'ordre sans doublon).
+milestone_history() {
+  awk -v cible="$1" -v e="$2" -v d="$3" -v det="${4:-}" '
+    /^<!-- historique:debut/ { inb = 1; next }
+    /^<!-- historique:fin/   { inb = 0; next }
+    inb && /^\*\*Etat\*\* : / { etat = $0; next }
+    inb && /^\| LOT-/ { split($0, f, "|"); l = f[2]; gsub(/ /, "", l)
+                        if (!(l in lot)) ord[++nl] = l; lot[l] = $0; next }
+    inb && /^- [0-9][0-9][0-9][0-9]-/ { hist[++nh] = $0; next }
+    inb { next }
+    { pre[++np] = $0 }
+    END {
+      if (cible == "milestone") { cur = etat; sub(/^\*\*Etat\*\* : /, "", cur); sub(/ \(depuis .*$/, "", cur) }
+      else if (cible in lot) { split(lot[cible], f, "|"); cur = f[3]; gsub(/^ +| +$/, "", cur) }
+      if (cur != e) {
+        if (cible == "milestone") etat = "**Etat** : " e " (depuis " d ")"
+        else { if (!(cible in lot)) ord[++nl] = cible; lot[cible] = "| " cible " | " e " | " d " |" }
+        hist[++nh] = "- " d " — " cible " : " e (det != "" ? " — " det : "")
+      }
+      while (np > 0 && pre[np] ~ /^[[:space:]]*$/) np--
+      for (i = 1; i <= np; i++) print pre[i]
+      if (np > 0) print ""
+      print "<!-- historique:debut — maintenu par deployer, ne pas editer a la main -->"
+      print (etat != "" ? etat : "**Etat** : planifie")
+      if (nl > 0) { print ""; print "| Lot | Etat | Depuis |"; print "|---|---|---|"
+                    for (i = 1; i <= nl; i++) print lot[ord[i]] }
+      print ""; print "**Historique**"
+      for (i = 1; i <= nh; i++) print hist[i]
+      print "<!-- historique:fin -->"
+    }'
+}
+
+NUM=<numero du milestone, matching par prefixe — GITHUB.md 3.1> ; TODAY=$(date +%F)
+# Demarrage (MILESTONE START uniquement) : due date si vide, 12:00 UTC = meme jour affiche quel que soit le fuseau
+DUE=$(gh api repos/{owner}/{repo}/milestones/$NUM --jq '.due_on // ""')
+[ -z "$DUE" ] && gh api repos/{owner}/{repo}/milestones/$NUM --method PATCH -f due_on="$(date -u +%Y-%m-%dT12:00:00Z)"
+# Evenement : CIBLE = milestone | LOT-N ; ETAT = vocabulaire de GITHUB.md 3.0bis (icone comprise)
+DESC=$(gh api repos/{owner}/{repo}/milestones/$NUM --jq '.description // ""')
+NEW=$(printf '%s\n' "$DESC" | milestone_history "<CIBLE>" "<ETAT>" "$TODAY" "<DETAIL>")
+[ "$NEW" != "$DESC" ] && gh api repos/{owner}/{repo}/milestones/$NUM --method PATCH --raw-field description="$NEW"
+```
+
+Etat identique a l'etat courant de la cible → aucune ecriture (un ordre rejoue apres une reprise ne cree pas de
+doublon). Une ecriture GitHub en echec ne bloque jamais la tache principale : la signaler dans le `DONE`.
 
 ## Tache SESSION (ordre du teamleader, `/end-session`)
 
@@ -342,6 +398,11 @@ pre-validation (`ci-branch.yml`, `infra.md` §3bis C10 — il ne lance que `comm
 exact** de la branche milestone : `gh run list --workflow ci-branch.yml --commit <sha>`. Un tag ne sert jamais de
 test ; apres un echec on corrige sur la branche, on ne retague pas (detail dans le fichier d'environnement).
 
+**Historique du milestone** (Tache MILESTONE, `context/GITHUB.md` 3.0bis), ecrit par toi sans ordre : DEPLOY QUALIF
+reussi → `🧪 en QUALIF — <X.Y.Z.a>` (cible `LOT-N` si l'ordre QUALIF porte `Lot : LOT-N`, sinon `milestone`) ;
+PUBLISH PROD lance → `milestone → 🚀 mise en prod — vX.Y.Z` ; echec PROD / rollback → `milestone → ❌ mise en prod en
+echec — <cause>` ; cloture → Etape 5.
+
 **Hotfix** (voir Mode Teammates) : pour PUBLISH PROD specifiquement, le prerequis "publication
 validee sur l'environnement precedent" est leve — le candidat vient directement de BUILD.
 
@@ -418,12 +479,10 @@ Si cloturer → executer la logique de cloture (identique a `/milestone close v[
 
 1. Lister les issues ouvertes restantes dans le milestone
 2. Si issues ouvertes → proposer : reporter vers prochain milestone / fermer / laisser en suspens
-3. Fermer le milestone et y consigner la version livree (ecriture ponctuelle, section 5.7) :
+3. Consigner la version livree dans l'historique (Tache MILESTONE : `milestone → ✅ termine — tag v$VERSION`),
+   **puis** fermer le milestone — sans toucher a la description (elle porte l'historique) :
    ```bash
-   gh api repos/{owner}/{repo}/milestones/<numero> \
-     --method PATCH \
-     -f state=closed \
-     -f description="Release v$VERSION — livre, tag v$VERSION"
+   gh api repos/{owner}/{repo}/milestones/<numero> --method PATCH -f state=closed
    ```
 4. Afficher le bilan de cloture
 

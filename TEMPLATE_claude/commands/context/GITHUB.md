@@ -134,6 +134,46 @@ l'ouverture de la branche `milestone/vX.Y.Z` (`context/CDP_WORKFLOWS.md` Phase I
 
 Ne jamais poser `due_on` a la creation (`/milestone new`), ni l'ecraser une fois posee.
 
+### 3.0bis Historique du milestone (description GitHub)
+
+La description du milestone porte, sous le texte libre (`Release vX.Y.Z`, conserve), un **bloc d'historique** :
+etat courant, tableau des lots, journal date. Seul `deployer` l'ecrit (`agents/deploy.md` « Tache MILESTONE », script
+`milestone_history`, idempotent) ; il est lisible directement sur la page du milestone :
+
+```
+**Etat** : 🧪 en QUALIF (depuis 2026-11-03)
+
+| Lot | Etat | Depuis |
+|---|---|---|
+| LOT-1 | ✅ termine | 2026-11-04 |
+| LOT-2 | 🧪 en QUALIF | 2026-11-06 |
+
+**Historique**
+- 2026-11-01 — milestone : ▶ en cours
+- 2026-11-01 — LOT-1 : ⏳ planifie
+- 2026-11-03 — LOT-1 : 🧪 en QUALIF — v1.4.0.3
+- 2026-11-04 — LOT-1 : ✅ termine — CI verte
+```
+
+Evenements (vocabulaire fixe, icone comprise) — le teamleader ajoute la ligne `Milestone : <cible> → <etat> [— <detail>]`
+a l'ordre `deployer` qu'il envoie a ce moment ; « deployer » = ecrit par `deployer` lui-meme dans sa tache :
+
+| Moment | Cible → etat — detail | Porte par |
+|---|---|---|
+| Ouverture de la branche milestone (Phase Init) | `milestone → ▶ en cours` (+ due date) | ordre `MILESTONE START` |
+| GATE 2 valide, plan avec lots | chaque `LOT-N → ⏳ planifie` | ordre `Labels GATE 2` (deployer, d'apres la table des lots) |
+| Lancement du DEV d'un lot | `LOT-N → ▶ en cours` | ordre labels `→ EN COURS` du lot |
+| DEPLOY QUALIF reussi | `LOT-N → 🧪 en QUALIF — <X.Y.Z.a>` (sans lots : `milestone → 🧪 en QUALIF`) | deployer (l'ordre QUALIF porte `Lot : LOT-N`) |
+| GATE LOT refuse | `LOT-N → ↩ refuse — retour DEV` / `— retour PLAN` | ordre labels Cas A / Cas B |
+| Lot : CI verte, issues fermees | `LOT-N → ✅ termine — CI verte` | ordre de fermeture des issues du lot |
+| Publication anticipee (GATE LOT) | `LOT-N → ⇢ reporte — vers <milestone>` (lots restants) | ordre de deplacement des issues |
+| GATE 4 refuse | `milestone → ▶ en cours — GATE 4 refuse, retour DEV` (ou `retour PLAN`) | ordre labels Cas A / Cas B |
+| PUBLISH PROD lance (GATE 4 valide) | `milestone → 🚀 mise en prod — vX.Y.Z` | deployer |
+| Echec PROD / rollback | `milestone → ❌ mise en prod en echec — <cause>` | deployer |
+| Cloture (Etape 5 de `deploy.md`, `/milestone close`) | `milestone → ✅ termine — tag vX.Y.Z` puis `state=closed` | deployer |
+
+La description n'est jamais reecrite en entier : seul le bloc entre marqueurs est regenere.
+
 ### 3.1 Lister les milestones
 
 ```bash
@@ -577,6 +617,11 @@ QA valide → label DONE → Phase 5 (BUILD, PUBLISH QUALIF, DEPLOY QUALIF) → 
   NON → seules les issues concernees repartent : meme procedure que §9.6 (Cas A → EN COURS, Cas B → PLANNING),
         sans reouverture puisque l'issue n'est pas encore fermee
 ```
+
+Historique du milestone (3.0bis) — lignes `Milestone : …` a ajouter aux ordres `deployer` de ce cycle : lancement du
+lot (`LOT-N → ▶ en cours`), fermeture apres CI verte (`LOT-N → ✅ termine — CI verte`), refus (`LOT-N → ↩ refuse —
+retour DEV|PLAN`), publication anticipee (`LOT-N → ⇢ reporte — vers <milestone>` pour chaque lot restant). Le passage
+`🧪 en QUALIF` est ecrit par `deployer` lui-meme apres DEPLOY QUALIF.
 
 **Publication anticipee** (option du GATE LOT) : les lots restants (issues `PRET`) sont deplaces vers un autre
 milestone (`gh issue edit <numero> --milestone "<TITLE>"` ; le label `LOT-N` les suit) puis le milestone est publie

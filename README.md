@@ -744,7 +744,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 |----------|-------------|
 | `/backlog` | Lister les issues GitHub ouvertes |
 | `/backlog <desc>` | Rechercher une issue et lancer le workflow adapté |
-| `/milestone new <version>` | Créer un milestone et associer des issues (le premier, `v0.1.0`, est créé par `/init-project` sur un nouveau projet). Pas de date à la création : la **due date GitHub** du milestone porte la **date de démarrage du dev**, posée par `deployer` à l'ouverture de la branche `milestone/vX.Y.Z` (jamais écrasée). Sur GitHub : ouvert sans due date = planifié, ouvert avec due date = en cours depuis cette date, fermé = terminé |
+| `/milestone new <version>` | Créer un milestone et associer des issues (le premier, `v0.1.0`, est créé par `/init-project` sur un nouveau projet). Pas de date à la création : la **due date GitHub** du milestone porte la **date de démarrage du dev**, posée par `deployer` à l'ouverture de la branche `milestone/vX.Y.Z` (jamais écrasée). Sur GitHub : ouvert sans due date = planifié, ouvert avec due date = en cours depuis cette date, fermé = terminé. La **description** du milestone porte en plus son **historique** (état courant, tableau des lots, journal daté : en cours, en QUALIF, refusé, terminé, reporté, mise en prod, échec, clôture), tenu par `deployer` à chaque transition — `GITHUB.md` §3.0bis |
 | `/milestone status` | Progression du milestone actif (barre %) |
 | `/milestone close [version]` | Clôturer avec gestion des issues non terminées |
 
