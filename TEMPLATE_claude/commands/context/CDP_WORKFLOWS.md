@@ -289,6 +289,11 @@ else
 fi
 ```
 
+**Tracer le demarrage sur GitHub** — juste apres ce bloc, a chaque passage (idempotent), ordre a `deployer` :
+`MILESTONE START vX.Y.Z`. Il pose la « Due date » du milestone a la date du jour **si elle est vide**, sans jamais
+l'ecraser (`context/GITHUB.md` 3.0 : due date = date de demarrage du dev ; milestone ouvert avec due date = en
+cours, ferme = termine). Une reprise apres interruption rejoue l'ordre sans effet.
+
 ### Phase Versionnement
 
 **Référence complète** : `context/COMMON.md` section 5 (format `X.Y.Z.a`, cycle de vie de la version).

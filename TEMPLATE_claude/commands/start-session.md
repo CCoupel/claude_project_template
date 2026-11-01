@@ -203,7 +203,7 @@ Executer les deux requetes en parallele :
 **Milestone actif :**
 ```bash
 gh api repos/{owner}/{repo}/milestones \
-  --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0] | {title, open_issues, closed_issues, due_on}'
+  --jq '[.[] | select(.state=="open")] | (map(select(.due_on != null)) | sort_by(.due_on) | .[0]) // (sort_by(.number) | .[0]) | {title, open_issues, closed_issues, due_on}'
 ```
 Calculer : `progress = closed_issues / (open_issues + closed_issues) * 100`
 Si aucun milestone actif → ne pas afficher le bloc milestone.
@@ -239,7 +239,7 @@ En parallèle de l'étape 5. Afficher dans la confirmation (étape 6) une ligne 
 ---
 
 **Milestone actif** : <version>  ████████░░  <X>%  (<closed>/<total> issues)
-**Echeance** : <date ou "non definie">
+**En cours depuis** : <due_on, date de demarrage du dev — ou « planifie, non demarre » si absente>
 
 ### Backlog — Issues ouvertes
 

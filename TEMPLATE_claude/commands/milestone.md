@@ -5,7 +5,7 @@ Gerer les milestones GitHub du projet : creation avec association d'issues, suiv
 ## Usage
 
 ```
-/milestone new <version> [YYYY-MM-DD]   # Creer un milestone et associer des issues
+/milestone new <version>                # Creer un milestone et associer des issues
 /milestone status                        # Progression du ou des milestones actifs
 /milestone close [version]               # Cloturer un milestone
 ```
@@ -24,13 +24,13 @@ Sinon → detecter le mode selon le premier mot de `$ARGUMENTS`.
 ```
 Commandes disponibles :
 
-  /milestone new <version> [date]   Creer un milestone (ex: v1.4 2026-05-01)
+  /milestone new <version>          Creer un milestone (ex: v1.4) — la due date GitHub
+                                    est posee au demarrage du dev, pas ici
   /milestone status                  Voir la progression des milestones actifs
   /milestone close [version]         Cloturer un milestone
 
 Exemples :
   /milestone new v1.4
-  /milestone new v1.4 2026-06-01
   /milestone status
   /milestone close v1.4
   /milestone close                   (clot le milestone le plus avance)
@@ -101,18 +101,12 @@ gh api repos/{owner}/{repo}/milestones \
 ### Etape 3 — Creer le milestone sur GitHub
 
 ```bash
-# Sans date
+# Jamais de due_on a la creation : la « Due date » GitHub porte la date de demarrage du dev, posee
+# a l'ouverture de la branche milestone (context/GITHUB.md 3.0)
 gh api repos/{owner}/{repo}/milestones \
   --method POST \
   -f title="<TITLE>" \
   -f description="Release <VERSION>"
-
-# Avec date (format ISO 8601)
-gh api repos/{owner}/{repo}/milestones \
-  --method POST \
-  -f title="<TITLE>" \
-  -f description="Release <VERSION>" \
-  -f due_on="<YYYY-MM-DD>T23:59:59Z"
 ```
 
 Afficher la confirmation :
@@ -186,7 +180,7 @@ Issues associees :
   ✅ #51 — Export PDF des rapports
 
   3 issues / 0 % complete (0 fermees)
-  Echeance : <date ou "non definie">
+  Etat : planifie (la due date sera posee au demarrage du dev)
 
 Prochaines etapes :
   /backlog #42     Demarrer le travail sur une issue
@@ -215,7 +209,7 @@ Milestones actifs :
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   v1.4.0 — Authentification OAuth2  ████████░░░░░░░░  50%  (3/6 issues)
-  Echeance : 2026-06-01  (J-46)
+  En cours depuis : 2026-06-01  (J+12)        ← due date GitHub ; absente → « Planifie (non demarre) »
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Issues terminees (3) :

@@ -120,6 +120,20 @@ gh issue comment <numero> --body "<message>"
 
 ## 3. Milestones
 
+### 3.0 Etat d'un milestone — `due_on` = date de demarrage du dev
+
+Le champ GitHub `due_on` (« Due date ») ne sert **pas** d'echeance : il porte la **date de demarrage du
+developpement**, posee une seule fois par `deployer` (ordre `MILESTONE START`, `agents/deploy.md` Tache LABELS) a
+l'ouverture de la branche `milestone/vX.Y.Z` (`context/CDP_WORKFLOWS.md` Phase Init). Lecture directe sur GitHub :
+
+| Etat GitHub | Signification |
+|---|---|
+| `open`, sans due date | Planifie — dev pas encore demarre |
+| `open`, avec due date | **En cours** depuis cette date |
+| `closed` | Termine (livre en PROD — `agents/deploy.md` Etape 5) ; la due date reste la date de demarrage |
+
+Ne jamais poser `due_on` a la creation (`/milestone new`), ni l'ecraser une fois posee.
+
 ### 3.1 Lister les milestones
 
 ```bash
@@ -127,9 +141,9 @@ gh issue comment <numero> --body "<message>"
 gh api repos/{owner}/{repo}/milestones \
   --jq '.[] | select(.state=="open") | {number, title, open_issues, closed_issues, due_on}'
 
-# Milestone actif le plus avance
+# Milestone actif : celui en cours (due date posee, voir 3.0), sinon le plus ancien planifie
 gh api repos/{owner}/{repo}/milestones \
-  --jq '[.[] | select(.state=="open")] | sort_by(.due_on) | .[0]'
+  --jq '[.[] | select(.state=="open")] | (map(select(.due_on != null)) | sort_by(.due_on) | .[0]) // (sort_by(.number) | .[0])'
 
 # Milestone correspondant a une version — matching par PREFIXE, jamais par titre exact ni sur
 # un separateur precis (le titre reel peut porter un nom descriptif apres le prefixe, avec un
@@ -148,18 +162,17 @@ est fourni — voir `commands/milestone.md` Mode NEW pour le detail complet (X/Y
 Z auto-complete, unicite par prefixe de version).
 
 ```bash
-# Sans nom, sans echeance
+# Sans nom
 gh api repos/{owner}/{repo}/milestones \
   --method POST \
   -f title="<version>" \
   -f description="Release <version>"
 
-# Avec nom descriptif et echeance (format ISO 8601)
+# Avec nom descriptif — jamais de due_on ici : il est reserve a la date de demarrage (3.0)
 gh api repos/{owner}/{repo}/milestones \
   --method POST \
   -f title="<version> — <nom>" \
-  -f description="Release <version>" \
-  -f due_on="<YYYY-MM-DD>T23:59:59Z"
+  -f description="Release <version>"
 ```
 
 ### 3.3 Cloturer un milestone
