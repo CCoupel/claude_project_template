@@ -79,6 +79,10 @@ Sinon -> workflow normal.
 
 ### 2. PLAN (optionnel)
 
+**Cadrage** (`agents/context/MILESTONE_CADRAGE.md`) : bugfix rejoignant un milestone en cours → son cadrage s'applique ;
+nouveau milestone avec plan → cadrage propose par le planner, valide au GATE 2 ; sans plan → intensite de depart telle
+quelle, team = agent DEV du perimetre + `qa` (+ selon options), presentee au GATE 1 (section 6).
+
 Pour les bugs complexes uniquement :
 - Plusieurs fichiers impactes
 - Risque de regression
@@ -92,7 +96,8 @@ Pour les bugs complexes uniquement :
 
 ### 4. TEST-WRITER puis RED CHECK (avant le DEV)
 
-**Obligatoire** : test de reproduction ecrit par test-writer, **avant** le fix
+**Obligatoire** : test de reproduction ecrit par test-writer (ou par l'agent DEV concerne si le cadrage du milestone
+est sans test-writer — `agents/context/MILESTONE_CADRAGE.md` section 5), **avant** le fix
 - Script qui reproduit le bug (red avant le fix, green apres), enregistre au statut `regression` dans `tests/INDEX.md`
 - Procedure manuelle dans `tests/procedures/` pour que QA valide le scenario
 - **RED CHECK** : QA execute ce seul test sur le code non corrige (`Scope : red-check`) — il doit echouer. S'il passe, il ne reproduit pas le bug : retour au test-writer (hors comptage de cycles)

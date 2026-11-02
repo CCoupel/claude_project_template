@@ -90,6 +90,11 @@ gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
   de `/milestone new` (`commands/milestone.md` Mode NEW, `context/COMMON.md` section 5.7).
   `{VERSION_FILE}` est positionne sur `X.Y.Z+1.0`.
 
+**Cadrage** (`agents/context/MILESTONE_CADRAGE.md` section 6) : toujours le cadrage fixe du flux hotfix (pas de planner
+ni de GATE 2 ; PROD directe sans QUALIF, reproduction par `test-writer`). Agents necessaires (agent DEV concerne +
+`test-writer` + `code-reviewer` + `qa` + `doc-updater`) spawnes des le routage s'ils sont absents. Milestone dedie →
+ordre `MILESTONE CADRAGE` au `deployer` ; milestone actif → son cadrage n'est pas modifie.
+
 ### 2. FIX
 
 - Correction la plus simple possible

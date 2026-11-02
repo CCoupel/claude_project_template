@@ -26,7 +26,9 @@ Role: Orchestrer workflows multi-agents avec validation utilisateur
 
 ## 2.bis Dispatch d'un Teammate
 
-Tous les teammates sont en IDLE depuis `/start-session`. Dispatch = uniquement `SendMessage`.
+Les agents `socle` sont en IDLE depuis `/start-session` ; ceux de la team du milestone le sont depuis le GATE 2
+(`agents/context/MILESTONE_CADRAGE.md` section 4). Dispatch = uniquement `SendMessage`. Avant de dispatcher une phase
+dont le deroulement depend du cadrage (tests, review, QUALIF, doc), relire `cadrage` (MILESTONE_CADRAGE.md section 5).
 
 ```
 SendMessage({ to: "<nom>", content: "<tâche complète>" })
@@ -55,6 +57,10 @@ SendMessage({ to: "dev-frontend", content: "<tâche>" })
 | QA | `qa` — par défaut en parallèle de Review (voir `QUALITY.md` section 12), dès `test-writer` DONE |
 | Doc | `doc-updater` |
 | Build / Publish / Deploy QUALIF / PROD | `deployer` |
+
+> Table du cadrage `complet`. Option du cadrage desactivee (`agents/context/MILESTONE_CADRAGE.md` section 5) → l'agent
+> correspondant n'est pas dispatche (ni spawne) : `test_writer: false` (tests par les agents DEV), `review: false` (pas de
+> `code-reviewer`), `doc: dev` (pas de `doc-updater`), `qualif: false` (BUILD seul avant le GATE 4).
 
 ---
 
@@ -295,6 +301,11 @@ l'ecraser (`context/GITHUB.md` 3.0 : due date = date de demarrage du dev ; miles
 cours, ferme = termine), et inscrit `▶ en cours` dans l'historique de la description (3.0bis). Une reprise apres
 interruption rejoue l'ordre sans effet. **Chaque transition suivante** (lots, QUALIF, GATE refuses, PROD) ajoute
 une ligne `Milestone : <cible> → <etat>` a l'ordre `deployer` du moment — table des evenements : GITHUB.md 3.0bis.
+
+**Cadrage du milestone** — le `DONE` de `MILESTONE START` fournit les donnees de l'**intensite de depart**
+(`agents/context/MILESTONE_CADRAGE.md` 3.1), transmise au planner avec l'ordre de plan ; le cadrage complet (options,
+team) est valide au GATE 2 puis applique (MILESTONE_CADRAGE.md section 4). Milestone deja cadre (`cadrage` present
+dans `workflow-state.json`) → rien a refaire.
 
 ### Phase Versionnement
 
@@ -673,7 +684,7 @@ SendMessage({ to: "deployer", content: "
 
 - Scope minimal obligatoire
 - Pas de refactoring
-- Test de reproduction OBLIGATOIRE, ecrit par test-writer avant le DEV, statut `regression`, verifie rouge par QA (`red-check`, context/COMMON.md 15.5)
+- Test de reproduction OBLIGATOIRE, ecrit par test-writer (ou l'agent DEV si `cadrage.test_writer == false`) avant le fix, statut `regression`, verifie rouge par QA (`red-check`, context/COMMON.md 15.5)
 - Doc si majeur
 - QUALIF obligatoire
 
@@ -831,6 +842,12 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
   "issue_nums": [123, 456],
   "milestone_num": 5,
   "plan": ".claude/workflow/plan-v1.4.0.md",
+  "cadrage": {
+    "intensite": "leger",
+    "test_writer": false, "review": false, "qualif": false, "doc": "dev",
+    "team": ["dev-backend", "qa"],
+    "valide": "GATE 2"
+  },
   "lots": {
     "current": "LOT-2",
     "items": {
@@ -868,6 +885,10 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
 > de granularite `resume`/`skip` (section 11 ci-dessus, cf. `COMMON.md` section 12.2) reste la
 > phase globale `deploy` — ces sous-etapes sont informatives, pas des cibles de `resume`/`skip`.
 
+> `cadrage` : écrit à la validation du GATE 2 (`agents/context/MILESTONE_CADRAGE.md` section 4) ; absent = cadrage
+> `complet` avec tous les agents `milestone` (projet migré depuis la v3). Lu par chaque phase (section 5) et par
+> `/start-session` pour respawner la team après interruption.
+
 > `status` (racine) : `in_progress` tant que le workflow n'est pas terminé — `/start-session` s'en sert pour détecter
 > une session interrompue (absent = `in_progress`). `lots` n'existe que si le plan validé contient une table
 > « Lots » ; `lots.items.<LOT>.phase` reprend les clés de `phases` (`dev-backend`, `review`, `qa`, `deploy-qualif`…)
@@ -882,7 +903,7 @@ la seule trace qui survit à un terminal tué.
 | Moment | Action CDP |
 |--------|------------|
 | Démarrage workflow | Créer le fichier avec `status: "in_progress"` et toutes les phases à `pending` |
-| GATE 2 validé | Copier le plan validé dans `.claude/workflow/plan-<version>.md` (lu puis écrit tel quel), renseigner `plan` ; table « Lots » → créer `lots` (tous `pending`) |
+| GATE 2 validé | Copier le plan validé dans `.claude/workflow/plan-<version>.md` (lu puis écrit tel quel), renseigner `plan` ; table « Lots » → créer `lots` (tous `pending`) ; écrire `cadrage` (MILESTONE_CADRAGE.md section 4) |
 | Dispatch d'un agent | Passer la phase à `in_progress` (avec lots : `lots.current` et sa `phase`) |
 | Réception DONE conforme | Passer la phase à `completed`, enregistrer refs |
 | Renvoi pour correction | Laisser `in_progress`, incrémenter `cycles` |

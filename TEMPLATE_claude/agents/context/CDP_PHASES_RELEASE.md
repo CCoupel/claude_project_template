@@ -10,6 +10,13 @@
 > puis PUBLISH QUALIF (mise a disposition, mecanisme `promote`) puis DEPLOY QUALIF
 > (installation) — voir `agents/deploy.template.md`.
 
+> **Cadrage** (`context/MILESTONE_CADRAGE.md` section 5) :
+> - `cadrage.qualif == false` → **pas de validation infra QUALIF, ni de PUBLISH/DEPLOY QUALIF** : ordre au `deployer`
+>   « BUILD seul depuis la branche [branche] — Cadrage : sans QUALIF. [Avec lots : Lot : LOT-N] Retourne : DONE + version [X.Y.Z.a] + chemin de
+>   l'artefact `build/candidate_vX.Y.Z/` » ; le GATE LOT / GATE 4 porte sur cet artefact local (procedure de test
+>   adaptee au local, « Binaire a tester » = ce chemin). NR complete inchangee. Historique : `🧪 en validation locale — <X.Y.Z.a>`.
+> - `cadrage.doc == dev` → pas de DOC FINALIZE : le GATE 4 n'attend pas `doc-updater`.
+
 **Validation infra (avant de lancer) :**
 ```
 SendMessage({ to: "infra", content: "
@@ -62,13 +69,17 @@ SendMessage({ to: "doc-updater", content: "
 
 **GATE 4 — s'ouvre uniquement quand TOUT est termine :**
 
-Attendre DONE de deployer ET DONE de doc-updater ET (si `testing.full_regression_at` est `qualif` ou `build`)
+Attendre DONE de deployer ET DONE de doc-updater (sauf `cadrage.doc == dev`) ET (si `testing.full_regression_at` est `qualif` ou `build`)
 le verdict VALIDATED de la NR complete avant de presenter a l'utilisateur. L'utilisateur n'est jamais invite
 a valider une QUALIF dont la NR est KO ou pas encore terminee.
 
 **NR complete NOT VALIDATED** → ne pas ouvrir le GATE 4, ne pas solliciter l'utilisateur : cycle++
 (`tests/METRICS.md`), retour Phase DEV avec le rapport (echecs de nature `regression`), puis REVIEW + QA et
 nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour lever son attente.
+
+> `cadrage.qualif == false` : meme presentation, titre « Build valide + Documentation prete — Validation manuelle
+> requise avant PROD », « Version deployee (QUALIF) » → « Artefact a tester (local) », sans URL ; procedure de test
+> adaptee au local. Idem pour le GATE LOT.
 
 ```markdown
 ## QUALIF deployee + Documentation prete — Validation manuelle requise avant PROD
@@ -124,16 +135,20 @@ Selon la reponse utilisateur :
 
   **Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV :**
   > issues concernees → reset label `EN COURS` (`--add-label "EN COURS" --remove-label "DONE"`)
+  > Agents hors cadrage (`test-writer`, `code-reviewer`, `doc-updater` selon `cadrage`) : ni CLEAR ni redispatch —
+  > leur part revient aux agents DEV (tests, CHANGELOG) ou n'a pas lieu (REVIEW), `context/MILESTONE_CADRAGE.md` section 5.
   - dev-* et test-writer : **pas de CLEAR** — leur contexte est la carte exacte de ce qu'ils ont construit
   - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater)
   - Une fois REVIEW + QA a nouveau valides sur le fix, avant de repasser en GATE 4 :
-    redispatcher `doc-updater` (`DOC FINALIZE` — rattrapage), **sauf si le fix n'a aucun
+    redispatcher `doc-updater` (`DOC FINALIZE` — rattrapage ; `doc: dev` → ordre CHANGELOG a l'agent DEV), **sauf si le fix n'a aucun
     impact documente ou observable** (ex : renommage interne, typo de commentaire).
     Jugement laxiste — en cas de doute sur l'impact doc, redispatcher (voir `deploy.md` étape 1ter).
 
   **Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1 :**
   > issues concernees → reset label `PLANNING` (`--add-label "PLANNING" --remove-label "DONE"`)
-  - CLEAR(planner) → nouveau plan → GATE 2
+  - CLEAR(planner) → nouveau plan (avec cadrage révisable, transmis comme cadrage en vigueur) → GATE 2
+  - Cadrage modifié au GATE 2 → le réappliquer (`context/MILESTONE_CADRAGE.md` section 4 : état, `MILESTONE CADRAGE`,
+    spawn / arrêt des agents)
   - Après réception du nouveau plan : CLEAR(dev-*) + CLEAR(test-writer) — contexte obsolète
   - CLEAR(code-reviewer) + CLEAR(qa) + CLEAR(doc-updater) avant redispatch
 
@@ -144,8 +159,8 @@ Selon la reponse utilisateur :
 > distinction, meme protocole dans les deux cas (voir `commands/deploy.template.md`). Le
 > deployer enchaine en interne PUBLISH PROD (merge + tag officiel, rebuild deterministe via
 > CI) puis DEPLOY PROD (installation) — voir `agents/deploy.template.md`. Aucun BUILD ici :
-> l'artefact QUALIF deja valide est republie, jamais reconstruit ad hoc (exception : Hotfix,
-> voir "Dispatch selon le Type de Workflow").
+> l'artefact QUALIF deja valide est republie, jamais reconstruit ad hoc (exceptions : Hotfix,
+> voir "Dispatch selon le Type de Workflow" ; cadrage sans QUALIF — artefact du BUILD valide en local au GATE 4).
 
 > **Principe absolu : PROD = zero modification.**
 > A ce stade, code, tests, documentation et contrats sont figes et valides.
@@ -178,9 +193,11 @@ type de workflow (y compris Hotfix — voir aussi section "Dispatch selon le Typ
 ```
 SendMessage({ to: "deployer", content: "
   Publie puis deploie en PROD la version [X.Y.Z] — l'artefact [X.Y.Z.a] est deja publie et
-  valide en QUALIF. Enchaine PUBLISH PROD (merge → main → tag officiel vX.Y.Z, declenche le
+  valide en QUALIF [cadrage.qualif == false : « valide en local au GATE 4 », voir ligne Cadrage ci-dessous].
+  Enchaine PUBLISH PROD (merge → main → tag officiel vX.Y.Z, declenche le
   rebuild deterministe via CI) puis DEPLOY PROD (installation de l'artefact publie par la CI,
   verification du rollout) sans attendre de nouvel ordre.
+  [cadrage.qualif == false] Cadrage : sans QUALIF — l'artefact [X.Y.Z.a] a ete valide en local au GATE 4.
 " })
 
 // marketing est ponctuel (table « Agents Disponibles ») : absent de la team → le spawner (commands/marketing.md,

@@ -34,8 +34,8 @@ Tu combines deux rôles sans jamais les déléguer à un agent séparé :
 3. Attendre les instructions de l'utilisateur
 ```
 
-> Tous les teammates ont été spawned par `/start-session` et sont en IDLE.
-> Tu n'as jamais besoin de spawner un agent — uniquement `SendMessage`.
+> Les agents `socle` ont été spawnés par `/start-session` (et la team d'un milestone en cours) et sont en IDLE.
+> Tu ne spawnes qu'à l'application du cadrage d'un milestone (GATE 2) et pour les agents `ponctuel` — sinon uniquement `SendMessage`.
 
 ---
 
@@ -108,7 +108,7 @@ forcer des options fermées sur une question de découverte lui ferait perdre so
 
 - **Jamais de CDP séparé** — ce rôle est toujours le tien
 - **Seul interlocuteur** — l'utilisateur ne parle qu'à toi ; tout besoin d'information de sa part (y compris ceux des teammates, qu'ils te remontent) lui est présenté **via `AskUserQuestion`**, jamais en texte
-- **SendMessage uniquement** — aucun spawn pendant la session, sauf les agents `ponctuel` de la table « Agents Disponibles », spawnés à la demande puis arrêtés (`TaskStop`)
+- **SendMessage uniquement** — aucun spawn pendant la session, sauf la team d'un milestone à l'application de son cadrage (GATE 2 — `context/MILESTONE_CADRAGE.md`) et les agents `ponctuel` de la table « Agents Disponibles », spawnés à la demande puis arrêtés (`TaskStop`)
 - **Labels de phase** — à chaque changement de phase, labels de toutes les issues suivies mis à jour (ordre à `deployer`, `GITHUB.md` §9) **avant** l'ordre suivant, et dès l'événement : retour de fin de tâche d'un teammate (`DONE`/`FAILED`/`BLOQUE`) ou validation d'un GATE (`GITHUB.md` §9.12) — l'état dit ce qui reste à faire
 - **Seul maître de la branche courante** — toi seul crées/changes la branche et reviens à un commit précédent ; chaque ordre aux teammates annonce la branche ; changement = PAUSE → checkout → REPRISE (`context/COMMON.md` « Branche Courante et Historique »). Tu exécutes les `BRANCH REQUEST` des agents
 - **Délégation stricte** — voir cdp.template.md

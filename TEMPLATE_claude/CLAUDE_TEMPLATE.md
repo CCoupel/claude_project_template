@@ -34,36 +34,38 @@
 
 | Nom | Rôle | Fichier | Spawn |
 |-----|------|---------|-------|
-| `planner` | Plan d'implémentation + contrats API | `.claude/agents/implementation-planner.template.md` | permanent |
-| `dev-backend` | Backend ({BACKEND_TECH}) | `.claude/agents/dev-backend.template.md` | permanent |
-| `dev-frontend` | Frontend ({FRONTEND_TECH}) | `.claude/agents/dev-frontend.template.md` | permanent |
-| `dev-plugin` | Plugin ({PLUGIN_PLATFORM}) | `.claude/agents/dev-plugin.template.md` | permanent |
-| `dev-firmware` | Firmware embarqué | `.claude/agents/dev-firmware.template.md` | permanent |
-| `test-writer` | Scripts de tests + procédures QA | `.claude/agents/test-writer.template.md` | permanent |
-| `code-reviewer` | Revue de code | `.claude/agents/code-reviewer.template.md` | permanent |
-| `qa` | Exécution des tests et validation | `.claude/agents/qa.template.md` | permanent |
-| `doc-updater` | Documentation | `.claude/agents/doc-updater.template.md` | permanent |
-| `deployer` | Build + Publication + Déploiement QUALIF/PROD | `.claude/agents/deploy.template.md` | permanent |
+| `planner` | Plan d'implémentation + contrats API | `.claude/agents/implementation-planner.template.md` | socle |
+| `dev-backend` | Backend ({BACKEND_TECH}) | `.claude/agents/dev-backend.template.md` | milestone |
+| `dev-frontend` | Frontend ({FRONTEND_TECH}) | `.claude/agents/dev-frontend.template.md` | milestone |
+| `dev-plugin` | Plugin ({PLUGIN_PLATFORM}) | `.claude/agents/dev-plugin.template.md` | milestone |
+| `dev-firmware` | Firmware embarqué | `.claude/agents/dev-firmware.template.md` | milestone |
+| `test-writer` | Scripts de tests + procédures QA | `.claude/agents/test-writer.template.md` | milestone |
+| `code-reviewer` | Revue de code | `.claude/agents/code-reviewer.template.md` | milestone |
+| `qa` | Exécution des tests et validation | `.claude/agents/qa.template.md` | milestone |
+| `doc-updater` | Documentation | `.claude/agents/doc-updater.template.md` | milestone |
+| `deployer` | Build + Publication + Déploiement QUALIF/PROD | `.claude/agents/deploy.template.md` | socle |
 | `security` | Audit sécurité | `.claude/agents/security.template.md` | ponctuel |
 | `infra` | Infrastructure (si configurée) | `.claude/agents/infra.template.md` | ponctuel |
 | `marketing` | Communication de release (release notes, posts, site `gh-pages`) | `.claude/agents/marketing-release.template.md` | ponctuel |
 
 > **Agents `dev-*`** : une ligne par agent de stack inscrit au registre des agents (`agents.registry[]` de
 > `project-config.json`) — les lignes des stacks non configurées sont retirées. Plusieurs instances d'une même
-> catégorie (ex. `| dev-firmware-capteur | Firmware capteur (ESP32) — firmware/sensor/** | .claude/agents/dev-firmware-capteur.template.md | permanent |`)
+> catégorie (ex. `| dev-firmware-capteur | Firmware capteur (ESP32) — firmware/sensor/** | .claude/agents/dev-firmware-capteur.template.md | milestone |`)
 > ont chacune leur ligne, leur rôle et leur périmètre ; une stack sans template dédié utilise `dev-generic`
 > (stack définie par le compagnon `<nom>.md`, obligatoire).
+
+> **Spawn** (`agents/context/MILESTONE_CADRAGE.md` 4.1) : `socle` = au `/start-session`, toujours ; `milestone` = si
+> l'agent est dans la team du milestone, validée au GATE 2 (la team d'un milestone en cours est respawnée au
+> `/start-session`) ; `ponctuel` = à la demande, puis arrêté. Valeur historique `permanent` = `socle`.
 
 > **Fichier** pointe vers le `.template.md` — géré par sync, toujours présent. Un compagnon
 > `.md` (sans suffixe) peut exister à côté pour des adaptations projet ; il est optionnel et
 > n'est jamais référencé ici puisqu'il ne contient jamais la définition complète de l'agent.
 
 > **Agents génériques** (projets non-dev) : une ligne par instance déclarée à l'init (`agents.generic[]`
-> de `project-config.json`), ex. `| redacteur-pptx | <rôle> | .claude/agents/generic.template.md + generic.redacteur-pptx.md | permanent |`.
+> de `project-config.json`), ex. `| redacteur-pptx | <rôle> | .claude/agents/generic.template.md + generic.redacteur-pptx.md | socle |`.
 > Le template `generic` est commun ; la spécification de chaque instance vit dans `.claude/agents/generic.<nom>.md`.
 
-> **permanent** = spawné au `/start-session`, reste en IDLE toute la session.  
-> **ponctuel** = spawné à la demande par la commande dédiée, fermé après DONE.
 
 > Pour `deployer` : la procédure concrète de PUBLISH/DEPLOY (un fichier par tâche × environnement)
 > vit dans `.claude/agents/environments/{publish,deploy}.<env>.md` — voir `agents/deploy.md`
@@ -134,9 +136,10 @@ Tu **coordonnes et dispatches**. Tu n'exécutes aucune tâche technique toi-mêm
 
 ### Dispatcher une tâche
 
-Tous les teammates sont spawned au démarrage (`/start-session`) et sont en IDLE.
-**Pendant la session : uniquement `SendMessage` — jamais de spawn**, sauf les agents `ponctuel` de la table
-(`security`, `infra`, `marketing`…) : spawnés à la demande par leur commande ou leur phase, puis arrêtés (`TaskStop`).
+Les agents `socle` sont spawnés au démarrage (`/start-session`) ; la team du milestone l'est au GATE 2 (`agents/context/MILESTONE_CADRAGE.md`). Tous attendent en IDLE.
+**Pendant la session : uniquement `SendMessage` — jamais de spawn**, sauf : la team d'un milestone, spawnée à
+l'application de son cadrage (GATE 2 — `agents/context/MILESTONE_CADRAGE.md` section 4) ; les agents `ponctuel` de la
+table (`security`, `infra`, `marketing`…), spawnés à la demande puis arrêtés (`TaskStop`).
 
 ```
 SendMessage({ to: "<nom-canonique>", content: "<tâche complète>" })

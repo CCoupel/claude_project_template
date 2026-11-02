@@ -73,7 +73,8 @@ Le rapport QA inclut :
 
 ## Agent
 
-Dispatcher via `SendMessage` (teammate en IDLE depuis `/start-session`) :
+Dispatcher via `SendMessage` — `qa` est de type `milestone` (`agents/context/MILESTONE_CADRAGE.md` 4.1) : present si un
+milestone en cours l'a dans sa team ; sinon le spawner d'abord (meme prompt que `start-session.md` etape 4) :
 `SendMessage({to: "qa", content: ...})`
 
 Spec : `.claude/agents/qa.template.md` (+ `.claude/agents/qa.md` si présent)

@@ -119,7 +119,7 @@ s'il existe, sinon de `.claude/agents/teamleader.template.md`. Les comparer a `.
   seule fois les commandes a taper : `/model <modele>` et `/effort <effort>`, puis continuer. Ne jamais tenter de
   changer soi-meme le modele.
 
-### Etape 4 — Creation de la TEAM et spawn de tous les teammates
+### Etape 4 — Creation de la TEAM et spawn du socle (+ team du milestone en cours)
 
 **Sans demander confirmation** :
 
@@ -130,10 +130,18 @@ s'il existe, sinon de `.claude/agents/teamleader.template.md`. Les comparer a `.
    frontmatter de `.claude/agents/<nom>.template.md`. Les passer **explicitement** au spawn — sans cela le teammate
    herite du modele et de l'effort de la session du teamleader.
 
-3. **Spawner les teammates permanents en parallèle** — lire la liste dans CLAUDE.md section "Agents Disponibles", colonne `Spawn = permanent` :
+3. **Spawner en parallèle** (types de spawn : `agents/context/MILESTONE_CADRAGE.md` 4.1) — table « Agents Disponibles »
+   de CLAUDE.md, colonne `Spawn` :
+   - tous les agents `socle` (valeur historique `permanent` = `socle`) ;
+   - **si un workflow est en cours** (étape 2 : `RESUME=1`, ou état non terminé) : en plus, les agents de
+     `cadrage.team` de `.claude/workflow-state.json`. `cadrage` absent : si `plan` est renseigné (GATE 2 passé —
+     workflow démarré en v3), tous les agents `milestone` ; sinon (interrompu avant le GATE 2) rien de plus, la team
+     sera spawnée à la validation du cadrage ;
+   - jamais les agents `milestone` hors team ni les `ponctuel` — ils sont spawnés au GATE 2 du prochain milestone
+     ou à la demande.
 
 ```
-Pour chaque agent avec Spawn = permanent :
+Pour chaque agent retenu :
 Task({
   name: "<nom-canonique>",
   subagent_type: "<nom-canonique>",
@@ -161,12 +169,13 @@ Task({
 })
 ```
 
-> Les agents `ponctuel` (ex: `security`, `infra`) sont spawned à la demande par leur commande dédiée — ne pas les inclure ici.
+> Les agents `ponctuel` (ex: `security`, `infra`, `marketing`) sont spawnés à la demande par leur commande ou leur phase ;
+> les agents `milestone` le sont à l'application du cadrage (GATE 2) — ne pas les inclure ici hors milestone en cours.
 
 4. **Attendre les ACTIF de tous les teammates** avant de continuer.
 
 > Après cette étape, le teamleader n'utilise plus que `SendMessage` — aucun nouveau spawn pendant la session, sauf
-> les agents `ponctuel` (spawnés à la demande par leur commande ou leur phase).
+> la team d'un milestone à l'application de son cadrage (GATE 2) et les agents `ponctuel` (à la demande).
 
 ### Etape 4bis — Reprise du workflow interrompu (si `RESUME=1`)
 
@@ -257,7 +266,7 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 
 ---
 
-**Team** : tous les teammates sont en IDLE et prêts à recevoir des tâches
+**Team** : socle en IDLE (`planner`, `deployer`) [+ team du milestone en cours : <liste>] — la team d'un nouveau milestone est spawnée à la validation de son cadrage (GATE 2)
 
 **Commandes disponibles** :
 - `/feature <description>` — Nouvelle feature complete
@@ -279,6 +288,6 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 - **Jamais de purge de `_work/` sans avoir verifie l'absence de workflow interrompu** (etape 2)
 - La TEAM est **toujours creee** sans demander confirmation
 - Le nom de la TEAM est **toujours** `{TEAM_NAME}` (defini dans CLAUDE.md)
-- Tous les teammates sont spawned au démarrage et passent en IDLE
-- Pendant la session : **uniquement SendMessage** — aucun nouveau spawn, sauf agents `ponctuel` à la demande
+- Les agents `socle` (et la team d'un milestone en cours) sont spawnés au démarrage et passent en IDLE
+- Pendant la session : **uniquement SendMessage** — aucun nouveau spawn, sauf team du milestone (GATE 2) et agents `ponctuel` à la demande
 - Les teammates attendent un ordre explicite du teamleader via SendMessage

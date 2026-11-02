@@ -4,6 +4,9 @@
 > Agents concernes : tous les agents `dev-*`
 >
 > **Prerequis** : Respecter `context/COMMON.md` (regles generales) et le contexte technique : `CLAUDE.md` « Configuration Projet », `.claude/project-config.json`, ton compagnon `dev-*.md` (perimetre, conventions projet)
+>
+> **Cadrage du milestone** (`context/MILESTONE_CADRAGE.md` section 5) : si l'ordre le precise, tu ecris aussi les tests
+> de tes changements (`test_writer: false`) et/ou tiens `CHANGELOG.md` dans tes commits (`doc: dev`).
 
 ---
 
