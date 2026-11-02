@@ -5,6 +5,10 @@
 
 ### Phase 3 — Revue + QA (parallelisation par defaut)
 
+> **Cadrage** (`context/MILESTONE_CADRAGE.md` section 5) : `cadrage.review == false` → **pas de `code-reviewer`** : seul le
+> dispatch `qa` ci-dessous a lieu (label `EN QA` directement), son verdict ouvre la Phase 4 ; un cycle = un NOT
+> VALIDATED de QA. `cadrage.test_writer == false` → les tests ont ete commites par les agents DEV (SHA de leurs DONE).
+
 > `ISSUE_NUMS[]` non vide → label `EN REVIEW` sur toutes les issues (ordre à `deployer` — `commands/context/GITHUB.md` §9, `gh issue edit`)
 > Critere `qa_parallelizable` du plan (voir `implementation-planner.md`, section "Parallelisation Review/QA") —
 > sans plan, heuristique CDP : `true` par defaut. Mecanisme complet : `context/QUALITY.md` section 12.
@@ -103,6 +107,11 @@ SUBAGENT_NAMES[] = []
   → Si cycle > 3 : **Escalade utilisateur** ← GATE 3
 
 ### Phase 4 — Documentation Draft
+
+> **Cadrage** : `cadrage.doc == dev` → **pas de Phase 4** : `CHANGELOG.md` et la doc touchee ont ete mis a jour par les
+> agents DEV dans leurs commits (controle : ligne `CHANGELOG : mis a jour` de leurs `DONE` — le teamleader ne lit pas
+> le diff ; ligne absente → renvoyer l'agent DEV), puis appliquer directement
+> « Apres reception » ci-dessous (labels `DONE`, push, CI) comme si `doc-updater` avait repondu DONE.
 
 Le code est REVIEW-approuve et QA VALIDATED (voir Phase 3) — dispatcher `doc-updater` :
 

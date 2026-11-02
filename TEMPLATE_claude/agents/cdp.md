@@ -127,7 +127,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 
 ## Agents selon le Workflow
 
-La team est gérée par le Claude principal. Tous les agents sont **en IDLE depuis `/start-session`** — le teamleader dispatche via `SendMessage` uniquement. Agents à contacter selon le workflow :
+La team est gérée par le Claude principal. Les agents `socle` sont **en IDLE depuis `/start-session`**, la team du milestone depuis l'application de son cadrage (GATE 2 — `context/MILESTONE_CADRAGE.md`) — le teamleader dispatche via `SendMessage`. Agents à contacter selon le workflow :
 
 | Workflow | Agents |
 |----------|--------|
@@ -177,8 +177,13 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 ## Workflow Standard
 
 ```
-ROUTING → PLAN → DEV (arbre planner) → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] → PROD
+ROUTING → PLAN (+ cadrage) → GATE 2 → DEV (arbre planner) → [REVIEW ∥ QA] → DOC draft → [QUALIF ∥ DOC finalize] → PROD
 ```
+
+> **Cadrage du milestone** (`context/MILESTONE_CADRAGE.md` — a lire au lancement d'un milestone) : intensite de depart
+> au lancement, cadrage complet (options `test_writer` / `review` / `qualif` / `doc` + team) propose par le planner et
+> valide au GATE 2, puis applique (spawn de la team). Les phases ci-dessous decrivent le cadrage `complet` ; une option
+> desactivee retire l'etape correspondante (MILESTONE_CADRAGE.md section 5) — jamais les invariants (QA, CI, GATE 4).
 
 > DEV : dispatch selon l'Arbre d'Execution du plan (batches sequentiels, agents en parallele par batch).
 > REVIEW et TEST-WRITER s'executent en parallele apres DEV.
@@ -207,6 +212,7 @@ ROUTING → PLAN → DEV (arbre planner) → [REVIEW ∥ QA] → DOC draft → [
 
 | Phase | Fichier |
 |-------|---------|
+| Lancement d'un milestone — cadrage (intensité, options, team) | `context/MILESTONE_CADRAGE.md` |
 | 1 Planification — 2 Développement + Tests | `context/CDP_PHASES_PLAN_DEV.md` |
 | 3 Revue + QA — 4 Documentation draft | `context/CDP_PHASES_REVIEW_QA.md` |
 | 5 Build + Publish + QUALIF — validation manuelle (GATE 4) — 6 PROD | `context/CDP_PHASES_RELEASE.md` |
@@ -263,6 +269,9 @@ Phase C : Validation fonctionnelle → Phase D : Merge
 
 ## Gestion des Cycles
 
+> Les agents absents du cadrage du milestone (`test-writer`, `code-reviewer`, `doc-updater` selon `cadrage`) ne sont ni
+> CLEAR ni redispatches ci-dessous : leur travail est fait par les agents DEV (tests, CHANGELOG) ou n'a pas lieu (REVIEW).
+
 ```
 MAX_CYCLES = 3
 
@@ -295,9 +304,9 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 |-------|--------|-----------|
 | GATE 1   | Apres routing | "Je demarre ?" — Oui, demarrer (Recommandé) : je lance l'execution selon ma comprehension ci-dessus / Non : je precise d'abord un point de ma comprehension |
 | GATE 1.5 | Planner BLOQUE ou FAILED | "Comment lever cette ambiguite bloquante ?" — une `AskUserQuestion` par ambiguite identifiee (option par interpretation possible + description de son impact sur le plan) |
-| GATE 2   | Plan valide par CDP | "Valides-tu ce plan et ces contrats API ?" — Oui, valider (Recommandé) : le DEV demarre sur cette base / Non : je revois le plan avant de redemander validation |
+| GATE 2   | Plan (et cadrage du milestone) valide par CDP | "Valides-tu ce plan et ce cadrage ?" — Oui, valider (Recommandé) : cadrage applique (team spawnee), le DEV demarre sur cette base / Ajuster le cadrage : l'utilisateur precise (options, team), redispatch au planner / Non : je revois le plan avant de redemander validation |
 | GATE 2b  | Conflit merge non resolvable | "Comment resoudre ce conflit backend/frontend ?" — une option par strategie de resolution proposee, description = ce qui change concretement pour chaque camp |
-| GATE LOT | Milestone avec lots : lot QA valide et deploye en QUALIF (apres Phase 5) ; **auto-valide si aucune issue `VALID-HUMAINE`** (aucune question) ; sinon synthese + chemin + ouverture Chrome de la procedure (regles ci-dessous) | "Lot LOT-N conforme en QUALIF — la suite ?" — Valider le lot et passer au suivant (Recommandé) : push, CI, fermeture des issues du lot, lot suivant / Valider le lot et publier le milestone en PROD : publication anticipee, lots restants deplaces vers un autre milestone (dernier lot : « Valider et publier en PROD ») / Refuser : retour DEV (Cas A) ou PLAN (Cas B) avec l'ecart decrit. **Aucune** validation apres la CI du lot. Deroulement : `commands/context/GITHUB.md` §9.5b |
+| GATE LOT | Milestone avec lots : lot QA valide et deploye en QUALIF (apres Phase 5 ; cadrage sans QUALIF : artefact local du BUILD) ; **auto-valide si aucune issue `VALID-HUMAINE`** (aucune question) ; sinon synthese + chemin + ouverture Chrome de la procedure (regles ci-dessous) | "Lot LOT-N conforme en QUALIF — la suite ?" — Valider le lot et passer au suivant (Recommandé) : push, CI, fermeture des issues du lot, lot suivant / Valider le lot et publier le milestone en PROD : publication anticipee, lots restants deplaces vers un autre milestone (dernier lot : « Valider et publier en PROD ») / Refuser : retour DEV (Cas A) ou PLAN (Cas B) avec l'ecart decrit. **Aucune** validation apres la CI du lot. Deroulement : `commands/context/GITHUB.md` §9.5b |
 | GATE 3   | 3 cycles atteints | "3 cycles ont echoue sans validation QA — comment continuer ?" — Continuer (Recommandé) : un cycle supplementaire, meme scope / Abandonner : retour au CDP pour redefinir le scope |
 | GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED ; **toujours pose** ; synthese + chemin + ouverture Chrome pour les scenarios `HUMAIN` restants (regles ci-dessous) | "QUALIF conforme — lancer le deploiement PROD ?" — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate : retour DEV avec l'ecart decrit. La commande `/deploy prod` equivaut a « Oui » |
 | GATE 4b  | Infra QUALIF invalide | "Comment proceder face a cette incoherence infra/procedure QUALIF (voir rapport) ?" — une option par correction possible, description = ce qu'elle implique |

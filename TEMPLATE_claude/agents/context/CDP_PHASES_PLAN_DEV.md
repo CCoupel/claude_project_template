@@ -14,9 +14,15 @@
 SendMessage({ to: "planner", content: "
   Cree un plan d'implementation pour : [description]
   Contrats API a creer dans contracts/ si nouveaux endpoints.
-  Retourne le plan structure avec : taches ordonnees, dependances, risques.
+  Intensite de depart : [leger|complet] — [raison] ; QUALIF disponible : [oui|non]
+  (cadrage du milestone : context/MILESTONE_CADRAGE.md — section « Cadrage du milestone » du plan)
+  Retourne le plan structure avec : taches ordonnees, dependances, risques, cadrage.
 " })
 ```
+
+> **Intensité de départ** : calculée au lancement du milestone à partir du `DONE` de `MILESTONE START`
+> (`context/MILESTONE_CADRAGE.md` 3.1). Milestone déjà cadré (issue entrante, retour en PLAN) : transmettre le cadrage
+> en vigueur à la place.
 
 **Issue entrante en cours de milestone** (`/bugfix`, `/hotfix` ou ajout alors qu'un plan existe déjà et que du DEV est lancé) :
 même branche, pas de worktree ni de livraison séparés. Dispatcher au planner `Issue entrante #N à intégrer au plan du milestone
@@ -45,9 +51,14 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 - Non conforme → renvoyer au planner pour correction avant toute suite
 - Lire `contracts/CHANGELOG.md` — si changements **BREAKING** détectés, les signaler au GATE 2 :
   `⚠ Breaking changes détectés : [liste] — impact sur les clients existants`
+- Vérifier la section « Cadrage du milestone » (`context/MILESTONE_CADRAGE.md` 3.2) : chaque option qui s'écarte de
+  l'intensité est justifiée, `qualif` est `false` si la QUALIF n'est pas disponible, la team couvre chaque agent DEV
+  assigné à une tâche (+ `qa`, et `test-writer` / `code-reviewer` / `doc-updater` selon les options)
 - Plan avec section `Prérequis infra (à fournir par l'utilisateur)` : la présenter **en tête** du GATE 2, avec la
   liste exacte des actions/commandes — ce sont les seuls écarts qu'`infra` ne peut pas corriger seul
-- **Présenter le plan validé à l'utilisateur, avec la maquette si le plan en contient une** ← GATE 2
+- **Présenter le plan validé à l'utilisateur, avec la maquette si le plan en contient une, et le résumé du cadrage**
+  (intensité, options modifiées, team) ← GATE 2 — question « Valides-tu ce plan et ce cadrage ? »
+  (`context/MILESTONE_CADRAGE.md` 3.3)
 
 **Corrections demandées au GATE 2 (plan et/ou maquette)** :
 - Recueillir les corrections de l'utilisateur
@@ -65,6 +76,9 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   `.claude/workflow/plan-<version>.md` et mettre à jour `.claude/workflow-state.json` (`plan`, et `lots` si le plan a
   une table « Lots ») — `_work/` peut être purgé, la reprise après interruption repart de cette copie
   (`commands/context/CDP_WORKFLOWS.md` section 12)
+- **Appliquer le cadrage** avant tout ordre DEV (`context/MILESTONE_CADRAGE.md` section 4) : `cadrage` dans
+  `workflow-state.json`, ordre `MILESTONE CADRAGE` à `deployer`, spawn des agents de la team absents (attendre leurs
+  `ACTIF`) et arrêt des agents `milestone` hors team
 - **Plan avec table « Lots »** : avant GATE 2, vérifier que chaque issue du milestone figure dans un seul lot ou sous-lot nommé `LOT-<entier>` ou `LOT-<entier>.<entier>` (sinon renvoyer le plan au planner). Les lots sont traités **un à la fois**, dans l'ordre (`LOT-1`, `LOT-2`…) : cycle complet DEV → REVIEW → QA → Phase 5 (QUALIF) → **GATE LOT** (l'utilisateur teste et valide) → push → CI verte → fermeture des issues du lot (`GITHUB.md` §9.5b), puis lot suivant. Aucune validation après la CI. Les issues des lots non lancés restent `PRET`. Après validation (GATE 2), envoyer à `deployer` **un seul ordre** recopiant la table « Lots » du plan validé : `PRET` sur toutes les issues **et** le lot de chacune, **tous les lots** d'un coup (forme exacte et vérifications : `commands/context/GITHUB.md` §9.0 ; nommage et re-découpage : §9.11). Attendre `LABELS DONE`, comparer son récapitulatif à la table du plan (toute issue sans lot ou mal lotie → ordre correctif) avant le premier ordre DEV
 
 **Maquette au GATE 2** (convention : `context/COMMON.md` section 14) :
@@ -127,11 +141,16 @@ SendMessage({ to: "[agent]", content: "
   Commits atomiques.
   Tests : boucle rapide seulement (build + lint + typecheck + tests feature de tes fichiers,
   `commands.test_fast`) — jamais la suite complete (voir context/COMMON.md 15.2).
+  [cadrage.test_writer == false] Ecris aussi les tests de tes changements (section « Tests Requis » du plan,
+  rangement tests/INDEX.md comme test-writer) et indique `Validation humaine : oui|non` dans ton DONE.
+  [cadrage.doc == dev] Mets a jour CHANGELOG.md (section X.Y.Z, et la doc touchee) dans ton commit ;
+  ajoute `CHANGELOG : mis a jour` a ton DONE.
   Reponse : DONE/FAILED + fichiers modifies + SHA commit.
 " })
 ```
 
-**Message test-writer (toujours Batch 1) :**
+**Message test-writer (Batch 1, si `cadrage.test_writer`)** — sinon les agents DEV écrivent les tests (message DEV
+ci-dessus, `context/MILESTONE_CADRAGE.md` section 5) :
 ```
 SendMessage({ to: "test-writer", content: "
   Ecris les tests pour : [description]
@@ -145,7 +164,8 @@ SendMessage({ to: "test-writer", content: "
 " })
 ```
 
-**Bugfix — RED CHECK avant DEV :** le test-writer est dispatche **avant** les dev-* pour livrer le test de
+**Bugfix — RED CHECK avant DEV :** le test-writer (ou, si `cadrage.test_writer == false`, l'agent DEV concerne, dans
+un ordre dedie « test de reproduction seul, sans le fix ») est dispatche **avant** le fix pour livrer le test de
 reproduction (statut `regression`). Des son DONE, dispatcher `qa` en `Scope : red-check` (ce seul test, sur
 le code non corrige — il doit **echouer**). `RED CHECK KO` (le test passe) → retour au test-writer, sans
 compter de cycle. `RED CHECK OK` → lancer le DEV. Voir `context/COMMON.md` 15.5.
@@ -163,7 +183,7 @@ SendMessage({ to: "dev-backend", content: "
 " })
 ```
 
-- **Retour `TEST-WRITER DONE`** (dès réception, avant REVIEW) : lire sa ligne `Validation humaine` et envoyer à `deployer`
+- **Retour `TEST-WRITER DONE`** (ou `DONE` des agents DEV si `cadrage.test_writer == false`) (dès réception, avant REVIEW) : lire sa ligne `Validation humaine` et envoyer à `deployer`
   l'ordre `Labels validation humaine` (`GITHUB.md` §9.13) ; attendre `LABELS DONE`. Ce label décide du GATE LOT
   (règle « Validation humaine ou automatique » de `cdp.md`).
 - DONE → Phase REVIEW (test-writer a déjà produit ses livrables)

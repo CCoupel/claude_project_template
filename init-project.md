@@ -489,11 +489,13 @@ registry_report() {
     # (a defaut — agent hors table, ex. teamleader — le nom du fichier ; generic = template commun des instances)
     line=$(grep '^| ' CLAUDE.md 2>/dev/null | grep -F ".claude/agents/${name}.template.md" | head -1)
     teammate=$(cut -d'|' -f2 <<<"$line" | tr -d ' `')
-    # Spawn = colonne "Spawn" de la meme ligne : permanent → au /start-session ; ponctuel ou agent hors table
-    # (pr-reviewer...) → a la demande du teamleader ; teamleader/cdp = le Claude principal
+    # Spawn = colonne "Spawn" de la meme ligne (MILESTONE_CADRAGE.md 4.1) : socle (ou historique permanent) →
+    # au /start-session ; milestone → team du milestone (GATE 2) ; ponctuel ou agent hors table (pr-reviewer...)
+    # → a la demande du teamleader ; teamleader/cdp = le Claude principal
     case "$(cut -d'|' -f5 <<<"$line" | tr -d ' ')" in
-      permanent) spawn="au /start-session" ;;
-      *)         spawn="a la demande du teamleader" ;;
+      socle|permanent) spawn="au /start-session" ;;
+      milestone)       spawn="si dans la team du milestone" ;;
+      *)               spawn="a la demande du teamleader" ;;
     esac
     case "$name" in
       teamleader) teammate="team-lead"; spawn="— (Claude principal, jamais spawne)" ;;
@@ -514,9 +516,10 @@ registry_report() {
   done
   # Instances d'agents generiques : template commun generic + specification (compagnon obligatoire)
   gtag=$(jq -r '.agents.registry[]? | select(.name=="generic") | .tag' "$CFG")
-  jq -r '.agents.generic[]? | [.name, (.spawn // "permanent")] | @tsv' "$CFG" | while IFS=$'\t' read -r n spawn; do
+  jq -r '.agents.generic[]? | [.name, (.spawn // "socle")] | @tsv' "$CFG" | while IFS=$'\t' read -r n spawn; do
     comp=$([ -s ".claude/agents/generic.${n}.md" ] && echo "✓ generic.${n}.md (spec)" || echo "✗ generic.${n}.md manquante")
-    [ "$spawn" = "permanent" ] && spawn="au /start-session" || spawn="a la demande du teamleader"
+    case "$spawn" in socle|permanent) spawn="au /start-session" ;; milestone) spawn="si dans la team du milestone" ;;
+                     *) spawn="a la demande du teamleader" ;; esac
     echo "| ${n} | generic.template.md | agents/generic.md | ${gtag:-—} | (voir generic) | ${comp} | ${spawn} |"
   done
   ctx_report
@@ -591,7 +594,8 @@ dernier changement restant dans `changed_in`), son etat (`🟢 a jour` ; `⚠ en
 dispo)`, la cible etant la version fetchee), la presence d'un compagnon `<nom>.md`
 (adaptations projet ; pour une instance generique, sa specification `generic.<nom>.md`) et le **mode de spawn**
 (colonne `Spawn` de la table « Agents Disponibles » de `CLAUDE.md`, `agents.generic[].spawn` pour une instance) :
-`au /start-session` (permanent), `a la demande du teamleader` (ponctuel, ou agent absent de la table comme
+`au /start-session` (socle), `si dans la team du milestone` (milestone — `agents/context/MILESTONE_CADRAGE.md` 4.1),
+`a la demande du teamleader` (ponctuel, ou agent absent de la table comme
 `pr-reviewer`), ou `— (Claude principal)` pour `teamleader`/`cdp`, qui ne sont pas des teammates spawnes. Il est suivi du tableau
 des **contextes partages** (`ctx_report`) : meme registre sous la cle `contexts.registry[]` de
 `project-config.json`, memes champs (`name` = chemin sans `.md`, ex. `agents/context/COMMON`), meme en-tete de
@@ -1391,7 +1395,7 @@ AskUserQuestion (texte libre via "Autre") :
   (planner, qa, deployer, dev-*...) ni `generic`
 - Role en une ligne
 - Specification : perimetre, entrees, livrables (formats/chemins), outils/charte, criteres de validation
-- Spawn : permanent (defaut — spawne au /start-session) | ponctuel (spawne a la demande)
+- Spawn : socle (defaut — spawne au /start-session) | milestone (si le planner l'inclut dans la team du milestone) | ponctuel (spawne a la demande)
 ```
 
 Puis « Ajouter une autre instance ? ». Les reponses alimentent `agents.generic[]` et la specification
@@ -1679,11 +1683,14 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
   "marketing": {
     "site": "auto"
   },
+  "milestone": {
+    "defaults": { "patch": "leger", "minor": "complet", "major": "complet" }
+  },
   "agents": {
     "idle_ttl_minutes": 15,
     "idle_warning_interval_minutes": 5,
     "generic": [
-      { "name": "redacteur-pptx", "role": "Redaction de presentations PowerPoint", "spawn": "permanent" }
+      { "name": "redacteur-pptx", "role": "Redaction de presentations PowerPoint", "spawn": "socle" }
     ],
     "registry": []
   }
@@ -1720,6 +1727,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `testing.regression_at_qa` | Defaut `gated` (`gated` \| `parallel` \| `none`) — `context/COMMON.md` 15.3 |
 | `testing.full_regression_at` | Defaut `qualif` (`qualif` \| `build` \| `prod`) — `context/COMMON.md` 15.4 |
 | `testing.coverage_min` | Defaut `70` (seuil minimal de couverture, en %) |
+| `milestone.defaults` | Intensite de depart d'un milestone selon son type de version (`patch` / `minor` / `major` → `leger` / `complet`). Defaut `patch: leger`, `minor` et `major: complet`. Le cadrage complet (options, team) est propose par le planner et valide au GATE 2 : `agents/context/MILESTONE_CADRAGE.md`. Absent = `complet` partout |
 | `testing.lot_max_tests` | Defaut `50` (nombre max de cas de test par lot ; QA execute et rapporte lot par lot) |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
@@ -1759,7 +1767,7 @@ done
 Remplir ensuite chaque compagnon cree avec les reponses de l'Etape 5d (`## Stack` et `## Toolchain et commandes`
 **non vides** pour `dev-generic`, `## Perimetre` pour une instance) — trackes git, jamais ecrases par la sync.
 Ajouter une ligne par agent de stack dans la table `## Agents Disponibles` de `CLAUDE.md` :
-`| <name> | <role> | .claude/agents/<name>.template.md | permanent |` (la ligne `dev-<categorie>` du template est
+`| <name> | <role> | .claude/agents/<name>.template.md | milestone |` (la ligne `dev-<categorie>` du template est
 retiree quand la categorie a des instances).
 
 En **reconfiguration** (stack modifiee), meme procedure : un agent de stack dont la `source` change (ex.
@@ -2558,6 +2566,13 @@ jamais de milestone `v0.1.0` cree ici)
 
 #### Etape d0 — Registre des agents
 
+> **Migration v3 → v4 (cadrage par milestone)** — a l'entree de l'option d, avant d2 : si `milestone.defaults` est absent
+> de `project-config.json`, l'ajouter avec les valeurs par defaut (`patch: leger`, `minor`/`major: complet`) et
+> le signaler dans le rapport d8. Les colonnes `Spawn` `permanent` de la table « Agents Disponibles » sont
+> reecrites par d3b/d5d selon le template (`socle` / `milestone` / `ponctuel`) ; une instance generique garde son
+> `agents.generic[].spawn` (`permanent` = `socle`). Un milestone deja en cours garde son deroulement : sans `cadrage`
+> dans `workflow-state.json`, il est mene en `complet` (`agents/context/MILESTONE_CADRAGE.md` section 6).
+
 Si `agents.registry` est absent de `project-config.json` → section "Registre des agents", "Migration —
 projet anterieur au registre", avant toute autre etape. Le registre est ensuite la reference des etapes
 d2, d3, d3b et d5 pour les agents.
@@ -2836,7 +2851,7 @@ while read -r n; do [[ -n "$n" ]] && EXPECTED_TEAMMATES+=("$n"); done < <(jq -r 
 while read -r n; do [[ -n "$n" ]] && EXPECTED_TEAMMATES+=("$n"); done < <(jq -r '.agents.generic[]?.name' .claude/project-config.json)
 ```
 
-Ligne attendue d'un agent de stack (registre) : `| <name> | <role> | .claude/agents/<name>.template.md | permanent |`,
+Ligne attendue d'un agent de stack (registre) : `| <name> | <role> | .claude/agents/<name>.template.md | milestone |`,
 `<role>` = `agents.registry[].role` (a defaut, le role de la ligne `dev-<categorie>` du template) — une ligne par
 instance.
 

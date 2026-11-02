@@ -170,7 +170,7 @@ provenance en première ligne, détection de dérive par empreinte, tableau affi
 Chaque init / sync / réinstallation se termine par un **tableau des teammates** : nom, fichier, template source,
 version actuelle (celle de la copie déployée), état (`🟢 a jour`, `⚠ en retard → <cible>`, `📌 epingle (<cible> dispo)`) et présence d'un compagnon `<nom>.md` (ou de la
 spécification `generic.<nom>.md` pour une instance générique), et **mode de spawn** : `au /start-session`
-(agents `permanent`), `a la demande du teamleader` (`ponctuel` : `security`, `infra`, `marketing`, `pr-reviewer`...), ou
+(agents `socle`), `si dans la team du milestone` (agents `milestone`), `a la demande du teamleader` (`ponctuel` : `security`, `infra`, `marketing`, `pr-reviewer`...), ou
 `— (Claude principal)` pour `teamleader` et `cdp`, qui ne sont pas des teammates : ce sont les specs que le Claude
 principal lit pour jouer les deux rôles.
 
@@ -251,6 +251,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │       ├── CDP_PHASES_PLAN_DEV.md      # Phases 1-2 du CDP (lues à l'entrée de la phase)
 │       ├── CDP_PHASES_REVIEW_QA.md     # Phases 3-4
 │       ├── CDP_PHASES_RELEASE.md       # Phases 5-6 (QUALIF, GATE 4, PROD)
+│       ├── MILESTONE_CADRAGE.md        # Cadrage par milestone : intensité, options, team (v4)
 │       ├── VALIDATION_COMMON.md
 │       └── GITHUB.md
 │
@@ -353,7 +354,7 @@ spécifications sont trackées git et jamais écrasées par la sync ; ajouter un
 - **Branche courante maîtrisée** : une seule branche de travail à la fois (`milestone/vX.Y.Z`), fixée par le teamleader — seul propriétaire du HEAD du checkout principal. Les agents la consomment sans pouvoir la changer (ni `checkout`/`switch`/`reset`/`rebase`/`merge`/`stash`, ni retour à un commit précédent) : ils la vérifient au démarrage (écart → `BLOQUE`) et passent par `BRANCH REQUEST` au teamleader, qui change de branche en `BRANCH CHANGE PENDING` → checkout → `BRANCH CHANGE DONE` (tree propre exigé, confirmation utilisateur pour un retour en arrière). Un `/bugfix` ou `/hotfix` lancé pendant un milestone n'ouvre pas sa branche : le planner l'intègre **en priorité** au plan du milestone, livré avec lui. Les worktrees restent libres mais sans nouvelle branche (`git worktree add --detach`) ; `pr-reviewer` et la publication PROD (merge vers `main`, rollback) passent par un worktree détaché + `git push origin HEAD:main`. Les tests (`qa`, `sub-qa`) ne tournent que sur du code commité (`git status --porcelain` vide, sinon `BLOQUE`). Règle posée dans `agents/context/COMMON.md` « Branche Courante et Historique »
 - **Nettoyage des branches** : après un DEPLOY PROD réussi, `deployer` supprime en **local et en remote** la branche du milestone et toute branche dont la PR est `MERGED` (`agents/deploy.md` Étape 6) ; jamais `main`, `gh-pages` ni un milestone actif ; une branche à PR fermée non mergée est signalée, pas supprimée ; garde-fou : une branche ayant des commits absents de `origin/main` (`git log origin/main..<branche>` non vide, ex. PROD en `promote` sans merge) n'est jamais supprimée. La GitHub Release étant créée par la CI de release (C5), `deployer` y pose les notes (`gh release edit`) et ne la crée qu'en repli
 - **Validation CDP** : à réception de chaque DONE, le CDP lit le rapport ou handoff référencé et vérifie la conformité avant de continuer (jamais le code lui-même)
-- **Teammates persistants** : tous les agents `permanent` sont spawned au `/start-session` (les `ponctuel` à la demande) et restent en IDLE — le teamleader n'utilise que `SendMessage` pendant la session, jamais de nouveau spawn
+- **Team par milestone** (v4) : au `/start-session`, seul le **socle** est spawné (`planner`, `deployer`) ; la **team du milestone** (agents DEV, `test-writer`, `code-reviewer`, `qa`, `doc-updater` selon le cadrage) est spawnée à la validation du plan (GATE 2) et respawnée au `/start-session` tant que le milestone est en cours ; les `ponctuel` (`security`, `infra`, `marketing`) à la demande. Hors de ces moments, le teamleader n'utilise que `SendMessage`
 - **Reprise après interruption** : le CDP écrit `.claude/workflow-state.json` à chaque transition (`status`, phase, `lots` avec le lot courant et sa phase, `plan`) et copie le plan validé au GATE 2 dans `.claude/workflow/plan-<version>.md` (gitignoré, hors `_work/`). Si le terminal est tué en plein lot, `/start-session` détecte le workflow non terminé **avant** toute purge et propose *Reprendre* (purge sélective : seuls `_work/tmp/` et `_work/tasks/` ; rapports, handoffs, `tests-ledger.md` conservés) ou *Abandonner*. À la reprise, le teamleader rapproche l'état de git (commits, arbre non commité → WIP / stash / jeter) et des labels GitHub, puis rejoue la phase interrompue depuis son début, sans rejouer les phases ni lots terminés. Règles : `commands/start-session.md` étapes 2 et 4bis, `commands/context/CDP_WORKFLOWS.md` §12
 - **Teamleader = interlocuteur unique** : les teammates s'adressent toujours au teamleader (adresse `SendMessage` : `team-lead`) — jamais à un « CDP » distinct. Quand le teamleader a besoin d'une information de l'utilisateur, il la présente **toujours via l'outil `AskUserQuestion`** (2 à 4 options avec description détaillée par option, valeur par défaut marquée "(Recommandé)", "Autre" géré automatiquement par l'outil). Les questions des teammates suivent la même chaîne : le teammate envoie un `BLOQUE` avec questions + options chiffrées (format dans `TEAMMATES_PROTOCOL.md`), le teamleader les convertit en `AskUserQuestion` puis renvoie la réponse au teammate — jamais de liste de questions ni de `[O/n]` en texte dans le chat
 
@@ -376,6 +377,31 @@ Détail complet du protocole : `TEMPLATE_claude/agents/context/TEAMMATES_PROTOCO
 ---
 
 ## Workflows
+
+### Cadrage du milestone (v4)
+
+Deux niveaux de réglage. Le **projet** (`/init-project`) fixe ce qui existe — stacks, environnements (QUALIF ou non),
+CI — et les valeurs par défaut des milestones (`milestone.defaults` : `patch` → léger, `minor`/`major` → complet).
+Chaque **milestone** est cadré à son lancement :
+
+1. **Lancement** (1re ouverture de la branche) : le CDP calcule une **intensité de départ** — type de version, relevée à
+   « complet » si une issue porte `breaking`/`security` ou si le milestone compte plus de 5 issues.
+2. **Plan** : le planner, qui analyse le code, propose le **cadrage** — options `test_writer`, `review`, `qualif`, `doc`
+   (chacune justifiée si elle s'écarte de l'intensité) et la **team** (agents DEV des tâches, + `qa`, + selon options).
+3. **GATE 2** : l'utilisateur valide plan et cadrage en une seule question (ou les ajuste).
+4. **Application** : cadrage écrit dans `workflow-state.json` et dans un bloc « Cadrage » de la description GitHub du
+   milestone ; team spawnée, agents inutiles arrêtés.
+
+| Option | Léger | Complet | Désactivée |
+|---|---|---|---|
+| `test_writer` | non | oui | les agents DEV écrivent leurs tests |
+| `review` | non | oui | QA seule (`code-reviewer` à la demande) |
+| `qualif` | non | oui (si le projet a une QUALIF) | validation humaine sur l'artefact local, PROD sans QUALIF |
+| `doc` | agents DEV | `doc-updater` | CHANGELOG tenu par les agents DEV |
+
+**Invariants**, quelle que soit l'intensité : milestone et sa branche, versionnement, QA, CI verte, validation humaine
+avant PROD, historique GitHub. Un milestone garde son cadrage jusqu'à sa clôture. Hotfix : cadrage fixe (flux hotfix
+inchangé). Règles complètes : `TEMPLATE_claude/agents/context/MILESTONE_CADRAGE.md`.
 
 ### Phase Review/QA — parallélisation par défaut
 
@@ -803,6 +829,13 @@ puis toutes les minutes, après toute commande Bash et après chaque délégatio
 ```
 
 ---
+
+## Migration depuis v3 (cadrage par milestone)
+
+`/init-project` → « d) Synchroniser » : ajoute `milestone.defaults` à `project-config.json`, réécrit la colonne `Spawn`
+de la table « Agents Disponibles » (`permanent` → `socle` / `milestone` / `ponctuel` selon le template ; une instance
+générique garde sa valeur, `permanent` = `socle`). Un milestone déjà en cours, sans cadrage, est mené en « complet »
+avec toute la team ; le cadrage s'applique à partir du milestone suivant. Redémarrer le teamleader après la synchro.
 
 ## Migration depuis v1 ou v2
 

@@ -288,6 +288,16 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 - Changement d'architecture
 - Code concurrent ou sensible (races, transactions, etat partage)
 
+### 3f. Cadrer le milestone (intensite, options, team)
+
+Regles : `context/MILESTONE_CADRAGE.md` (sections 2, 3.2 et 4.1). Partir de l'**intensite de depart** transmise par
+le teamleader (`Intensite de depart : <leger|complet> — <raison>`, `QUALIF disponible : oui|non`), puis ajuster
+chaque option d'apres ton analyse — relever (`review: true` si le code touche l'authentification, des donnees
+sensibles ou une architecture partagee ; `test_writer: true` si une API publique ou un contrat change) ou abaisser,
+toujours avec une justification d'une ligne. `qualif` ne peut pas etre `true` si la QUALIF n'est pas disponible.
+Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent DEV assigne a au moins une tache,
+`test-writer` si `test_writer`, `code-reviewer` si `review`, `doc-updater` si `doc: agent`, `qa` toujours.
+
 ### 4. Evaluer les Risques
 
 - Complexite technique
@@ -422,6 +432,19 @@ Determiner si `qa` peut demarrer en parallele de `code-reviewer` (des que `test-
 |--------|-------------|--------|------------|
 | ... | Faible/Moyen/Eleve | ... | ... |
 
+## Cadrage du milestone
+> Regles : `context/MILESTONE_CADRAGE.md`. Intensite de depart recue : <leger|complet> — <raison>.
+
+| Option | Valeur | Justification (obligatoire si differente de l'intensite) |
+|--------|--------|-----------------------------|
+| intensite | leger / complet | <raison> |
+| test_writer | true / false | ... |
+| review | true / false | ... |
+| qualif | true / false | <false force si QUALIF non disponible> |
+| doc | agent / dev | ... |
+
+- Team : <agents `milestone` necessaires, ex. dev-backend, qa> — <raison de chaque agent DEV>
+
 ## Parallelisation Review/QA
 - qa_parallelizable: true|false
 - Justification : <1 ligne — scope, risque de rejet en review, sensibilite concurrence/architecture>
@@ -455,6 +478,7 @@ Resume :
 - Complexite : Moyenne
 - Maquette : <chemin du brouillon si interface, machine a etats ou architecture impactee ; sinon justification>
 - QA parallele a Review : Oui/Non (<raison si Non>)
+- Cadrage : <leger|complet> — options modifiees : <liste ou aucune> — team : <liste>
 
 Voulez-vous :
 a) Valider et lancer l'implementation

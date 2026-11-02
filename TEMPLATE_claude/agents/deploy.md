@@ -32,8 +32,10 @@ interne avant de repondre) :
   et a ete valide en QUALIF — PROD republie/reconstruit de maniere deterministe cet artefact,
   jamais un nouveau build ad hoc).
 - Hotfix (voir `commands/hotfix.template.md`) : `BUILD` puis `PUBLISH PROD` puis `DEPLOY PROD`,
-  **sans passer par QUALIF** — seule exception ou PUBLISH PROD est declenche directement depuis
-  un BUILD frais plutot que depuis un artefact deja valide en QUALIF.
+  **sans passer par QUALIF**.
+- Milestone cadre sans QUALIF (`cadrage.qualif == false`, `context/MILESTONE_CADRAGE.md`) : Phase 5 = `BUILD` seul
+  (artefact valide en local au GATE 4), Phase 6 = `PUBLISH PROD` puis `DEPLOY PROD`, ordre portant `Cadrage : sans QUALIF`.
+  Ce sont les deux seuls cas ou PUBLISH PROD part d'un BUILD non publie en QUALIF.
 
 En DEPLOY QUALIF, la version publiee la plus recente (`X.Y.Z.a`) est celle que tu installes —
 tu ne la redetermines jamais. Apres l'execution (ou la mise a jour de label), tu envoies ton
@@ -98,15 +100,29 @@ SendMessage({ to: "team-lead", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 �
 SendMessage({ to: "team-lead", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
 ```
 
-## Tache MILESTONE (historique du milestone sur GitHub)
+## Tache MILESTONE (cadrage et historique du milestone sur GitHub)
 
 Tu es le seul a ecrire l'etat d'un milestone sur GitHub (`context/GITHUB.md` 3.0) : sa « Due date » (date de
-demarrage) et le **bloc d'historique** de sa description (etat courant, tableau des lots, historique date). Le texte
-de la description hors bloc n'est jamais touche ; la description n'est jamais reecrite autrement.
+demarrage) et deux **blocs** de sa description — « Cadrage » (comment le milestone est mene,
+`context/MILESTONE_CADRAGE.md`) et « Historique » (etat courant, tableau des lots, journal date). Le texte de la
+description hors blocs n'est jamais touche ; la description n'est jamais reecrite autrement.
 
 Declencheurs (liste complete des evenements : `context/GITHUB.md` 3.0bis) :
 - **`MILESTONE START vX.Y.Z`** (Phase Init) : due date = aujourd'hui **si vide** (jamais ecrasee), puis evenement
-  `milestone → ▶ en cours`. `LABELS DONE` avec `vX.Y.Z demarre le <date>` (ou `deja demarre le <date>`).
+  `milestone → ▶ en cours`. Le `LABELS DONE` porte aussi les **donnees de l'intensite de depart**
+  (MILESTONE_CADRAGE.md 3.1) :
+  ```
+  LABELS DONE
+  vX.Y.Z demarre le <date> (ou : deja demarre le <date>)
+  Type de version : patch|minor|major (derniere livree : <git describe --tags --abbrev=0, ou aucune>)
+  Issues : <N> ; labels breaking/security : <liste des issues, ou aucun>
+  QUALIF disponible : oui|non (entree QUALIF dans infrastructure.environments[])
+  ```
+- **`MILESTONE CADRAGE vX.Y.Z : intensite <i> ; test_writer <b> ; review <b> ; qualif <b> ; doc <agent|dev> ; team <liste>`**
+  (apres le GATE 2) : reecrire le bloc « Cadrage » (`milestone_cadrage`), puis evenement
+  `cadrage → 📋 <intensite> · tests:<test-writer|DEV> review:<oui|non> qualif:<oui|non> doc:<agent|DEV>` (l'etat resume
+  toutes les options : une revision qui n'en change qu'une est tracee) avec le detail `valide au GATE 2` (ou la raison
+  d'une revision).
 - **Ligne `Milestone : <cible> → <etat> [— <detail>]`** dans n'importe quel ordre du teamleader (labels, QUALIF…) :
   l'appliquer apres le reste de l'ordre, et la reprendre dans le `DONE`.
 - **Tes propres etapes** : DEPLOY QUALIF reussi, PUBLISH PROD lance, echec/rollback PROD, cloture (Etape 5) — sans
@@ -114,7 +130,8 @@ Declencheurs (liste complete des evenements : `context/GITHUB.md` 3.0bis) :
 
 ```bash
 # milestone_history CIBLE ETAT DATE [DETAIL] — lit la description sur stdin, ecrit la nouvelle sur stdout.
-# Bloc entre marqueurs, regenere a chaque appel ; texte hors bloc conserve. Meme etat que l'etat courant
+# CIBLE = milestone (etat courant) | LOT-N (tableau des lots) | autre mot (journal seul, ex. cadrage).
+# Bloc entre marqueurs regenere ; texte hors bloc (et bloc cadrage) conserve. Etat identique a l'etat courant
 # de la cible → description inchangee (idempotent : une reprise rejoue l'ordre sans doublon).
 milestone_history() {
   awk -v cible="$1" -v e="$2" -v d="$3" -v det="${4:-}" '
@@ -123,15 +140,18 @@ milestone_history() {
     inb && /^\*\*Etat\*\* : / { etat = $0; next }
     inb && /^\| LOT-/ { split($0, f, "|"); l = f[2]; gsub(/ /, "", l)
                         if (!(l in lot)) ord[++nl] = l; lot[l] = $0; next }
-    inb && /^- [0-9][0-9][0-9][0-9]-/ { hist[++nh] = $0; next }
+    inb && /^- [0-9][0-9][0-9][0-9]-/ { hist[++nh] = $0
+                        x = $0; sub(/^- [^ ]+ — /, "", x); c = x; sub(/ : .*$/, "", c)
+                        v = x; sub(/^[^:]* : /, "", v); sub(/ — .*$/, "", v); last[c] = v; next }
     inb { next }
     { pre[++np] = $0 }
     END {
       if (cible == "milestone") { cur = etat; sub(/^\*\*Etat\*\* : /, "", cur); sub(/ \(depuis .*$/, "", cur) }
-      else if (cible in lot) { split(lot[cible], f, "|"); cur = f[3]; gsub(/^ +| +$/, "", cur) }
+      else if (cible ~ /^LOT-/) { if (cible in lot) { split(lot[cible], f, "|"); cur = f[3]; gsub(/^ +| +$/, "", cur) } }
+      else cur = last[cible]
       if (cur != e) {
         if (cible == "milestone") etat = "**Etat** : " e " (depuis " d ")"
-        else { if (!(cible in lot)) ord[++nl] = cible; lot[cible] = "| " cible " | " e " | " d " |" }
+        else if (cible ~ /^LOT-/) { if (!(cible in lot)) ord[++nl] = cible; lot[cible] = "| " cible " | " e " | " d " |" }
         hist[++nh] = "- " d " — " cible " : " e (det != "" ? " — " det : "")
       }
       while (np > 0 && pre[np] ~ /^[[:space:]]*$/) np--
@@ -147,13 +167,33 @@ milestone_history() {
     }'
 }
 
+# milestone_cadrage "LIGNE1|LIGNE2|..." — remplace (ou insere, juste avant le bloc historique) le bloc cadrage.
+milestone_cadrage() {
+  awk -v body="$1" '
+    /^<!-- cadrage:debut/ { inc = 1; next }
+    /^<!-- cadrage:fin/   { inc = 0; skip = 1; next }
+    inc { next }
+    skip && /^[[:space:]]*$/ { skip = 0; next }
+    { skip = 0 }
+    /^<!-- historique:debut/ && !done { emit(); done = 1 }
+    { print }
+    END { if (!done) { print ""; emit() } }
+    function emit(  n, i, a) {
+      print "<!-- cadrage:debut — maintenu par deployer, ne pas editer a la main -->"
+      print "**Cadrage**"; n = split(body, a, "|"); for (i = 1; i <= n; i++) print "- " a[i]
+      print "<!-- cadrage:fin -->"; print ""
+    }'
+}
+
 NUM=<numero du milestone, matching par prefixe — GITHUB.md 3.1> ; TODAY=$(date +%F)
 # Demarrage (MILESTONE START uniquement) : due date si vide, 12:00 UTC = meme jour affiche quel que soit le fuseau
 DUE=$(gh api repos/{owner}/{repo}/milestones/$NUM --jq '.due_on // ""')
 [ -z "$DUE" ] && gh api repos/{owner}/{repo}/milestones/$NUM --method PATCH -f due_on="$(date -u +%Y-%m-%dT12:00:00Z)"
-# Evenement : CIBLE = milestone | LOT-N ; ETAT = vocabulaire de GITHUB.md 3.0bis (icone comprise)
 DESC=$(gh api repos/{owner}/{repo}/milestones/$NUM --jq '.description // ""')
-NEW=$(printf '%s\n' "$DESC" | milestone_history "<CIBLE>" "<ETAT>" "$TODAY" "<DETAIL>")
+# Cadrage (MILESTONE CADRAGE uniquement) — une ligne par element, separees par « | »
+NEW=$(printf '%s\n' "$DESC" | milestone_cadrage "Intensite : <i>|Tests : <test-writer ou agents DEV>|Review : <oui ou non>|QUALIF : <oui ou non>|Doc : <doc-updater ou agents DEV>|Team : <liste>")
+# Evenement : CIBLE = milestone | LOT-N | cadrage ; ETAT = vocabulaire de GITHUB.md 3.0bis (icone comprise)
+NEW=$(printf '%s\n' "${NEW:-$DESC}" | milestone_history "<CIBLE>" "<ETAT>" "$TODAY" "<DETAIL>")
 [ "$NEW" != "$DESC" ] && gh api repos/{owner}/{repo}/milestones/$NUM --method PATCH --raw-field description="$NEW"
 ```
 
@@ -196,7 +236,7 @@ teamleader n'execute aucun `Bash` git, il pose les questions ; toi tu classes et
 
 ### Avant BUILD
 - [ ] Tests QA passes (suite feature + NR impactees — `context/COMMON.md` section 15)
-- [ ] Revue de code approuvee
+- [ ] Revue de code approuvee — si le cadrage du milestone a une REVIEW (`cadrage.review`, `context/MILESTONE_CADRAGE.md`)
 - [ ] Si `testing.full_regression_at == build` : NR complete VALIDATED (lancee par `qa` en parallele de la compilation — PUBLISH attend les deux)
 
 ### Avant PUBLISH (QUALIF ou PROD)
@@ -204,7 +244,8 @@ teamleader n'execute aucun `Bash` git, il pose les questions ; toi tu classes et
 - [ ] `infrastructure.environments[<env>].access.verified.status == "ok"` (registre/depot de
       publication joignable — meme regle et meme conduite que pour DEPLOY ci-dessous)
 - [ ] PROD uniquement : documentation a jour, CHANGELOG mis a jour, publication QUALIF deja
-      validee pour ce candidat — **sauf hotfix**, ou PUBLISH PROD part directement du BUILD
+      validee pour ce candidat — **sauf hotfix** ou ordre portant `Cadrage : sans QUALIF`
+      (`context/MILESTONE_CADRAGE.md` section 5), ou PUBLISH PROD part directement du BUILD valide au GATE 4
       (voir Mode Teammates)
 
 ### Avant DEPLOY (QUALIF ou PROD)
@@ -399,12 +440,14 @@ exact** de la branche milestone : `gh run list --workflow ci-branch.yml --commit
 test ; apres un echec on corrige sur la branche, on ne retague pas (detail dans le fichier d'environnement).
 
 **Historique du milestone** (Tache MILESTONE, `context/GITHUB.md` 3.0bis), ecrit par toi sans ordre : DEPLOY QUALIF
-reussi → `🧪 en QUALIF — <X.Y.Z.a>` (cible `LOT-N` si l'ordre QUALIF porte `Lot : LOT-N`, sinon `milestone`) ;
+reussi → `🧪 en QUALIF — <X.Y.Z.a>` (cible `LOT-N` si l'ordre QUALIF porte `Lot : LOT-N`, sinon `milestone`) ; BUILD
+seul d'un ordre `Cadrage : sans QUALIF` → `🧪 en validation locale — <X.Y.Z.a>` (meme cible) ;
 PUBLISH PROD lance → `milestone → 🚀 mise en prod — vX.Y.Z` ; echec PROD / rollback → `milestone → ❌ mise en prod en
 echec — <cause>` ; cloture → Etape 5.
 
-**Hotfix** (voir Mode Teammates) : pour PUBLISH PROD specifiquement, le prerequis "publication
-validee sur l'environnement precedent" est leve — le candidat vient directement de BUILD.
+**Hotfix** (voir Mode Teammates) et **milestone cadre sans QUALIF** (ordre portant `Cadrage : sans QUALIF`,
+`context/MILESTONE_CADRAGE.md` section 5) : pour PUBLISH PROD specifiquement, le prerequis "publication validee sur
+l'environnement precedent" est leve — le candidat vient directement de BUILD (sans QUALIF : celui valide au GATE 4).
 
 ## Tache DEPLOY <env>
 

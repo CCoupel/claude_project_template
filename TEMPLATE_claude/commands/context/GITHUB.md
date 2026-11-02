@@ -136,11 +136,20 @@ Ne jamais poser `due_on` a la creation (`/milestone new`), ni l'ecraser une fois
 
 ### 3.0bis Historique du milestone (description GitHub)
 
-La description du milestone porte, sous le texte libre (`Release vX.Y.Z`, conserve), un **bloc d'historique** :
-etat courant, tableau des lots, journal date. Seul `deployer` l'ecrit (`agents/deploy.md` « Tache MILESTONE », script
+La description du milestone porte, sous le texte libre (`Release vX.Y.Z`, conserve), un **bloc « Cadrage »**
+(intensite, options, team — `agents/context/MILESTONE_CADRAGE.md`) puis un **bloc d'historique** : etat courant, tableau
+des lots, journal date. Seul `deployer` l'ecrit (`agents/deploy.md` « Tache MILESTONE », script
 `milestone_history`, idempotent) ; il est lisible directement sur la page du milestone :
 
 ```
+**Cadrage**
+- Intensite : complet (minor)
+- Tests : test-writer
+- Review : oui
+- QUALIF : oui
+- Doc : doc-updater
+- Team : dev-backend, dev-frontend, test-writer, code-reviewer, qa, doc-updater
+
 **Etat** : 🧪 en QUALIF (depuis 2026-11-03)
 
 | Lot | Etat | Depuis |
@@ -150,7 +159,8 @@ etat courant, tableau des lots, journal date. Seul `deployer` l'ecrit (`agents/d
 
 **Historique**
 - 2026-11-01 — milestone : ▶ en cours
-- 2026-11-01 — LOT-1 : ⏳ planifie
+- 2026-11-02 — cadrage : 📋 complet · tests:test-writer review:oui qualif:oui doc:agent — valide au GATE 2
+- 2026-11-02 — LOT-1 : ⏳ planifie
 - 2026-11-03 — LOT-1 : 🧪 en QUALIF — v1.4.0.3
 - 2026-11-04 — LOT-1 : ✅ termine — CI verte
 ```
@@ -161,9 +171,11 @@ a l'ordre `deployer` qu'il envoie a ce moment ; « deployer » = ecrit par `depl
 | Moment | Cible → etat — detail | Porte par |
 |---|---|---|
 | Ouverture de la branche milestone (Phase Init) | `milestone → ▶ en cours` (+ due date) | ordre `MILESTONE START` |
+| GATE 2 valide — cadrage | bloc « Cadrage » + `cadrage → 📋 <intensite> · tests:… review:… qualif:… doc:… — valide au GATE 2` (revision : la raison) | ordre `MILESTONE CADRAGE` |
 | GATE 2 valide, plan avec lots | chaque `LOT-N → ⏳ planifie` | ordre `Labels GATE 2` (deployer, d'apres la table des lots) |
 | Lancement du DEV d'un lot | `LOT-N → ▶ en cours` | ordre labels `→ EN COURS` du lot |
 | DEPLOY QUALIF reussi | `LOT-N → 🧪 en QUALIF — <X.Y.Z.a>` (sans lots : `milestone → 🧪 en QUALIF`) | deployer (l'ordre QUALIF porte `Lot : LOT-N`) |
+| BUILD seul, cadrage sans QUALIF | `LOT-N → 🧪 en validation locale — <X.Y.Z.a>` (sans lots : `milestone → …`) | deployer (ordre `Cadrage : sans QUALIF`) |
 | GATE LOT refuse | `LOT-N → ↩ refuse — retour DEV` / `— retour PLAN` | ordre labels Cas A / Cas B |
 | Lot : CI verte, issues fermees | `LOT-N → ✅ termine — CI verte` | ordre de fermeture des issues du lot |
 | Publication anticipee (GATE LOT) | `LOT-N → ⇢ reporte — vers <milestone>` (lots restants) | ordre de deplacement des issues |
@@ -604,6 +616,9 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE"
 ```
 
 ### 9.5b Lot : QUALIF, validation, push (GATE LOT)
+
+> Cadrage sans QUALIF (`agents/context/MILESTONE_CADRAGE.md` section 5) : « deploye en QUALIF » se lit « BUILD seul,
+> artefact local » — le GATE LOT porte sur cet artefact ; le reste du deroulement est inchange.
 
 Les lots sont traites **un a la fois**. Quand la QA valide le lot (`DONE`), il est deploye en QUALIF (Phase 5) puis
 presente a l'utilisateur (question et options : point « GATE LOT » du tableau de `agents/cdp.md`, avec le lien de la

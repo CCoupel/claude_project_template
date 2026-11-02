@@ -106,7 +106,8 @@ Le rapport inclut :
 
 ## Agent
 
-Agent permanent — spawné au `/start-session`, toujours en IDLE.
+Agent de type `milestone` — présent si la team du milestone l'inclut (`cadrage.review`, `agents/context/MILESTONE_CADRAGE.md`) ;
+sinon (revue hors milestone ou cadrage sans review) le spawner à la demande, puis l'arrêter (`TaskStop`).
 
 Envoyer la tâche directement :
 `SendMessage({to: "code-reviewer", content: ...})`

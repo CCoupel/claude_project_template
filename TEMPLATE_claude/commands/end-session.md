@@ -50,7 +50,9 @@ verification de l'etat du projet.
 
 Le teamleader **coordonne et questionne** ; il n'execute ni `Bash` git/build/test, ni `Edit`/`Write` hors
 `_work/tasks/` (CLAUDE.md « Délégation Stricte »). Toute la commande passe par des ordres aux teammates, encore
-actifs a ce stade (fermes a l'etape 5) :
+actifs a ce stade (fermes a l'etape 5). `deployer` est toujours present (`socle`) ; `qa` et `doc-updater` sont de type
+`milestone` (`agents/context/MILESTONE_CADRAGE.md` 4.1) : absents de la team → les spawner a la demande (meme prompt
+que `start-session.md` etape 4), ils sont fermes avec les autres a l'etape 5 :
 
 | Besoin | Ordre | Agent |
 |---|---|---|
