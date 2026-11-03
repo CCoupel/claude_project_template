@@ -1,5 +1,14 @@
 export type Issue = { number: number; title: string; phase: string; /** Lot parent (`LOT-2` pour `LOT-2` ou `LOT-2.1`). */ lot: string | null; /** Label de lot tel que posé sur l'issue (couleur GitHub). */ lotLabel: string | null; isBlocked: boolean; /** Label `VALID-HUMAINE` : validation humaine requise. */ needsHuman: boolean }
 export type MilestoneRow = { title: string; open: number; closed: number }
+/** Pull request ouverte, affichée quand aucun milestone n'est en cours. */
+export type PullRow = {
+  number: number
+  title: string
+  branch: string
+  isDraft: boolean
+  /** Décision de revue GitHub : `APPROVED`, `CHANGES_REQUESTED`, `REVIEW_REQUIRED`, ou null. */
+  review: string | null
+}
 export type View = {
   /** Milestone en cours, ou null quand aucun n'a d'issue en phase. */
   current: string | null
@@ -7,6 +16,8 @@ export type View = {
   isReleasing: boolean
   issues: Issue[]
   milestones: MilestoneRow[]
+  /** PR ouvertes, lues seulement quand aucun milestone n'est en cours (vide sinon). */
+  prs: PullRow[]
   /** Couleur GitHub (hex sans #) de chaque label du dépôt. */
   colors: Record<string, string>
   updatedAt: number

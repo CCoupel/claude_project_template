@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageLabel, usageThresholds } from './lib'
+import { allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageLabel, usageThresholds } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -261,4 +261,27 @@ test('intervalle de lecture lu dans la config du launcher, repli 5 min', () => {
   expect(usageThresholds(120)).toEqual({ freshMs: 180_000, backoffMs: 300_000 })
   expect(usageThresholds(600)).toEqual({ freshMs: 900_000, backoffMs: 1_200_000 })
   expect(usageThresholds(null)).toEqual({ freshMs: 450_000, backoffMs: 600_000 })
+})
+
+test('PR ouvertes : brouillons en dernier, plus recentes d\'abord, champs normalises', () => {
+  const prs = buildPrs([
+    { number: 3, title: 'c', headRefName: 'feat/c', isDraft: true, reviewDecision: '' },
+    { number: 1, title: 'a', headRefName: 'fix/a', isDraft: false, reviewDecision: 'APPROVED' },
+    { number: 2, title: 'b', isDraft: false, reviewDecision: null },
+  ])
+  expect(prs.map(p => p.number)).toEqual([2, 1, 3])
+  expect(prs[0]).toEqual({ number: 2, title: 'b', branch: '', isDraft: false, review: null })
+  expect(prs[1].review).toBe('APPROVED')
+  expect(prs[2].review).toBe(null)
+})
+
+test('buildView : liste de PR vide par defaut', () => {
+  expect(buildView(ms, [], 1).prs).toEqual([])
+})
+
+test('commandes gh pr qui changent les PR ouvertes', () => {
+  expect(isGhPrCommand('gh pr create --title x')).toBe(true)
+  expect(isGhPrCommand('git push && gh pr merge 12 --merge')).toBe(true)
+  expect(isGhPrCommand('gh pr list --state open')).toBe(false)
+  expect(isGhPrCommand('gh issue edit 3 --add-label PRET')).toBe(false)
 })

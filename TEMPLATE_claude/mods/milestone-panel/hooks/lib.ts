@@ -1,4 +1,4 @@
-import type { Issue, MilestoneRow, Usage, View } from '../types'
+import type { Issue, MilestoneRow, PullRow, Usage, View } from '../types'
 
 export const PHASES = ['PLANNING', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'DONE'] as const
 
@@ -108,8 +108,31 @@ export const buildView = (
       open: m.open_issues,
       closed: m.closed_issues,
     }))
-  return { current, isReleasing: releasing !== null, issues, milestones, colors, updatedAt: now, error: null }
+  return { current, isReleasing: releasing !== null, issues, milestones, prs: [], colors, updatedAt: now, error: null }
 }
+
+type RawPull = {
+  number: number
+  title: string
+  headRefName?: string | null
+  isDraft?: boolean | null
+  reviewDecision?: string | null
+}
+
+/** PR ouvertes (`gh pr list --json number,title,headRefName,isDraft,reviewDecision`), brouillons en dernier, puis plus récentes d'abord. */
+export const buildPrs = (raw: RawPull[]): PullRow[] =>
+  raw
+    .map(p => ({
+      number: p.number,
+      title: p.title,
+      branch: p.headRefName ?? '',
+      isDraft: !!p.isDraft,
+      review: p.reviewDecision || null,
+    }))
+    .sort((a, b) => Number(a.isDraft) - Number(b.isDraft) || b.number - a.number)
+
+/** Vrai si la commande modifie des PR (`gh pr create/merge/close/reopen/ready/edit`) : le panneau relit GitHub. */
+export const isGhPrCommand = (command: string) => /\bgh\s+pr\s+(create|merge|close|reopen|ready|edit)\b/.test(command)
 
 export const groupByPhase = (issues: Issue[]) =>
   // Du plus avancé au moins avancé, le backlog (sans phase) en dernier.
