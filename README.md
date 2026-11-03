@@ -47,7 +47,10 @@ Ouvrir le projet dans Claude Code et lancer `/init-project`.
 
 `/init-project` fetche automatiquement `TEMPLATE_claude/` depuis GitHub,
 détecte la stack et génère la configuration complète. Sans remote `origin`, il demande le repo GitHub (existant,
-ou à créer via `gh repo create`). Sur un **projet vide**, trois entrées : le **brief** (un texte de présentation
+ou à créer via `gh repo create`). Il fixe la **licence** : détectée (`LICENSE`, manifestes) et seulement
+confirmée, fournie (identifiant SPDX ou fichier), propriétaire, reportée, ou **choisie avec un guide** — synthèse des
+principales licences open source puis 4 questions (réutilisation dans du logiciel fermé, SaaS, brevets, forme du
+livrable) aboutissant à une recommandation ; le fichier `LICENSE` est créé à la finalisation (jamais écrasé). Sur un **projet vide**, trois entrées : le **brief** (un texte de présentation
 ou de préparation du projet — passé avec la commande, collé dans la conversation, ou lu dans `BRIEF.md` /
 `docs/BRIEF.md` / un `README.md` descriptif — dont il déduit une **proposition de cadrage** puis ne pose que des
 **questionnaires de précision** sur ce que le texte ne dit pas, valeurs déduites en option recommandée), le

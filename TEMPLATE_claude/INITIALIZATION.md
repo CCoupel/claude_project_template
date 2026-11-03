@@ -166,6 +166,25 @@ l'Etape 5d pour proposer directement des instances d'agents.
 `org` / `project` de `project-config.json` sont extraits du remote ; sans remote, les etapes GitHub de la
 finalisation sont sautees.
 
+### Etape 1b : Licence
+
+```
+Licence detectee (LICENSE*, COPYING*, champ license des manifestes) → « Conserver ? » seulement.
+Sinon : « Comment definir la licence du projet ? »
+   a) M'aider a choisir (recommande) → synthese des principales licences open source (MIT, BSD-3-Clause,
+      Apache-2.0, MPL-2.0, LGPL-3.0, GPL-3.0, AGPL-3.0, Unlicense), puis 4 questions :
+      reutilisation dans du logiciel ferme ? usage en SaaS ? brevets ? forme du livrable ?
+      → recommandation argumentee + alternatives
+   b) Je fournis la licence → identifiant SPDX ou chemin d'un fichier
+   c) Proprietaire (tous droits reserves)
+   d) Decider plus tard → rappel dans le message de fin
+Puis titulaire du copyright (git user.name ou org GitHub).
+```
+
+Enregistre dans `project-config.json` → `license` ; `LICENSE` est cree a la finalisation (texte officiel via
+`gh api licenses/<cle>`, jamais d'ecrasement d'un fichier existant). Projet deja initialise sans `license` :
+option d, etape d1g.
+
 ### Etape 2 : Stack Backend
 
 ```

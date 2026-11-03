@@ -1057,6 +1057,7 @@ Technologies detectees :
 - Database : PostgreSQL (prisma avec provider postgresql)
 - CI/CD : GitHub Actions (.github/workflows/)
 - Tests : Vitest, Playwright
+- Licence : MIT (LICENSE)   ← ou « non detectee — posee a l'Etape 1b »
 
 AskUserQuestion : "Comment veux-tu initialiser le projet ?"
 - Initialiser avec cette configuration (Recommande) — utilise directement les technologies
@@ -1305,6 +1306,133 @@ Chaque ligne de la fiche porte sa provenance entre crochets : `[brief]`, `[preci
 
 > `org` / `project` de `project-config.json` sont extraits du remote (section "Generation de la Configuration") ;
 > sans remote, ils restent vides et les etapes GitHub de la finalisation sont sautees.
+
+---
+
+## Etape 1b : Licence
+
+Choisir une licence est difficile sans reperes : l'etape commence par demander **comment** la definir, et
+propose un guide (synthese + jeu de questions) plutot qu'une liste brute d'identifiants.
+
+### Detection
+
+Avant toute question, chercher une licence deja posee :
+
+```bash
+ls LICENSE* LICENCE* COPYING* 2>/dev/null                       # fichier de licence
+jq -r '.license // empty' package.json 2>/dev/null              # Node
+grep -E '^\s*license\s*=' Cargo.toml pyproject.toml 2>/dev/null # Rust / Python
+```
+
+Identifier l'identifiant SPDX depuis l'en-tete du fichier (« MIT License », « Apache License Version 2.0 »,
+« GNU AFFERO GENERAL PUBLIC LICENSE Version 3 »...). Licence detectee → la lister avec les technologies
+detectees (« Licence : MIT (LICENSE) ») et poser seulement AskUserQuestion « Conserver la licence MIT ? » :
+Conserver (Recommande) / Changer de licence (→ question ci-dessous). Fichier et manifeste en desaccord
+(ex. `LICENSE` MIT, `package.json` ISC) → le signaler et demander laquelle fait foi.
+
+> Exception a « Initialiser avec cette configuration — aucune question supplementaire » (Etape 0) : la licence
+> n'est pas une technologie deductible du code. Non detectee → cette etape est posee quand meme.
+> Brief (Option a-bis) : licence nommee par le brief = `deduit` ; sinon `manquant` → cette etape, telle quelle.
+
+### Question d'entree
+
+AskUserQuestion : "Comment definir la licence du projet ?"
+- M'aider a choisir (Recommande) — synthese des principales licences open source puis 3-4 questions pour
+  aboutir a une recommandation argumentee
+- Je fournis la licence — identifiant SPDX (ex. `MIT`, `Apache-2.0`, `GPL-3.0-or-later`) ou chemin d'un
+  fichier de licence existant, saisi via « Autre »
+- Proprietaire (tous droits reserves) — pas de licence open source : code non reutilisable sans accord ecrit
+- Decider plus tard — aucun fichier `LICENSE` cree ; rappel dans le message de fin (sans licence, le code
+  publie reste par defaut « tous droits reserves »)
+
+« Je fournis » : identifiant SPDX inconnu → le signaler et reposer la question ; chemin → lire le fichier,
+en deduire l'identifiant (ou `LicenseRef-custom` pour un texte maison) et le copier en `LICENSE` s'il n'est
+pas deja a la racine.
+
+### Guide de selection
+
+**1. Synthese** — afficher dans le chat (seul affichage texte de l'etape, il sert de reference aux questions) :
+
+| Licence | Famille | Obligation principale pour qui redistribue | Brevets | Usage typique |
+|---------|---------|---------------------------------------------|---------|---------------|
+| MIT | Permissive | Garder la notice de copyright et la licence | Non explicite | Bibliotheques, outils, adoption maximale (npm, Rails...) |
+| BSD-3-Clause | Permissive | Idem MIT + interdiction d'utiliser le nom des auteurs pour promouvoir un derive | Non explicite | Monde academique, systemes (BSD, Django) |
+| Apache-2.0 | Permissive | Notice + mention des fichiers modifies + fichier `NOTICE` s'il existe | **Licence et clause de retorsion** explicites | Projets d'entreprise, nombreux contributeurs (Kubernetes, Android) |
+| MPL-2.0 | Copyleft faible (par fichier) | Les fichiers MPL modifies restent ouverts ; le reste du produit peut etre ferme | Oui | Composants integres dans des produits commerciaux (Firefox, Terraform avant 2023) |
+| LGPL-3.0 | Copyleft faible (bibliotheque) | La bibliotheque modifiee reste LGPL ; un programme qui la lie peut etre ferme | Oui | Bibliotheques a large diffusion (GTK, Qt) |
+| GPL-3.0 | Copyleft fort | Tout derive **distribue** est publie sous GPL avec ses sources | Oui | Applications et outils voulus libres de bout en bout (GIMP, Bash) |
+| AGPL-3.0 | Copyleft fort + reseau | Comme GPL, **et** les sources d'un service accessible par le reseau (SaaS) | Oui | Applications serveur / SaaS (Nextcloud, Mastodon) |
+| Unlicense | Domaine public | Aucune | Non | Snippets, exemples, contenus jetables |
+
+Compatibilites a rappeler : une dependance GPL/AGPL **distribuee** avec le projet impose une licence
+compatible (pas MIT/Apache pour l'ensemble) ; Apache-2.0 est compatible GPL-3.0 mais pas GPL-2.0. Sur un
+projet avec code, si une dependance directe connue est sous copyleft fort (manifeste, `LICENSE` du module),
+le signaler avant les questions.
+
+**2. Questions** — un seul appel AskUserQuestion, 4 questions :
+
+1. "Un tiers peut-il reutiliser ce code dans un logiciel ferme (proprietaire) ?"
+   - Oui, librement — adoption maximale, aucun retour des modifications exige → famille permissive
+   - Oui, mais ses modifications de MON code restent ouvertes — le reste de son produit peut etre ferme
+     → copyleft faible
+   - Non, tout derive doit rester open source — reciprocite garantie, mais freine l'usage en entreprise
+     → copyleft fort
+2. "Le projet sera-t-il surtout utilise comme service en ligne (SaaS, API hebergee) par des tiers ?"
+   - Non / produit distribue (binaire, paquet, firmware) — la GPL suffit a garantir la reciprocite
+   - Oui, et les modifications d'un service heberge doivent etre publiees — seule l'AGPL le couvre
+   - Oui, mais ce n'est pas un enjeu — pas de contrainte reseau
+3. "La protection contre les brevets est-elle importante ?"
+   - Oui — entreprise, contributeurs externes nombreux, domaine a brevets (crypto, codecs, medical)
+   - Non — projet personnel ou interne, risque faible
+4. "Quelle forme prend le livrable ?"
+   - Bibliotheque / SDK destine a etre integre — favorise MIT/Apache ou LGPL/MPL pour ne pas bloquer
+     l'integration
+   - Application / service autonome — toutes familles possibles
+   - Firmware / materiel embarque — attention : GPL-3.0 impose de permettre la reinstallation du logiciel
+     modifie sur l'appareil (« anti-tivoisation »)
+
+Pre-remplir chaque question depuis le contexte (cadrage, stack, Etape 8 : un projet deploye en SaaS rend la
+question 2 pertinente ; une bibliotheque npm oriente la question 4) en placant la reponse deduite en
+"(Recommande)".
+
+**3. Recommandation** — table de decision :
+
+| Q1 (reutilisation fermee) | Q2 / Q3 / Q4 | Recommandation | Alternatives |
+|---------------------------|--------------|----------------|--------------|
+| Oui, librement | Q3 = Oui | Apache-2.0 | MIT |
+| Oui, librement | Q3 = Non | MIT | Apache-2.0, BSD-3-Clause |
+| Modifications ouvertes | Q4 = Bibliotheque | LGPL-3.0 | MPL-2.0 |
+| Modifications ouvertes | sinon | MPL-2.0 | LGPL-3.0 |
+| Non (copyleft fort) | Q2 = Oui, publier | AGPL-3.0 | GPL-3.0 |
+| Non (copyleft fort) | sinon | GPL-3.0 | AGPL-3.0 si SaaS envisage |
+
+Correctifs : Q4 = Firmware + copyleft fort → mentionner GPL-2.0 comme alternative (sans clause
+anti-tivoisation) ; dependance copyleft fort signalee → ecarter toute recommandation incompatible.
+
+**Reponses contradictoires** — Q2 = « Oui, modifications a publier » avec Q1 ≠ copyleft fort : aucune licence
+courante n'a de clause reseau sans copyleft fort. Ne pas ignorer Q2 : la question de recommandation commence
+par expliquer la tension en une phrase (« tu acceptes l'integration dans un produit ferme, mais seule l'AGPL
+oblige un service heberge a publier ses modifications »), et propose la recommandation de la table (fidele a
+Q1, en precisant ce qu'elle ne couvre pas) et AGPL-3.0 (fidele a Q2, en precisant qu'elle interdit
+l'integration fermee).
+
+AskUserQuestion : "Licence recommandee : <SPDX> — <raison en une phrase tiree des reponses>. Laquelle retenir ?"
+- <SPDX recommande> (Recommande) — <consequence concrete pour un utilisateur du code>
+- <Alternative 1> — <ce qui change par rapport a la recommandation>
+- <Alternative 2> (si pertinente) — idem
+- Revoir les reponses — repose les 4 questions
+
+### Titulaire et enregistrement
+
+Licence retenue (hors « Decider plus tard ») → AskUserQuestion "Titulaire du copyright ?" :
+« <git config user.name> (Recommande) » / « <org GitHub> » (si le remote appartient a une organisation),
+saisie libre via « Autre ». Annee = annee courante.
+
+Identifiant enregistre : SPDX complet. Famille GNU (GPL, LGPL, AGPL) → variante `-or-later` par defaut
+(recommandation FSF : `AGPL-3.0-or-later`), `-only` seulement si l'utilisateur l'a demande.
+
+Enregistre dans `project-config.json` → `license` (section "Generation de la Configuration") ; le fichier
+`LICENSE` est cree a la Finalisation (section 5).
 
 ---
 
@@ -1614,6 +1742,7 @@ AskUserQuestion (`multiSelect: true`) : "Quels aspects securite sont importants 
   "org": "<GITHUB_ORG>",
   "project": "<REPO_NAME>",
   "description": "<DESCRIPTION>",
+  "license": { "spdx": "MIT", "holder": "<TITULAIRE>", "year": 2026, "source": "guided" },
   "version": "0.1.0",
   "initialized_at": "<TIMESTAMP>",
   "initialized_from": "analysis|manual|workshop|brief",
@@ -1729,6 +1858,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `testing.coverage_min` | Defaut `70` (seuil minimal de couverture, en %) |
 | `milestone.defaults` | Intensite de depart d'un milestone selon son type de version (`patch` / `minor` / `major` → `leger` / `complet`). Defaut `patch: leger`, `minor` et `major: complet`. Le cadrage complet (options, team) est propose par le planner et valide au GATE 2 : `agents/context/MILESTONE_CADRAGE.md`. Absent = `complet` partout |
 | `testing.lot_max_tests` | Defaut `50` (nombre max de cas de test par lot ; QA execute et rapporte lot par lot) |
+| `license` | Etape 1b. `spdx` : identifiant SPDX (`MIT`, `Apache-2.0`...), `LicenseRef-proprietary` (tous droits reserves), `LicenseRef-custom` (texte maison fourni) ou `null` (« Decider plus tard ») ; `holder` / `year` : titulaire et annee du copyright ; `source` : `detected` \| `provided` \| `guided` \| `proprietary` \| `deferred` |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
 | `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question « environnements de release ») ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question « Comment deploies-tu ? » de l'Etape 8 pour chaque environnement, sauf personnalisation explicite |
@@ -2140,6 +2270,50 @@ else
 fi
 ```
 
+#### Fichier de licence
+
+Selon `license` (Etape 1b) — **jamais d'ecrasement** d'un fichier `LICENSE*` / `COPYING*` existant :
+
+```bash
+SPDX=$(jq -r '.license.spdx // empty' .claude/project-config.json)
+HOLDER=$(jq -r '.license.holder // empty' .claude/project-config.json)
+YEAR=$(jq -r '.license.year // empty' .claude/project-config.json)
+if ls -d LICENSE* LICENCE* COPYING* 2>/dev/null | grep -q . || [ -z "$SPDX" ]; then
+  : # licence deja presente, ou « Decider plus tard » : rien a creer
+elif [ "$SPDX" = "LicenseRef-proprietary" ]; then
+  printf 'Copyright (c) %s %s. All rights reserved.\n\nThis software is proprietary. No license is granted to use, copy, modify\nor distribute it without prior written permission of the copyright holder.\n' \
+    "$YEAR" "$HOLDER" > LICENSE
+else
+  # Texte officiel via l'API GitHub (cle = SPDX en minuscules : mit, apache-2.0, gpl-3.0, agpl-3.0, mpl-2.0,
+  # lgpl-3.0, bsd-3-clause, unlicense ; suffixe -only/-or-later retire pour la cle)
+  KEY=$(echo "$SPDX" | tr 'A-Z' 'a-z' | sed -E 's/-(only|or-later)$//')
+  if BODY=$(gh api "licenses/$KEY" --jq .body 2>/dev/null) && [ -n "$BODY" ]; then
+    printf '%s\n' "$BODY" | sed -e "s/\[year\]/$YEAR/g" -e "s/\[fullname\]/$HOLDER/g" > LICENSE
+  else
+    echo "⚠ Texte de licence $SPDX non recupere (hors ligne ?) — LICENSE a ajouter a la main"
+  fi
+fi
+```
+
+Puis, pour chaque manifeste present (`package.json`, `Cargo.toml`, `pyproject.toml`) : champ licence absent →
+le renseigner avec l'identifiant SPDX (`"UNLICENSED"` dans `package.json` pour une licence proprietaire) ;
+present et different → le signaler dans le message de fin, sans le modifier.
+
+Notice de copyright : seuls MIT, BSD et la licence proprietaire portent le titulaire dans `LICENSE`. Pour les
+autres (Apache-2.0, MPL-2.0, famille GNU, Unlicense), le texte officiel est verbatim et le titulaire n'y figure
+pas. Ajouter donc au `README.md` (le creer s'il est absent) une section `## Licence`, si aucune section
+licence n'existe deja :
+
+```markdown
+## Licence
+
+Copyright (C) <YEAR> <HOLDER>
+
+Distribue sous licence <SPDX> — voir [LICENSE](LICENSE).
+```
+
+(licence proprietaire : « Tous droits reserves — voir [LICENSE](LICENSE). » ; « Decider plus tard » : rien.)
+
 Puis appliquer la section **"Site marketing — worktree `gh-pages`"** (detection d'un `MARKETING/` deja suivi).
 
 #### Dossier des maquettes
@@ -2467,6 +2641,8 @@ Configuration :
 - Database     : <DATABASE>
 - CI/CD        : <CICD>
 - Environnements : <ENVIRONMENTS>  (ex: QUALIF -> PROD)
+- Licence      : <SPDX> (<TITULAIRE>, <ANNEE>) — LICENSE <cree | deja present>
+                 | non definie — a choisir avant toute publication (relancer /init-project, option d)
 
 Memoire projet : .claude/memory/MEMORY.md initialisee (si absente)
 Teamleader : <modele> / <effort> ecrits dans .claude/settings.json (surcharge : compagnon .claude/agents/teamleader.md)
@@ -2763,6 +2939,18 @@ Pour tout environnement dont le statut n'est pas `ok` : l'inclure au rapport d4 
 valide (<statut>)`), puis a l'etape d5 AskUserQuestion : Collecter et valider maintenant (Recommande —
 rejouer l'Etape 8b pour ces seuls environnements, avec le role `infra`) / Plus tard (l'ecart reste affiche
 a chaque sync et `/deploy <env>` refusera de partir tant que l'acces n'est pas valide).
+
+#### Etape d1g — Licence
+
+Un projet initialise avant l'Etape 1b n'a pas de cle `license` dans `project-config.json`. Lecture seule ici :
+
+- Cle `license` presente (y compris `source: deferred`) → rien ; `deferred` est seulement rappele au rapport d8.
+- Cle absente, licence detectee (detection de l'Etape 1b : fichier ou manifeste) → au rapport d4
+  `[+] licence — <SPDX> detectee (<fichier>), a enregistrer` ; a l'etape d5, l'ecrire sans question
+  (`source: detected`, titulaire lu dans la ligne de copyright).
+- Cle absente, aucune licence → au rapport d4 `[?] licence — non definie` ; a l'etape d5 AskUserQuestion :
+  Definir maintenant (Recommande — rejouer l'Etape 1b puis « Fichier de licence » de la Finalisation) /
+  Plus tard (`license: { "spdx": null, "source": "deferred" }`, plus reposee, rappelee au rapport d8).
 
 #### Etape d2 — Calculer les noms deployes attendus
 
@@ -3358,6 +3546,7 @@ Synchronisation terminee.
   Publication                       : <PUBLISH> (section 7 — ex. "pousse sur origin/main")
   Schema infrastructure             : [convertit vers environments[] | deja a jour | inchange (refuse)]
   Acces aux environnements          : [<ENV>: ok | <ENV>: non valide (statut) | valides a l'instant (etape d1f)]
+  Licence                           : [<SPDX> (inchangee | enregistree | definie a l'instant) | non definie — reportee] (etape d1g)
 
   Fichiers PROJET preserves (non touches) :
     ✓ CLAUDE.md (hors bloc TEAMLEADER_PROTOCOL et hors table Agents Disponibles)
