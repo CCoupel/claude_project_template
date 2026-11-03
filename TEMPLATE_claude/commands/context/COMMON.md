@@ -303,6 +303,8 @@ perf:     Amelioration de performance
 
 Jamais de worktree, dossier ou fichier de travail hors du dossier du projet (`../`, `/tmp`, `$TMPDIR`, `~/`).
 Worktree git → `.claude/worktrees/<nom>` ; temporaire → `_work/tmp/` (gitignore). Les supprimer en fin de tache.
+Element prive durable (jamais commite, hors `.env`/`<env>.env`) → `PRIVATE/` (gitignore, jamais purge) — voir
+section « Éléments privés » de `CLAUDE.md`.
 
 ### 8.1 Fichiers Temporaires a Supprimer
 

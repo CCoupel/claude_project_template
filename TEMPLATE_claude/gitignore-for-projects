@@ -52,6 +52,11 @@ TEMPLATE_claude/
 # Le site n'est gere que sur gh-pages — jamais commite sur la branche de code (main, milestone/*, hotfix).
 MARKETING/
 
+# Elements prives du projet (notes personnelles, credentials hors .env, cles, exports/dumps reels,
+# documents client...) — jamais commites. Le contenu est etudie par /init-project (Etape 10b).
+# Les .env / <env>.env gardent leurs emplacements dedies ci-dessus (sources par les scripts deploy).
+PRIVATE/
+
 # Dossier de travail inter-agents (rapports et handoffs temporaires)
 _work/
 

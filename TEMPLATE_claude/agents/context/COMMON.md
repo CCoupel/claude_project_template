@@ -32,6 +32,16 @@ chemin absolu hors du repo, `/tmp`, `$TMPDIR` ou `~/`.
 - **Fichier / dossier temporaire** : `_work/tmp/` (`mkdir -p _work/tmp`, `mktemp -p _work/tmp`, ou `TMPDIR="$PWD/_work/tmp"`) ; supprimer en fin de tache.
 - Si un outil impose un emplacement externe et ne peut pas etre redirige : **BLOQUE** et demander au teamleader.
 
+## Elements Prives — `PRIVATE/` (OBLIGATOIRE)
+
+Tout element prive qui ne doit jamais etre commite (kubeconfig, tokens k8s / comptes de service, cles SSH,
+certificats, comptes et acces notes, exports ou dumps de donnees reelles, documents client, notes personnelles,
+config locale d'un poste) va dans `PRIVATE/` (racine, gitignore). Exceptions : `.env` et
+`.claude/agents/environments/<env>.env` gardent leurs emplacements fixes (une variable designant un fichier
+d'acces y pointe : `KUBECONFIG=PRIVATE/k8s/kubeconfig-prod`) ; le temporaire reste dans `_work/tmp/`. Jamais de `git add -f` sur `PRIVATE/`. Element prive tracke hors `PRIVATE/` : **BLOQUE**
+au teamleader (deplacement + `git rm --cached` decides par l'utilisateur, rotation si secret deja pousse).
+Detail : section « Éléments privés » de `CLAUDE.md`.
+
 ---
 
 ## Branche Courante et Historique (OBLIGATOIRE)
