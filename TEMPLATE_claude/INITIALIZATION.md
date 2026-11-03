@@ -343,6 +343,19 @@ chaque environnement, avec le role de l'agent `infra` (section « Mode Acces (ca
     (Autre — API publique, multi-tenant...)
 ```
 
+### Etape 10b : Elements prives (`PRIVATE/`)
+
+```
+Etude : fichiers trackes au nom ou contenu evocateur (cles, kubeconfig, tokens, dumps, motifs de secrets —
+fichiers listes, jamais les valeurs), fichiers non trackes non ignores, et elements attendus d'apres les
+reponses (acces Etape 8b : kubeconfig, token k8s, cle SSH, comptes → PRIVATE/ACCES.md ; dumps de donnees
+reelles ; keystores mobile ; cles firmware ; documents client ; notes perso).
+Hors perimetre : .env, <env>.env (+ .example), _work/, MARKETING/, build/, TEMPLATE_claude/, .claude/.
+→ tableau puis « Quels elements ranger dans PRIVATE/ ? » (multiSelect)
+→ project-config.json `private` (chemins + nature, jamais de contenu) ; deplacement a la Finalisation
+  (git rm --cached si tracke, references mises a jour, rotation recommandee si deja pousse).
+```
+
 ## Generation de la Configuration
 
 Une fois les reponses collectees, Claude genere :
@@ -546,6 +559,7 @@ Les projets sans adaptation n'ont pas besoin de créer de fichier `*.md` (agents
 
 - `.gitignore` : copie de `TEMPLATE_claude/gitignore-for-projects`, ou fusion non destructive s'il existe
   (seules les lignes template absentes sont ajoutees) ; site marketing : `MARKETING/` = worktree de `gh-pages`.
+- `PRIVATE/` (gitignore) : cree, puis deplacement des elements retenus a l'Etape 10b (apres la fusion du `.gitignore`).
 - Squelettes idempotents : `docs/mockup/INDEX.md` + `DECISIONS.md`, `tests/INDEX.md` + `tests/METRICS.md`,
   `.claude/memory/MEMORY.md`, `contracts/CHANGELOG.md` (jamais ecrases).
 - Labels GitHub de phase (`PLANNING`, `PRET`, `EN COURS`, `EN REVIEW`, `EN QA`, `DONE`) si un remote existe.
@@ -610,7 +624,7 @@ Etapes principales (detail : `init-project.md`, section "Option d") :
 | Etape | Action |
 |-------|--------|
 | d0 | Registre des agents (cree s'il est absent) ; **migration v3 → v4** : ajout de `milestone.defaults`, colonne `Spawn` `permanent` reecrite en `socle` / `milestone` / `ponctuel` ; un milestone deja en cours sans cadrage est mene en `complet` |
-| d1a-d1f | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements |
+| d1a-d1h | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements, licence, elements prives (`PRIVATE/` : etude de l'Etape 10b si jamais faite, insertion de la section « Éléments privés » dans `CLAUDE.md`) |
 | d2-d4 | Diff commandes / agents (par empreinte, via le registre) / contextes / table « Agents Disponibles », puis rapport et choix (tout appliquer, sans les reliquats, annuler) |
 | d5-d5e | Deploiement, doublons et conflits dans les compagnons, table « Agents Disponibles », verification post-nettoyage |
 | d6-d6b | Bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`, adequation modele/effort, `settings.json`, memoire, `.gitignore` |
@@ -682,6 +696,11 @@ spécifique — jamais commités). `/init-project` génère un `.env.example` pa
 variables attendus selon le mécanisme, valeurs vides), enrichi d'une détection best-effort des
 noms déjà référencés dans les fichiers existants du projet (`docker-compose*.yml`, workflows
 CI) — jamais de valeur lue ni copiée, juste des noms à vérifier manuellement.
+
+Éléments privés : `PRIVATE/` (racine, gitignoré) reçoit tout ce qui ne doit jamais être commité hors de ces
+variables — fichiers d'accès (kubeconfig, tokens k8s, clés SSH, comptes de service), comptes et accès notés,
+dumps de données réelles, documents client, notes personnelles. Une variable de `<env>.env` qui désigne un
+fichier d'accès y pointe (`KUBECONFIG=PRIVATE/k8s/kubeconfig-prod`). Contenu attendu : `project-config.json` → `private`.
 
 ### Séparation template / adaptations projet
 

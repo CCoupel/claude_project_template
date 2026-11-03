@@ -73,7 +73,7 @@ SendMessage({ to: "sub-qa-unit", content: "
 [NOM] execution de tests — scope : unitaires, branche/commit : [branche]
 1. Verifier `git status --porcelain` vide sur [branche] (tests sur code commite uniquement, sinon BLOQUE),
    puis git worktree add --detach .claude/worktrees/sub-qa-unit [branche]   # pas de branche creee
-2. Copier les fichiers non trackes necessaires (.env, config locale — voir project-config.json
+2. Copier les fichiers non trackes necessaires (.env, PRIVATE/, config locale — voir project-config.json
    si liste, sinon ignorer) depuis le checkout principal vers le worktree.
 3. Executer les tests du scope assigne dans ce worktree.
 4. Nettoyer : git worktree remove .claude/worktrees/sub-qa-unit

@@ -395,6 +395,10 @@ l'init, voir `init-project.md` section 3bis) liste ces memes noms avec des valeu
 `<env>.env` reel (valeurs completees par le projet, jamais commite) n'est jamais genere
 automatiquement.
 
+Les **fichiers** d'acces (kubeconfig, token k8s, cle SSH, JSON de compte de service) ne vont pas dans ces
+`.env` : ils vivent dans `PRIVATE/` (gitignore, voir « Éléments privés » de `CLAUDE.md`) et la variable les
+designe par chemin relatif (`KUBECONFIG=PRIVATE/k8s/kubeconfig-prod`). Fichier designe absent : meme STOP.
+
 Si une variable attendue est absente au moment de l'executer : STOP, remonter au teamleader — ne
 jamais deviner ou coder une valeur en dur.
 
