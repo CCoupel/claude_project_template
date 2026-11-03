@@ -99,6 +99,24 @@ sauf retour en PLAN (Cas B d'un GATE refuse) : le nouveau plan peut reviser le c
 
 Valeur historique `permanent` (projet non synchronise, instance generique) = `socle`.
 
+### 4.2 Team perdue en cours de session — et agent absent au dispatch
+
+**Effectif attendu** a tout moment d'un workflow en cours : agents `socle` + `cadrage.team` (sans `cadrage` : tous les
+agents `milestone` si `plan` est renseigne, sinon rien de plus — memes regles que `/start-session` etape 4).
+
+- **Reprise annoncee par Claude Code** (message du type « tes teammates (...) ont ete perdus ... relance les teammates
+  necessaires pour les taches non terminees », apres un terminal tue, une coupure de WSL ou de disque) : cette consigne
+  ne remplace pas la regle du template. Le teamleader respawne **tout l'effectif attendu**, pas seulement les agents
+  des taches en cours — une correction de QA ou le lot suivant en auront besoin. Il applique `commands/start-session.md`
+  etape 4 points 2 a 4 (modele/effort resolus, meme prompt de spawn, attente des `ACTIF` ; pas de nouveau `TeamCreate`
+  si la team existe encore), puis l'etape 4bis (rapprochement etat/git/GitHub, phase interrompue rejouee depuis son
+  debut, labels de phase realignes).
+- **Agent absent au dispatch** (filet de securite) : avant d'envoyer un ordre, si le destinataire fait partie de
+  l'effectif attendu mais n'est pas actif dans la team (perdu, jamais respawne, `SendMessage` en echec), le spawner
+  (meme prompt), attendre son `ACTIF`, puis envoyer l'ordre — jamais executer la tache soi-meme, jamais bloquer le
+  workflow faute d'agent. Un agent `milestone` hors `cadrage.team` n'est pas concerne : l'utiliser est une revision du
+  cadrage (section 4), a faire valider par l'utilisateur.
+
 ## 5. Effets des options sur les phases
 
 | Option a `false` / `dev` | Phase | Deroulement |
@@ -123,4 +141,5 @@ Valeur historique `permanent` (projet non synchronise, instance generique) = `so
   modifier le cadrage du milestone.
 - **Milestone en cours sans `cadrage`** (projet migre depuis la v3) : `complet`, team = tous les agents `milestone`
   de la table.
-- **Reprise apres interruption** : `/start-session` respawne `socle` + la team de `cadrage` (`workflow-state.json`).
+- **Reprise apres interruption** : `/start-session` respawne `socle` + la team de `cadrage` (`workflow-state.json`) ;
+  une reprise annoncee par Claude Code sans `/start-session` respawne le meme effectif (section 4.2).

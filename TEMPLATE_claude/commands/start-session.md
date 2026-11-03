@@ -175,7 +175,12 @@ Task({
 4. **Attendre les ACTIF de tous les teammates** avant de continuer.
 
 > Après cette étape, le teamleader n'utilise plus que `SendMessage` — aucun nouveau spawn pendant la session, sauf
-> la team d'un milestone à l'application de son cadrage (GATE 2) et les agents `ponctuel` (à la demande).
+> la team d'un milestone à l'application de son cadrage (GATE 2), les agents `ponctuel` (à la demande) et le respawn
+> d'un effectif perdu ou incomplet (`agents/context/MILESTONE_CADRAGE.md` 4.2).
+>
+> **Même effectif sans `/start-session`** : quand Claude Code annonce lui-même la reprise (« tes teammates ont été
+> perdus… relance les teammates nécessaires »), le teamleader applique les points 2 à 4 ci-dessus (socle + team du
+> milestone en cours, pas seulement les agents des tâches non terminées), puis l'étape 4bis.
 
 ### Etape 4bis — Reprise du workflow interrompu (si `RESUME=1`)
 
@@ -289,5 +294,5 @@ _(Si aucune issue ouverte : "Aucune issue ouverte.")_
 - La TEAM est **toujours creee** sans demander confirmation
 - Le nom de la TEAM est **toujours** `{TEAM_NAME}` (defini dans CLAUDE.md)
 - Les agents `socle` (et la team d'un milestone en cours) sont spawnés au démarrage et passent en IDLE
-- Pendant la session : **uniquement SendMessage** — aucun nouveau spawn, sauf team du milestone (GATE 2) et agents `ponctuel` à la demande
+- Pendant la session : **uniquement SendMessage** — aucun nouveau spawn, sauf team du milestone (GATE 2), agents `ponctuel` à la demande et respawn d'un effectif perdu ou incomplet (MILESTONE_CADRAGE.md 4.2)
 - Les teammates attendent un ordre explicite du teamleader via SendMessage
