@@ -2,13 +2,13 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage, View } from '../types'
-import { PHASES, allocate, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageThresholds } from './lib'
+import { PHASES, allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageThresholds } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
 const RETRY_MS = 15_000
 
-const empty: View = { current: null, issues: [], milestones: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
+const empty: View = { current: null, issues: [], milestones: [], prs: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
 const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
 const noUsage: Usage = { windows: [], source: null, updatedAt: 0, error: null }
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
@@ -140,7 +140,11 @@ async function refresh($: any) {
     ])
     const now = await $.clock.now()
     lastRefreshAt = now
-    await update($, view, () => buildView(ms, issues, now, Object.fromEntries(labels.map((l: any) => [l.name, l.color]))))
+    const next = buildView(ms, issues, now, Object.fromEntries(labels.map((l: any) => [l.name, l.color])))
+    // PR ouvertes : seulement quand aucun milestone n'est en cours (rien d'autre à suivre dans le panneau).
+    if (!next.current)
+      next.prs = buildPrs(await gh($, ['pr', 'list', '--state', 'open', '--limit', '50', '--json', 'number,title,headRefName,isDraft,reviewDecision']))
+    await update($, view, () => next)
     if (expected.length > 0) {
       const isOk = isConsistent(issues, expected)
       if (isOk || retries >= 1) {
@@ -208,7 +212,7 @@ export const register: Register = (on, options) => {
     if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error} ; ${conso}.` }
     const what = v.current
       ? `milestone ${v.current}${v.isReleasing ? ' (publication)' : ''}, ${v.issues.length} issue(s) ouverte(s)`
-      : `${v.milestones.length} milestone(s) ouvert(s), aucun en cours`
+      : `${v.milestones.length} milestone(s) ouvert(s), aucun en cours, ${v.prs.length} PR ouverte(s)`
     return { text: `Panneau milestone rechargé : ${what} ; ${conso}.` }
   })
 
@@ -218,8 +222,12 @@ export const register: Register = (on, options) => {
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     const ran = await next(e)
     if (isTeammate) return ran
-    const found = parseGhIssueCommand(String((e as { command?: string }).command ?? ''))
-    if (found.length > 0) {
+    const command = String((e as { command?: string }).command ?? '')
+    const found = parseGhIssueCommand(command)
+    if (isGhPrCommand(command) && found.length === 0) {
+      pending?.cancel()
+      pending = $.clock.after(delayMs, () => void refresh($))
+    } else if (found.length > 0) {
       expected = [...expected, ...found]
       retries = 0
       pending?.cancel()
@@ -404,6 +412,26 @@ export const register: Register = (on, options) => {
                   <Text bold>{` ${String(pct).padStart(3)}%`}</Text>
                   <Text dimColor>{` ${m.closed}/${total} `}</Text>
                   <Text bold color="cyan">{m.title}</Text>
+                </Text>
+              )
+            })}
+            <Box marginTop={1}>
+              <Text bold>{`PR ouvertes (${v.prs.length})`}</Text>
+            </Box>
+            {v.prs.length === 0 && <Text dimColor>Aucune PR ouverte.</Text>}
+            {v.prs.map(pr => {
+              // Une ligne par PR : « #n  état  titre  (branche) » ; état = revue GitHub, ou brouillon.
+              const state = pr.isDraft ? { t: 'brouillon', c: 'gray' }
+                : pr.review === 'APPROVED' ? { t: '✓ approuvée', c: 'green' }
+                : pr.review === 'CHANGES_REQUESTED' ? { t: '✗ à corriger', c: 'red' }
+                : pr.review === 'REVIEW_REQUIRED' ? { t: 'revue attendue', c: 'yellow' }
+                : null
+              return (
+                <Text wrap="truncate-end">
+                  <Text bold color="green">{`#${pr.number} `}</Text>
+                  {state && <Text color={state.c}>{`${state.t} `}</Text>}
+                  <Text dimColor={pr.isDraft}>{pr.title}</Text>
+                  {pr.branch !== '' && <Text dimColor>{`  (${pr.branch})`}</Text>}
                 </Text>
               )
             })}
