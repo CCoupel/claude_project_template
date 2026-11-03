@@ -30,6 +30,11 @@ Les agents `socle` sont en IDLE depuis `/start-session` ; ceux de la team du mil
 (`agents/context/MILESTONE_CADRAGE.md` section 4). Dispatch = uniquement `SendMessage`. Avant de dispatcher une phase
 dont le deroulement depend du cadrage (tests, review, QUALIF, doc), relire `cadrage` (MILESTONE_CADRAGE.md section 5).
 
+**Destinataire absent** (perdu apres une coupure, jamais respawne, `SendMessage` en echec) alors qu'il fait partie de
+l'effectif attendu (socle + `cadrage.team`) : le spawner (prompt de `commands/start-session.md` etape 4), attendre son
+`ACTIF`, puis envoyer l'ordre (MILESTONE_CADRAGE.md 4.2). Teammates perdus annonces par Claude Code : respawner tout
+l'effectif attendu, pas seulement les agents des taches en cours.
+
 ```
 SendMessage({ to: "<nom>", content: "<tâche complète>" })
 → Attendre ACTIF + DONE
@@ -887,7 +892,8 @@ Ce fichier est la source de vérité pour les commandes `status`, `resume`, `ski
 
 > `cadrage` : écrit à la validation du GATE 2 (`agents/context/MILESTONE_CADRAGE.md` section 4) ; absent = cadrage
 > `complet` avec tous les agents `milestone` (projet migré depuis la v3). Lu par chaque phase (section 5) et par
-> `/start-session` pour respawner la team après interruption.
+> `/start-session` pour respawner la team après interruption — et par le teamleader quand Claude Code annonce
+> lui-même des teammates perdus (MILESTONE_CADRAGE.md 4.2).
 
 > `status` (racine) : `in_progress` tant que le workflow n'est pas terminé — `/start-session` s'en sert pour détecter
 > une session interrompue (absent = `in_progress`). `lots` n'existe que si le plan validé contient une table
