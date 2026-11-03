@@ -74,9 +74,10 @@ Projet cible
 ├── TEMPLATE_claude/         # Fetché depuis GitHub — gitignored
 └── .claude/
     ├── commands/            # Générés depuis TEMPLATE_claude/commands/
-    ├── agents/dev-*.md      # Générés selon la stack — trackés
-    ├── agents/environments/{publish,deploy}.<env>.md  # Générés selon publish/deploy
-    │                        # par environnement — trackés (voir infrastructure.environments[])
+    ├── agents/*.template.md # Générés (communs + dev-* selon la stack) — gitignored ;
+    │                        # compagnons <agent>.md (adaptations projet) — trackés
+    ├── agents/environments/{publish,deploy}.<env>.template.md  # Générés par environnement
+    │                        # — gitignored ; compagnons .md trackés (voir infrastructure.environments[])
     ├── CLAUDE.md            # Généré depuis TEMPLATE_claude/CLAUDE_TEMPLATE.md
     ├── project-config.json  # Créé par /init-project
     └── memory/

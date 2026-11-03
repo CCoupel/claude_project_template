@@ -1498,7 +1498,7 @@ Chaque environnement declare dans `infrastructure.environments[]` recoit un meca
   merge + tag officiel, declenche un rebuild deterministe via la CI choisie a l'Etape 7.
 
 Le mecanisme `deploy.mechanism` de chaque environnement reprend par defaut la reponse a la
-question 9 (docker-compose / helm / serverless / vps / paas / cloud-run) — proposer a
+question « Comment deploies-tu ? » (docker-compose / helm / serverless / vps / paas / cloud-run) — proposer a
 l'utilisateur de le personnaliser par environnement uniquement s'il le demande explicitement.
 
 > Seule la chaine QUALIF -> PROD est cablee dans l'orchestration CDP (voir
@@ -1731,15 +1731,15 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `testing.lot_max_tests` | Defaut `50` (nombre max de cas de test par lot ; QA execute et rapporte lot par lot) |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
-| `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question 9bis) ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question 9 pour chaque environnement, sauf personnalisation explicite |
+| `infrastructure.environments` | Defaut `[QUALIF, PROD]` (Etape 8, question « environnements de release ») ; `publish.mode` = `promote` pour tous sauf le dernier (`rebuild-ci`) ; `deploy.mechanism` reprend la reponse a la question « Comment deploies-tu ? » de l'Etape 8 pour chaque environnement, sauf personnalisation explicite |
 | `infrastructure.environments[].access` | Etape 8b : coordonnees non sensibles d'acces (`method`, `host`, `user`, `port`, `runtime`, `registry`/`context`...), **noms** des variables secretes (`credentials_env`) et resultat des sondes (`verified.status` : `ok` / `failed` / `skipped` / `unknown`). Jamais de valeur secrete. Lu par le preflight de `agents/deploy.md` et par les fichiers `deploy.<env>` (runtime, hote, port). `deploy.services` (optionnel) : seuls ces services/unites sont deployes |
 | Nom de fichier des environnements | `infrastructure.environments[].name` normalise : minuscules, espaces/underscores → tirets (ex. `PRE-PROD` → `pre-prod`) — utilise pour `.claude/agents/environments/{publish,deploy}.<nom>.template.md` (section 3bis) |
 
 ### 2. Agents dev-* et registre des agents
 
 Les agents de stack sont choisis avec la **table de correspondance stack → agent de stack** de la section
-"Registre des agents" (`dev-backend`, `dev-frontend`, `dev-firmware`, `dev-plugin` — une stack sans template
-est signalee `[?]`, aucun agent genere). Chacun est deploye en `.claude/agents/<name>.template.md`, avec un
+"Registre des agents" (`dev-backend`, `dev-frontend`, `dev-firmware`, `dev-plugin` ; une stack sans template
+dedie est couverte par `dev-generic`, compagnon obligatoire — Etape 5d). Chacun est deploye en `.claude/agents/<name>.template.md`, avec un
 compagnon `.md` optionnel pour les adaptations projet, et inscrit au registre ; les agents communs, deja
 deployes a l'etape 4 du fetch, y sont inscrits aussi :
 
@@ -2415,7 +2415,7 @@ continuer — ne jamais bloquer la fin de l'init.
 ### 7. Publication sur `main`
 
 Derniere action, **sans question** : l'init (ou la synchronisation, etape d7b) et l'audit sont termines, le resultat
-part sur `main` et sur GitHub. Section partagee par l'init et le mode « d) Synchroniser » (`INIT_FROM` pose a
+part sur `main` et sur GitHub. Section partagee par l'init et l'option d « Appliquer les mises a jour detectees » (`INIT_FROM` pose a
 l'etape 6.1 ou d7b).
 
 ```bash
@@ -2484,7 +2484,7 @@ Milestone v0.1.0 : N issues de base — https://github.com/<org>/<repo>/mileston
 Agents generes (registre : project-config.json → agents.registry[], <tag>) :
 - .claude/agents/dev-backend.template.md   ← templates/dev-backend-<stack>.md
 - .claude/agents/dev-frontend.template.md  ← templates/dev-frontend-<stack>.md
-- [?] dev-<categorie> — <techno> : aucun template de stack   (si stack « Autre »)
+- .claude/agents/dev-<categorie>.template.md ← templates/dev-generic.md  (si stack « Autre » — compagnon .md obligatoire)
 
 Commandes disponibles :
 - /feature, /bugfix, /hotfix, /refactor
@@ -2639,7 +2639,7 @@ Si `CUSTOMIZED_COMMANDS[]` non vide → informer l'utilisateur avant de continue
 Pour rétablir le template, supprimer le fichier .claude/commands/[nom].md et relancer l'option d.
 ```
 
-#### Etape d1c — Migration : renommer les contextes legacy `context/X.md` → `context/X.template.md`
+#### Etape d1b2 — Migration : renommer les contextes legacy `context/X.md` → `context/X.template.md`
 
 Même migration que l'étape M1c (v1/v2 → v3), applicable ici à un projet déjà en v3 mais synchronisé
 avant l'introduction du pattern template/compagnon pour `context/`. Sans effet si déjà migré.

@@ -57,8 +57,8 @@ tableau sourcé (3 à 5 solutions, couverture des cas d'usage v1, limites, modè
 **différenciateur** — ou l'adoption d'une solution existante si elle couvre déjà tout le besoin.
 Brief et workshop produisent la **fiche de cadrage** `docs/CADRAGE.md` (brief d'origine verbatim + valeurs finales
 avec leur provenance), relue par le planner et le marketing ; un projet avec code existant peut aussi être cadré
-depuis un brief (stack détectée, phases produit déduites). Pour un **nouveau projet** (aucun code détecté) avec
-un remote GitHub, il crée les labels de phase, puis le **premier milestone `v0.1.0`** et ses **issues de base**
+depuis un brief (stack détectée, phases produit déduites). Avec un remote GitHub, il crée les labels de phase ; pour
+un **nouveau projet** (aucun code détecté), il crée en plus le **premier milestone `v0.1.0`** et ses **issues de base**
 (squelette du projet, pipeline CI/CD, publication/déploiement du premier environnement, README, et une issue par
 cas d'usage v1 de la fiche de cadrage) après validation de la liste — jamais sur un projet avec code existant,
 déjà doté de milestones ou de tags, ni lors d'une mise à jour. Il se termine par un **audit du contexte** :
@@ -105,7 +105,9 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/agents/*.template.md` | Agents template (jamais édités) — agents communs et agents de stack `dev-*`, chacun avec un en-tête de provenance (template source + version) | Non (gitignore) |
 | `.claude/agents/*.md` | Adaptations projet par agent (compagnons, `dev-*.md` compris) | Oui |
 | `.claude/agents/generic.<nom>.md` | Spécification d'une instance d'agent générique (projets non-dev, ex. rédacteur PowerPoint) — le template commun est `generic.template.md` ; plusieurs instances possibles, déclarées dans `project-config.json` → `agents.generic[]` | Oui |
-| `.claude/agents/environments/{publish,deploy}.<env>.md` | Fichiers publish/deploy par environnement (mécanisme spécifique, un par tâche × environnement) | Oui |
+| `.claude/agents/environments/{publish,deploy}.<env>.template.md` | Fichiers publish/deploy par environnement (mécanisme spécifique, un par tâche × environnement), générés depuis `templates/environments/` | Non (gitignore) |
+| `.claude/agents/environments/{publish,deploy}.<env>.md` | Adaptations projet d'un fichier d'environnement (compagnon optionnel) | Oui |
+| `.claude/agents/environments/<env>.env`, `.env` | Valeurs des variables/secrets (global et par environnement) — les `*.env.example` (noms seuls) sont trackés | Non (gitignore) |
 | `.claude/{agents,commands}/context/*.template.md` | Contextes partagés template (jamais édités) | Non (gitignore) |
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet — `project-config.json` porte aussi le **registre des agents** (`agents.registry[]`) | Oui |
@@ -421,7 +423,7 @@ applique la même valeur par défaut. Détail complet : `TEMPLATE_claude/command
 PLAN ──────────────────────── contrats API + contracts/CHANGELOG.md + qa_parallelizable
     ↓  (🧵 peut déléguer à des sub-planner-N — groupes d'issues indépendants)
     ↓  label PLANNING
-[GATE 2] Validation plan (+ alerte breaking changes si détectés)
+[GATE 2] Validation plan + cadrage du milestone (+ alerte breaking changes si détectés) → team du milestone spawnée
     ↓  label PRET (EN COURS à l'ordre DEV du lot)
     ├──────────────────────────┐
   DEV                     TEST-WRITER ── depuis plan + contrats (TDD)
@@ -447,12 +449,12 @@ BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes
     └────────────────────────────────────────┴──────────────────────────────┘
     ↓  BUILD = compilation seule, incrémente `a` (aucun test rejoué) · GATE 4 attend les TROIS (NR KO → retour DEV sans solliciter l'utilisateur)
 [GATE 4] Validation manuelle ── CDP présente les scénarios à tester
-    ├─ OUI → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) → milestone si 100%
+    ├─ OUI → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) → clôture du milestone proposée
     │        → branche distante du milestone supprimée une fois PROD réussi
     └─ NON → seules les issues concernées sont rouvertes : label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
 PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un rebuild déterministe via CI) → installe l'artefact publié par la CI
-                               succès : release + milestone
+                               succès : notes de release + clôture du milestone proposée
                                échec  : rollback infra → rapport au teamleader → routing agent
 ```
 
@@ -476,12 +478,12 @@ PUSH → CI de validation ── verte : issues du lot N fermées (DONE conserv�
 | Gate | Moment | Action requise |
 |------|--------|----------------|
 | 1 | Après analyse | Confirmer le démarrage |
-| 2 | Après plan | Valider le plan et les contrats API |
+| 2 | Après plan | Valider le plan, les contrats API et le cadrage du milestone (options, team) — ou ajuster le cadrage |
 | 1.5 | Planner bloqué ou en échec (ambiguïté) | Lever l'ambiguïté |
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
-| LOT | Milestone avec lots : lot déployé en QUALIF | Valider le lot (suivant / publier en PROD) ou refuser |
+| LOT | Milestone avec lots : lot déployé en QUALIF (auto-validé si aucune issue `VALID-HUMAINE`) | Valider le lot (suivant / publier en PROD) ou refuser |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
-| 4 | BUILD+PUBLISH+DEPLOY QUALIF **et** DOC (finalize) tous les deux DONE | OUI (issue fermée + publish/deploy prod) ou NON (retour DEV ou PLAN) |
+| 4 | BUILD+PUBLISH+DEPLOY QUALIF, DOC (finalize) DONE **et** NR complète VALIDATED — toujours posé | OUI (publish/deploy prod) ou NON (retour DEV ou PLAN) |
 | 4b | Procédure QUALIF incohérente | Corriger avant build/publish/deploy |
 | 4c | Procédure PROD incohérente | Corriger avant publish/deploy |
 | 4d | Maquette de communication prête | Valider la communication de release |
@@ -624,9 +626,9 @@ Définition de référence (transitions, labels retirés, commandes `gh`) :
 
 ### Build (compilation locale, agnostique à l'environnement)
 
-`/build` compile et teste une seule fois, sans dépendre d'un environnement cible, et produit un
-candidat local versionné (`build/candidate_vX.Y.Z/`) — aucune CI ni registre impliqués. Un échec
-ici est toujours un échec de code (compilation, tests, lint), remonté directement à `dev`.
+`/build` compile une seule fois, sans dépendre d'un environnement cible ni rejouer de tests (QA a déjà validé
+le même arbre git), et produit un candidat local versionné (`build/candidate_vX.Y.Z/`) — aucune CI ni registre
+impliqués. Un échec ici est toujours un échec de code (compilation, packaging), remonté directement à `dev`.
 
 ### Publish (mise à disposition, par environnement)
 
@@ -665,8 +667,8 @@ PUBLISH, la procédure d'installation propre au mécanisme (docker-compose, helm
 selon `infrastructure.environments[].deploy.mechanism`.
 
 **En cas de succès du rollout :**
-- Création de la GitHub Release avec les notes
-- Vérification du milestone actif → clôture automatique si 100% des issues fermées
+- Notes de release posées sur la GitHub Release créée par la CI (`gh release edit` ; création seulement en repli)
+- Milestone correspondant à la version → clôture proposée à l'utilisateur, puis nettoyage des branches résiduelles
 
 **En cas d'échec du rollout :** rollback infra (`kubectl rollout undo`, réinstallation de la
 version précédente) — la publication (`/publish prod`) ayant déjà réussi (CI verte), l'échec ici
@@ -675,9 +677,13 @@ les faits bruts au teamleader, qui décide de la suite.
 
 ### Clôture de milestone
 
-Après un déploiement PROD réussi, le CDP vérifie le milestone actif :
-- **100% des issues fermées** → milestone clos automatiquement
-- **Issues encore ouvertes** → alerte utilisateur avec la liste
+Après un déploiement PROD réussi, `deployer` recherche le milestone correspondant à la version (par préfixe `vX.Y.Z`)
+et remonte la question « Clôturer le milestone ? » (posée par le teamleader via `AskUserQuestion`) :
+- **Clôturer** (recommandé) → issues encore ouvertes : reporter vers le prochain milestone / fermer / laisser en
+  suspens ; version consignée dans l'historique de la description, puis milestone fermé
+- **Laisser ouvert** → aucun changement
+
+Même logique que `/milestone close` (`agents/deploy.md` Étape 5).
 
 ### Marketing en parallèle du déploiement
 
@@ -748,7 +754,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 
 | Commande | Description |
 |----------|-------------|
-| `/start-session` | Démarre la session, lit la mémoire projet, affiche le milestone actif ; détecte un workflow interrompu (terminal tué) et propose de le reprendre au lieu de purger `_work/` ; signale les branches résiduelles (lecture seule) |
+| `/start-session` | Démarre la session, lit la mémoire projet, spawne le socle (+ la team du milestone en cours), affiche le milestone actif ; détecte un workflow interrompu (terminal tué) et propose de le reprendre au lieu de purger `_work/` ; signale les branches résiduelles (lecture seule) |
 | `/end-session` | Clôture la session, shutdown propre des agents, met à jour la mémoire — tout délégué : git à `deployer`, tests/build à `qa`, docs + `MEMORY.md` à `doc-updater`, le teamleader ne fait que questionner ; purge sélective de `_work/` si un workflow reste en cours ; classe les branches résiduelles (protégée / sûre / à arbitrer) et propose de supprimer les sûres en local + remote, jamais sans confirmation (classement et suppression délégués à `deployer`) |
 | `/team-status` | État de la team (lecture seule) |
 | `/team-delete [--force]` | Ferme les teammates IDLE, ou tous avec `--force` |
@@ -803,7 +809,7 @@ puis toutes les minutes, après toute commande Bash et après chaque délégatio
 
 | Commande | Description |
 |----------|-------------|
-| `/build` | Compilation/tests d'une version candidate — locale, agnostique à l'environnement |
+| `/build` | Compilation d'une version candidate (aucun test rejoué) — locale, agnostique à l'environnement |
 | `/publish qualif` | Mise à disposition du candidat pour QUALIF — promotion, zéro rebuild |
 | `/publish prod` | Mise à disposition du candidat pour PROD — merge + tag officiel, déclenche un rebuild déterministe via CI |
 | `/deploy qualif` | Installation en qualification de l'artefact déjà publié (avec validation infra préalable) |
@@ -832,7 +838,7 @@ puis toutes les minutes, après toute commande Bash et après chaque délégatio
 
 ## Migration depuis v3 (cadrage par milestone)
 
-`/init-project` → « d) Synchroniser » : ajoute `milestone.defaults` à `project-config.json`, réécrit la colonne `Spawn`
+`/init-project` → « Appliquer les mises à jour détectées » (option d) : ajoute `milestone.defaults` à `project-config.json`, réécrit la colonne `Spawn`
 de la table « Agents Disponibles » (`permanent` → `socle` / `milestone` / `ponctuel` selon le template ; une instance
 générique garde sa valeur, `permanent` = `socle`). Un milestone déjà en cours, sans cadrage, est mené en « complet »
 avec toute la team ; le cadrage s'applique à partir du milestone suivant. Redémarrer le teamleader après la synchro.
@@ -862,7 +868,7 @@ curl -fsSL \
 Pour récupérer les nouvelles fonctionnalités du template dans un projet existant :
 
 ```
-/init-project → d) Synchroniser le template depuis GitHub
+/init-project → Appliquer les mises à jour détectées (option d)
 ```
 
 Fetche la dernière version de `TEMPLATE_claude/` et :
@@ -886,7 +892,8 @@ Zone 1 — Contenu projet           Zone 2 — Règles template
 ─────────────────────────         ───────────────────────────────────────
 Config, stack, commandes,         <!-- BEGIN TEAMLEADER_PROTOCOL -->
 mémoire. Jamais écrasé            Rôle CDP, nommage canonique,
-par le template.                 délégation stricte, spawn au start-session,
+par le template.                 délégation stricte, spawn du socle au
+                                  start-session (team au GATE 2),
                                   SendMessage only, validation DONE.
                                   <!-- END TEAMLEADER_PROTOCOL -->
                                   Remplacé à chaque sync (step d6).

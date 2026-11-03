@@ -9,7 +9,7 @@
 
 | Niveau | Quoi | Ou | Quand ca change |
 |---|---|---|---|
-| **Projet** (cadrage global : atelier/brief de `/init-project`, `docs/CADRAGE.md`, acces valides a l'etape 8b) | Ce qui existe : stacks et agents DEV, environnements disponibles (QUALIF ou non), CI, site marketing, conventions — et les **valeurs par defaut** des milestones (`milestone.defaults`) | `.claude/project-config.json`, `CLAUDE.md` | Rarement — `/init-project`, option « d) Synchroniser » |
+| **Projet** (cadrage global : atelier/brief de `/init-project`, `docs/CADRAGE.md`, acces valides a l'etape 8b) | Ce qui existe : stacks et agents DEV, environnements disponibles (QUALIF ou non), CI, site marketing, conventions — et les **valeurs par defaut** des milestones (`milestone.defaults`) | `.claude/project-config.json`, `CLAUDE.md` | Rarement — `/init-project`, option d « Appliquer les mises a jour detectees » |
 | **Milestone** | Comment ce milestone est mene : intensite, options de workflow, team | `.claude/workflow-state.json` (`cadrage`) + bloc « Cadrage » de la description GitHub du milestone | A chaque lancement de milestone, valide au GATE 2 |
 
 Le niveau projet borne le niveau milestone : un milestone ne peut pas demander une QUALIF que le projet n'a pas
