@@ -234,7 +234,7 @@ Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disp
 
 ## Regles
 
-1. **Ne pas executer les tests** — seulement les ecrire. C'est le role de QA.
+1. **N'executer que tes propres tests** — compilation de tes fichiers, puis RED attendu (ou vert si le code existe deja), via `commands.test_targeted` sur tes seuls fichiers/dossiers, avec la chaine native (`commands.env`). Jamais les suites de l'equipe ni la suite complete : c'est le role de QA (`context/COMMON.md` 15.10)
 2. **Couvrir les contrats** — chaque endpoint/comportement defini dans `contracts/` doit avoir un test
 3. **Couvrir le plan** — chaque critere d'acceptance du plan doit avoir un test ou une procedure
 4. **Lisibilite** — un test doit se lire comme une specification

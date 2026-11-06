@@ -140,8 +140,8 @@ SendMessage({ to: "[agent]", content: "
   Handoff planner : _work/handoff/planner-[timestamp].md
   Contrats API : contracts/
   Commits atomiques.
-  Tests : boucle rapide seulement (build + lint + typecheck + tests feature de tes fichiers,
-  `commands.test_fast`) — jamais la suite complete (voir context/COMMON.md 15.2).
+  Tests : boucle rapide seulement (build + lint + typecheck + tests lies a tes fichiers modifies,
+  `commands.test_related` / `commands.test_targeted`) — jamais la suite complete (voir context/COMMON.md 15.2, 15.10).
   [cadrage.test_writer == false] Ecris aussi les tests de tes changements (section « Tests Requis » du plan,
   rangement tests/INDEX.md comme test-writer) et indique `Validation humaine : oui|non` dans ton DONE.
   [cadrage.doc == dev] Mets a jour CHANGELOG.md (section X.Y.Z, et la doc touchee) dans ton commit ;

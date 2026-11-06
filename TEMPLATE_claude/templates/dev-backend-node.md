@@ -158,9 +158,9 @@ npm run dev
 # Build
 npm run build
 
-# Tests
-npm test
-npm run test:coverage
+# Tests — boucle DEV : seulement les tests lies a tes fichiers modifies (suite complete = QA,
+# context/COMMON.md 15.10). Node/npm de l'OS qui execute (sous WSL : Node Linux, jamais npm Windows).
+npx vitest related --run src/foo.ts src/bar.ts   # Vitest (Jest : npx jest --findRelatedTests <fichiers>)
 
 # Linter
 npm run lint

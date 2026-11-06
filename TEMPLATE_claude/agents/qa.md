@@ -177,10 +177,15 @@ Joues uniquement si le teamleader les transmet (decides par le planner, `test_sc
 ### 1. Preparation
 
 ```bash
-# Verifier l'environnement
-# Installer les dependances si necessaire
+# Verifier l'environnement : commands.env evalue + controle « chaine native » (context/COMMON.md 15.10)
+#   binaire Windows sous WSL (node/npm/go → /mnt/c/... ou .exe) → BLOQUE au teamleader, aucune suite lancee
+# Installer les dependances si necessaire (avec la chaine native : node_modules lie a l'OS qui execute)
+# Verifier qu'aucune autre suite complete ne tourne deja sur ce depot (pgrep vitest / go test / pytest)
 # Preparer les donnees de test
 ```
+
+Tu es **le seul** agent qui lance les suites completes (les `dev-*` et le `test-writer` ne jouent que leurs
+tests cibles — `context/COMMON.md` 15.10).
 
 ### 1b. Progression par lot (OBLIGATOIRE des que la suite compte plusieurs lots)
 
@@ -199,13 +204,13 @@ teamleader, tous les lots sont joues et le rapport liste tous les echecs. Conven
 ### 2. Tests Unitaires
 
 ```bash
-# Backend (selon stack)
-go test ./... -v -cover          # Go
-npm test                          # Node.js
-pytest -v --cov                   # Python
+# Backend (selon stack) — paquets en parallele, sortie compacte, detecteur de course en QA
+go test -race -count=1 -p "$(nproc)" ./internal/foo/... ./cmd/...   # Go, par lot de paquets
+npx vitest run --reporter=dot <lot>                                # Node.js / vitest
+pytest -n auto --cov <lot>                                         # Python (pytest-xdist)
 
 # Frontend
-npm run test:unit                 # React/Vue
+npx vitest run --reporter=dot <lot>                                # React/Vue
 ```
 
 ### 3. Tests d'Integration
@@ -330,6 +335,12 @@ feature : X — regression : Y — quarantaine : Z — environnement : W — fla
 |------|-------|
 | test_name | 12.5s |
 
+## Durees (context/COMMON.md 15.10)
+Duree totale : <mm:ss> — toolchain : <native | Windows sous WSL ⚠>
+| Unite (paquet / fichier) — 5 plus lentes | Duree | Hors budget (~60 s) |
+|-------------------------------------------|-------|---------------------|
+| cmd/server | 225s | OUI → issue de decoupage proposee |
+
 ## Recommandations
 - Recommandation 1
 - Recommandation 2
@@ -390,7 +401,7 @@ c) Continuer malgre tout (non recommande)
 Lire `.claude/project-config.json` pour :
 - Frameworks de test a utiliser
 - Commandes de test specifiques
-- `commands.test`, `commands.test_targeted`, `commands.test_fast`, `commands.audit`
+- `commands.env`, `commands.test`, `commands.test_targeted`, `commands.test_related`, `commands.audit`
 - `testing.regression_at_qa`, `testing.full_regression_at`, `testing.components`, `testing.coverage_min`
 - Tests a ignorer : uniquement via le statut `quarantaine` de `tests/INDEX.md`
 

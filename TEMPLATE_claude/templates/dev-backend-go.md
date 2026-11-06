@@ -112,8 +112,9 @@ func TestCreateUser(t *testing.T) {
 # Build
 go build -o bin/server ./cmd/server
 
-# Tests
-go test ./... -v -cover
+# Tests — boucle DEV : seulement les paquets touches (suite complete = QA, context/COMMON.md 15.10)
+go test ./internal/foo -run 'TestBar'     # sans -race, sauf code concurrent touche
+go test -race ./internal/foo              # code concurrent touche
 
 # Linter
 golangci-lint run
@@ -186,6 +187,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 - [ ] Implementation repository
 - [ ] Service avec logique metier
 - [ ] Handler HTTP/gRPC
-- [ ] Tests unitaires internes pour la logique ajoutee (boucle rapide `go test -short` sur les paquets touches ; suite complete = QA)
+- [ ] Tests unitaires internes pour la logique ajoutee (boucle rapide `go test ./<paquet> -run <Motif>` sur les paquets touches ; suite complete = QA)
+- [ ] Logique dans `internal/<domaine>/`, `cmd/` reste mince (paquets testables en parallele) ; `t.Parallel()` si independant ; aucune attente fixe (`time.Sleep`) dans les tests — attente sur evenement avec echeance
 - [ ] Tests integration si necessaire
 - [ ] Documentation des endpoints
