@@ -332,6 +332,13 @@ chaque environnement, avec le role de l'agent `infra` (section « Mode Acces (ca
     c) Tests E2E : Playwright (recommande)
 ```
 
+### Etape 9b : Chaine d'outils native
+
+Detection sans question si tout est natif : sous WSL, un `node`/`npm`/`go` Windows (`/mnt/c/...`, `.exe`) rend
+les tests plusieurs fois plus lents. Binaire Windows detecte → question « Utiliser la chaine Linux (Recommande) /
+Garder Windows » ; la reponse fixe `commands.env` (prefixe `PATH` evalue par tous les agents avant leurs
+commandes). Regle : `commands/context/COMMON.md` §15.10.
+
 ### Etape 10 : Securite
 
 ```
@@ -624,7 +631,7 @@ Etapes principales (detail : `init-project.md`, section "Option d") :
 | Etape | Action |
 |-------|--------|
 | d0 | Registre des agents (cree s'il est absent) ; **migration v3 → v4** : ajout de `milestone.defaults`, colonne `Spawn` `permanent` reecrite en `socle` / `milestone` / `ponctuel` ; un milestone deja en cours sans cadrage est mene en `complet` |
-| d1a-d1h | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements, licence, elements prives (`PRIVATE/` : etude de l'Etape 10b si jamais faite, insertion de la section « Éléments privés » dans `CLAUDE.md`) |
+| d1a-d1i | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements, licence, elements prives (`PRIVATE/` : etude de l'Etape 10b si jamais faite, insertion de la section « Éléments privés » dans `CLAUDE.md`), chaine d'outils native et tests cibles (detection de l'Etape 9b, ajout de `commands.env` / `commands.test_related`, compagnons prescrivant une suite complete en boucle DEV signales en conflit) |
 | d2-d4 | Diff commandes / agents (par empreinte, via le registre) / contextes / table « Agents Disponibles », puis rapport et choix (tout appliquer, sans les reliquats, annuler) |
 | d5-d5e | Deploiement, doublons et conflits dans les compagnons, table « Agents Disponibles », verification post-nettoyage |
 | d6-d6b | Bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`, adequation modele/effort, `settings.json`, memoire, `.gitignore` |

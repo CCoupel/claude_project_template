@@ -1715,6 +1715,31 @@ se range dans `PRIVATE/` (Etape 10b) : la variable de `<env>.env` le designe par
     c) Tests E2E : Playwright (recommande)
 ```
 
+### Etape 9b : Chaine d'outils native (detection, sans question si tout est natif)
+
+Les tests doivent tourner avec les binaires de l'OS qui execute (`context/COMMON.md` 15.10) — sous WSL, un
+`node`/`npm`/`go` Windows (`/mnt/c/...`, `.exe`) rend les suites un ordre de grandeur plus lentes :
+
+```bash
+TOOLCHAIN_ISSUES=""
+if grep -qi microsoft /proc/version 2>/dev/null; then
+  for t in node npm npx go python3; do
+    p=$(command -v "$t") || continue; r=$(readlink -f "$p")
+    case "$r" in /mnt/*|*.exe|*.cmd) TOOLCHAIN_ISSUES="$TOOLCHAIN_ISSUES $t=$r";; esac
+  done
+  # Alternatives Linux deja installees mais hors PATH
+  ls -d "$HOME"/.nvm/versions/node/*/bin /usr/local/go/bin "$HOME"/go/bin 2>/dev/null
+fi
+echo "${TOOLCHAIN_ISSUES:-toolchain native}"
+```
+
+- Rien a signaler → `commands.env` vide (ou le seul ajout d'un dossier hors PATH, ex. `/usr/local/go/bin`).
+- Binaire Windows detecte → AskUserQuestion « Les tests utiliseraient <outil> Windows (<chemin>) sous WSL :
+  plusieurs fois plus lent » : Utiliser la chaine Linux (Recommande — `commands.env` = `export PATH=<bin Linux
+  detecte>:$PATH` ; si aucune n'est installee, proposer `nvm install <version de la CI ou LTS>` ; `node_modules`
+  existant installe sous Windows → `npm ci` cote Linux a faire, signale au rapport) / Garder Windows (consigne
+  au rapport : `⚠ toolchain Windows — tests lents`).
+
 ---
 
 ## Etape 10 : Securite
@@ -1852,6 +1877,7 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
     "concerns": ["auth", "api-public"]
   },
   "commands": {
+    "env": "<ENV_CMD : prefixe shell de la chaine native, ex. export PATH=...>",
     "build": "<BUILD_CMD>",
     "test": "<TEST_CMD>",
     "lint": "<LINT_CMD>",
@@ -1861,6 +1887,7 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
     "coverage": "<COVERAGE_CMD>",
     "test_fast": "<TEST_FAST_CMD>",
     "test_targeted": "<TEST_TARGETED_CMD avec {TARGETS}>",
+    "test_related": "<TEST_RELATED_CMD avec {FILES}>",
     "smoke": "<SMOKE_CMD optionnel>"
   },
   "docs": {
@@ -1906,8 +1933,10 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
 | `marketing.site` | Defaut `"auto"` : un site marketing est attendu (branche `gh-pages`, uniquement — `MARKETING/` en est le worktree git, jamais un dossier de la branche de code) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
 | `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/COMMON.md` §14) |
-| `commands.test_fast` | Boucle DEV : tests hors tag `slow`. Stack : `go test -short ./...` / `npx vitest run --exclude "**/*.slow.*"` / `pytest -m "not slow"` — vide sinon (les dev-* retombent sur `commands.test_targeted`) |
-| `commands.test_targeted` | Tests d'un sous-ensemble, `{TARGETS}` = fichiers ou dossiers. Stack : `go test {TARGETS}` / `npx vitest run {TARGETS}` / `pytest {TARGETS}` |
+| `commands.env` | Etape 9b. Prefixe shell evalue par tout agent avant ses commandes `commands.*` (chaine d'outils native de l'OS — `context/COMMON.md` 15.10). Ex. sous WSL : `export PATH=$HOME/.nvm/versions/node/v22.11.0/bin:/usr/local/go/bin:$PATH`. Vide si les outils du PATH sont deja natifs |
+| `commands.test_related` | Boucle DEV : tests lies aux fichiers source modifies, `{FILES}` = liste de fichiers. Stack : `npx vitest related --run {FILES}` / `npx jest --findRelatedTests {FILES}` — vide pour Go/pytest (les dev-* utilisent alors `commands.test_targeted` sur les paquets/dossiers touches) |
+| `commands.test_fast` | **Obsolete** (conserve s'il existe, plus utilise par les dev-*) : il relancait toute la suite hors tag `slow`. Remplace par `commands.test_related` / `commands.test_targeted` |
+| `commands.test_targeted` | Tests d'un sous-ensemble, `{TARGETS}` = fichiers ou dossiers (lots QA, paquets touches par un dev, tests du test-writer). Stack : `go test {TARGETS}` / `npx vitest run {TARGETS}` / `pytest {TARGETS}` |
 | `commands.smoke` | Optionnel : tests tagues `smoke` (verification post-deploy). Absent → `curl /health` |
 | `testing.components` | Composant → globs de sources (ex. `"http_server": ["server-go/internal/server/**"]`) — sert a selectionner les NR impactees (`context/COMMON.md` 15.3). Derive de l'arborescence detectee (Etape 0) ; a defaut, un composant par dossier de premier niveau de `src_dir` |
 | `testing.regression_at_qa` | Defaut `gated` (`gated` \| `parallel` \| `none`) — `context/COMMON.md` 15.3 |
@@ -3068,6 +3097,22 @@ grep -q '^## Éléments privés' CLAUDE.md || {
 La ligne `PRIVATE/` du `.gitignore` est ajoutee par la fusion de l'etape d6b — la faire **avant** tout deplacement
 (le garde-fou de la Finalisation l'ajoute de toute facon).
 
+#### Etape d1i — Chaine d'outils native et tests cibles
+
+Un projet initialise avant la regle de duree des tests (`context/COMMON.md` 15.10) n'a ni `commands.env` ni
+`commands.test_related`, et ses dev-* peuvent encore suivre `commands.test_fast` (suite complete hors `slow`).
+Lecture seule ici :
+
+- Jouer la detection de l'Etape 9b. Binaire Windows sous WSL → au rapport d4 `[⚠] toolchain — <outil> Windows
+  (<chemin>) : tests lents` ; a l'etape d5, la question de l'Etape 9b (Utiliser la chaine Linux / Garder).
+- `commands.env` absent → l'ajouter a l'etape d5 (vide, ou valeur issue de la question) — migration additive.
+- `commands.test_related` absent et frontend Vitest/Jest → au rapport d4 `[+] commands.test_related — <valeur>` ;
+  ecrit a l'etape d5 sans question (migration additive). `commands.test_fast` existant : conserve, signale
+  `[i] commands.test_fast obsolete (plus utilise par les dev-*)`.
+- Compagnons `.claude/agents/<agent>.md` (dev-*, test-writer, qa) qui prescrivent une suite complete en boucle
+  DEV ou au test-writer (`go test ./...`, `npm test`, `vitest run` sans cible, `commands.test_fast`) → conflit
+  avec le template, arbitre a l'etape d5c comme les autres conflits.
+
 #### Etape d2 — Calculer les noms deployes attendus
 
 ```bash
@@ -3664,6 +3709,7 @@ Synchronisation terminee.
   Acces aux environnements          : [<ENV>: ok | <ENV>: non valide (statut) | valides a l'instant (etape d1f)]
   Licence                           : [<SPDX> (inchangee | enregistree | definie a l'instant) | non definie — reportee] (etape d1g)
   Elements prives (PRIVATE/)        : [N deplaces, N attendus | inchange] — rotation recommandee : <elements> (etape d1h)
+  Toolchain / tests cibles          : [native | Linux activee (commands.env) | ⚠ Windows conservee] ; test_related [ajoute | inchange] (etape d1i)
 
   Fichiers PROJET preserves (non touches) :
     ✓ CLAUDE.md (hors bloc TEAMLEADER_PROTOCOL et hors table Agents Disponibles)

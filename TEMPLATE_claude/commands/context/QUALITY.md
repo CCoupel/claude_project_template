@@ -101,8 +101,9 @@ Ce fichier centralise les patterns partages par les commandes `/code-review`, `/
 {COVERAGE_CMD}
 ```
 
-Boucle DEV rapide (`commands.test_fast`) et tests cibles (`commands.test_targeted`, `{TARGETS}` = fichiers ou
-dossiers) : voir `context/COMMON.md` section 15. Un scope deja VALIDATED sur le meme arbre git n'est pas rejoue
+Boucle DEV : tests lies aux fichiers modifies (`commands.test_related`, `{FILES}`) ou tests cibles
+(`commands.test_targeted`, `{TARGETS}` = fichiers ou dossiers) ; duree des suites (chaine native, petits paquets,
+runner regle) : voir `context/COMMON.md` section 15 (15.10). Un scope deja VALIDATED sur le meme arbre git n'est pas rejoue
 (`_work/tests-ledger.md`).
 
 ### 7bis. CI_CMD et tests de timing
@@ -197,7 +198,8 @@ dossiers) : voir `context/COMMON.md` section 15. Un scope deja VALIDATED sur le 
 | code-reviewer | NE PAS corriger le code (juste reviewer) |
 | code-reviewer | NE PAS approuver si issue critique securite |
 | QA | NE PAS modifier de code (juste tester) |
-| test-writer | NE PAS executer les tests (juste ecrire) |
+| test-writer | NE PAS executer les suites de l'equipe : uniquement ses propres fichiers (compilation + RED, COMMON.md 15.10) |
+| dev-* | NE PAS lancer la suite complete : uniquement les tests lies aux fichiers modifies (COMMON.md 15.10) |
 | Tous | NE PAS ignorer les duplications |
 
 ---

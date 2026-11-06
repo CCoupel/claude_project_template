@@ -87,9 +87,10 @@ Suivre l'ordre et les conventions de ton template de stack (`dev-*.template.md` 
 ### Etape 5 : Verifications
 
 ```bash
-# Tests — boucle rapide uniquement : tests feature de tes fichiers, hors tag `slow`
-# (`commands.test_fast`, sinon `commands.test_targeted` de project-config.json).
-# La suite complete ({TEST_CMD}) est jouee par QA, jamais ici (context/COMMON.md 15.2).
+# Tests — boucle rapide uniquement : tests lies a tes fichiers modifies, hors tag `slow`
+# (`commands.test_related` avec {FILES}, sinon `commands.test_targeted` sur les paquets/dossiers touches),
+# avec la chaine native de l'OS (`commands.env`).
+# La suite complete ({TEST_CMD}) est jouee par QA, jamais ici (context/COMMON.md 15.2, 15.10).
 ```
 
 Commit local uniquement — **pas de push**. Tous les agents (dev, review, qa) travaillent sur

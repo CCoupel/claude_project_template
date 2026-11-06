@@ -67,8 +67,9 @@ Puis implementer et envoyer le rapport TERMINE habituel.
 
 1. Lire l'ordre, les contrats et les fichiers concernes de ton perimetre
 2. Implementer par petits increments, en suivant les conventions du compagnon
-3. Boucle rapide apres chaque increment : build, lint, tests de tes fichiers (commandes du compagnon —
-   jamais la suite complete, reservee a `qa`)
+3. Boucle rapide apres chaque increment : build, lint, tests lies a tes fichiers modifies (commandes du
+   compagnon, `commands.test_related` / `commands.test_targeted` — jamais la suite complete, reservee a `qa` ;
+   chaine native de l'OS : `context/COMMON.md` 15.10)
 4. Tests unitaires internes pour la logique ajoutee (les tests de specification sont ecrits par `test-writer`)
 5. Verifications de `context/DEV_COMMON.md` (« Avant de Terminer »), commit, rapport TERMINE
 

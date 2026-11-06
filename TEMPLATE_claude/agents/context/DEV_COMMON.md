@@ -113,7 +113,8 @@ Si vous devez modifier un contrat, documentez-le dans votre summary :
 | Verification | Description |
 |--------------|-------------|
 | Build | Le projet compile sans erreur |
-| Tests | Boucle rapide : tests **feature** de tes fichiers (`commands.test_fast`, sinon `commands.test_targeted`) — jamais la suite complete (QA la joue une fois par arbre, `context/COMMON.md` 15.2) |
+| Toolchain | `commands.env` evalue, controle « chaine native » fait (pas de binaire Windows sous WSL) — `context/COMMON.md` 15.10 |
+| Tests | Uniquement les tests **lies a tes fichiers modifies** : `commands.test_related` (`{FILES}`), sinon `commands.test_targeted` sur les paquets/dossiers touches (Go : sans `-race` sauf code concurrent) — **jamais** la suite complete, meme « pour verifier » (QA la joue une fois par arbre, `context/COMMON.md` 15.2 et 15.10). Effet de bord large soupconne → `Impact large : <zones>` dans ton DONE |
 | Version | La version correspond au fichier de config |
 | Lint / typecheck | Pas d'erreurs de linting (`commands.lint`) ni de typage (`commands.typecheck`) |
 
