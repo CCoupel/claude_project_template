@@ -55,11 +55,12 @@ const phaseOf = (i: RawIssue) =>
   i.labels.map(l => l.name).find(n => (PHASES as readonly string[]).includes(n)) ?? null
 
 /**
- * Milestone en cours = le premier milestone ouvert (due date = date de démarrage du dev, GITHUB.md 3.0 :
- * démarrés d'abord, du plus ancien ; puis SemVer)
- * qui porte au moins une issue ouverte avec un label de phase.
- * À défaut : un milestone encore ouvert dont toutes les issues sont fermées (CI verte) est en publication /
- * déploiement PROD — il reste le milestone en cours (`isReleasing`), jusqu'à sa clôture.
+ * Milestone en cours (GITHUB.md 3.0 : `due_on` = date de démarrage du dev, posée par MILESTONE START) :
+ * le milestone ouvert portant une due date, le plus anciennement démarré. Toutes ses issues fermées (CI verte) :
+ * il est en publication / déploiement PROD (`isReleasing`) jusqu'à sa clôture — et le reste même si le
+ * milestone suivant a déjà des issues en PLANNING (non démarré tant qu'il n'a pas de due date).
+ * Repli pour un projet sans aucune due date (convention antérieure) : premier milestone (SemVer) portant une
+ * issue ouverte avec un label de phase, sinon un milestone ouvert dont toutes les issues sont fermées.
  */
 export const buildView = (
   rawMilestones: RawMilestone[],
@@ -71,10 +72,14 @@ export const buildView = (
   const started = new Set(
     rawIssues.filter(i => i.milestone && phaseOf(i)).map(i => i.milestone!.title),
   )
-  const working = sorted.find(m => started.has(m.title))?.title ?? null
+  const isDone = (m: RawMilestone) => m.open_issues === 0 && m.closed_issues > 0
+  const dated = sorted.find(m => m.due_on)
+  const working = dated
+    ? (isDone(dated) ? null : dated.title)
+    : (sorted.find(m => started.has(m.title))?.title ?? null)
   const releasing = working
     ? null
-    : (sorted.find(m => m.open_issues === 0 && m.closed_issues > 0)?.title ?? null)
+    : ((dated ?? sorted.find(isDone))?.title ?? null)
   const current = working ?? releasing
   const issues: Issue[] = current
     ? rawIssues

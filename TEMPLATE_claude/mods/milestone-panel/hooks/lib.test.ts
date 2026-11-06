@@ -168,6 +168,33 @@ test('milestone dont toutes les issues sont fermées mais encore ouvert : en cou
   expect(buildView([m('v11.3', 3, 0), m('v12', 0, 0)], [], 1).current).toBe(null)
 })
 
+test('milestone démarré (due date) dont toutes les issues sont fermées : reste en cours (publication) face au suivant en PLANNING', () => {
+  const ms = [
+    { title: 'v11.5.0', due_on: null, open_issues: 4, closed_issues: 0 },
+    { title: 'v11.4.0', due_on: '2026-11-01T00:00:00Z', open_issues: 0, closed_issues: 9 },
+  ]
+  const issues = [{ number: 1, title: 'a', labels: lab('PLANNING'), milestone: { title: 'v11.5.0' } }]
+  const v = buildView(ms, issues, 1)
+  expect(v.current).toBe('v11.4.0')
+  expect(v.isReleasing).toBe(true)
+  expect(v.issues).toEqual([])
+})
+
+test('milestone démarré (due date) avec issues ouvertes : en cours, même si un autre milestone a des issues en phase', () => {
+  const ms = [
+    { title: 'v11.4.0', due_on: null, open_issues: 2, closed_issues: 0 },
+    { title: 'v11.5.0', due_on: '2026-11-01T00:00:00Z', open_issues: 1, closed_issues: 3 },
+  ]
+  const issues = [
+    { number: 1, title: 'a', labels: lab('EN COURS'), milestone: { title: 'v11.4.0' } },
+    { number: 2, title: 'b', labels: lab('EN QA'), milestone: { title: 'v11.5.0' } },
+  ]
+  const v = buildView(ms, issues, 1)
+  expect(v.current).toBe('v11.5.0')
+  expect(v.isReleasing).toBe(false)
+  expect(v.issues.map(i => i.number)).toEqual([2])
+})
+
 test('consommation : libellés, ordre, barre et couleur', () => {
   const u = buildUsage(
     [
