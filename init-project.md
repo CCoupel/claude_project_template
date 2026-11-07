@@ -1595,6 +1595,15 @@ AskUserQuestion : "Quel systeme CI/CD utilises-tu ?"
 (Autre — Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines... — preciser via "Autre")
 ```
 
+```
+AskUserQuestion : "Quand fermer une issue terminee ?"
+- Sur CI verte apres QA (Recommande) — `issues.close_on = ci` : l'issue est fermee des que la CI de validation
+  est verte ; la validation utilisateur porte sur le milestone (GATE 4)
+- Apres validation utilisateur — `issues.close_on = validation` : l'issue reste ouverte en `DONE` jusqu'a une
+  validation qui la couvre (GATE LOT explicite, sinon « Oui » au GATE 4)
+```
+Projet deja initialise (option d) : `issues.close_on` absent = `ci`, aucune question (modifiable a la main).
+
 ---
 
 ## Etape 8 : Environnements et Deploiement
@@ -1876,6 +1885,9 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
   "security": {
     "concerns": ["auth", "api-public"]
   },
+  "issues": {
+    "close_on": "ci"
+  },
   "commands": {
     "env": "<ENV_CMD : prefixe shell de la chaine native, ex. export PATH=...>",
     "build": "<BUILD_CMD>",
@@ -1945,6 +1957,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `milestone.defaults` | Intensite de depart d'un milestone selon son type de version (`patch` / `minor` / `major` → `leger` / `complet`). Defaut `patch: leger`, `minor` et `major: complet`. Le cadrage complet (options, team) est propose par le planner et valide au GATE 2 : `agents/context/MILESTONE_CADRAGE.md`. Absent = `complet` partout |
 | `testing.lot_max_tests` | Defaut `50` (nombre max de cas de test par lot ; QA execute et rapporte lot par lot) |
 | `private` | Etape 10b. `reviewed` : date de l'etude ; `items[]` : contenu attendu de `PRIVATE/` (gitignore) — `path`, `kind` (nature, sans valeur), `origin` : `moved` (deplace depuis `from`) \| `existing` (deja hors git, range) \| `expected` (a fournir par le developpeur). Copie trackee : un clone frais sait ce qui manque ; `qa` y lit ce qu'il copie dans ses worktrees |
+| `issues.close_on` | Etape 7. `ci` (defaut ; absent = `ci`) : issue fermee sur CI verte apres QA ; `validation` : issue laissee ouverte en `DONE` jusqu'a une validation utilisateur qui la couvre (GATE LOT explicite, sinon GATE 4) — `commands/context/GITHUB.md` §9.5 |
 | `license` | Etape 1b. `spdx` : identifiant SPDX (`MIT`, `Apache-2.0`...), `LicenseRef-proprietary` (tous droits reserves), `LicenseRef-custom` (texte maison fourni) ou `null` (« Decider plus tard ») ; `holder` / `year` : titulaire et annee du copyright ; `source` : `detected` \| `provided` \| `guided` \| `proprietary` \| `deferred` |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |

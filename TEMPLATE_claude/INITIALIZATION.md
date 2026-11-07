@@ -281,6 +281,10 @@ de `init-project.md`, section "Registre des agents") :
     b) GitLab CI — meme demarche avec .gitlab-ci.yml
     c) Aucun — pas de pipeline genere, /build et /publish restent manuels
     (Autre — Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines...)
+
+10b. Quand fermer une issue terminee ? (`issues.close_on`)
+    a) Sur CI verte apres QA (Recommande) — `ci`
+    b) Apres validation utilisateur — `validation` (GATE LOT explicite, sinon GATE 4)
 ```
 
 ### Etape 8 : Environnements et Deploiement

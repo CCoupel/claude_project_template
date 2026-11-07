@@ -135,6 +135,8 @@ SendMessage({ to: "doc-updater", content: "
   validation (`infra.md` §3bis, C10) s'execute — puis attendre son verdict (`gh run watch` / `gh run list --branch`) :
   - **CI verte** → `ISSUE_NUMS[]` non vide → commenter puis **fermer toutes les issues** (avec lots : celles du lot ;
     elles gardent `DONE`) ; la fermeture vaut « QA OK + CI verte », **pas** validation du milestone (reste au GATE 4).
+    `issues.close_on` = `validation` (`GITHUB.md` §9.5) : commentaire seul, issues laissees ouvertes en `DONE` —
+    fermees a la validation utilisateur (GATE LOT explicite, sinon GATE 4).
     Sans lots : Phase BUILD + PUBLISH QUALIF + DEPLOY QUALIF (automatique). Avec lots : aucune validation
     utilisateur après la CI — lot suivant directement
   - **CI non verte** (rouge, orange, annulee, en erreur) → jamais de fermeture : cycle++ (`tests/METRICS.md`),
