@@ -60,7 +60,8 @@ const phaseOf = (i: RawIssue) =>
  * il est en publication / déploiement PROD (`isReleasing`) jusqu'à sa clôture — et le reste même si le
  * milestone suivant a déjà des issues en PLANNING (non démarré tant qu'il n'a pas de due date).
  * Repli pour un projet sans aucune due date (convention antérieure) : premier milestone (SemVer) portant une
- * issue ouverte avec un label de phase, sinon un milestone ouvert dont toutes les issues sont fermées.
+ * issue ouverte avec un label de phase autre que `PLANNING` (un plan en cours d'élaboration ne démarre pas le
+ * milestone), sinon un milestone ouvert dont toutes les issues sont fermées.
  */
 export const buildView = (
   rawMilestones: RawMilestone[],
@@ -70,7 +71,7 @@ export const buildView = (
 ): View => {
   const sorted = [...rawMilestones].sort(compareMilestones)
   const started = new Set(
-    rawIssues.filter(i => i.milestone && phaseOf(i)).map(i => i.milestone!.title),
+    rawIssues.filter(i => i.milestone && phaseOf(i) && phaseOf(i) !== 'PLANNING').map(i => i.milestone!.title),
   )
   const isDone = (m: RawMilestone) => m.open_issues === 0 && m.closed_issues > 0
   const dated = sorted.find(m => m.due_on)
