@@ -8,26 +8,36 @@ le développement, la qualité, le déploiement et la communication de release.
 
 ## Installation
 
-### Option A — Launcher tmux (recommandé)
+### Option A — Launcher (recommandé)
 
-Hub tmux pour piloter plusieurs projets Claude Code en parallèle (sessions groupées, panes colorés
-par agent, auto-update silencieux, sync automatique de `init-project.md`) — maintenu dans son
-propre repo, compagnon de celui-ci :
+**Claude-Launcher-NG2** : hub tmux pour piloter plusieurs projets Claude Code en parallèle (teams
+mises en page, vignettes, reprise après crash, sync automatique de `init-project.md`), sur l'hôte
+ou **en conteneur** (podman, docker, ssh, Kubernetes) — maintenu dans son propre repo, compagnon de
+celui-ci :
 
 ```bash
-curl -fsSL \
-  https://raw.githubusercontent.com/CCoupel/Claude-Launcher/main/claude-launcher.sh \
-  -o ~/claude-launcher.sh && chmod +x ~/claude-launcher.sh && ~/claude-launcher.sh
+os=$(uname -s | tr A-Z a-z); arch=$(uname -m)
+case "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; esac
+curl -fsSL "https://github.com/CCoupel/Claude-Launcher/releases/latest/download/claude-launcher-ng2-$os-$arch" \
+  -o ~/.local/bin/claude-launcher-ng2 && chmod +x ~/.local/bin/claude-launcher-ng2 && claude-launcher-ng2
 ```
 
-Documentation complète (configuration, `EXTRA_ENVS`, mise à jour) :
+Documentation complète (configuration, backends, mise à jour) :
 [CCoupel/Claude-Launcher](https://github.com/CCoupel/Claude-Launcher) ·
 [site](https://ccoupel.github.io/Claude-Launcher/)
 
+> **Version majeure commune.** Depuis la v5, le template et le launcher partagent leur version
+> majeure : le template **v5** va avec **Claude-Launcher v5 (NG2)**. Un launcher vX n'adopte que
+> les versions du template de majeure ≤ X ; les versions mineures restent indépendantes, sauf
+> fonctionnalité commune (publiée sous le même numéro des deux côtés).
+>
+> **Passage d'une majeure à l'autre** : fermer tous les projets avant de changer de version
+> majeure du launcher (voir
+> [Passage à la v5](https://github.com/CCoupel/Claude-Launcher#passage-à-la-v5)).
+
 > **Déjà installé avant `v3.0.0` ?** Le launcher vivait ici auparavant — votre script cherche
-> encore ses mises à jour sur ce repo, qui ne l'héberge plus. Relancez une fois la commande
-> ci-dessus (même URL, elle pointe déjà vers le nouveau repo) pour basculer définitivement ;
-> votre config (`~/.config/claude-launcher.conf`) n'est pas touchée. Détails :
+> encore ses mises à jour sur ce repo, qui ne l'héberge plus. Installez NG2 avec la commande
+> ci-dessus ; détails :
 > [notes de la release v3.0.0](https://github.com/CCoupel/claude_project_template/releases/tag/v3.0.0)
 > · [procédure de migration complète](https://github.com/CCoupel/Claude-Launcher#migration-depuis-claude_project_template).
 
