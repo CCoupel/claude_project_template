@@ -647,6 +647,14 @@ Un seul label de phase à la fois (sauf `EN REVIEW` + `EN QA` pendant la parall�
 | `ABANDONNE` | Ne sera pas traitée (terminal) | CDP | Sur décision de l'utilisateur uniquement ; l'issue est fermée `not planned` |
 | *(issue fermée)* | QA OK + CI verte (garde `DONE`) — la validation du milestone reste à l'utilisateur (GATE 4) | CDP | CI verte après le push de la branche (avec lots : après validation QUALIF du lot, GATE LOT) ; rouverte si GATE 4 refusé pour cette issue |
 
+Les labels sont posés par `deployer`, sur ordre du teamleader (qui n'a ni `Bash` ni outil GitHub), avec
+`gh issue edit --add-label … --remove-label …` — à chaque changement de phase, avant l'ordre de la phase suivante
+(règle aussi présente dans le bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`).
+
+**Fermeture configurable** — `project-config.json` → `issues.close_on` (question de l'Étape 7 de `/init-project`) :
+`ci` (défaut) ferme l'issue sur CI verte ; `validation` la laisse ouverte en `DONE` jusqu'à une validation
+utilisateur qui la couvre (GATE LOT explicite, sinon « Oui » au GATE 4, avant le déploiement PROD).
+
 Définition de référence (transitions, labels retirés, commandes `gh`) :
 `TEMPLATE_claude/commands/context/GITHUB.md` §8.2 et §9 — les autres fichiers y renvoient sans la recopier.
 

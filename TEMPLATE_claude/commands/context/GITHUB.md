@@ -473,7 +473,7 @@ fi
 | `DONE` | Implementation validee (QA OK) ; branche poussee, CI en cours puis verte (l'issue est alors fermee) ; avec lots, le lot est d'abord valide par l'utilisateur en QUALIF (GATE LOT), puis pousse | CDP (`gh`, §9) | QA valide (le push de la branche et la CI suivent immediatement) | Rejet GATE LOT ou GATE 4 (→ `EN COURS` ou `PLANNING`, issue rouverte si fermee) ; ou CI non verte (→ `EN COURS`) |
 | `BLOQUE` | Avancement impossible (dependance externe, decision ou information en attente) — **s'ajoute** a la phase courante, qui est conservee pour la reprise | CDP (`gh`, §9), sur decision de l'utilisateur ou constat d'un blocage | Blocage constate, avec un commentaire precisant la cause | Blocage leve (la phase courante reprend) ou abandon |
 | `ABANDONNE` | Issue abandonnee, ne sera pas traitee (terminal) | CDP (`gh`, §9), **uniquement sur decision de l'utilisateur** | Abandon decide, avec un commentaire precisant la raison | Reouverture manuelle (l'issue repart a `PLANNING`) |
-| — (issue fermee) | CI verte sur la branche poussee (avec lots : apres la validation QUALIF du lot, GATE LOT). L'issue conserve `DONE`. **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (`gh`, §9) | CI verte apres le push de la branche en `DONE` (avec lots : apres validation du lot, §9.5b) | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
+| — (issue fermee) | CI verte sur la branche poussee (avec lots : apres la validation QUALIF du lot, GATE LOT) ; `issues.close_on` = `validation` : validation utilisateur qui la couvre (GATE LOT explicite, sinon GATE 4), §9.5. L'issue conserve `DONE`. **Ne vaut pas validation du milestone** : celle-ci reste a l'utilisateur (GATE 4) | CDP (`gh`, §9) | CI verte apres le push de la branche en `DONE` (avec lots : apres validation du lot, §9.5b) | Rejet GATE 4 pour cette issue (reouverture, label `DONE` retire) |
 
 **Regle de semantique : l'etat dit ou en est l'issue dans le cycle (ce qui reste a faire), pas ce qu'un teammate
 fait a cet instant.** Il change donc **au retour** du teammate (DONE/FAILED/BLOQUE) ou a la **validation de
@@ -494,7 +494,8 @@ Regles :
   transition de phase — seule la levée du blocage le retire.
 - `ABANDONNE` est **terminal** : il remplace tous les labels de phase (et `BLOQUE`) et ferme l'issue (`not planned`).
 - Chaque transition de phase pose le nouveau label **et retire les autres labels de phase** (commandes en section 9).
-- **Fermeture = CI verte, pas validation utilisateur.** A `DONE`, le CDP pousse la branche du milestone ; la CI
+- **Fermeture = CI verte, pas validation utilisateur** (defaut `issues.close_on` = `ci` ; projet qui exige la
+  validation utilisateur : `validation`, §9.5). A `DONE`, le CDP pousse la branche du milestone ; la CI
   de validation (`infra.md` §3bis, C10) s'execute. CI verte → l'issue est fermee. **Avec lots**, le push n'a lieu
   qu'apres la validation QUALIF du lot par l'utilisateur (GATE LOT, §9.5b) ; aucune validation n'est demandee apres
   la CI. CI **non verte** (rouge, orange, annulee ou en erreur) → l'issue repart a `EN COURS` avec un commentaire
@@ -547,9 +548,15 @@ fix(scope): Description (#38)
 SendMessage({ to: "deployer", content: "Labels : issues #12 #15 → EN COURS (GITHUB.md §9.1)" })
 ```
 
-Si un outil GitHub MCP est disponible (`mcp__plugin_github_github__issue_write`), il est équivalent ; sinon `gh`
-est la procédure de référence. Toute transition retire les autres labels de phase. La fermeture d'une issue suit
+`gh` est la procédure de référence (un outil GitHub MCP, s'il est présent dans la session de `deployer`, est
+équivalent — jamais requis). Toute transition retire les autres labels de phase. La fermeture d'une issue suit
 §9.5 ; la clôture du milestone reste soumise à la validation utilisateur (GATE 4).
+
+### 9.0a Transition vers `PLANNING` (entrée en Phase Plan)
+
+```bash
+gh issue edit <numero> --add-label "PLANNING" --remove-label "PRET,EN COURS,EN REVIEW,EN QA,DONE"
+```
 
 ### 9.0 Transition vers `PRET` + pose des lots (GATE 2 validé) — un seul ordre
 
@@ -605,10 +612,21 @@ git push origin milestone/vX.Y.Z   # la CI de validation (C10) demarre
 
 ### 9.5 Résultat de la CI
 
+Mode de fermeture : `project-config.json` → `issues.close_on` — `ci` (défaut, absent = `ci`) : l'issue est fermée sur
+CI verte ; `validation` : elle reste ouverte en `DONE` jusqu'à une **validation utilisateur** qui la couvre — GATE LOT
+**explicite** (lot à issue `VALID-HUMAINE` validé par l'utilisateur ; un lot auto-validé ne compte pas) ou, à défaut,
+« Oui » au GATE 4 — puis elle est fermée avant la Phase 6.
+
 ```bash
-# CI verte → fermeture de l'issue (elle conserve DONE)
+# CI verte, close_on = ci (defaut) → fermeture de l'issue (elle conserve DONE)
 gh issue comment <numero> --body "✅ CI verte — QA OK — en attente de validation utilisateur (GATE 4)"
 gh issue close <numero>
+
+# CI verte, close_on = validation → issue laissee ouverte (DONE)
+gh issue comment <numero> --body "✅ CI verte — QA OK — fermeture a la validation utilisateur"
+# ... puis, a la validation (GATE LOT explicite ou GATE 4 « Oui ») :
+gh issue close <numero> --comment "✅ Valide par l'utilisateur (<GATE LOT LOT-N | GATE 4>)"
+# ordre du teamleader : "Fermeture validee (<GATE LOT LOT-N | GATE 4>) : issues #12 #15"
 
 # CI non verte (rouge, orange, annulee, en erreur) → correction obligatoire, l'issue reste ouverte
 gh issue comment <numero> --body "🔴 CI non verte — <job en echec, lien du run>"
@@ -627,7 +645,8 @@ QUALIF et du rapport QA ; **lot sans issue `VALID-HUMAINE` : auto-valide, GATE L
 ```
 QA valide → label DONE → Phase 5 (BUILD, PUBLISH QUALIF, DEPLOY QUALIF) → GATE LOT : l'utilisateur teste et valide
   OUI → push de la branche du milestone → CI de validation (C10)
-          CI verte     → fermeture des issues du lot (§9.5, DONE conserve) → lot suivant (§9.0 → §9.1)
+          CI verte     → fermeture des issues du lot (§9.5, DONE conserve ; close_on = validation : seulement si le
+                         GATE LOT a ete valide explicitement, sinon ouvertes jusqu'au GATE 4) → lot suivant (§9.0 → §9.1)
           CI non verte → §9.5 (EN COURS, correction, nouveau push)
   NON → seules les issues concernees repartent : meme procedure que §9.6 (Cas A → EN COURS, Cas B → PLANNING),
         sans reouverture puisque l'issue n'est pas encore fermee
@@ -661,7 +680,8 @@ gh issue edit <numero> --add-label "PLANNING" --remove-label "PRET,DONE"
 
 ### 9.7 Validation GATE 4 (OUI)
 
-Aucun changement sur les issues (déjà fermées en `DONE`). La validation autorise la clôture du milestone et le
+Aucun changement sur les issues (déjà fermées en `DONE`) — sauf `issues.close_on` = `validation` : fermer d'abord les
+issues `DONE` encore ouvertes du milestone (§9.5), avant la Phase 6. La validation autorise la clôture du milestone et le
 déploiement PROD ; à l'issue du déploiement, les branches résiduelles (milestone, PR mergées) sont supprimées en local et en remote (`deploy.md`, Étape 6).
 
 ### 9.8 Blocage et déblocage (`BLOQUE`)
@@ -762,7 +782,8 @@ l'etat reel meme quand le teamleader attend (GATE, teammate parallele, lot en fi
 | Lot valide en QUALIF par l'utilisateur (GATE LOT) | aucun label : push puis CI (§9.5b) |
 | CI verte d'un lot | issues du lot fermees (§9.5) ; `EN COURS` sur les issues du lot suivant a son ordre DEV (§9.1) |
 | QA `FAILED` / tests en echec | `EN COURS`, retirer `EN QA` et `EN REVIEW` (§9.1) |
-| CI verte / non verte | fermeture des issues / `EN COURS` (§9.5) |
+| CI verte / non verte | fermeture des issues (`close_on` = `validation` : commentaire seul) / `EN COURS` (§9.5) |
+| GATE 4 « Oui » (`close_on` = `validation`) | fermeture des issues `DONE` encore ouvertes du milestone (§9.5), avant la Phase 6 |
 | Teammate `BLOQUE` | ajouter `BLOQUE` + commentaire de cause (§9.8) ; la phase est conservee |
 | Blocage leve | retirer `BLOQUE` + commentaire (§9.8) |
 

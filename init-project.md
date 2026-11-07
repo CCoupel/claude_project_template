@@ -1596,6 +1596,15 @@ AskUserQuestion : "Quel systeme CI/CD utilises-tu ?"
 (Autre — Jenkins, CircleCI, Azure DevOps, Bitbucket Pipelines... — preciser via "Autre")
 ```
 
+```
+AskUserQuestion : "Quand fermer une issue terminee ?"
+- Sur CI verte apres QA (Recommande) — `issues.close_on = ci` : l'issue est fermee des que la CI de validation
+  est verte ; la validation utilisateur porte sur le milestone (GATE 4)
+- Apres validation utilisateur — `issues.close_on = validation` : l'issue reste ouverte en `DONE` jusqu'a une
+  validation qui la couvre (GATE LOT explicite, sinon « Oui » au GATE 4)
+```
+Projet deja initialise (option d) : `issues.close_on` absent = `ci`, aucune question (modifiable a la main).
+
 ---
 
 ## Etape 8 : Environnements et Deploiement
@@ -1909,6 +1918,9 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
   "security": {
     "concerns": ["auth", "api-public"]
   },
+  "issues": {
+    "close_on": "ci"
+  },
   "commands": {
     "env": "<ENV_CMD : prefixe shell de la chaine native, ex. export PATH=...>",
     "build": "<BUILD_CMD>",
@@ -1965,6 +1977,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.typecheck` | Frontend TS : `npm run typecheck` / `tsc --noEmit` — vide sinon |
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
 | `marketing.site` | Defaut `"auto"` : un site marketing est attendu (branche `gh-pages`, uniquement — `MARKETING/` en est le worktree git, jamais un dossier de la branche de code) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
+| `issues.close_on` | Etape 7. `ci` (defaut ; absent = `ci`) : issue fermee sur CI verte apres QA ; `validation` : issue laissee ouverte en `DONE` jusqu'a une validation utilisateur qui la couvre (GATE LOT explicite, sinon GATE 4) — `commands/context/GITHUB.md` §9.5 |
 | `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/COMMON.md` §14) |
 | `commands.env` | Etape 9b. Prefixe shell evalue par tout agent avant ses commandes `commands.*` (chaine d'outils native de l'OS — `context/COMMON.md` 15.10). Ex. sous WSL : `export PATH=$HOME/.nvm/versions/node/v22.11.0/bin:/usr/local/go/bin:$PATH`. Vide si les outils du PATH sont deja natifs |
 | `commands.test_related` | Boucle DEV : tests lies aux fichiers source modifies, `{FILES}` = liste de fichiers. Stack : `npx vitest related --run {FILES}` / `npx jest --findRelatedTests {FILES}` — vide pour Go/pytest (les dev-* utilisent alors `commands.test_targeted` sur les paquets/dossiers touches) |

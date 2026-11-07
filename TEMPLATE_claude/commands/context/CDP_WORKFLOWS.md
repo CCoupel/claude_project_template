@@ -224,30 +224,24 @@ Enchaîner directement sur la phase suivante sans autre attente.
 | Entrée Phase QA — mode séquentiel (après verdict Review positif) | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `PRET`, `DONE` |
 | QA VALIDATED (et Review déjà approuvée) | `DONE` — puis push de la branche et CI | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`, `PRET` |
 | Lot validé en QUALIF par l'utilisateur (GATE LOT, avec lots) | — (push de la branche puis CI) | — |
-| CI verte sur la branche poussée | — (issues fermées, `DONE` conservé) ; avec lots : lot suivant → `EN COURS` à son ordre DEV | — |
+| CI verte sur la branche poussée | — (`issues.close_on` = `ci` : issues fermées, `DONE` conservé ; `validation` : issues laissées ouvertes jusqu'à la validation utilisateur) ; avec lots : lot suivant → `EN COURS` à son ordre DEV | — |
 | CI non verte (rouge, orange, annulée) | `EN COURS` | `DONE` |
 | Rejet GATE 4 (issues concernées seulement) | `EN COURS` (Cas A) ou `PLANNING` (Cas B), issue rouverte | `DONE` (et `PRET`) |
-| Validation GATE 4 | — (issues déjà fermées ; déploiement PROD) | — |
+| Validation GATE 4 | — (issues déjà fermées ; `issues.close_on` = `validation` : fermeture des issues `DONE` encore ouvertes, §9.5) ; déploiement PROD | — |
 
-Appel MCP pour chaque transition — boucler sur toutes les issues suivies :
+Exécutant : `deployer`, sur ordre du teamleader (une ligne, toutes les issues suivies) — le teamleader n'a ni `Bash`
+ni outil GitHub MCP. Commandes `gh issue edit --add-label … --remove-label …` : `GITHUB.md` §9 (une sous-section par
+transition). Attendre `LABELS DONE` avant l'ordre de la phase suivante :
 ```
-pour chaque issue_num dans ISSUE_NUMS[] :
-  mcp__plugin_github_github__issue_write({
-    owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["<label>"], remove: ["<labels à retirer>"] }
-  })
+SendMessage({ to: "deployer", content: "Labels : issues #12 #15 → EN REVIEW (GITHUB.md §9.2)" })
 ```
 
-CI verte — fermer les issues suivies (avec lots : celles du lot seulement ; la fermeture dépend de la CI, pas d'une validation utilisateur ; le milestone, lui, reste lié au GATE 4) :
+CI verte — selon `project-config.json` → `issues.close_on` (`GITHUB.md` §9.5) : `ci` (défaut) → fermer les issues
+suivies (avec lots : celles du lot) ; `validation` → commentaire « CI verte — en attente de validation », issues
+**laissées ouvertes** (`DONE`) jusqu'à une validation utilisateur qui les couvre (GATE LOT explicite, sinon GATE 4).
+Le milestone, lui, reste lié au GATE 4 :
 ```
-pour chaque issue_num dans ISSUE_NUMS[] :
-  mcp__plugin_github_github__add_issue_comment({
-    issue_number: issue_num,
-    body: "✅ CI verte — QA OK — en attente de validation utilisateur (GATE 4)"
-  })
-  mcp__plugin_github_github__issue_write({
-    issue_number: issue_num, state: "closed"
-  })
+SendMessage({ to: "deployer", content: "CI verte : issues #12 #15 — fermeture selon issues.close_on (GITHUB.md §9.5)" })
 ```
 
 > **BUGFIX** : pas de phase Plan → pas de label `PLANNING`. Démarre directement à `EN COURS` lors de la Phase Dev.
@@ -261,7 +255,7 @@ pour chaque issue_num dans ISSUE_NUMS[] :
 | Moment | Action |
 |--------|--------|
 | Deploy PROD OK (tag `vX.Y.Z`) | `gh issue list --milestone "<title>" --state open --json number,title` |
-| Milestone à 100% (liste vide) | Fermer : `mcp__plugin_github_github__issue_write` (milestone state: closed) + consigner la version livrée dans l'historique de la description (`✅ termine — tag vX.Y.Z`, `GITHUB.md` 3.0bis — jamais d'écrasement de la description) + informer l'utilisateur |
+| Milestone à 100% (liste vide) | Fermer (ordre à `deployer`) : `gh api -X PATCH repos/<owner>/<repo>/milestones/<MILESTONE_NUM> -f state=closed` + consigner la version livrée dans l'historique de la description (`✅ termine — tag vX.Y.Z`, `GITHUB.md` 3.0bis — jamais d'écrasement de la description) + informer l'utilisateur |
 | Issues encore ouvertes | Alerter l'utilisateur avec la liste des issues restantes et leur label actuel |
 
 ---
@@ -362,9 +356,7 @@ titre entier (le nom ne doit jamais empêcher un matching).
 **→ Appliquer label `PLANNING`** sur toutes les issues de `ISSUE_NUMS[]` si non vide (FEATURE uniquement) :
 
 ```
-pour chaque issue_num dans ISSUE_NUMS[] :
-  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["PLANNING"], remove: ["PRET", "EN COURS", "EN REVIEW", "EN QA", "DONE"] } })
+SendMessage({ to: "deployer", content: "Labels : issues <ISSUE_NUMS> → PLANNING (GITHUB.md §9.0a)" })   // attendre LABELS DONE
 ```
 
 > **Le CDP ne rédige jamais le plan lui-même.** C'est le rôle exclusif du planner.
@@ -402,9 +394,7 @@ Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING l
 **→ Dès la validation (GATE 2 OUI), appliquer label `PRET`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
 
 ```
-pour chaque issue_num dans ISSUE_NUMS[] :
-  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["PRET"], remove: ["PLANNING"] } })
+SendMessage({ to: "deployer", content: "Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 ; LOT-1 → #12 ; LOT-2 → #15" })   // attendre LABELS DONE
 ```
 
 ---
@@ -422,9 +412,7 @@ SUBPLANNER_NAMES[] = []
 **→ À l'ordre DEV du lot, appliquer label `EN COURS`** sur les issues de ce lot (toutes celles de `ISSUE_NUMS[]` sans lots) si non vide :
 
 ```
-pour chaque issue_num dans ISSUE_NUMS[] :
-  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["EN COURS"], remove: ["PLANNING", "PRET", "EN REVIEW", "EN QA", "DONE"] } })
+SendMessage({ to: "deployer", content: "Labels : issues <ISSUE_NUMS> → EN COURS (GITHUB.md §9.1)" })   // attendre LABELS DONE
 ```
 
 ```
@@ -460,9 +448,7 @@ Analyser le scope, puis dispatcher les agents concernés via SendMessage :
 **→ Appliquer label `EN REVIEW`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
 
 ```
-pour chaque issue_num dans ISSUE_NUMS[] :
-  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["EN REVIEW"], remove: ["EN COURS", "PLANNING", "PRET", "EN QA", "DONE"] } })
+SendMessage({ to: "deployer", content: "Labels : issues <ISSUE_NUMS> → EN REVIEW (GITHUB.md §9.2)" })   // attendre LABELS DONE
 ```
 
 ```
@@ -514,7 +500,7 @@ pour chaque nom de la liste "Sub-reviewers a fermer" :
               Si qa déjà dispatché (mode parallèle) : attendre son DONE si pas encore reçu, puis traiter
               son verdict (voir Phase QA). Sinon (mode séquentiel) : dispatcher qa maintenant -> Phase QA.
         |-- REJECTED -> Retour Phase Dev (cycle++) :
-              mcp__plugin_github_github__issue_write( labels: add ["EN COURS"], remove ["EN REVIEW", "EN QA"] )
+              ordre deployer : issues → EN COURS (GITHUB.md §9.1)
               Si qa est en cours (mode parallèle) -> lui envoyer le message d'annulation (QUALITY.md
               section 12), ignorer tout résultat tardif. Si qa déjà DONE -> ignorer son résultat.
               relancer code-reviewer + test-writer (+ qa si mode parallèle, réévalué après correction)
@@ -525,9 +511,7 @@ pour chaque nom de la liste "Sub-reviewers a fermer" :
 **→ Appliquer label `EN QA`** sur toutes les issues de `ISSUE_NUMS[]` si non vide, au moment du dispatch effectif de `qa` (dès test-writer DONE en mode parallèle, ou après verdict Review positif en mode séquentiel — voir Phase Review) :
 
 ```
-pour chaque issue_num dans ISSUE_NUMS[] :
-  mcp__plugin_github_github__issue_write({ owner: <owner>, repo: <repo>, issue_number: issue_num,
-    labels: { add: ["EN QA"], remove: ["EN REVIEW", "EN COURS", "PLANNING", "PRET", "DONE"] } })
+SendMessage({ to: "deployer", content: "Labels : issues <ISSUE_NUMS> → EN QA (GITHUB.md §9.3)" })   // attendre LABELS DONE
 ```
 
 ```
@@ -565,11 +549,11 @@ pour chaque nom de la liste "Sub-qa a fermer" :
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
         |-- VALIDATED                   -> Phase Doc (automatique) :
-                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING", "PRET"] )
+                                           ordre deployer : issues → DONE (GITHUB.md §9.4)
         |-- VALIDATED WITH RESERVATIONS -> Phase Doc (noter reserves, continuer) :
-                                           mcp__plugin_github_github__issue_write( labels: add ["DONE"], remove ["EN QA", "EN REVIEW", "EN COURS", "PLANNING", "PRET"] )
+                                           ordre deployer : issues → DONE (GITHUB.md §9.4)
         |-- NOT VALIDATED               -> Retour Phase Dev (cycle++) :
-                                           mcp__plugin_github_github__issue_write( labels: add ["EN COURS"], remove ["EN QA", "EN REVIEW"] )
+                                           ordre deployer : issues → EN COURS (GITHUB.md §9.1)
                                            relancer code-reviewer + test-writer
 
 Si cycle > 3 -> ESCALADE utilisateur

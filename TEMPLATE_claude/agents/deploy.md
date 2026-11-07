@@ -84,6 +84,10 @@ reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
 - **Validation humaine** (`Labels validation humaine (GITHUB.md §9.13) : +VALID-HUMAINE #12 ; -VALID-HUMAINE #15`) :
   creer le label s'il est absent, puis `gh issue edit <numero> --add-label "VALID-HUMAINE"` (`+`) ou
   `--remove-label "VALID-HUMAINE"` (`-`) ; ne toucher a aucun label de phase ni de lot ; `LABELS DONE`.
+- **Fermeture** (`CI verte : issues #12 #15 — fermeture selon issues.close_on (GITHUB.md §9.5)`, ou `Fermeture
+  validee (<GATE LOT LOT-N | GATE 4>) : issues #12 #15`) : lire `project-config.json` → `issues.close_on` (absent =
+  `ci`) et appliquer §9.5 — `ci` : commentaire + `gh issue close` ; `validation` : commentaire seul sur CI verte,
+  fermeture a l'ordre « Fermeture validee » ; `LABELS DONE` avec l'etat (fermee / ouverte) de chaque issue.
 - **Demarrage d'un milestone** (`MILESTONE START vX.Y.Z`) et **lignes `Milestone : …`** d'un ordre : voir « Tache
   MILESTONE » ci-dessous.
 - **Ordre unique du GATE 2** (`Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 ; LOT-1 → #12 #15 ; LOT-2.1 → #18`) :

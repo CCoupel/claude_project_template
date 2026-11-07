@@ -121,7 +121,9 @@ retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/depl
 
 Selon la reponse utilisateur :
 - **Oui / `/deploy prod`** →
-  > Les issues sont **deja fermees** (CI verte, Phase 4 ; avec lots : CI verte apres chaque GATE LOT) — aucun changement sur elles. La validation du milestone
+  > Les issues sont **deja fermees** (CI verte, Phase 4 ; avec lots : CI verte apres chaque GATE LOT) — aucun changement sur elles.
+  > Exception `issues.close_on` = `validation` (`GITHUB.md` §9.5) : ce « Oui » est la validation utilisateur — ordre a
+  > `deployer` de fermer les issues `DONE` encore ouvertes du milestone **avant** la Phase 6. La validation du milestone
   > releve de l'utilisateur : verifier le milestone (100 % des issues fermees)
   Phase 6 (PROD) — les branches residuelles (milestone, PR mergees) sont supprimees en local et en remote en fin de deploiement reussi (`deploy.md`, Etape 6)
 - **NON** →
@@ -273,12 +275,12 @@ deploy_ok == true ET mockup_ok == true
 > (`main`, `milestone/*`, `hotfix/*`). Les release notes et posts restent sur la branche de code, dans
 > `docs/releases/`. Le CDP ne commite jamais `MARKETING/` lui-meme.
 
-Apres rollout PROD OK — verifier le milestone via GitHub MCP :
+Apres rollout PROD OK — verifier le milestone (ordre a `deployer`, qui rend la liste) :
+```bash
+gh issue list --milestone "<title>" --state open --json number,title,labels
 ```
-mcp__plugin_github_github__issue_read — lister les issues ouvertes du milestone actif
-```
-- **Milestone a 100%** (aucune issue ouverte) → fermer le milestone :
-  `mcp__plugin_github_github__issue_write` (milestone state: closed) + informer l'utilisateur
+- **Milestone a 100%** (aucune issue ouverte) → fermer le milestone (ordre a `deployer`) :
+  `gh api -X PATCH repos/<owner>/<repo>/milestones/<MILESTONE_NUM> -f state=closed` + informer l'utilisateur
 - **Issues encore ouvertes** → alerter :
   ```
   Milestone [version] — [N] issue(s) encore ouverte(s) :
