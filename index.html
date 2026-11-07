@@ -81,6 +81,7 @@
         <div class="step-title" data-i18n="wf.plan"></div>
         <div class="step-desc" data-i18n="wf.plan.desc"></div>
         <div class="step-sub" data-i18n="wf.plan.sub"></div>
+        <div class="step-sub" data-i18n="wf.plan.team"></div>
         <span class="step-label label-planning">PLANNING</span>
         <div class="sub-wing">
           <div class="sub-box">sub-planner-1</div>
@@ -339,11 +340,16 @@
       <div class="feature-card"><div class="feature-icon">🏷️</div><div class="feature-body"><h3><span data-i18n="features.f17.title"></span></h3><p data-i18n="features.f17.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">🎚️</div><div class="feature-body"><h3><span data-i18n="features.f18.title"></span></h3><p data-i18n="features.f18.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">🚦</div><div class="feature-body"><h3><span data-i18n="features.f19.title"></span></h3><p data-i18n="features.f19.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">🎛️</div><div class="feature-body"><h3><span data-i18n="features.f20.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f20.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">📜</div><div class="feature-body"><h3><span data-i18n="features.f21.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f21.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">👤</div><div class="feature-body"><h3><span data-i18n="features.f22.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f22.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">🔑</div><div class="feature-body"><h3><span data-i18n="features.f23.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f23.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">🗂️</div><div class="feature-body"><h3><span data-i18n="features.f24.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f24.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🎛️</div><div class="feature-body"><h3><span data-i18n="features.f20.title"></span></h3><p data-i18n="features.f20.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">📜</div><div class="feature-body"><h3><span data-i18n="features.f21.title"></span></h3><p data-i18n="features.f21.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">👤</div><div class="feature-body"><h3><span data-i18n="features.f22.title"></span></h3><p data-i18n="features.f22.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🔑</div><div class="feature-body"><h3><span data-i18n="features.f23.title"></span></h3><p data-i18n="features.f23.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🗂️</div><div class="feature-body"><h3><span data-i18n="features.f24.title"></span></h3><p data-i18n="features.f24.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🐳</div><div class="feature-body"><h3><span data-i18n="features.f25.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f25.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">✅</div><div class="feature-body"><h3><span data-i18n="features.f26.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f26.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">⏱️</div><div class="feature-body"><h3><span data-i18n="features.f27.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f27.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🔒</div><div class="feature-body"><h3><span data-i18n="features.f28.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f28.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">⚖️</div><div class="feature-body"><h3><span data-i18n="features.f29.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f29.desc"></p></div></div>
     </div>
     <figure class="panel-shot">
       <img src="assets/milestone-panel.png" alt="milestone-panel" loading="lazy">
@@ -365,9 +371,11 @@
         <div class="step-content">
           <h3 data-i18n="install.step1.title"></h3>
           <p data-i18n="install.step1.desc"></p>
-          <pre><span class="code-cmd">curl</span> -fsSL \
-  https://raw.githubusercontent.com/CCoupel/Claude-Launcher/main/claude-launcher.sh \
-  -o ~/claude-launcher.sh &amp;&amp; <span class="code-cmd">chmod</span> +x ~/claude-launcher.sh</pre>
+          <pre>os=$(<span class="code-cmd">uname</span> -s | tr A-Z a-z); arch=$(<span class="code-cmd">uname</span> -m)
+<span class="code-cmd">case</span> "$arch" in x86_64) arch=amd64 ;; aarch64) arch=arm64 ;; esac
+<span class="code-cmd">curl</span> -fsSL "https://github.com/CCoupel/Claude-Launcher/releases/latest/download/claude-launcher-ng2-$os-$arch" \
+  -o ~/.local/bin/claude-launcher-ng2 &amp;&amp; <span class="code-cmd">chmod</span> +x ~/.local/bin/claude-launcher-ng2 &amp;&amp; claude-launcher-ng2</pre>
+          <p class="label-note" data-i18n="install.v5note"></p>
           <p style="margin-top:.5rem"><a href="https://github.com/CCoupel/Claude-Launcher">github.com/CCoupel/Claude-Launcher</a> ·
           <a href="https://ccoupel.github.io/Claude-Launcher/">site dédié</a></p>
           <div class="launcher-features">
