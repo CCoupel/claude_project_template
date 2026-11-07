@@ -339,6 +339,14 @@ les tests plusieurs fois plus lents. Binaire Windows detecte → question « Uti
 Garder Windows » ; la reponse fixe `commands.env` (prefixe `PATH` evalue par tous les agents avant leurs
 commandes). Regle : `commands/context/COMMON.md` §15.10.
 
+### Etape 9c : Environnement conteneur Claude-Launcher
+
+Proposition de `.claude-launcher/env.yaml` (Claude-Launcher NG2 v5.1.0+, versionne) depuis la stack : paquets
+(`packages` + `packages_by_manager` apt/dnf/apk), `setup` idempotent, verrous en `watch`, dossiers derives en `local`
+(prives au conteneur, sous-dossiers compris, ajoutes au `.gitignore`). Un `env.yaml` existant est complete par fusion
+additive (commentaires, `image`, `mounts`, `prefer`, `on_start` conserves). Refus → `launcher_env.status = declined`.
+Reference : `templates/launcher/env-yaml.md`.
+
 ### Etape 10 : Securite
 
 ```
@@ -631,7 +639,7 @@ Etapes principales (detail : `init-project.md`, section "Option d") :
 | Etape | Action |
 |-------|--------|
 | d0 | Registre des agents (cree s'il est absent) ; **migration v3 → v4** : ajout de `milestone.defaults`, colonne `Spawn` `permanent` reecrite en `socle` / `milestone` / `ponctuel` ; un milestone deja en cours sans cadrage est mene en `complet` |
-| d1a-d1i | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements, licence, elements prives (`PRIVATE/` : etude de l'Etape 10b si jamais faite, insertion de la section « Éléments privés » dans `CLAUDE.md`), chaine d'outils native et tests cibles (detection de l'Etape 9b, ajout de `commands.env` / `commands.test_related`, compagnons prescrivant une suite complete en boucle DEV signales en conflit) |
+| d1a-d1j | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements, licence, elements prives (`PRIVATE/` : etude de l'Etape 10b si jamais faite, insertion de la section « Éléments privés » dans `CLAUDE.md`), chaine d'outils native et tests cibles (detection de l'Etape 9b, ajout de `commands.env` / `commands.test_related`, compagnons prescrivant une suite complete en boucle DEV signales en conflit), environnement conteneur (d1j : `.claude-launcher/env.yaml` complete — nouveaux dossiers derives, verrous, version de chaine) |
 | d2-d4 | Diff commandes / agents (par empreinte, via le registre) / contextes / table « Agents Disponibles », puis rapport et choix (tout appliquer, sans les reliquats, annuler) |
 | d5-d5e | Deploiement, doublons et conflits dans les compagnons, table « Agents Disponibles », verification post-nettoyage |
 | d6-d6b | Bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`, adequation modele/effort, `settings.json`, memoire, `.gitignore` |

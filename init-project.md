@@ -60,6 +60,7 @@ jamais du texte brut listant des lettres dans le chat :
     |
     v
 [FINALISATION] --> CLAUDE.md + .gitignore + CI/CD workflow + labels GitHub
+    |              + .claude-launcher/env.yaml (conteneur Claude-Launcher NG2, Etape 9c)
     |              + milestone v0.1.0 et issues de base (nouveau projet avec remote GitHub)
     v
 [AUDIT CONTEXTE] --> commit d'init puis /context-audit (audit complet)
@@ -1740,6 +1741,37 @@ echo "${TOOLCHAIN_ISSUES:-toolchain native}"
   existant installe sous Windows → `npm ci` cote Linux a faire, signale au rapport) / Garder Windows (consigne
   au rapport : `⚠ toolchain Windows — tests lents`).
 
+### Etape 9c : Environnement conteneur Claude-Launcher (`.claude-launcher/env.yaml`)
+
+Claude-Launcher NG2 (v5.1.0+) peut executer le projet dans un conteneur bootstrappe depuis
+`.claude-launcher/env.yaml` (versionne). Le launcher fournit le mecanisme, le template connait la stack : il en
+propose le contenu — paquets, `setup`, `watch`, dossiers derives prives au conteneur (`local`). Reference complete
+(schema, correspondance stack → contenu, versions de chaine, regles de fusion) :
+**`TEMPLATE_claude/templates/launcher/env-yaml.md`** — la lire avant cette etape.
+
+1. **Detecter** (lecture seule) : `env.yaml` present (`image` choisie par le launcher, cles deja renseignees),
+   launcher NG2 installe (`${XDG_CONFIG_HOME:-$HOME/.config}/claude-launcher-ng2/` ou `~/.local/state/claude-launcher-ng2/`),
+   manifestes et dossiers derives (§3 de la reference, sous-dossiers compris), versions requises (§2.1).
+2. **Composer** la proposition (reference §2-§4) a partir des manifestes, et des reponses aux Etapes 2-5 et 9 pour
+   un projet sans manifeste.
+3. **Question** (sans objet si `project-config.json` → `launcher_env.status` = `declined` et aucun `env.yaml` : rien
+   a demander) — la question affiche la proposition (ou le diff de fusion si le fichier existe) et le chemin
+   `.claude-launcher/env.yaml` :
+   ```
+   AskUserQuestion : "Environnement conteneur Claude-Launcher (.claude-launcher/env.yaml) — <cree | complete : N ajouts> ?"
+   - Generer / completer (Recommande si env.yaml existe ou launcher NG2 detecte) — ecrit la proposition (fusion
+     additive si le fichier existe), ajoute les chemins `local` au .gitignore
+   - Ne pas generer (Recommande sinon) — projet execute sur l'hote ; launcher_env.status = declined (l'Etape d1j
+     ne reposera la question que si un env.yaml apparait)
+   (Autre : ajuster la proposition — paquets, image, version de chaine, dossiers local)
+   ```
+   Etape `setup` existante divergente (reference §4) : option supplementaire « Remplacer les etapes divergentes ».
+4. Version requise non couverte par le socle (Alpine/musl, paquet trop ancien sans binaire officiel possible) →
+   signaler `⚠ <outil> <version socle> < requis <version>` au message de fin, avec l'alternative (image
+   `<outil officiel>:<version>-bookworm`, a choisir par F2 dans le launcher).
+
+Ecriture a la Finalisation (section 5, « Environnement conteneur »).
+
 ---
 
 ## Etape 10 : Securite
@@ -1825,6 +1857,7 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
       { "path": "PRIVATE/dumps/", "kind": "dumps de donnees reelles", "origin": "expected" }
     ]
   },
+  "launcher_env": { "status": "managed", "updated": "2026-11-07" },
   "version": "0.1.0",
   "initialized_at": "<TIMESTAMP>",
   "initialized_from": "analysis|manual|workshop|brief",
@@ -1945,6 +1978,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `milestone.defaults` | Intensite de depart d'un milestone selon son type de version (`patch` / `minor` / `major` → `leger` / `complet`). Defaut `patch: leger`, `minor` et `major: complet`. Le cadrage complet (options, team) est propose par le planner et valide au GATE 2 : `agents/context/MILESTONE_CADRAGE.md`. Absent = `complet` partout |
 | `testing.lot_max_tests` | Defaut `50` (nombre max de cas de test par lot ; QA execute et rapporte lot par lot) |
 | `private` | Etape 10b. `reviewed` : date de l'etude ; `items[]` : contenu attendu de `PRIVATE/` (gitignore) — `path`, `kind` (nature, sans valeur), `origin` : `moved` (deplace depuis `from`) \| `existing` (deja hors git, range) \| `expected` (a fournir par le developpeur). Copie trackee : un clone frais sait ce qui manque ; `qa` y lit ce qu'il copie dans ses worktrees |
+| `launcher_env` | Etape 9c. `status` : `managed` (`.claude-launcher/env.yaml` genere ou complete par le template — fusion additive a chaque option d, Etape d1j) \| `declined` (refuse : plus de question tant qu'aucun `env.yaml` n'apparait) ; `updated` : date de la derniere ecriture. Absent = jamais propose (projet anterieur : Etape d1j) |
 | `license` | Etape 1b. `spdx` : identifiant SPDX (`MIT`, `Apache-2.0`...), `LicenseRef-proprietary` (tous droits reserves), `LicenseRef-custom` (texte maison fourni) ou `null` (« Decider plus tard ») ; `holder` / `year` : titulaire et annee du copyright ; `source` : `detected` \| `provided` \| `guided` \| `proprietary` \| `deferred` |
 | `src_dir` | Detection Etape 0 (repertoire source principal) ou stack par defaut : `src`, `cmd`... |
 | `version_file` | Fichier source de verite de la version (ex: `package.json`, `config.json`, `VERSION`) |
@@ -2357,6 +2391,22 @@ else
 fi
 ```
 
+#### Environnement conteneur (`.claude-launcher/env.yaml`)
+
+Si l'Etape 9c a retenu « Generer / completer » : ecrire ou fusionner `.claude-launcher/env.yaml` selon
+`TEMPLATE_claude/templates/launcher/env-yaml.md` §4 (creation, ou fusion additive par Edit — commentaires, `image`,
+`mounts`, `prefer`, `on_start` conserves), verifier la syntaxe, puis ignorer les points de montage `local` (apres la
+fusion du `.gitignore` ci-dessus) :
+
+```bash
+for l in $LOCAL_PATHS; do git check-ignore -q "$l/" || echo "/$l/" >> .gitignore; done
+git check-ignore -q .claude-launcher/env.yaml && echo "⚠ .claude-launcher/ ignore par le .gitignore — env.yaml doit etre versionne"
+```
+
+`project-config.json` → `launcher_env` = `{ "status": "managed", "updated": "<date>" }` (`declined` si refuse).
+Le fichier part avec le commit d'init (section 6) ; un `node_modules`/`.venv` deja present sur l'hote n'est pas touche
+(le conteneur le masque).
+
 #### Fichier de licence
 
 Selon `license` (Etape 1b) — **jamais d'ecrasement** d'un fichier `LICENSE*` / `COPYING*` existant :
@@ -2759,6 +2809,8 @@ Configuration :
                  | non definie — a choisir avant toute publication (relancer /init-project, option d)
 - Prive        : PRIVATE/ (gitignore) — N deplaces, N attendus a fournir : <chemins>
                  rotation recommandee (deja pousse) : <elements | aucun>
+- Conteneur    : .claude-launcher/env.yaml <cree | complete (N ajouts) | non genere> — local : <chemins> ;
+                 <⚠ outil version socle < requis | rien a signaler>   (Etape 9c)
 
 Memoire projet : .claude/memory/MEMORY.md initialisee (si absente)
 Teamleader : <modele> / <effort> ecrits dans .claude/settings.json (surcharge : compagnon .claude/agents/teamleader.md)
@@ -3113,6 +3165,18 @@ Lecture seule ici :
   DEV ou au test-writer (`go test ./...`, `npm test`, `vitest run` sans cible, `commands.test_fast`) → conflit
   avec le template, arbitre a l'etape d5c comme les autres conflits.
 
+#### Etape d1j — Environnement conteneur (`.claude-launcher/env.yaml`)
+
+Lecture seule ici : jouer la detection et la composition de l'Etape 9c (projet anterieur : `launcher_env` absent).
+- `launcher_env.status` = `declined` et aucun `env.yaml` → rien (`[=] env.yaml — non gere`).
+- Sinon, comparer la proposition au fichier : manifeste ou dossier derive nouveau (ex. `web/node_modules` apparu),
+  verrou non surveille, version de chaine changee (`go.mod`, `.nvmrc`) → au rapport d4
+  `[+] env.yaml — <N ajouts : local web/node_modules, watch web/package-lock.json...>` ; etape divergente
+  `[~] env.yaml setup — <diff court>` ; rien a ajouter → `[=] env.yaml`. Fichier absent et launcher NG2 detecte →
+  `[+] env.yaml — a creer`.
+- A l'etape d5 : la question de l'Etape 9c (fusion additive, jamais d'ecrasement sans le choix « Remplacer »), puis
+  l'ecriture de la Finalisation (« Environnement conteneur »), `.gitignore` compris.
+
 #### Etape d2 — Calculer les noms deployes attendus
 
 ```bash
@@ -3254,6 +3318,9 @@ Synchronisation depuis github.com/<repo>
   [~] dev-backend  — tech passée de Node.js à Go
   [!] dev-firmware                        ← RELIQUAT (stack firmware retirée du projet)
   [=] planner, test-writer, code-reviewer, qa, doc-updater, deployer, security, infra (8 inchangés)
+
+  Environnement conteneur (etape d1j) :
+  [+] .claude-launcher/env.yaml — 2 ajouts : local web/node_modules, watch web/package-lock.json
 
   Graphe des fichiers de définition locaux (etape d1e, etat avant mise a jour) :
   [⛓] CLAUDE.md:42 → .claude/agents/old.md          ← lien casse (cible absente)
@@ -3710,6 +3777,7 @@ Synchronisation terminee.
   Licence                           : [<SPDX> (inchangee | enregistree | definie a l'instant) | non definie — reportee] (etape d1g)
   Elements prives (PRIVATE/)        : [N deplaces, N attendus | inchange] — rotation recommandee : <elements> (etape d1h)
   Toolchain / tests cibles          : [native | Linux activee (commands.env) | ⚠ Windows conservee] ; test_related [ajoute | inchange] (etape d1i)
+  Environnement conteneur           : [.claude-launcher/env.yaml cree | complete (N ajouts) | inchange | non gere] (etape d1j)
 
   Fichiers PROJET preserves (non touches) :
     ✓ CLAUDE.md (hors bloc TEAMLEADER_PROTOCOL et hors table Agents Disponibles)

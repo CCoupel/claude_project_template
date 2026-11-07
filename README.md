@@ -26,6 +26,12 @@ Documentation complète (configuration, backends, mise à jour) :
 [CCoupel/Claude-Launcher](https://github.com/CCoupel/Claude-Launcher) ·
 [site](https://ccoupel.github.io/Claude-Launcher/)
 
+Avec le launcher NG2 (v5.1.0+), un projet peut s'exécuter dans un **conteneur** décrit par
+`.claude-launcher/env.yaml` (versionné). `/init-project` en propose le contenu à partir de la stack
+détectée (Étape 9c) : paquets, `setup` idempotent (`npm ci`, venv, toolchain Go…), verrous en `watch`, et
+en `local` les dossiers dérivés (`node_modules`, `.venv`, y compris en sous-dossier) — privés au conteneur,
+ils masquent ceux du dossier partagé. Un `env.yaml` existant (écrit par le launcher) est complété, jamais écrasé.
+
 > **Version majeure commune.** Depuis la v5, le template et le launcher partagent leur version
 > majeure : le template **v5** va avec **Claude-Launcher v5 (NG2)**. Un launcher vX n'adopte que
 > les versions du template de majeure ≤ X ; les versions mineures restent indépendantes, sauf
@@ -128,6 +134,7 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet — `project-config.json` porte aussi le **registre des agents** (`agents.registry[]`) | Oui |
 | `contracts/CHANGELOG.md` | Changelog des contrats (squelette créé par `/init-project`) | Oui |
+| `.claude-launcher/env.yaml` | Environnement conteneur Claude-Launcher NG2 (v5.1.0+) : socle, paquets, `setup`, `watch`, dossiers dérivés privés au conteneur (`local` : `node_modules`, `.venv`…, ignorés par le `.gitignore`). Contenu proposé par `/init-project` selon la stack (Étape 9c ; fusion additive en mise à jour, étape d1j) — référence `templates/launcher/env-yaml.md` | Oui |
 | `docs/CADRAGE.md` | Fiche de cadrage produit (brief d'origine + valeurs finales par phase), écrite par `/init-project` en mode brief ou workshop ; lue par le planner et le marketing | Oui |
 
 > **Après un `git clone`/`git pull`** sur un projet déjà initialisé, les fichiers gitignorés
@@ -284,6 +291,8 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
     ├── dev-generic.md            # repli pour une stack sans template (Rust, STM32, Flutter...) — stack dans le compagnon
     ├── environments/             # Templates publish/deploy par mécanisme (promote, rebuild-ci,
     │                             # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
+    ├── launcher/
+    │   └── env-yaml.md           # stack → .claude-launcher/env.yaml (conteneur Claude-Launcher NG2)
     └── workflows/
         └── release-go-react.yml  # exemple de référence (le pipeline est audité/généré par infra)
 ```
@@ -898,6 +907,7 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
   comparaison ne crée/modifie/supprime jamais `.claude/agents/*.md`
 - Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL` + table `Agents Disponibles`) et `.claude/settings.json`
 - Crée s'ils sont absents `.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` (jamais écrasés)
+- Complète `.claude-launcher/env.yaml` (étape d1j) : nouveaux dossiers dérivés, verrous ou version de chaîne — fusion additive, rien d'écrasé sans accord
 - Termine par le même audit du contexte qu'à l'init (commit de l'état synchronisé, puis `/context-audit` complet),
   puis la même publication sur `main` (commit des corrections, report sur `main`, push)
 
