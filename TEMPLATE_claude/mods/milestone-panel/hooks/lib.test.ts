@@ -20,6 +20,22 @@ test('milestone en cours = premier milestone avec une issue en phase', () => {
   expect(v.issues.find(i => i.number === 1)?.isBlocked).toBe(true)
 })
 
+test('sans due date, des issues seulement en PLANNING ne démarrent pas le milestone', () => {
+  const m = [
+    { title: 'v11.5.0', due_on: null, open_issues: 4, closed_issues: 0 },
+    { title: 'v11.6.0', due_on: null, open_issues: 4, closed_issues: 0 },
+    { title: 'v14.0', due_on: null, open_issues: 0, closed_issues: 0 },
+  ]
+  const issues = [
+    { number: 1, title: 'a', labels: lab('PLANNING'), milestone: { title: 'v11.5.0' } },
+    { number: 2, title: 'b', labels: lab('PLANNING'), milestone: { title: 'v11.6.0' } },
+  ]
+  const v = buildView(m, issues, 1)
+  expect(v.current).toBe(null)
+  expect(v.isReleasing).toBe(false)
+  expect(v.issues).toEqual([])
+})
+
 test('label VALID-HUMAINE : validation humaine requise', () => {
   const issues = [
     { number: 1, title: 'a', labels: lab('EN QA', 'LOT-1', 'VALID-HUMAINE'), milestone: { title: 'v1.3.0' } },
