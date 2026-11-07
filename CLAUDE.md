@@ -58,6 +58,7 @@ TEMPLATE_claude/             # Racine de tous les composants template
     ├── dev-generic.md        # repli stack « Autre » — stack définie par le compagnon
     ├── environments/         # Templates publish/deploy par mecanisme (promote, rebuild-ci,
     │                         # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
+    ├── launcher/env-yaml.md  # stack → .claude-launcher/env.yaml (conteneur Claude-Launcher NG2)
     └── workflows/
         └── release-go-react.yml  # exemple de référence (le pipeline est audité/généré par infra)
 ```
