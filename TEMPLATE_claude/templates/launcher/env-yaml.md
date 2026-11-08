@@ -1,31 +1,79 @@
-# Environnement conteneur Claude-Launcher NG2 — `.claude-launcher/env.yaml`
+# Environnement conteneur Claude-Launcher NG2 — `.claude-launcher/env-template.yaml` + `env.yaml`
 
 Reference lue par `/init-project` (Etape 9c, Finalisation, Etape d1j). Le launcher NG2 (`CCoupel/Claude-Launcher`,
-`ng2/README.md` §« Déclarer l'environnement ») fournit le **mecanisme** (conteneur bootstrappe depuis `env.yaml`) ;
-le template connait la **stack** : il propose le contenu. `env.yaml` est **versionne** avec le projet.
+`ng2/README.md` §« Déclarer l'environnement ») fournit le **mecanisme** (conteneur bootstrappe depuis ces fichiers) ;
+le template connait la **stack** : il genere `env-template.yaml`. **Claude-Launcher ≥ v5.5.0** requis (les versions
+anterieures ignorent `env-template.yaml` et ne lisent que `env.yaml`).
 
-Principe : **projet = sources + verrous + `env.yaml` ; derive = au conteneur**. Le dossier projet est partage (hote,
-autres conteneurs, autres machines) : ce que `setup` construit (`node_modules`, `.venv`, `target/`) depend de l'image
-(glibc/musl, chemins des interpreteurs) et doit rester prive au conteneur (`local:`).
+Principe : **projet = sources + verrous + `env-template.yaml` + `env.yaml` ; derive = au conteneur**. Le dossier projet
+est partage (hote, autres conteneurs, autres machines) : ce que `setup` construit (`node_modules`, `.venv`, `target/`)
+depend de l'image (glibc/musl, chemins des interpreteurs) et doit rester prive au conteneur (`local:`).
 
-## 1. Schema (launcher v5.1.0+)
+## 1. Deux fichiers, deux proprietaires
 
-| Cle | Role | Genere par le template |
-|-----|------|------------------------|
-| `image` | Socle (obligatoire), ex. `docker.io/library/debian:12` | **Conserve** s'il existe (choisi par le launcher, F2). Absent : `defaults.image` de `~/.config/claude-launcher-ng2/backends.yaml`, sinon `docker.io/library/debian:12` |
-| `packages` | Paquets systeme en plus de `tmux git bash sudo curl` (implicites) — noms **communs** a toutes les distributions | Oui (§2) |
-| `packages_by_manager` | Paquets **en plus**, propres a un gestionnaire : `apt`, `dnf`, `apk`, `zypper` | Oui, pour les 3 premiers (le socle peut changer par F2) |
-| `setup` | Etapes executees une fois (et a chaque changement de `env.yaml` ou d'un `watch`), en utilisateur, dans le projet, `bash -e` | Oui (§2) |
-| `watch` | Fichiers dont le **contenu** modifie rejoue `setup` seul (sans reinstaller les paquets) | Oui : les verrous de dependances |
-| `on_start` | Etapes a chaque nouvelle session (jamais au rattachement) — a garder rapides | Non par defaut (`watch` couvre les verrous) ; conserve s'il existe |
-| `local` | Chemins relatifs au projet, **prives au conteneur** (volume qui masque le dossier partage) | Oui : chaque dossier derive (§3) |
-| `mounts`, `prefer` | Dossiers en plus, backend prefere | Jamais touches |
+Les deux sont **versionnes** dans `<projet>/.claude-launcher/` (`.claude-launcher/` n'est jamais ignore).
+
+| Fichier | Proprietaire | Regle |
+|---------|--------------|-------|
+| `env-template.yaml` | le template (`/init-project`) | **Regenere entierement** a chaque passage, sans fusion, de facon deterministe (§4). Jamais edite a la main |
+| `env.yaml` | le projet (l'utilisateur) | Le template n'y ecrit **jamais** (seule exception : la migration, §5) et ne le cree pas. Le launcher y ecrit son choix d'image (F2) et cree au besoin un squelette commente |
+
+Fusion par le launcher, dans l'ordre **config du launcher → `env-template.yaml` → `env.yaml`** :
+
+| Cle | Fusion |
+|-----|--------|
+| `image` | celle de `env.yaml` l'emporte, sinon celle de `env-template.yaml` — il en faut une dans l'un des deux |
+| `packages`, `packages_by_manager` (par gestionnaire), `watch`, `local` | union des valeurs |
+| `setup`, `on_start` | etapes du launcher, puis du template, puis du projet |
+| `mounts` | union par `path` ; pour un meme `path`, le `ro` de `env.yaml` l'emporte |
+| `prefer` | `env.yaml` seulement (choix du backend, propre a l'utilisateur) — **interdite** dans `env-template.yaml` |
+
+Un projet ne peut **pas retirer** un element du template : `env-template.yaml` ne contient que ce que la stack exige
+reellement (et le socle, §2.0). Ce qui est optionnel ou propre au poste va dans `env.yaml`.
+
+### Schema (cles)
+
+| Cle | Role | Dans `env-template.yaml` |
+|-----|------|--------------------------|
+| `image` | Socle, ex. `docker.io/library/debian:12` | Toujours `docker.io/library/debian:12` (deterministe ; le choix F2 du launcher va dans `env.yaml` et l'emporte) |
+| `packages` | Paquets systeme en plus de `tmux git bash sudo curl` (implicites) — noms **communs** a toutes les distributions | Socle (§2.0) + stack (§2.1) |
+| `packages_by_manager` | Paquets **en plus**, propres a un gestionnaire : `apt`, `dnf`, `apk`, `zypper` | Socle + stack, pour `apt`, `dnf`, `apk` |
+| `setup` | Etapes executees une fois (et a chaque changement de `env-template.yaml`, `env.yaml` ou d'un `watch`), en utilisateur, dans le projet, `bash -e` | Socle + stack |
+| `watch` | Fichiers dont le **contenu** modifie rejoue `setup` seul (sans reinstaller les paquets) | Les verrous de dependances |
+| `on_start` | Etapes a chaque nouvelle session (jamais au rattachement) — a garder rapides | Non par defaut (`watch` couvre les verrous) |
+| `local` | Chemins relatifs au projet, **prives au conteneur** (volume qui masque le dossier partage) | Chaque dossier derive (§3) |
+| `mounts` | Dossiers en plus | Seulement si la stack l'exige (rare) |
+| `prefer` | Backend prefere | **Interdite** |
 
 Contraintes des chemins `local` / `watch` : relatifs au projet, sans `..`, sans `:` ni `,`.
 `PATH` du conteneur (setup, on_start, sessions) : `$HOME/.local/bin` en tete. `$HOME` est propre au conteneur
-(seul `~/.claude` est partage) : caches pip/npm/go et outils installes sous `~/.local` n'y sont pas a declarer.
+(seule la config claude, `$CLAUDE_CONFIG_DIR` — ex-`~/.claude` —, est partagee) : caches pip/npm/go et outils installes
+sous `~/.local` n'y sont pas a declarer.
+
+**Rejeu** : le launcher rejoue **tout** le `setup` des qu'un des fichiers change (reecriture de `env-template.yaml`
+comprise). Chaque etape `setup` / `on_start` doit pouvoir etre rejouee **sans effet de bord** (garde `[ -d ... ] ||`,
+`command -v ... ||`, installation depuis le verrou).
 
 ## 2. Stack → contenu
+
+### 2.0 Socle commun (tout projet)
+
+Present dans **chaque** `env-template.yaml`, quelle que soit la stack : outils dont le template lui-meme a besoin
+(`gh` : issues, PR, releases, panneau milestone ; `jq` : `/init-project`, hooks) et authentification git par `gh`
+(`$HOME` propre au conteneur, perdu a sa recreation).
+
+| Cle | Valeur |
+|-----|--------|
+| `packages` | `jq` |
+| `packages_by_manager` | apt : `gh` ; dnf : `gh` ; apk : `github-cli` |
+| `setup` (premiere etape) | `git config --global --get-all include.path \| grep -qxF "$PWD/PRIVATE/gitconfig" \|\| git config --global --add include.path "$PWD/PRIVATE/gitconfig"` |
+
+`PRIVATE/gitconfig` (gitignore, `PRIVATE/`) : cree par `/init-project` depuis `templates/launcher/gitconfig` s'il est
+absent, **jamais ecrase** — git passe par `gh auth git-credential` pour github.com, jeton lu dans `$GH_TOKEN`, aucun
+secret dans le fichier. Le developpeur peut y ajouter sa config git personnelle. Fichier absent : git ignore
+l'inclusion sans erreur.
+
+### 2.1 Par manifeste
 
 Un manifeste par dossier `D` (racine `.` ou sous-dossier : `web/`, `server-go/web/`...). Hors racine, une etape qui doit
 s'executer dans `D` s'ecrit en sous-shell `(cd D && ...)` : les etapes `setup` sont concatenees en **un seul script**
@@ -34,7 +82,7 @@ a chaque changement d'un `watch`).
 
 | Manifeste dans `D` | `packages` (+ `packages_by_manager`) | `setup` | `local` | `watch` |
 |--------------------|--------------------------------------|---------|---------|---------|
-| `package.json` + `package-lock.json` | `nodejs`, `npm` (§2.1) | `npm ci` | `D/node_modules` | `D/package-lock.json` |
+| `package.json` + `package-lock.json` | `nodejs`, `npm` (§2.2) | `npm ci` | `D/node_modules` | `D/package-lock.json` |
 | `package.json` + `pnpm-lock.yaml` | idem | `command -v pnpm >/dev/null \|\| npm install -g --prefix ~/.local pnpm` puis `pnpm install --frozen-lockfile` | `D/node_modules` | `D/pnpm-lock.yaml` |
 | `package.json` + `yarn.lock` | idem | `command -v yarn >/dev/null \|\| npm install -g --prefix ~/.local yarn` puis `yarn install --frozen-lockfile` (Berry : `--immutable`) | `D/node_modules` | `D/yarn.lock` |
 | `package.json` sans verrou | idem | `npm install` — signaler `⚠ verrou absent` | `D/node_modules` | `D/package.json` |
@@ -42,7 +90,7 @@ a chaque changement d'un `watch`).
 | `pyproject.toml` + `uv.lock` | `python3` | `command -v uv >/dev/null \|\| curl -LsSf https://astral.sh/uv/install.sh \| sh` puis `uv sync --frozen` | `D/.venv` | `D/uv.lock` |
 | `pyproject.toml` + `poetry.lock` | `python3` (+ comme `requirements`) | `command -v poetry >/dev/null \|\| curl -sSL https://install.python-poetry.org \| python3 -` puis `POETRY_VIRTUALENVS_IN_PROJECT=true poetry install --no-root` | `D/.venv` | `D/poetry.lock` |
 | `pyproject.toml` seul | comme `requirements` | venv comme ci-dessus puis `D/.venv/bin/pip install -e D` | `D/.venv` | `D/pyproject.toml` |
-| `go.mod` | aucun (§2.1) | toolchain Go (§2.1) puis `go mod download` | — (modules sous `~/go`) | `D/go.sum` |
+| `go.mod` | aucun (§2.2) | toolchain Go (§2.2) puis `go mod download` | — (modules sous `~/go`) | `D/go.sum` |
 | `Cargo.toml` | apt : `build-essential` ; dnf : `gcc make` ; apk : `build-base` | `command -v cargo >/dev/null \|\| { curl -sSf https://sh.rustup.rs \| sh -s -- -y --no-modify-path && ln -sf ~/.cargo/bin/* ~/.local/bin/; }` puis `cargo fetch` | `D/target` | `D/Cargo.lock` |
 | Playwright (E2E, Etape 9) | — | `npx playwright install --with-deps chromium` (sudo disponible) | — (navigateurs sous `~/.cache`) | — |
 | Dependances natives (`node-gyp`, cgo, `psycopg`, `bcrypt`...) | apt : `build-essential` ; dnf : `gcc gcc-c++ make` ; apk : `build-base` (+ en-tetes : `libpq-dev` / `libpq-devel` / `postgresql-dev`...) | — | — | — |
@@ -53,13 +101,13 @@ dependances depuis le verrou, dossier de dependances/sorties natives en `local`,
 Sorties de build **natives** (binaires, `target/`) → `local`. Sorties portables (`dist/` JS, `build/` du candidat
 BUILD) : **non** — elles sont lues hors conteneur (publish/deploy).
 
-### 2.1 Versions de la chaine
+### 2.2 Versions de la chaine
 
 Les paquets de distribution sont souvent en retard (Debian 12 : `nodejs` 18, `golang` 1.19, `python3` 3.11).
 Version requise = dans l'ordre `.nvmrc` / `.node-version` / `engines.node`, directive `toolchain` / `go` de `go.mod`,
 `requires-python`, sinon celle de la CI (`setup-node`, `setup-go`, `setup-python` des workflows).
 
-- **Node** : paquet distro si sa version suffit ; sinon binaire officiel sous `~/.local` (glibc ; Alpine/musl : paquet
+- **Node** : paquet distro si sa version suffit (Debian 12 : 18) ; sinon binaire officiel sous `~/.local` (glibc ; Alpine/musl : paquet
   `nodejs` de la distro, signaler si trop ancien) — paquets apt : `xz-utils`, dnf/apk : `xz` :
   ```bash
   V=22.11.0; A=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/')
@@ -67,7 +115,7 @@ Version requise = dans l'ordre `.nvmrc` / `.node-version` / `engines.node`, dire
   ```
   (`~/.local/bin/node`, `npm`, `npx` : deja dans le `PATH`). Les paquets `nodejs`/`npm` sont alors retires.
 - **Go** : toujours le binaire officiel (version **figee** : `toolchain`, sinon `go` complet de `go.mod`, sinon la CI,
-  sinon `curl -s 'https://go.dev/VERSION?m=text' | head -1` au moment de l'init) ; Alpine : paquet `go` si suffisant :
+  sinon celle du `env-template.yaml` existant — determinisme, §4 —, sinon `curl -s 'https://go.dev/VERSION?m=text' | head -1`) ; Alpine : paquet `go` si suffisant :
   ```bash
   V=1.23.4; A=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
   [ "$(~/.local/go/bin/go env GOVERSION 2>/dev/null)" = "go$V" ] || { rm -rf ~/.local/go; curl -fsSL https://go.dev/dl/go$V.linux-$A.tar.gz | tar -xz -C ~/.local; }
@@ -93,35 +141,116 @@ find . -path ./.git -prune -o -name node_modules -prune -o -path ./TEMPLATE_clau
 - `venv/` existant (nom non standard) : le garder tel quel dans `local` et dans les etapes `setup`.
 - `target/` sans `Cargo.toml` voisin (ex. Maven) : selon la stack — sorties natives → `local`.
 - Projet neuf sans manifeste : partir des reponses aux Etapes 2-5 et des repertoires sources (`src_dir`, frontend) ;
-  l'Etape d1j completera `env.yaml` quand les manifestes existeront.
+  l'Etape d1j regenerera `env-template.yaml` quand les manifestes existeront.
 
-## 4. Ecriture et fusion
+## 4. Generation deterministe de `env-template.yaml`
 
-- **Absent** → creer `.claude-launcher/env.yaml` (en-tete ci-dessous, cles dans l'ordre du §1).
-- **Present** (ecrit par le launcher ou a la main) → **fusion additive** : conserver commentaires, `image`, `mounts`,
-  `prefer`, `on_start` et toutes les valeurs existantes ; n'ajouter que les elements absents des listes (les lignes
-  commentees du launcher `# packages: []`... sont remplacees par la cle reelle). Une etape `setup` existante qui
-  differe de la proposition (meme outil, autre commande) n'est **jamais** reecrite d'office : la presenter en diff
-  dans la question de l'Etape 9c / d1j.
-- Editer le texte (Edit), pas de reserialisation YAML (qui perdrait les commentaires). Verifier ensuite la syntaxe si
-  un parseur est disponible :
-  `python3 -c 'import sys,yaml; yaml.safe_load(open(sys.argv[1]))' .claude-launcher/env.yaml` (ou `yq . <fichier>`).
+Meme stack = **fichier identique a l'octet pres** : sinon chaque `/init-project` ferait rejouer le `setup` de tous
+les conteneurs pour rien. Forme canonique :
+
+1. **En-tete** (exactement, rien d'autre en commentaire, aucune date) :
+   ```yaml
+   # Généré par le template (/init-project) — NE PAS MODIFIER : réécrit à chaque passage.
+   # Ajouts propres au projet : .claude-launcher/env.yaml (fusionné par Claude-Launcher ≥ v5.5.0).
+   ```
+2. **Cles** dans l'ordre `image`, `packages`, `packages_by_manager`, `setup`, `watch`, `on_start`, `local`, `mounts` ;
+   cle vide omise.
+3. **Listes de valeurs** (`packages`, valeurs de `packages_by_manager`, `watch`, `local`) en style flux `[a, b]`,
+   sans doublon, triees (`LC_ALL=C sort`) ; `packages_by_manager` : gestionnaires dans l'ordre `apt`, `dnf`, `apk`,
+   une ligne chacun (`  apt: [build-essential, gh]`).
+4. **`setup`** en liste bloc, dans un ordre fixe : socle (§2.0), puis chaines d'outils (§2.2 : Node, Go, Python/uv,
+   Rust), puis une etape par manifeste — dossiers tries (`LC_ALL=C`), dans un dossier l'ordre des lignes du §2.1 —,
+   Playwright en dernier. Etape d'une ligne : `  - <commande>` (entre guillemets doubles seulement si YAML l'exige :
+   debut par `[`, `{`, `"`, `'`, `*`, `&`, `!`, `|`, `>`, `%`, `@`, ou presence de `: ` / ` #`) ; plusieurs lignes :
+   `  - |` puis le bloc indente de 4 espaces.
+5. **Versions** figees depuis les manifestes (§2.2) ; a defaut, reprendre celle du fichier existant (jamais une
+   version « derniere » recalculee a chaque passage).
+6. Indentation 2 espaces, fin de ligne `\n`, un `\n` final, pas d'espace en fin de ligne.
+
+**Ecriture seulement si le contenu change** :
+
+```bash
+mkdir -p .claude-launcher
+NEW=$(mktemp)   # contenu canonique compose ci-dessus, ecrit dans $NEW
+cmp -s "$NEW" .claude-launcher/env-template.yaml && { rm -f "$NEW"; echo "= env-template.yaml inchange"; } \
+  || { mv "$NEW" .claude-launcher/env-template.yaml; echo "✓ env-template.yaml ecrit"; }
+# syntaxe, si un parseur est disponible
+if python3 -c 'import yaml' 2>/dev/null; then python3 -c 'import sys,yaml; yaml.safe_load(open(sys.argv[1]))' .claude-launcher/env-template.yaml
+elif command -v yq >/dev/null; then yq . .claude-launcher/env-template.yaml >/dev/null; fi
+```
+
+Puis :
+- `PRIVATE/gitconfig` absent → `mkdir -p PRIVATE && cp TEMPLATE_claude/templates/launcher/gitconfig PRIVATE/gitconfig`
+  (present : jamais touche) ; `git check-ignore -q PRIVATE/gitconfig` doit reussir.
 - `.gitignore` : chaque chemin `local` doit etre ignore (le moteur cree un dossier vide servant de point de montage
   dans le projet) — `git check-ignore -q <chemin>/ || echo "/<chemin>/" >> .gitignore` (`node_modules/`, `.venv/`
-  generiques deja presents : rien a ajouter). `.claude-launcher/` n'est **jamais** ignore.
+  generiques deja presents : rien a ajouter).
+- `env.yaml` absent → **ne pas le creer** (`env-template.yaml` suffit au launcher, qui cree lui-meme un squelette).
+  Present → **jamais modifie** (hors migration, §5).
 
-Exemple (Go + React dans `server-go/web/`, socle choisi par le launcher) :
+## 5. Migration d'un projet existant
+
+Concerne un projet dont `env.yaml` etait genere par le template : `project-config.json` → `launcher_env.status` =
+`managed` sans `launcher_env.file` (convention anterieure, fusion additive dans `env.yaml`). Jouee par l'Etape d1j
+(option d) ou l'Etape 9c (re-init).
+
+1. **G** = `env-template.yaml` genere pour la stack actuelle (§4) ; **E** = `env.yaml` actuel.
+2. Retirer de E chaque element present dans G : paquets, entrees de `packages_by_manager` (par gestionnaire),
+   etapes `setup` / `on_start` **identiques au texte pres** (espaces de fin et forme `- |` / une ligne normalisees),
+   `watch`, `local`, `mounts` de meme `path` **et** meme `ro`. Une liste videe disparait.
+3. `image` : egale dans E et G → retiree de E ; differente → **gardee** dans E (choix explicite du projet ou du
+   launcher, elle l'emporte) et signalee.
+4. Le reste de E (ajouts manuels, `prefer`, commentaires de l'utilisateur) reste dans `env.yaml` — edition du texte
+   (Edit), jamais de reserialisation YAML. L'ancienne ligne d'en-tete du template
+   (`# Contenu propose par /init-project (stack)...`) est retiree. S'il ne reste rien d'utile, remplacer le fichier
+   par le **squelette** (ne pas le supprimer) :
+   ```yaml
+   # Ajouts propres au projet — fusionnés par Claude-Launcher ≥ v5.5.0 après .claude-launcher/env-template.yaml
+   # (généré par le template, ne pas le modifier). Un projet ne peut pas retirer un élément du template.
+   # image: docker.io/library/debian:12   # remplace celle du template
+   # packages: []
+   # setup: []
+   # prefer: podman
+   ```
+5. **Montrer le diff des deux fichiers** (`env-template.yaml` cree, `env.yaml` allege) et demander confirmation :
+   ```
+   AskUserQuestion : "Migration de l'environnement conteneur : env-template.yaml (template) + env.yaml (projet) —
+   nécessite Claude-Launcher ≥ v5.5.0 (une version antérieure ignore env-template.yaml : le projet perdrait
+   l'environnement de sa stack, voire repasserait sur l'hôte) ?"
+   - Migrer (Recommande si Claude-Launcher ≥ v5.5.0) — ecrit les deux fichiers ; launcher_env.migrated = <date>
+   - Plus tard — rien n'est modifie (ni env.yaml ni env-template.yaml) ; nouvelle proposition au prochain passage
+   ```
+6. **Ne jamais perdre une etape** : etape proche mais pas identique (meme outil, autre version ou option) → laissee
+   dans `env.yaml` et signalee `⚠ setup « <debut> » garde dans env.yaml (differe du template)` — elle s'ajoutera a
+   celle du template (a nettoyer par l'utilisateur).
+
+Version du launcher : `claude-launcher-ng2 version` si la commande existe (hote), sinon inconnue (le dire dans la
+question, sans recommander « Migrer » d'office).
+
+## 6. Cas d'essai
+
+| Cas | Depart | Attendu |
+|-----|--------|---------|
+| Projet neuf | Pas de `.claude-launcher/` | `env-template.yaml` seul (socle + stack), `env.yaml` **non cree**, `PRIVATE/gitconfig` cree ; `launcher_env` = `{status: managed, file: env-template.yaml, updated}` |
+| Projet existant a migrer | `env.yaml` genere (`managed`, sans `file`) + `setup: [make tools]` ajoute a la main + `image: ubuntu:24.04` (F2) | `env-template.yaml` cree ; `env.yaml` = `image: ubuntu:24.04` (signalee, differente) + `make tools` ; etapes du template retirees ; `migrated` pose |
+| Second passage, stack inchangee | `env-template.yaml` deja a jour | `cmp` identique : **fichier non reecrit** (mtime inchange, aucun rejeu du `setup`) ; `env.yaml` non touche |
+| Refus de migration | Comme « a migrer », reponse « Plus tard » | Aucun fichier modifie ; `launcher_env` inchange (pas de `file`) ; question reposee au prochain passage |
+| Nouveau manifeste | `web/package.json` + verrou apparus | `env-template.yaml` regenere (ajout `local`, `watch`, etape `npm ci`) ; `env.yaml` non touche |
+| `env.yaml` du launcher seul | Squelette ou `image` ecrits par le launcher, `launcher_env` absent | `env-template.yaml` cree ; `env.yaml` **non touche** (pas de migration : il n'etait pas gere par le template) |
+
+Exemple de `env-template.yaml` (Go + React dans `server-go/web/`) :
 
 ```yaml
-# Exécution du projet en conteneur (Claude-Launcher-NG2) — versionné avec le projet
-# Contenu propose par /init-project (stack) — completable a la main, fusion additive a chaque /init-project d
+# Généré par le template (/init-project) — NE PAS MODIFIER : réécrit à chaque passage.
+# Ajouts propres au projet : .claude-launcher/env.yaml (fusionné par Claude-Launcher ≥ v5.5.0).
 image: docker.io/library/debian:12
-packages: [nodejs, npm]
+packages: [jq, nodejs, npm]
 packages_by_manager:
-  apt: [build-essential]
-  dnf: [gcc, gcc-c++, make]
-  apk: [build-base]
+  apt: [build-essential, gh]
+  dnf: [gcc, gcc-c++, gh, make]
+  apk: [build-base, github-cli]
 setup:
+  - git config --global --get-all include.path | grep -qxF "$PWD/PRIVATE/gitconfig" || git config --global --add include.path "$PWD/PRIVATE/gitconfig"
   - |
     V=1.23.4; A=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
     [ "$(~/.local/go/bin/go env GOVERSION 2>/dev/null)" = "go$V" ] || { rm -rf ~/.local/go; curl -fsSL https://go.dev/dl/go$V.linux-$A.tar.gz | tar -xz -C ~/.local; }

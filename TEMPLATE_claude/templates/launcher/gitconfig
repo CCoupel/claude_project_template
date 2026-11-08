@@ -1,0 +1,9 @@
+# Config git personnelle, sur le stockage partagé : incluse par le ~/.gitconfig de chaque conteneur
+# (étape setup de .claude-launcher/env-template.yaml). Le $HOME d'un conteneur lui est propre et se perd à sa recréation.
+# Aucun secret : gh lit le jeton dans $GH_TOKEN à chaque appel. Créé par /init-project s'il est absent, jamais écrasé.
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper =
+	helper = !gh auth git-credential

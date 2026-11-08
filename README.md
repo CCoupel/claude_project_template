@@ -26,11 +26,26 @@ Documentation complète (configuration, backends, mise à jour) :
 [CCoupel/Claude-Launcher](https://github.com/CCoupel/Claude-Launcher) ·
 [site](https://ccoupel.github.io/Claude-Launcher/)
 
-Avec le launcher NG2 (v5.1.0+), un projet peut s'exécuter dans un **conteneur** décrit par
-`.claude-launcher/env.yaml` (versionné). `/init-project` en propose le contenu à partir de la stack
-détectée (Étape 9c) : paquets, `setup` idempotent (`npm ci`, venv, toolchain Go…), verrous en `watch`, et
-en `local` les dossiers dérivés (`node_modules`, `.venv`, y compris en sous-dossier) — privés au conteneur,
-ils masquent ceux du dossier partagé. Un `env.yaml` existant (écrit par le launcher) est complété, jamais écrasé.
+Avec le launcher NG2 (**≥ v5.5.0**), un projet s'exécute dans un **conteneur** décrit par deux fichiers versionnés
+de `.claude-launcher/` :
+
+| Fichier | Propriétaire | Règle |
+|---------|--------------|-------|
+| `env-template.yaml` | le template | **Régénéré entièrement** par `/init-project` à chaque passage (Étape 9c, option d : d1j), sans fusion, de façon déterministe (même stack = même fichier à l'octet près, réécrit seulement s'il change — sinon chaque passage ferait rejouer le `setup` des conteneurs) ; en-tête « NE PAS MODIFIER » |
+| `env.yaml` | le projet | Ajouts propres au projet (image choisie par F2, paquets, étapes, `prefer`). Le template n'y écrit **jamais** et ne le crée pas (le launcher crée un squelette au besoin) |
+
+Le launcher fusionne **config du launcher → `env-template.yaml` → `env.yaml`** : `image` de `env.yaml` sinon du
+template ; `packages`, `packages_by_manager`, `watch`, `local` réunis ; `setup` / `on_start` à la suite (launcher,
+template, projet) ; `mounts` réunis par `path` (`ro` de `env.yaml` prioritaire) ; `prefer` réservé à `env.yaml`.
+Un projet ne peut pas retirer un élément du template : `env-template.yaml` ne contient que ce que la stack exige —
+paquets, `setup` rejouable sans effet de bord (`npm ci`, venv, toolchain Go…), verrous en `watch`, dossiers dérivés en
+`local` (`node_modules`, `.venv`, y compris en sous-dossier, privés au conteneur) — plus un **socle commun** à tous
+les projets : `gh`, `jq`, et l'inclusion de `PRIVATE/gitconfig` (créé s'il manque, gitignoré : git s'authentifie par
+`gh` avec `$GH_TOKEN`, sans secret dans le fichier) dans le `~/.gitconfig` du conteneur.
+Projet dont `env.yaml` était généré par une version antérieure du template : `/init-project` (option d) propose la
+**migration** — retire de `env.yaml` ce que génère le template, garde une image différente et les ajouts manuels,
+montre le diff et demande confirmation. **Claude-Launcher < v5.5.0 ignore `env-template.yaml`** : un projet migré
+perdrait l'environnement de sa stack, voire repasserait sur l'hôte.
 
 > **Version majeure commune.** Depuis la v5, le template et le launcher partagent leur version
 > majeure : le template **v5** va avec **Claude-Launcher v5 (NG2)**. Un launcher vX n'adopte que
@@ -134,7 +149,8 @@ TEMPLATE_claude/           │     ├── commands/
 | `.claude/{agents,commands}/context/*.md` | Adaptations projet par contexte partagé | Oui |
 | `.claude/CLAUDE.md`, `project-config.json`, `memory/` | Config projet — `project-config.json` porte aussi le **registre des agents** (`agents.registry[]`) | Oui |
 | `contracts/CHANGELOG.md` | Changelog des contrats (squelette créé par `/init-project`) | Oui |
-| `.claude-launcher/env.yaml` | Environnement conteneur Claude-Launcher NG2 (v5.1.0+) : socle, paquets, `setup`, `watch`, dossiers dérivés privés au conteneur (`local` : `node_modules`, `.venv`…, ignorés par le `.gitignore`). Contenu proposé par `/init-project` selon la stack (Étape 9c ; fusion additive en mise à jour, étape d1j) — référence `templates/launcher/env-yaml.md` | Oui |
+| `.claude-launcher/env-template.yaml` | Environnement conteneur Claude-Launcher NG2 (≥ v5.5.0) généré par le template — régénéré à chaque `/init-project`, ne pas modifier (socle `gh`/`jq`/`PRIVATE/gitconfig` + stack) | Oui |
+| `.claude-launcher/env.yaml` | Ajouts propres au projet (image choisie par F2, paquets, étapes, `prefer`), fusionnés par le launcher après `env-template.yaml` ; jamais créé ni écrit par le template, sauf migration d'un `env.yaml` généré par une version antérieure (étape d1j) — référence `templates/launcher/env-yaml.md` | Oui |
 | `docs/CADRAGE.md` | Fiche de cadrage produit (brief d'origine + valeurs finales par phase), écrite par `/init-project` en mode brief ou workshop ; lue par le planner et le marketing | Oui |
 
 > **Après un `git clone`/`git pull`** sur un projet déjà initialisé, les fichiers gitignorés
@@ -292,7 +308,8 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
     ├── environments/             # Templates publish/deploy par mécanisme (promote, rebuild-ci,
     │                             # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
     ├── launcher/
-    │   └── env-yaml.md           # stack → .claude-launcher/env.yaml (conteneur Claude-Launcher NG2)
+    │   ├── env-yaml.md           # stack → .claude-launcher/env-template.yaml (conteneur Claude-Launcher NG2 ≥ v5.5.0)
+    │   └── gitconfig             # modèle de PRIVATE/gitconfig (git → gh auth git-credential)
     └── workflows/
         └── release-go-react.yml  # exemple de référence (le pipeline est audité/généré par infra)
 ```
@@ -915,7 +932,7 @@ Fetche la dernière version de `TEMPLATE_claude/` et :
   comparaison ne crée/modifie/supprime jamais `.claude/agents/*.md`
 - Synchronise `CLAUDE.md` (bloc `TEAMLEADER_PROTOCOL` + table `Agents Disponibles`) et `.claude/settings.json`
 - Crée s'ils sont absents `.claude/memory/MEMORY.md` et `contracts/CHANGELOG.md` (jamais écrasés)
-- Complète `.claude-launcher/env.yaml` (étape d1j) : nouveaux dossiers dérivés, verrous ou version de chaîne — fusion additive, rien d'écrasé sans accord
+- Régénère `.claude-launcher/env-template.yaml` (étape d1j) s'il change : nouveaux dossiers dérivés, verrous ou version de chaîne ; `env.yaml` jamais touché, sauf migration d'un `env.yaml` généré par une version antérieure (diff + confirmation)
 - Termine par le même audit du contexte qu'à l'init (commit de l'état synchronisé, puis `/context-audit` complet),
   puis la même publication sur `main` (commit des corrections, report sur `main`, push)
 
