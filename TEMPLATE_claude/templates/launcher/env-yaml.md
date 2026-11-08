@@ -23,7 +23,7 @@ autres conteneurs, autres machines) : ce que `setup` construit (`node_modules`, 
 
 Contraintes des chemins `local` / `watch` : relatifs au projet, sans `..`, sans `:` ni `,`.
 `PATH` du conteneur (setup, on_start, sessions) : `$HOME/.local/bin` en tete. `$HOME` est propre au conteneur
-(seul `~/.claude` est partage) : caches pip/npm/go et outils installes sous `~/.local` n'y sont pas a declarer.
+(seule la config claude, `$CLAUDE_CONFIG_DIR` — ex-`~/.claude` —, est partagee) : caches pip/npm/go et outils installes sous `~/.local` n'y sont pas a declarer.
 
 ## 2. Stack → contenu
 

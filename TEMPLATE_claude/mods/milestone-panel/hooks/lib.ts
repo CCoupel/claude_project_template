@@ -331,16 +331,26 @@ export function mergeHeaders(prev: Usage, limits: RateLimit[], now: number, erro
 
 /**
  * Cache de consommation partagé avec le launcher (CCoupel/Claude-Launcher) et les autres projets :
- * réponse brute de `/api/oauth/usage`, sa date de modification faisant foi ; `<cache>.err` (non vide) = dernier échec.
+ * réponse brute de `/api/oauth/usage`, sa date de modification faisant foi ; `<cache>.err` (non vide) = dernier échec,
+ * `<cache>.wait` = durée de la dernière attente après un 429 (s).
+ * Launcher v5 (NG2) : `$CLAUDE_CONFIG_DIR/claude-launcher-cache/usage.json`, sur le stockage partagé monté au même
+ * chemin sur l'hôte et dans chaque conteneur (le `$HOME` d'un conteneur lui est propre). Sinon (launcher v4, ou pas
+ * de launcher) : `${XDG_CACHE_HOME:-$HOME/.cache}/claude-launcher/usage.json`.
  */
-export function usageCachePath(xdgCacheHome: string | undefined, home: string | undefined): string | null {
+export function usageCachePath(
+  xdgCacheHome: string | undefined,
+  home: string | undefined,
+  claudeConfigDir?: string | undefined,
+): string | null {
+  if (claudeConfigDir) return `${claudeConfigDir.replace(/\/+$/, '')}/claude-launcher-cache/usage.json`
   const base = xdgCacheHome || (home ? `${home}/.cache` : '')
   return base ? `${base}/claude-launcher/usage.json` : null
 }
 
 /**
- * Qui appelle l'endpoint : personne tant que le cache a moins de `freshMs` (le launcher le relit toutes les 60 s),
- * ni moins de `backoffMs` après un échec enregistré par quiconque (429, token expiré) ; sinon cette session.
+ * Qui appelle l'endpoint : personne tant que le cache a moins de `freshMs` (le launcher le relit régulièrement),
+ * ni tant que `now < errMtime + backoffMs` après un échec enregistré par quiconque (429, token expiré) — un `.err`
+ * daté dans le futur (attente progressive posée par le launcher ou un panneau) vaut donc attente ; sinon cette session.
  */
 export function usageCacheDecision(
   cacheMtime: number | null,
@@ -350,15 +360,67 @@ export function usageCacheDecision(
   backoffMs: number,
 ): 'cache' | 'backoff' | 'fetch' {
   if (cacheMtime !== null && now - cacheMtime < freshMs) return 'cache'
-  if (errMtime !== null && now - errMtime < backoffMs) return 'backoff'
+  if (errMtime !== null && (errMtime > now || now < errMtime + backoffMs)) return 'backoff'
   return 'fetch'
+}
+
+const two = (n: number) => String(n).padStart(2, '0')
+
+/**
+ * Échec de l'endpoint : `keep` si une attente est déjà posée dans le futur (`.err` laissé tel quel, jamais raccourci) ;
+ * `wait` sur un 429 (attente progressive) ; `record` sinon (`.err` réécrit à maintenant).
+ */
+export function usageFailureAction(errMtime: number | null, now: number, status: number): 'keep' | 'wait' | 'record' {
+  if (errMtime !== null && errMtime > now) return 'keep'
+  return status === 429 ? 'wait' : 'record'
+}
+
+/** Attente progressive après un 429 (même contrat que le launcher) : 5 min, puis double, plafonnée à 30 min. */
+export const USAGE_WAIT_FIRST_SEC = 300
+export const USAGE_WAIT_MAX_SEC = 1800
+/** Le launcher attend `mtime(.err) + 5 min` : `.err` est daté de `now + attente − 5 min`. */
+export const USAGE_ERR_OFFSET_SEC = 300
+
+/** Contenu de `usage.json.wait` (secondes) ; `null` si absent, vide ou invalide. */
+export function parseUsageWait(text: string | null | undefined): number | null {
+  const m = (text ?? '').trim().match(/^(\d+)$/)
+  return m && Number(m[1]) > 0 ? Number(m[1]) : null
+}
+
+/** En-tête `Retry-After` : délai en secondes ou date HTTP ; secondes (arrondies au-dessus), `null` sinon. */
+export function parseRetryAfter(value: string | null | undefined, now: number): number | null {
+  const v = (value ?? '').trim()
+  if (v === '') return null
+  if (/^\d+$/.test(v)) return Number(v)
+  const t = Date.parse(v)
+  return Number.isNaN(t) ? null : Math.max(0, Math.ceil((t - now) / 1000))
+}
+
+/**
+ * Prochaine attente après un 429 (s) : 5 min sans attente précédente, sinon le double plafonné à 30 min ;
+ * jamais moins que `Retry-After` quand le serveur l'indique.
+ */
+export function nextUsageWait(prevWaitSec: number | null, retryAfterSec: number | null): number {
+  const progressive = prevWaitSec ? Math.min(USAGE_WAIT_MAX_SEC, prevWaitSec * 2) : USAGE_WAIT_FIRST_SEC
+  return Math.max(progressive, retryAfterSec ?? 0)
+}
+
+/** Date (ms) à poser sur `.err` pour une attente de `waitSec` à partir de `now` : `now + attente − 5 min`. */
+export function usageErrMtime(now: number, waitSec: number): number {
+  return now + (waitSec - USAGE_ERR_OFFSET_SEC) * 1000
+}
+
+/** Message de `.err` après un 429 : « trop d’appels à l’endpoint, nouvel essai vers HH:MM » (heure locale). */
+export function usageWaitMessage(now: number, waitSec: number): string {
+  const t = new Date(now + waitSec * 1000)
+  return `trop d’appels à l’endpoint, nouvel essai vers ${two(t.getHours())}:${two(t.getMinutes())}`
 }
 
 /** Repli quand la config du launcher est absente ou illisible : intervalle de lecture supposé de 5 min. */
 export const USAGE_REFRESH_FALLBACK_SEC = 300
 
 /**
- * `USAGE_REFRESH_SEC` de `~/.config/claude-launcher.conf` (fichier bash : dernière affectation non commentée,
+ * `USAGE_REFRESH_SEC` de `~/.config/claude-launcher.conf` (launcher v4 ; absent dans un conteneur NG2 → repli) (fichier bash : dernière affectation non commentée,
  * guillemets tolérés), borné à 60 s minimum ; `null` si absent ou non numérique.
  */
 export function parseUsageRefreshSec(conf: string | null | undefined): number | null {
@@ -372,8 +434,6 @@ export function usageThresholds(refreshSec: number | null): { freshMs: number; b
   const sec = refreshSec ?? USAGE_REFRESH_FALLBACK_SEC
   return { freshMs: sec * 1500, backoffMs: Math.max(300, sec * 2) * 1000 }
 }
-
-const two = (n: number) => String(n).padStart(2, '0')
 
 /** Réinitialisation en forme courte : « 15:00 » le jour même, « demain 12:00 », « mer. 12:00 », « 42 min ». Heure locale. */
 export function formatReset(resetsAt: string | null, now: number): string {

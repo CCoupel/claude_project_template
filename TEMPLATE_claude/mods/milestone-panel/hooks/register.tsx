@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage, View } from '../types'
-import { PHASES, allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageThresholds } from './lib'
+import { PHASES, allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -13,7 +13,8 @@ const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
 const noUsage: Usage = { windows: [], source: null, updatedAt: 0, error: null }
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const USAGE_THROTTLE_MS = 20_000
-// Cache partagé : seuils dérivés de `USAGE_REFRESH_SEC` du launcher (~/.config/claude-launcher.conf), repli 5 min.
+// Cache partagé : seuils dérivés de `USAGE_REFRESH_SEC` du launcher v4 (~/.config/claude-launcher.conf), repli 5 min
+// (fichier absent dans un conteneur Claude-Launcher v5).
 let cachePath: string | null | undefined
 let lastUsageAt = 0
 const usage = atom({ plugin: 'milestone-panel', key: 'usage' } as const, noUsage)
@@ -43,13 +44,17 @@ async function detectTeammate($: any) {
 
 // Consommation du compte : la même source que la page « Utilisation » du site (session, semaine, et limites
 // hebdomadaires par modèle comme Fable), endpoint `/api/oauth/usage`. Pour ne pas multiplier les appels (launcher +
-// un panneau par projet), un cache est partagé : `~/.cache/claude-launcher/usage.json`, alimenté par le launcher toutes
-// les `USAGE_REFRESH_SEC` s (config du launcher, 2 min par défaut). Le panneau le lit ; il n'appelle l'endpoint lui-même (credential tenu par l'hôte : $.session.authorize →
-// $.http.fetch, le secret ne transite jamais par le mod) que si le cache manque ou a plus de 1,5 × cet intervalle (5 min × 1,5 si la config est illisible), et l'y réécrit pour
-// le launcher et les autres projets. Un échec récent noté par quiconque (`.err` < max(5 min, 2 × intervalle) : 429, token expiré) suspend
-// les appels. À défaut de données du compte (clé API, passerelle, hors ligne), les en-têtes de la dernière réponse
-// ($.session.usage().rateLimits). Relue au démarrage, à chaque reload, toutes les minutes, et après chaque mesure du
-// moteur (20 s mini entre deux).
+// un panneau par projet, chacun dans son conteneur), un cache est partagé : `$CLAUDE_CONFIG_DIR/claude-launcher-cache/
+// usage.json` (stockage commun à l'hôte et aux conteneurs, launcher v5), sinon `${XDG_CACHE_HOME:-~/.cache}/claude-launcher/
+// usage.json` (launcher v4). Le launcher l'alimente toutes les `USAGE_REFRESH_SEC` s. Le panneau le lit ; il n'appelle
+// l'endpoint lui-même (credential tenu par l'hôte : $.session.authorize → $.http.fetch, le secret ne transite jamais par
+// le mod) que si le cache manque ou a plus de 1,5 × cet intervalle (5 min × 1,5 à défaut de config), et l'y réécrit.
+// Un échec noté par quiconque (`.err` : 429, token expiré) suspend les appels tant que `now < mtime(.err) + backoff` — un
+// `.err` daté dans le futur (attente progressive du launcher après un 429) compte, et n'est jamais raccourci : sur un 429,
+// même progression que le launcher (`.wait` : 5, 10, 20 puis 30 min, Retry-After respecté, `.err` daté de
+// now + attente − 5 min). À défaut de données du compte (clé API, passerelle, hors ligne), les en-têtes de la dernière
+// réponse ($.session.usage().rateLimits). Relue au démarrage, à chaque reload, toutes les minutes, et après chaque mesure
+// du moteur (20 s mini entre deux).
 async function statMtime($: any, path: string) {
   const s = await $.fs.stat(path).catch(() => null)
   return s && s.kind === 'file' && s.size > 0 ? (s.mtimeMs as number) : null
@@ -59,12 +64,12 @@ async function refreshUsage($: any, isForced = false) {
   const now = await $.clock.now()
   if (!isForced && now - lastUsageAt < USAGE_THROTTLE_MS) return
   lastUsageAt = now
-  if (cachePath === undefined) cachePath = usageCachePath(await $.env.get('XDG_CACHE_HOME'), await $.env.get('HOME'))
+  if (cachePath === undefined)
+    cachePath = usageCachePath(await $.env.get('XDG_CACHE_HOME'), await $.env.get('HOME'), await $.env.get('CLAUDE_CONFIG_DIR'))
   let error = 'pas de credential OAuth (clé API, passerelle ou non connecté)'
   if (cachePath) {
     const [cacheAt, errAt] = await Promise.all([statMtime($, cachePath), statMtime($, `${cachePath}.err`)])
-    const conf = await $.fs.read(`${await $.env.get('HOME')}/.config/claude-launcher.conf`).catch(() => null)
-    const { freshMs, backoffMs } = usageThresholds(parseUsageRefreshSec(conf))
+    const { freshMs, backoffMs } = usageThresholds(await usageRefreshSec($))
     const decision = usageCacheDecision(cacheAt, errAt, now, freshMs, backoffMs)
     if (decision === 'cache') {
       const parsed = await $.fs.read(cachePath).then((t: string) => parseAccountUsage(JSON.parse(t), cacheAt!)).catch(() => null)
@@ -84,19 +89,25 @@ async function refreshUsage($: any, isForced = false) {
       const parsed = res.ok ? parseAccountUsage(JSON.parse(res.text), now) : null
       if (parsed && parsed.windows.length > 0) {
         await update($, usage, () => parsed)
-        // Données fraîches mises à disposition du launcher et des autres projets ; `.err` vidé (= pas d'échec).
+        // Données fraîches mises à disposition du launcher et des autres projets ; `.wait` supprimé, `.err` vidé.
         if (cachePath) {
           await $.fs.write(cachePath, res.text).catch(() => undefined)
+          await clearWait($, `${cachePath}.wait`)
           if (await statMtime($, `${cachePath}.err`)) await $.fs.write(`${cachePath}.err`, '').catch(() => undefined)
         }
         return
       }
       error = res.ok ? 'réponse sans tableau `limits`'
-        : res.status === 429 ? 'trop d’appels à l’endpoint, nouvel essai dans 5 min'
         : res.status === 401 || res.status === 403 ? 'non authentifié — lancer claude puis /login'
         : `endpoint indisponible (HTTP ${res.status})`
-      // Échec partagé : les autres sessions et le launcher patientent au lieu de réessayer chacun.
-      if (cachePath) await $.fs.write(`${cachePath}.err`, error).catch(() => undefined)
+      // Échec partagé : les autres sessions et le launcher patientent au lieu de réessayer chacun. Une attente déjà
+      // posée dans le futur (launcher ou autre panneau) n'est jamais raccourcie : `.err` est laissé tel quel.
+      if (cachePath) {
+        const action = usageFailureAction(await statMtime($, `${cachePath}.err`), now, res.status)
+        if (action === 'keep') error = (await $.fs.read(`${cachePath}.err`).catch(() => '')) || error
+        else if (action === 'wait') error = await recordWait($, cachePath, now, res.headers?.['retry-after'])
+        else await $.fs.write(`${cachePath}.err`, error).catch(() => undefined)
+      } else if (res.status === 429) error = usageWaitMessage(now, nextUsageWait(null, parseRetryAfter(res.headers?.['retry-after'], now)))
     }
   } catch (e) {
     error = e instanceof Error ? e.message : String(e)
@@ -105,6 +116,33 @@ async function refreshUsage($: any, isForced = false) {
   // Nouvel essai rapide après un échec (le throttle normal attend 20 s, le timer une minute) ; le backoff partagé
   // le transforme en simple relecture du cache tant que l'échec est récent.
   $.clock.after(5_000, () => void refreshUsage($, true).catch(() => undefined))
+}
+
+// `USAGE_REFRESH_SEC` du launcher v4 ; absent (conteneur v5, pas de launcher) → repli dans usageThresholds.
+async function usageRefreshSec($: any) {
+  const home = await $.env.get('HOME')
+  const conf = home ? await $.fs.read(`${home}/.config/claude-launcher.conf`).catch(() => null) : null
+  return parseUsageRefreshSec(conf)
+}
+
+// 429 : même progression que le launcher — `.wait` lu (5 min sans précédent), doublé, plafonné à 30 min, Retry-After
+// respecté ; `.wait` écrit, `.err` écrit puis daté de now + attente − 5 min (le launcher attend mtime(.err) + 5 min).
+async function recordWait($: any, cachePath: string, now: number, retryAfter: string | undefined) {
+  const prev = parseUsageWait(await $.fs.read(`${cachePath}.wait`).catch(() => null))
+  const wait = nextUsageWait(prev, parseRetryAfter(retryAfter, now))
+  const message = usageWaitMessage(now, wait)
+  await $.fs.write(`${cachePath}.wait`, String(wait)).catch(() => undefined)
+  await $.fs.write(`${cachePath}.err`, message).catch(() => undefined)
+  const at = Math.floor(usageErrMtime(now, wait) / 1000)
+  await $.process.run(['touch', '-m', '-d', `@${at}`, `${cachePath}.err`]).catch(() => undefined)
+  return message
+}
+
+// Succès : `.wait` supprimé (la progression repart de 5 min) ; vidé s'il n'est pas supprimable (`statMtime` ignore un fichier vide).
+async function clearWait($: any, path: string) {
+  if (!(await $.fs.exists(path).catch(() => false))) return
+  const res = await $.process.run(['rm', '-f', path]).catch(() => null)
+  if (!res || res.exitCode !== 0 || (await $.fs.exists(path).catch(() => false))) await $.fs.write(path, '').catch(() => undefined)
 }
 
 // Repli sur les en-têtes de la dernière réponse — sans jamais effacer des fenêtres du compte déjà obtenues
