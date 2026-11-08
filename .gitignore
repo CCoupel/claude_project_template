@@ -111,3 +111,5 @@ nul
 
 # Claude Code local settings
 .claude/settings.local.json
+# Éléments privés jamais commités (config git perso incluse par le conteneur, accès...)
+PRIVATE/
