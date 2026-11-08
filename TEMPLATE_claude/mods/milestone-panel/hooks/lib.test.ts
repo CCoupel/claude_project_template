@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, parseAccountUsage, parseGhIssueCommand, parseUsageRefreshSec, usageBar, usageCacheDecision, usageCachePath, usageColor, usageLabel, usageThresholds } from './lib'
+import { allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageLabel, usageThresholds, usageWaitMessage } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -275,7 +275,14 @@ test('consommation : un échec passager de l’endpoint garde les fenêtres du c
   expect(u.windows[0].resetsAt).toBe('2026-10-13T13:00:00+00:00')
 })
 
-test('cache de consommation partagé : XDG_CACHE_HOME, sinon ~/.cache, sinon aucun', () => {
+test('cache de consommation partagé : CLAUDE_CONFIG_DIR (launcher v5) prioritaire', () => {
+  expect(usageCachePath('/x/cache', '/home/u', '/mfs/claude')).toBe('/mfs/claude/claude-launcher-cache/usage.json')
+  expect(usageCachePath(undefined, undefined, '/mfs/claude/')).toBe('/mfs/claude/claude-launcher-cache/usage.json')
+  expect(usageCachePath(undefined, '/home/u', '')).toBe('/home/u/.cache/claude-launcher/usage.json')
+})
+
+test('cache de consommation partagé sans CLAUDE_CONFIG_DIR : XDG_CACHE_HOME, sinon ~/.cache, sinon aucun', () => {
+  expect(usageCachePath('/x/cache', '/home/u', undefined)).toBe('/x/cache/claude-launcher/usage.json')
   expect(usageCachePath('/x/cache', '/home/u')).toBe('/x/cache/claude-launcher/usage.json')
   expect(usageCachePath(undefined, '/home/u')).toBe('/home/u/.cache/claude-launcher/usage.json')
   expect(usageCachePath('', '/home/u')).toBe('/home/u/.cache/claude-launcher/usage.json')
@@ -293,6 +300,52 @@ test('cache frais lu sans appel ; échec récent = backoff ; sinon appel', () =>
   expect(usageCacheDecision(null, null, now, 180_000, 300_000)).toBe('fetch')
 })
 
+test('.err daté dans le futur (attente du launcher) : aucun appel tant que now < errMtime + backoff', () => {
+  const now = 1_000_000
+  // attente de 30 min posée par le launcher : .err daté de now + 25 min
+  expect(usageCacheDecision(null, now + 1_500_000, now, 180_000, 300_000)).toBe('backoff')
+  expect(usageCacheDecision(now - 400_000, now + 1, now, 180_000, 300_000)).toBe('backoff')
+  // fin de l'attente : errMtime + backoff atteint
+  expect(usageCacheDecision(null, now - 300_000, now, 180_000, 300_000)).toBe('fetch')
+  expect(usageCacheDecision(null, now - 299_999, now, 180_000, 300_000)).toBe('backoff')
+})
+
+test('échec de l\'endpoint : un .err futur n\'est jamais réécrit, 429 = attente progressive', () => {
+  const now = 1_000_000
+  expect(usageFailureAction(now + 60_000, now, 429)).toBe('keep')
+  expect(usageFailureAction(now + 60_000, now, 503)).toBe('keep')
+  expect(usageFailureAction(now - 60_000, now, 429)).toBe('wait')
+  expect(usageFailureAction(null, now, 429)).toBe('wait')
+  expect(usageFailureAction(null, now, 401)).toBe('record')
+  expect(usageFailureAction(now, now, 503)).toBe('record')
+})
+
+test('attente après 429 : 5, 10, 20 puis 30 min (plafond), Retry-After respecté', () => {
+  expect(nextUsageWait(null, null)).toBe(300)
+  expect(nextUsageWait(300, null)).toBe(600)
+  expect(nextUsageWait(600, null)).toBe(1200)
+  expect(nextUsageWait(1200, null)).toBe(1800)
+  expect(nextUsageWait(1800, null)).toBe(1800)
+  expect(nextUsageWait(300, 3600)).toBe(3600)
+  expect(nextUsageWait(null, 60)).toBe(300)
+  expect(parseUsageWait('600\n')).toBe(600)
+  expect(parseUsageWait('')).toBe(null)
+  expect(parseUsageWait('abc')).toBe(null)
+  expect(parseUsageWait(null)).toBe(null)
+  const now = Date.parse('2026-11-08T10:00:00Z')
+  expect(parseRetryAfter('120', now)).toBe(120)
+  expect(parseRetryAfter('Sun, 08 Nov 2026 10:45:00 GMT', now)).toBe(2700)
+  expect(parseRetryAfter('', now)).toBe(null)
+  expect(parseRetryAfter('demain', now)).toBe(null)
+  expect(parseRetryAfter(undefined, now)).toBe(null)
+  // contrat du launcher : .err daté de now + attente − 5 min
+  expect(usageErrMtime(now, 300)).toBe(now)
+  expect(usageErrMtime(now, 1800)).toBe(now + 1_500_000)
+  expect(usageWaitMessage(now, 600)).toMatch(/^trop d’appels à l’endpoint, nouvel essai vers \d\d:\d\d$/)
+  const t = new Date(now + 600_000)
+  expect(usageWaitMessage(now, 600)).toContain(`${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`)
+})
+
 test('intervalle de lecture lu dans la config du launcher, repli 5 min', () => {
   expect(parseUsageRefreshSec('GITHUB_DIR="x"\nUSAGE_REFRESH_SEC=180\n')).toBe(180)
   expect(parseUsageRefreshSec('USAGE_REFRESH_SEC="90"  # commentaire')).toBe(90)
@@ -301,6 +354,8 @@ test('intervalle de lecture lu dans la config du launcher, repli 5 min', () => {
   expect(parseUsageRefreshSec('USAGE_REFRESH_SEC=abc')).toBe(null)
   expect(parseUsageRefreshSec('USAGE_REFRESH_SEC=100\nUSAGE_REFRESH_SEC=200')).toBe(200)
   expect(parseUsageRefreshSec(null)).toBe(null)
+  // conteneur Claude-Launcher v5 : pas de ~/.config/claude-launcher.conf → repli 300 s
+  expect(parseUsageRefreshSec(undefined)).toBe(null)
   expect(usageThresholds(120)).toEqual({ freshMs: 180_000, backoffMs: 300_000 })
   expect(usageThresholds(600)).toEqual({ freshMs: 900_000, backoffMs: 1_200_000 })
   expect(usageThresholds(null)).toEqual({ freshMs: 450_000, backoffMs: 600_000 })
