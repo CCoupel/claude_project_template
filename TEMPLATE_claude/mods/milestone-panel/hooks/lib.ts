@@ -1,6 +1,7 @@
 import type { Issue, MilestoneRow, PullRow, Usage, View } from '../types'
 
-export const PHASES = ['PLANNING', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'DONE'] as const
+// `A VALIDER` : terminée côté équipe, en attente de la validation utilisateur (GATE LOT / GATE 4) — avant `DONE`.
+export const PHASES = ['PLANNING', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'A VALIDER', 'DONE'] as const
 
 type RawIssue = {
   number: number
@@ -148,7 +149,7 @@ export const groupByPhase = (issues: Issue[]) =>
 
 /**
  * Issues regroupées par lot (`LOT-N`) : lots les plus avancés d'abord (avancement moyen de leurs issues :
- * DONE, EN QA, EN REVIEW, EN COURS, PRET, PLANNING, sans phase), puis les issues sans lot.
+ * DONE, A VALIDER, EN QA, EN REVIEW, EN COURS, PRET, PLANNING, sans phase), puis les issues sans lot.
  * Sans aucun lot dans le milestone : un seul groupe `lot: null`, aucun intitulé à afficher.
  */
 export const groupByLot = (issues: Issue[]) => {

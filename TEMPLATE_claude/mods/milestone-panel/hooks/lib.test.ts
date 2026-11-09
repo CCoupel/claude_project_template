@@ -121,6 +121,19 @@ test('PRET est une phase : classée entre PLANNING et EN COURS', () => {
   expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['EN COURS', 'PRET', 'PLANNING'])
 })
 
+test('A VALIDER est une phase : classée entre EN QA et DONE', () => {
+  const m = { title: 'v1' }
+  const issues = [
+    { number: 1, title: 'a', labels: lab('LOT-1', 'DONE'), milestone: m },
+    { number: 2, title: 'b', labels: lab('LOT-2', 'A VALIDER', 'VALID-HUMAINE'), milestone: m },
+    { number: 3, title: 'c', labels: lab('LOT-3', 'EN QA'), milestone: m },
+  ]
+  const v = buildView([{ title: 'v1', due_on: null, open_issues: 3, closed_issues: 0 }], issues, 0)
+  expect(v.issues.map(i => i.phase)).toEqual(['DONE', 'A VALIDER', 'EN QA'])
+  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-1', 'LOT-2', 'LOT-3'])
+  expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['DONE', 'A VALIDER', 'EN QA'])
+})
+
 test('sous-lots LOT-x.y : regroupés sous le lot parent, sans distinction', () => {
   const m = { title: 'v1' }
   const issues = [

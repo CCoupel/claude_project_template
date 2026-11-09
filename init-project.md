@@ -2587,6 +2587,7 @@ gh label create "PRET"      --color "bfdadc" --description "Plan validé, dével
 gh label create "EN COURS"  --color "e4e669" --description "Issue en cours de développement" --force
 gh label create "EN REVIEW" --color "d876e3" --description "Issue en cours de revue de code"  --force
 gh label create "EN QA"     --color "f9d0c4" --description "Issue en cours de tests QA"       --force
+gh label create "A VALIDER" --color "f29513" --description "Terminée, en attente de validation utilisateur" --force
 gh label create "DONE"      --color "0e8a16" --description "Issue livrée et validée"           --force
 ```
 
@@ -3787,6 +3788,7 @@ gh label create "PRET"      --color "bfdadc" --description "Plan validé, dével
 gh label create "EN COURS"  --color "e4e669" --description "Issue en cours de développement" --force
 gh label create "EN REVIEW" --color "d876e3" --description "Issue en cours de revue de code"  --force
 gh label create "EN QA"     --color "f9d0c4" --description "Issue en cours de tests QA"       --force
+gh label create "A VALIDER" --color "f29513" --description "Terminée, en attente de validation utilisateur" --force
 gh label create "DONE"      --color "0e8a16" --description "Issue livrée et validée"           --force
 ```
 
@@ -3817,7 +3819,7 @@ Synchronisation terminee.
   CLAUDE.md bloc TEAMLEADER_PROTOCOL : mis à jour
   Modeles/efforts agents            : <defauts adaptes | N alertes — N surcharges appliquees> (etape d6a)
   CLAUDE.md table Agents Disponibles : mis à jour (N lignes — documentation uniquement)
-  Labels GitHub                     : vérifiés (PLANNING, PRET, EN COURS, EN REVIEW, EN QA, DONE)
+  Labels GitHub                     : vérifiés (PLANNING, PRET, EN COURS, EN REVIEW, EN QA, A VALIDER, DONE)
   Audit contexte (/context-audit)   : N corriges (Auto), N arbitres, N laisses (etape d7b)
   Publication                       : <PUBLISH> (section 7 — ex. "pousse sur origin/main")
   Schema infrastructure             : [convertit vers environments[] | deja a jour | inchange (refuse)]

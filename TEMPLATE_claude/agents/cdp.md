@@ -325,10 +325,13 @@ ses scénarios est `HUMAIN` (ou si rien n'est marqué : sens sûr) ; elle porte 
   par le verdict `qa` (qui a joué les scénarios `AUTO` en automatisé). Le CDP consigne dans son compte rendu
   « Lot LOT-N auto-valide (aucun scenario HUMAIN) » et enchaîne : push, CI, fermeture des issues, lot suivant.
 - **GATE LOT, au moins une issue en `VALID-HUMAINE`** : GATE LOT classique, avec la présentation ci-dessous
-  limitée aux scénarios `HUMAIN`.
+  limitée aux scénarios `HUMAIN`. **Avant la question**, ordre à `deployer` : issues du lot → `A VALIDER`
+  (`commands/context/GITHUB.md` §9.4b, `LABELS DONE` attendu) ; à la réponse : validé → `DONE` (puis push) ;
+  refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le suivi montre ainsi qu'on attend l'utilisateur.
 - **GATE 4 : jamais sauté**, même si le dernier lot était auto-validé. Il récapitule le milestone (issues, lots
   auto-validés / validés par l'utilisateur, résultats QA). Sans scénario `HUMAIN` restant : simple confirmation
-  « publier en PROD ? », sans ouverture de document.
+  « publier en PROD ? », sans ouverture de document. `issues.close_on` = `validation` : les issues encore ouvertes
+  passent `A VALIDER` avant la question (§9.4b).
 
 ### GATE de validation par tests (GATE LOT, GATE 4) — présentation obligatoire
 
