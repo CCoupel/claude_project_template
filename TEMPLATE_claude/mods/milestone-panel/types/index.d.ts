@@ -14,6 +14,8 @@ export type View = {
   current: string | null
   /** Vrai quand le milestone en cours n'a plus d'issue ouverte : publication / déploiement PROD en cours. */
   isReleasing: boolean
+  /** État du milestone en cours (ligne `**Etat** :` de sa description, GITHUB.md 3.0bis), ex. `⏸ a publier` ; absent sinon. */
+  state?: string | null
   issues: Issue[]
   milestones: MilestoneRow[]
   /** PR ouvertes, lues seulement quand aucun milestone n'est en cours (vide sinon). */

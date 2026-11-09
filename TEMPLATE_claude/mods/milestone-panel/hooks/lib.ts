@@ -1,7 +1,12 @@
 import type { Issue, MilestoneRow, PullRow, Usage, View } from '../types'
 
-// `A VALIDER` : terminée côté équipe, en attente de la validation utilisateur (GATE LOT / GATE 4) — avant `DONE`.
-export const PHASES = ['PLANNING', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'A VALIDER', 'DONE'] as const
+// Attentes de validation utilisateur (GITHUB.md §8.2) : `PLAN A VALIDER` (GATE 2), `LOT A VALIDER` (GATE LOT),
+// `A PUBLIER` (GATE 4, issue encore ouverte).
+export const PHASES = ['PLANNING', 'PLAN A VALIDER', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'LOT A VALIDER', 'A PUBLIER', 'DONE'] as const
+/** Phases où l'équipe a fini et où la validation de l'utilisateur est attendue. */
+export const AWAITING_USER = ['PLAN A VALIDER', 'LOT A VALIDER', 'A PUBLIER'] as const
+/** Phases comptées comme terminées dans la barre d'avancement (travail de l'équipe fini). */
+export const FINISHED = ['LOT A VALIDER', 'A PUBLIER', 'DONE'] as const
 
 type RawIssue = {
   number: number
@@ -14,6 +19,13 @@ type RawMilestone = {
   due_on: string | null
   open_issues: number
   closed_issues: number
+  description?: string | null
+}
+
+/** Ligne `**Etat** : <etat> (depuis <date>)` du bloc historique (GITHUB.md 3.0bis), sans la date ; null si absente. */
+export const milestoneState = (description: string | null | undefined) => {
+  const m = (description ?? '').match(/^\*\*Etat\*\* : (.+?)(?: \(depuis [^)]*\))?\s*$/m)
+  return m ? m[1] : null
 }
 
 const semver = (title: string) =>
@@ -72,7 +84,7 @@ export const buildView = (
 ): View => {
   const sorted = [...rawMilestones].sort(compareMilestones)
   const started = new Set(
-    rawIssues.filter(i => i.milestone && phaseOf(i) && phaseOf(i) !== 'PLANNING').map(i => i.milestone!.title),
+    rawIssues.filter(i => i.milestone && phaseOf(i) && !['PLANNING', 'PLAN A VALIDER'].includes(phaseOf(i)!)).map(i => i.milestone!.title),
   )
   const isDone = (m: RawMilestone) => m.open_issues === 0 && m.closed_issues > 0
   const dated = sorted.find(m => m.due_on)
@@ -115,7 +127,8 @@ export const buildView = (
       open: m.open_issues,
       closed: m.closed_issues,
     }))
-  return { current, isReleasing: releasing !== null, issues, milestones, prs: [], colors, updatedAt: now, error: null }
+  const state = current ? milestoneState(sorted.find(m => m.title === current)?.description) : null
+  return { current, isReleasing: releasing !== null, state, issues, milestones, prs: [], colors, updatedAt: now, error: null }
 }
 
 type RawPull = {
@@ -149,7 +162,7 @@ export const groupByPhase = (issues: Issue[]) =>
 
 /**
  * Issues regroupées par lot (`LOT-N`) : lots les plus avancés d'abord (avancement moyen de leurs issues :
- * DONE, A VALIDER, EN QA, EN REVIEW, EN COURS, PRET, PLANNING, sans phase), puis les issues sans lot.
+ * DONE, A PUBLIER, LOT A VALIDER, EN QA, EN REVIEW, EN COURS, PRET, PLAN A VALIDER, PLANNING, sans phase), puis les issues sans lot.
  * Sans aucun lot dans le milestone : un seul groupe `lot: null`, aucun intitulé à afficher.
  */
 export const groupByLot = (issues: Issue[]) => {
