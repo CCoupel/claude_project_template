@@ -56,12 +56,15 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   assigné à une tâche (+ `qa`, et `test-writer` / `code-reviewer` / `doc-updater` selon les options)
 - Plan avec section `Prérequis infra (à fournir par l'utilisateur)` : la présenter **en tête** du GATE 2, avec la
   liste exacte des actions/commandes — ce sont les seuls écarts qu'`infra` ne peut pas corriger seul
+- **Avant la question** : ordre à `deployer` — `Labels : issues <ISSUE_NUMS> → PLAN A VALIDER (GITHUB.md §9.0b) ; Milestone :
+  milestone → ⏸ plan a valider` ; attendre `LABELS DONE` (le suivi montre que le plan attend l'utilisateur)
 - **Présenter le plan validé à l'utilisateur, avec la maquette si le plan en contient une, et le résumé du cadrage**
   (intensité, options modifiées, team) ← GATE 2 — question « Valides-tu ce plan et ce cadrage ? »
   (`context/MILESTONE_CADRAGE.md` 3.3)
 
 **Corrections demandées au GATE 2 (plan et/ou maquette)** :
 - Recueillir les corrections de l'utilisateur
+- Ordre à `deployer` : issues → `PLANNING` (§9.0a) ; `Milestone : milestone → ▶ en cours — plan a revoir`
 - Re-dispatcher au planner avec les corrections précises :
   ```
   SendMessage({ to: "planner", content: "

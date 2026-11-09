@@ -87,7 +87,7 @@ reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
 - **Fermeture** (`CI verte : issues #12 #15 — fermeture selon issues.close_on (GITHUB.md §9.5)`, ou `Fermeture
   validee (<GATE LOT LOT-N | GATE 4>) : issues #12 #15`) : lire `project-config.json` → `issues.close_on` (absent =
   `ci`) et appliquer §9.5 — `ci` : commentaire + `gh issue close` ; `validation` : commentaire seul sur CI verte,
-  fermeture a l'ordre « Fermeture validee » (issue en `A VALIDER` : la repasser d'abord a `DONE`, §9.4b) ; `LABELS DONE`
+  fermeture a l'ordre « Fermeture validee » (issue en `LOT A VALIDER` / `A PUBLIER` : la repasser d'abord a `DONE`, §9.4b) ; `LABELS DONE`
   avec l'etat (fermee / ouverte) de chaque issue.
 - **Demarrage d'un milestone** (`MILESTONE START vX.Y.Z`) et **lignes `Milestone : …`** d'un ordre : voir « Tache
   MILESTONE » ci-dessous.

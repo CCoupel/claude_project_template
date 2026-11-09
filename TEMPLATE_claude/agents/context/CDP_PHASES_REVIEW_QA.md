@@ -128,7 +128,7 @@ SendMessage({ to: "doc-updater", content: "
 **Apres reception :**
 - DONE →
   > `ISSUE_NUMS[]` non vide → label `DONE` sur toutes les issues, remove `EN QA`/`EN REVIEW`/`EN COURS`/`PLANNING`/`PRET`
-  **Milestone avec lots** : pas de push ici — le lot passe d'abord en **Phase 5** (QUALIF, GATE LOT : issues `A VALIDER`
+  **Milestone avec lots** : pas de push ici — le lot passe d'abord en **Phase 5** (QUALIF, GATE LOT : issues `LOT A VALIDER`
   pendant que l'utilisateur teste et valide, `GITHUB.md` §9.4b), puis le CDP pousse la branche et attend la CI (`GITHUB.md` §9.5b) ; CI verte → issues du lot fermées
   → lot suivant (retour Phase DEV, `PRET` → `EN COURS`) ; plus de lot → fin du milestone (GATE 4 pour PROD).
   **Milestone sans lots — Push + CI (avant la Phase 5)** : pousser la branche du milestone (`git push origin milestone/vX.Y.Z`) — la CI de
@@ -140,7 +140,7 @@ SendMessage({ to: "doc-updater", content: "
     Sans lots : Phase BUILD + PUBLISH QUALIF + DEPLOY QUALIF (automatique). Avec lots : aucune validation
     utilisateur après la CI — lot suivant directement
   - **CI non verte** (rouge, orange, annulee, en erreur) → jamais de fermeture : cycle++ (`tests/METRICS.md`),
-    `ISSUE_NUMS[]` non vide → commentaire (job en echec + lien du run) + reset label `EN COURS` (`--remove-label "DONE,A VALIDER"`),
+    `ISSUE_NUMS[]` non vide → commentaire (job en echec + lien du run) + reset label `EN COURS` (`--remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,A PUBLIER"`),
     retour Phase DEV avec le rapport CI, puis REVIEW + QA, `DOC` si besoin, nouveau push. Si cycle > 3 : **Escalade
     utilisateur** ← GATE 3
 - FAILED → renvoyer au doc-updater avec correction avant de continuer

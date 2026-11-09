@@ -63,7 +63,7 @@ SendMessage({ to: "doc-updater", content: "
 
 > **Milestone avec lots** : la Phase 5 s'exécute **pour chaque lot** (BUILD, PUBLISH QUALIF, DEPLOY QUALIF, NR et
 > DOC selon les règles ci-dessous), puis le **GATE LOT** (question et options : tableau des points de validation de
-> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Juste avant la question du GATE LOT, ordre à `deployer` : issues du lot → `A VALIDER` (`GITHUB.md` §9.4b) ; validé → `DONE` puis push ; refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le GATE 4 (PROD) n'a lieu qu'une
+> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Juste avant la question du GATE LOT, ordre à `deployer` : issues du lot → `LOT A VALIDER` + `Milestone : LOT-N → ⏸ a valider ; Milestone : milestone → ⏸ LOT-N a valider` (`GITHUB.md` §9.4b) ; validé → `DONE` puis push ; refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le GATE 4 (PROD) n'a lieu qu'une
 > fois : après le dernier lot, ou sur la publication anticipée. Refus du lot : Cas A / Cas B ci-dessous, sans
 > réouverture (issues non encore fermées).
 
@@ -113,7 +113,7 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 ```
 
 Avant la question : ouvrir la/les procedure(s) a scenarios `HUMAIN` dans Chrome (regle « GATE de validation par tests » de `cdp.md`).
-`issues.close_on` = `validation` : ordre a `deployer` — issues `DONE` encore ouvertes du milestone → `A VALIDER` (`GITHUB.md` §9.4b), `LABELS DONE` attendu avant la question.
+Ordre a `deployer`, `LABELS DONE` attendu avant la question : `Milestone : milestone → ⏸ a publier` ; `issues.close_on` = `validation` : en plus, issues `DONE` encore ouvertes du milestone → `A PUBLIER` (`GITHUB.md` §9.4b).
 Apres ce resume (texte informatif), poser **via `AskUserQuestion`** : « QUALIF conforme — lancer le deploiement
 PROD ? » — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate :
 retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/deploy prod` reste un equivalent de « Oui ».
@@ -124,7 +124,7 @@ Selon la reponse utilisateur :
 - **Oui / `/deploy prod`** →
   > Les issues sont **deja fermees** (CI verte, Phase 4 ; avec lots : CI verte apres chaque GATE LOT) — aucun changement sur elles.
   > Exception `issues.close_on` = `validation` (`GITHUB.md` §9.5) : ce « Oui » est la validation utilisateur — ordre a
-  > `deployer` de repasser a `DONE` puis fermer les issues `A VALIDER` encore ouvertes du milestone **avant** la Phase 6. La validation du milestone
+  > `deployer` de repasser a `DONE` puis fermer les issues `A PUBLIER` encore ouvertes du milestone **avant** la Phase 6. La validation du milestone
   > releve de l'utilisateur : verifier le milestone (100 % des issues fermees)
   Phase 6 (PROD) — les branches residuelles (milestone, PR mergees) sont supprimees en local et en remote en fin de deploiement reussi (`deploy.md`, Etape 6)
 - **NON** →
@@ -133,12 +133,12 @@ Selon la reponse utilisateur :
   **Seules les issues concernees sont rouvertes** — les autres restent fermees. Determiner les issues concernees depuis
   la reponse de l'utilisateur (champ « Autre ») ; si elles ne sont pas designees sans ambiguite, poser un
   `AskUserQuestion` (`multiSelect: true`, une option par issue de `ISSUE_NUMS[]`) avant tout changement.
-  > Pour chaque issue concernee : `reopen` (si fermee) + commentaire (ecart constate) ; le label `DONE` / `A VALIDER` est retiré
-  > (les issues non concernees encore ouvertes en `A VALIDER` repassent a `DONE`) — la
+  > Pour chaque issue concernee : `reopen` (si fermee) + commentaire (ecart constate) ; le label `DONE` / `A PUBLIER` est retiré
+  > (les issues non concernees encore ouvertes en `A PUBLIER` repassent a `DONE`) — la
   > destination dépend de la nature de la correction (jamais `EN COURS` par défaut) :
 
   **Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV :**
-  > issues concernees → reset label `EN COURS` (`--add-label "EN COURS" --remove-label "DONE,A VALIDER"`)
+  > issues concernees → reset label `EN COURS` (`--add-label "EN COURS" --remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,A PUBLIER"`)
   > Agents hors cadrage (`test-writer`, `code-reviewer`, `doc-updater` selon `cadrage`) : ni CLEAR ni redispatch —
   > leur part revient aux agents DEV (tests, CHANGELOG) ou n'a pas lieu (REVIEW), `context/MILESTONE_CADRAGE.md` section 5.
   - dev-* et test-writer : **pas de CLEAR** — leur contexte est la carte exacte de ce qu'ils ont construit
@@ -149,7 +149,7 @@ Selon la reponse utilisateur :
     Jugement laxiste — en cas de doute sur l'impact doc, redispatcher (voir `deploy.md` étape 1ter).
 
   **Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1 :**
-  > issues concernees → reset label `PLANNING` (`--add-label "PLANNING" --remove-label "DONE,A VALIDER"`)
+  > issues concernees → reset label `PLANNING` (`--add-label "PLANNING" --remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,A PUBLIER"`)
   - CLEAR(planner) → nouveau plan (avec cadrage révisable, transmis comme cadrage en vigueur) → GATE 2
   - Cadrage modifié au GATE 2 → le réappliquer (`context/MILESTONE_CADRAGE.md` section 4 : état, `MILESTONE CADRAGE`,
     spawn / arrêt des agents)

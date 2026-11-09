@@ -585,7 +585,7 @@ Les projets sans adaptation n'ont pas besoin de créer de fichier `*.md` (agents
   environnement, puis deplacement des elements retenus a l'Etape 10b (apres la fusion du `.gitignore`).
 - Squelettes idempotents : `docs/mockup/INDEX.md` + `DECISIONS.md`, `tests/INDEX.md` + `tests/METRICS.md`,
   `.claude/memory/MEMORY.md`, `contracts/CHANGELOG.md` (jamais ecrases).
-- Labels GitHub de phase (`PLANNING`, `PRET`, `EN COURS`, `EN REVIEW`, `EN QA`, `A VALIDER`, `DONE`) si un remote existe.
+- Labels GitHub de phase (`PLANNING`, `PLAN A VALIDER`, `PRET`, `EN COURS`, `EN REVIEW`, `EN QA`, `LOT A VALIDER`, `A PUBLIER`, `DONE` ; `A VALIDER` de la v5.4.0 renommé `LOT A VALIDER`) si un remote existe.
 - **Premier milestone `v0.1.0` et issues de base** — uniquement pour un projet vide, avec remote GitHub, sans
   milestone ni tag `v*` existant, et jamais en mise a jour : squelette du projet, pipeline CI/CD, publication et
   deploiement du premier environnement, README, puis une issue par cas d'usage v1 de `docs/CADRAGE.md` (workshop ou

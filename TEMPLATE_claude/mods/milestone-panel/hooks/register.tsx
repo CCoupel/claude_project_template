@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Usage, View } from '../types'
-import { PHASES, allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
+import { FINISHED, PHASES, allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
 import type { Expectation } from './lib'
 
 const PANE = 'milestone-panel'
@@ -359,8 +359,8 @@ export const register: Register = (on, options) => {
       const total = segs.reduce((a, x) => a + x.n, 0)
       const width = Math.max(8, Math.min(30, columns - 16))
       const cells = allocate(segs.map(x => x.n), width)
-      // DONE = QA validée, issue fermée dès la CI verte ; A VALIDER = travail de l'équipe terminé, validation attendue.
-      const finished = closed + (byPhase.DONE ?? 0) + (byPhase['A VALIDER'] ?? 0)
+      // DONE = QA validée, issue fermée dès la CI verte ; LOT A VALIDER / A PUBLIER = travail fini, validation attendue.
+      const finished = closed + FINISHED.reduce((a, p) => a + (byPhase[p] ?? 0), 0)
       const pct = total === 0 ? 0 : Math.round((finished / total) * 100)
       return (
         <Box flexDirection="column">
@@ -407,7 +407,8 @@ export const register: Register = (on, options) => {
           <Box flexDirection="column">
             <Text wrap="truncate-end">
               <Text bold color="cyan">{`Milestone ${v.current}`}</Text>
-              {v.isReleasing && <Text bold color="yellow">{' — publication'}</Text>}
+              {v.isReleasing && !v.state?.startsWith('⏸') && <Text bold color="yellow">{' — publication'}</Text>}
+              {v.state?.startsWith('⏸') && <Text bold color="yellow">{` — ${v.state} : à toi`}</Text>}
               <Text dimColor>{maj}</Text>
             </Text>
             {cur && progress(cur.closed, byPhase, v.issues.length - startedCount)}
