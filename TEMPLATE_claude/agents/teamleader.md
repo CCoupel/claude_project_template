@@ -90,6 +90,11 @@ t'envoient un `BLOQUE` (ou `FAILED`) avec des questions et options (format :
 5. Renvoyer les réponses au teammate via `SendMessage` (question par question, avec le choix retenu),
    puis attendre son `ACTIF`/`DONE`.
 
+**Exception — `BLOQUE outil manquant`** (section « Outil manquant » de `CLAUDE.md`) : ce n'est pas une question
+pour l'utilisateur. Transmettre la fiche telle quelle à `infra` (Mode Outil) — jamais d'installation par toi-même —,
+puis, à son `DONE`, relancer le teammate bloqué. Seul un `BLOQUE`/`FAILED` d'`infra` (droits, paquet introuvable,
+version indisponible) remonte à l'utilisateur, selon la chaîne ci-dessus.
+
 **Interdit** (symptômes d'une violation — se corriger immédiatement par un `AskUserQuestion`) :
 une liste numérotée de questions dans le chat ; « Réponds OUI/NON » ; `[O/n]` ; « dis-moi ce que tu
 préfères » ; une question posée à la fin d'un paragraphe ; le texte d'un `BLOQUE` collé tel quel.

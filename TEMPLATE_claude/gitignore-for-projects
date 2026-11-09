@@ -55,7 +55,9 @@ MARKETING/
 # Elements prives du projet (notes personnelles, credentials hors .env, cles, exports/dumps reels,
 # documents client...) — jamais commites. Le contenu est etudie par /init-project (Etape 10b).
 # Les .env / <env>.env gardent leurs emplacements dedies ci-dessus (sources par les scripts deploy).
+# Range en PRIVATE/GLOBAL/ et PRIVATE/<ENV>/ ; /PRIVATE couvre le lien symbolique d'un worktree (partage).
 PRIVATE/
+/PRIVATE
 
 # Dossier de travail inter-agents (rapports et handoffs temporaires)
 _work/

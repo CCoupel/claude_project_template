@@ -401,7 +401,9 @@ automatiquement.
 
 Les **fichiers** d'acces (kubeconfig, token k8s, cle SSH, JSON de compte de service) ne vont pas dans ces
 `.env` : ils vivent dans `PRIVATE/` (gitignore, voir « Éléments privés » de `CLAUDE.md`) et la variable les
-designe par chemin relatif (`KUBECONFIG=PRIVATE/k8s/kubeconfig-prod`). Fichier designe absent : meme STOP.
+designe par chemin relatif (`KUBECONFIG=PRIVATE/PROD/kubeconfig` — `PRIVATE/<ENV>/` pour un environnement,
+`PRIVATE/GLOBAL/` pour un acces commun). `deployer` les lit seulement : jamais d'ecriture ni de copie (un worktree
+lit le `PRIVATE/` du checkout principal). Fichier designe absent : meme STOP (a ranger par `infra` / l'utilisateur).
 
 Si une variable attendue est absente au moment de l'executer : STOP, remonter au teamleader — ne
 jamais deviner ou coder une valeur en dur.
