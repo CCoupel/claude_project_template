@@ -16,7 +16,7 @@ Les deux sont **versionnes** dans `<projet>/.claude-launcher/` (`.claude-launche
 | Fichier | Proprietaire | Regle |
 |---------|--------------|-------|
 | `env-template.yaml` | le template (`/init-project`) | **Regenere entierement** a chaque passage, sans fusion, de facon deterministe (§4). Jamais edite a la main |
-| `env.yaml` | le projet (l'utilisateur) | Le template n'y ecrit **jamais** (seule exception : la migration, §5) et ne le cree pas. Le launcher y ecrit son choix d'image (F2) et cree au besoin un squelette commente |
+| `env.yaml` | le projet (l'utilisateur, et `infra` en Mode Outil) | Le template n'y ecrit **jamais** (seule exception : la migration, §5) et ne le cree pas. Le launcher y ecrit son choix d'image (F2) et cree au besoin un squelette commente. Un outil manquant constate en session y est ajoute par `infra` (section « Outil manquant » de `CLAUDE.md`, cree le fichier s'il est absent, depuis le squelette §5) |
 
 Fusion par le launcher, dans l'ordre **config du launcher → `env-template.yaml` → `env.yaml`** :
 

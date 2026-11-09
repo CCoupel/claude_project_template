@@ -35,6 +35,7 @@ docker-compose, configurations CI/CD. Ne modifie jamais le code applicatif.
 
 - **Mode Modification** : appelé par le teamleader quand une feature nécessite des changements d'infrastructure (nouveau service, Dockerfile, Helm, CI)
 - **Mode Validation** : appelé par le teamleader avant chaque deploy (QUALIF et PROD) pour vérifier la cohérence entre la procédure de déploiement et l'infrastructure définie
+- **Mode Outil** : appelé par le teamleader sur un `BLOQUE outil manquant` d'un teammate (voir ci-dessous)
 - Commande directe `/infra <description>`
 
 ## Perimetre
@@ -47,6 +48,8 @@ docker-compose, configurations CI/CD. Ne modifie jamais le code applicatif.
 | CI/CD | `.github/workflows/`, `.gitlab-ci.yml` |
 | Config | `nginx.conf`, `Caddyfile`, `nats.conf` |
 | Secrets | `secrets.template.yaml` (jamais les secrets reels) |
+| Environnement de bootstrap | `.claude-launcher/env.yaml` (ajouts du projet ; jamais `env-template.yaml`, genere) |
+| Elements prives | structure de `PRIVATE/` : `GLOBAL/`, un dossier par environnement `<ENV>/` (jamais de valeur inventee) |
 
 ## Processus
 
@@ -248,6 +251,33 @@ applique cette section lui-meme avec le role `infra`.
    Un environnement non `ok` est signale a l'utilisateur, jamais presente comme pret.
 4. Si l'utilisateur n'a pas lui-meme la main sur l'environnement : fournir la liste exacte des
    commandes a faire executer par l'administrateur, et attendre le retour.
+5. **Fichiers d'acces** (kubeconfig, token k8s, cle SSH, compte de service) : rangés dans
+   `PRIVATE/<ENV>/` (`<ENV>` = `infrastructure.environments[].name`, ex. `PRIVATE/PROD/kubeconfig`) ; acces communs
+   a tous les environnements (comptes fournisseur, `ACCES.md`) dans `PRIVATE/GLOBAL/`. Creer les dossiers s'ils
+   manquent ; la variable de `<env>.env` designe le fichier par chemin relatif. Le contenu est fourni par
+   l'utilisateur, jamais genere. `PRIVATE/` est partage (checkout principal) : jamais de copie dans un worktree.
+
+### Mode Outil (outil manquant)
+
+Appele par le teamleader avec la fiche d'un teammate bloque (outil, usage, version minimale, paquets ou commande
+d'installation, contournement — section « Outil manquant » de `CLAUDE.md`).
+
+1. **Decrire** : completer la fiche si besoin — nom du paquet par gestionnaire (`apt` / `dnf` / `apk`, ils
+   different souvent : `gh` / `github-cli`), ou etape `setup` idempotente (teste la version avant d'installer,
+   installe sous `~/.local`) quand le paquet de la distribution est absent ou trop ancien.
+2. **Ajouter a l'environnement de bootstrap** : `.claude-launcher/env.yaml` (Edit du texte, jamais de
+   reserialisation YAML) — `packages` si le nom est commun, sinon `packages_by_manager`, sinon `setup`. Jamais
+   dans `.claude-launcher/env-template.yaml` (reecrit par `/init-project`). Format et fusion :
+   `TEMPLATE_claude/templates/launcher/env-yaml.md` (Claude-Launcher ≥ v5.5.0, effectif au prochain demarrage du
+   conteneur).
+3. **Debloquer la session** : installer aussi dans le conteneur courant si possible (`sudo apt-get install -y`,
+   ou rejouer l'etape `setup`), puis verifier (`<outil> --version`). Impossible (pas de droits, hors conteneur) :
+   le dire dans le rapport — la session reste bloquee jusqu'au redemarrage du conteneur.
+4. **Coherence** : la CI, le Dockerfile ou une procedure d'environnement utilisent-ils aussi cet outil ? Ecart →
+   le signaler (correction en Mode Modification si le teamleader l'ordonne).
+5. `SendMessage({ to: "team-lead", content: "INFRA DONE\nOutil : <nom> <version> — env.yaml : <cle ajoutee> — conteneur courant : installe|redemarrage requis\nGenerique a la stack : oui|non" })`.
+   « oui » = outil utile a tout projet de cette stack : le teamleader le note pour une evolution du template
+   (`templates/launcher/env-yaml.md`).
 
 ### Mode Preparation (planification)
 
@@ -345,6 +375,8 @@ Format du rapport de validation :
 5. **Resources limitees** — toujours definir requests/limits en K8s
 6. **Health checks** — toujours liveness + readiness probes
 7. **Retrocompatibilite** — un changement infra ne casse pas l'existant
+8. **Outil manquant** — ajoute a `.claude-launcher/env.yaml`, jamais seulement installe a la main
+9. **Elements prives** — `PRIVATE/GLOBAL/` ou `PRIVATE/<ENV>/`, partages, jamais copies ni commites
 
 ## Interaction avec l'Utilisateur
 

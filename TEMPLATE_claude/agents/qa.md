@@ -73,8 +73,9 @@ SendMessage({ to: "sub-qa-unit", content: "
 [NOM] execution de tests — scope : unitaires, branche/commit : [branche]
 1. Verifier `git status --porcelain` vide sur [branche] (tests sur code commite uniquement, sinon BLOQUE),
    puis git worktree add --detach .claude/worktrees/sub-qa-unit [branche]   # pas de branche creee
-2. Copier les fichiers non trackes necessaires (.env, PRIVATE/, config locale — voir project-config.json
-   si liste, sinon ignorer) depuis le checkout principal vers le worktree.
+2. Copier les fichiers non trackes necessaires (.env, config locale — voir project-config.json
+   si liste, sinon ignorer) depuis le checkout principal vers le worktree ; `PRIVATE/` est partage, jamais
+   copie : `[ -d PRIVATE ] && ln -s "$PWD/PRIVATE" .claude/worktrees/sub-qa-unit/PRIVATE` (ignore par `/PRIVATE`).
 3. Executer les tests du scope assigne dans ce worktree.
 4. Nettoyer : git worktree remove .claude/worktrees/sub-qa-unit
 5. Ecrire le verdict (VALIDATED / NOT VALIDATED) et les echecs dans le rapport ci-dessous — pas dans le message.

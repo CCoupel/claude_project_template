@@ -370,8 +370,8 @@ Reference : `templates/launcher/env-yaml.md`.
 ```
 Etude : fichiers trackes au nom ou contenu evocateur (cles, kubeconfig, tokens, dumps, motifs de secrets —
 fichiers listes, jamais les valeurs), fichiers non trackes non ignores, et elements attendus d'apres les
-reponses (acces Etape 8b : kubeconfig, token k8s, cle SSH, comptes → PRIVATE/ACCES.md ; dumps de donnees
-reelles ; keystores mobile ; cles firmware ; documents client ; notes perso).
+reponses (acces Etape 8b : kubeconfig, token k8s, cle SSH → PRIVATE/<ENV>/, comptes → PRIVATE/GLOBAL/ACCES.md ;
+dumps de donnees reelles ; keystores mobile ; cles firmware ; documents client ; notes perso → PRIVATE/GLOBAL/).
 Hors perimetre : .env, <env>.env (+ .example), _work/, MARKETING/, build/, TEMPLATE_claude/, .claude/.
 → tableau puis « Quels elements ranger dans PRIVATE/ ? » (multiSelect)
 → project-config.json `private` (chemins + nature, jamais de contenu) ; deplacement a la Finalisation
@@ -581,7 +581,8 @@ Les projets sans adaptation n'ont pas besoin de créer de fichier `*.md` (agents
 
 - `.gitignore` : copie de `TEMPLATE_claude/gitignore-for-projects`, ou fusion non destructive s'il existe
   (seules les lignes template absentes sont ajoutees) ; site marketing : `MARKETING/` = worktree de `gh-pages`.
-- `PRIVATE/` (gitignore) : cree, puis deplacement des elements retenus a l'Etape 10b (apres la fusion du `.gitignore`).
+- `PRIVATE/` (gitignore, + `/PRIVATE` pour le lien symbolique d'un worktree) : cree avec `GLOBAL/` et un dossier par
+  environnement, puis deplacement des elements retenus a l'Etape 10b (apres la fusion du `.gitignore`).
 - Squelettes idempotents : `docs/mockup/INDEX.md` + `DECISIONS.md`, `tests/INDEX.md` + `tests/METRICS.md`,
   `.claude/memory/MEMORY.md`, `contracts/CHANGELOG.md` (jamais ecrases).
 - Labels GitHub de phase (`PLANNING`, `PRET`, `EN COURS`, `EN REVIEW`, `EN QA`, `DONE`) si un remote existe.
@@ -646,7 +647,7 @@ Etapes principales (detail : `init-project.md`, section "Option d") :
 | Etape | Action |
 |-------|--------|
 | d0 | Registre des agents (cree s'il est absent) ; **migration v3 → v4** : ajout de `milestone.defaults`, colonne `Spawn` `permanent` reecrite en `socle` / `milestone` / `ponctuel` ; un milestone deja en cours sans cadrage est mene en `complet` |
-| d1a-d1j | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements, licence, elements prives (`PRIVATE/` : etude de l'Etape 10b si jamais faite, insertion de la section « Éléments privés » dans `CLAUDE.md`), chaine d'outils native et tests cibles (detection de l'Etape 9b, ajout de `commands.env` / `commands.test_related`, compagnons prescrivant une suite complete en boucle DEV signales en conflit), environnement conteneur (d1j : `.claude-launcher/env-template.yaml` regenere s'il change — nouveaux dossiers derives, verrous, version de chaine ; migration d'un `env.yaml` genere anterieurement) |
+| d1a-d1j | Site marketing (`gh-pages`), audit du pipeline CI/CD (C1-C11, `commands.ci`, `ci-branch.yml`), migrations legacy, fichiers d'environnement, graphe des fichiers de definition, validation des acces aux environnements, licence, elements prives (`PRIVATE/` : etude de l'Etape 10b si jamais faite, rangement en `GLOBAL/` / `<ENV>/`, insertion ou mise a jour des sections « Éléments privés » et « Outil manquant » dans `CLAUDE.md`), chaine d'outils native et tests cibles (detection de l'Etape 9b, ajout de `commands.env` / `commands.test_related`, compagnons prescrivant une suite complete en boucle DEV signales en conflit), environnement conteneur (d1j : `.claude-launcher/env-template.yaml` regenere s'il change — nouveaux dossiers derives, verrous, version de chaine ; migration d'un `env.yaml` genere anterieurement) |
 | d2-d4 | Diff commandes / agents (par empreinte, via le registre) / contextes / table « Agents Disponibles », puis rapport et choix (tout appliquer, sans les reliquats, annuler) |
 | d5-d5e | Deploiement, doublons et conflits dans les compagnons, table « Agents Disponibles », verification post-nettoyage |
 | d6-d6b | Bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`, adequation modele/effort, `settings.json`, memoire, `.gitignore` |
@@ -719,10 +720,16 @@ variables attendus selon le mécanisme, valeurs vides), enrichi d'une détection
 noms déjà référencés dans les fichiers existants du projet (`docker-compose*.yml`, workflows
 CI) — jamais de valeur lue ni copiée, juste des noms à vérifier manuellement.
 
-Éléments privés : `PRIVATE/` (racine, gitignoré) reçoit tout ce qui ne doit jamais être commité hors de ces
-variables — fichiers d'accès (kubeconfig, tokens k8s, clés SSH, comptes de service), comptes et accès notés,
-dumps de données réelles, documents client, notes personnelles. Une variable de `<env>.env` qui désigne un
-fichier d'accès y pointe (`KUBECONFIG=PRIVATE/k8s/kubeconfig-prod`). Contenu attendu : `project-config.json` → `private`.
+Éléments privés : `PRIVATE/` (racine, gitignoré, partagé par les worktrees — jamais copié) reçoit les données
+privées du projet hors de ces variables, rangées par portée : `PRIVATE/GLOBAL/` (comptes et accès notés, dumps de
+données réelles, documents client, notes personnelles) et `PRIVATE/<ENV>/` (fichiers d'accès d'un environnement :
+kubeconfig, tokens k8s, clés SSH, comptes de service). `PRIVATE/gitconfig`, lié à la structure du projet, reste à la
+racine. Une variable de `<env>.env` qui désigne un fichier d'accès y pointe (`KUBECONFIG=PRIVATE/PROD/kubeconfig`).
+Structure tenue par `infra`, lue par `deployer` ; contenu attendu : `project-config.json` → `private`.
+
+Outil manquant : le teammate qui le constate le décrit (`BLOQUE outil manquant` + fiche), le teamleader transmet à
+`infra` (Mode Outil), qui l'ajoute à l'environnement de bootstrap `.claude-launcher/env.yaml` et l'installe dans le
+conteneur courant si possible.
 
 ### Séparation template / adaptations projet
 

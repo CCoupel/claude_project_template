@@ -36,11 +36,25 @@ chemin absolu hors du repo, `/tmp`, `$TMPDIR` ou `~/`.
 
 Tout element prive qui ne doit jamais etre commite (kubeconfig, tokens k8s / comptes de service, cles SSH,
 certificats, comptes et acces notes, exports ou dumps de donnees reelles, documents client, notes personnelles,
-config locale d'un poste) va dans `PRIVATE/` (racine, gitignore). Exceptions : `.env` et
-`.claude/agents/environments/<env>.env` gardent leurs emplacements fixes (une variable designant un fichier
-d'acces y pointe : `KUBECONFIG=PRIVATE/k8s/kubeconfig-prod`) ; le temporaire reste dans `_work/tmp/`. Jamais de `git add -f` sur `PRIVATE/`. Element prive tracke hors `PRIVATE/` : **BLOQUE**
-au teamleader (deplacement + `git rm --cached` decides par l'utilisateur, rotation si secret deja pousse).
-Detail : section « Éléments privés » de `CLAUDE.md`.
+config locale d'un poste) va dans `PRIVATE/` (racine, gitignore), range par portee : `PRIVATE/GLOBAL/` (commun
+au projet) ou `PRIVATE/<ENV>/` (propre a un environnement, ex. `PRIVATE/PROD/kubeconfig`). Exceptions, liees a la
+structure du projet : `PRIVATE/gitconfig` (racine), `.env` et `.claude/agents/environments/<env>.env` gardent
+leurs emplacements fixes (une variable designant un fichier d'acces y pointe : `KUBECONFIG=PRIVATE/PROD/kubeconfig`) ;
+le temporaire reste dans `_work/tmp/`. `PRIVATE/` est **partage** : un seul exemplaire (checkout principal), jamais
+copie — depuis un worktree, `"$(git rev-parse --path-format=absolute --git-common-dir)/../PRIVATE"`. Structure et
+contenu attendu : `infra` ; `deployer` lit seulement ; tout teammate range lui-meme ce qu'il produit de prive ;
+nouveau sous-dossier hors `GLOBAL/`/`<ENV>/` : demander au teamleader. Jamais de valeur secrete inventee. Jamais de
+`git add -f` sur `PRIVATE/`. Element prive tracke hors `PRIVATE/` : **BLOQUE** au teamleader (deplacement +
+`git rm --cached` decides par l'utilisateur, rotation si secret deja pousse). Detail : section « Éléments privés »
+de `CLAUDE.md`.
+
+## Outil Manquant (OBLIGATOIRE)
+
+Commande introuvable ou version insuffisante : ne pas l'installer a la main ni contourner en silence.
+`[NOM] BLOQUE outil manquant` au teamleader avec la fiche : outil, usage dans la tache, version minimale, paquets
+(`apt`/`dnf`/`apk`) ou commande d'installation idempotente, contournement eventuel. Le teamleader la transmet a
+`infra`, qui l'ajoute a l'environnement de bootstrap (`.claude-launcher/env.yaml`). Detail : section « Outil
+manquant » de `CLAUDE.md`.
 
 ---
 
