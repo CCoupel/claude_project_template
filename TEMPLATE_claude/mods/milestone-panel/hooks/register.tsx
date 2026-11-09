@@ -359,7 +359,8 @@ export const register: Register = (on, options) => {
       const total = segs.reduce((a, x) => a + x.n, 0)
       const width = Math.max(8, Math.min(30, columns - 16))
       const cells = allocate(segs.map(x => x.n), width)
-      const finished = closed + (byPhase.DONE ?? 0) // DONE = QA validée, issue fermée dès la CI verte
+      // DONE = QA validée, issue fermée dès la CI verte ; A VALIDER = travail de l'équipe terminé, validation attendue.
+      const finished = closed + (byPhase.DONE ?? 0) + (byPhase['A VALIDER'] ?? 0)
       const pct = total === 0 ? 0 : Math.round((finished / total) * 100)
       return (
         <Box flexDirection="column">
