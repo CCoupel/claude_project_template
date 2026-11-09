@@ -195,6 +195,8 @@ nav {
 .badge-encours  { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
 .badge-review   { background: rgba(245,158,11,.15); color: var(--yellow); border: 1px solid rgba(245,158,11,.3); }
 .badge-qa       { background: rgba(249,115,22,.15); color: var(--orange); border: 1px solid rgba(249,115,22,.3); }
+.badge-avalider { background: rgba(234,179,8,.15); color: #facc15; border: 1px solid rgba(234,179,8,.35); }
+.badge-apublier { background: rgba(167,139,250,.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,.4); }
 .badge-done     { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
 .badge-closed   { background: rgba(139,148,158,.12); color: var(--muted); border: 1px solid var(--border); }
 .badge-dev      { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
@@ -307,3 +309,27 @@ footer a { color: var(--accent2); }
 .panel-shot { margin: 2rem auto 0; max-width: 760px; text-align: center; }
 .panel-shot img { max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg2); }
 .panel-shot figcaption { margin-top: .6rem; font-size: .82rem; color: var(--muted); font-style: italic; }
+
+/* Workflow des états d'issue (à côté du pipeline CDP) */
+.wf-layout { display: flex; flex-direction: column; align-items: center; gap: 2.5rem; }
+.wf-layout .pipeline { width: 100%; }
+.issue-flow { width: 100%; max-width: 680px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; display: flex; flex-direction: column; gap: .9rem; }
+.issue-flow h3 { font-size: 1rem; font-weight: 700; }
+.flow-sub { font-size: .78rem; color: var(--muted); margin-top: -.5rem; }
+.flow-chain { display: flex; flex-direction: column; align-items: flex-start; }
+.flow-state { display: flex; flex-direction: column; gap: .15rem; }
+.flow-pair { display: inline-flex; align-items: center; gap: .3rem; }
+.flow-par { color: var(--cyan); font-weight: 700; }
+.flow-desc { font-size: .74rem; color: var(--muted); }
+.flow-event { display: flex; align-items: center; gap: .45rem; font-size: .7rem; color: var(--muted); font-style: italic; padding: .3rem 0 .3rem .6rem; border-left: 1px dashed var(--border); margin-left: .9rem; }
+.flow-event.flow-user { color: var(--green); border-left-color: rgba(16,185,129,.5); }
+.flow-arrow { font-style: normal; }
+.flow-new { box-shadow: 0 0 0 3px rgba(234,179,8,.18); }
+.flow-box { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: .7rem .85rem; display: flex; flex-direction: column; gap: .4rem; }
+.flow-box p { font-size: .74rem; color: var(--muted); }
+.flow-box-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text); }
+.flow-back { border-left: 3px solid var(--red); }
+.badge-bloque    { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.35); }
+.badge-abandonne { background: rgba(139,148,158,.12); color: var(--muted); border: 1px solid var(--border); }
+.badge-human     { background: rgba(234,179,8,.10); color: #fde68a; border: 1px solid rgba(234,179,8,.3); }
+.badge-prod { background: rgba(16,185,129,.2); color: var(--green); border: 1px solid rgba(16,185,129,.45); }

@@ -68,6 +68,7 @@
       <h2 data-i18n="workflow.title"></h2>
       <p data-i18n="workflow.subtitle"></p>
     </div>
+    <div class="wf-layout">
     <div class="pipeline">
 
       <div class="pipeline-gate">
@@ -203,6 +204,47 @@
       </div>
 
     </div>
+    <aside class="issue-flow">
+      <h3 data-i18n="flow.title"></h3>
+      <p class="flow-sub" data-i18n="flow.subtitle"></p>
+      <div class="flow-chain">
+        <div class="flow-state"><span class="phase-badge badge-planning">PLANNING</span><span class="flow-desc" data-i18n="flow.s.planning"></span></div>
+        <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.plandone"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-avalider flow-new">PLAN A VALIDER</span><span class="flow-desc" data-i18n="flow.s.planavalider"></span></div>
+        <div class="flow-event flow-user"><span class="flow-arrow">↓</span><span data-i18n="flow.e.gate2"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-pret">PRET</span><span class="flow-desc" data-i18n="flow.s.pret"></span></div>
+        <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.dev"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-encours">EN COURS</span><span class="flow-desc" data-i18n="flow.s.encours"></span></div>
+        <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.devdone"></span></div>
+        <div class="flow-state"><span class="flow-pair"><span class="phase-badge badge-review">EN REVIEW</span><span class="flow-par">∥</span><span class="phase-badge badge-qa">EN QA</span></span><span class="flow-desc" data-i18n="flow.s.reviewqa"></span></div>
+        <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.qaok"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-done">DONE</span><span class="flow-desc" data-i18n="flow.s.done"></span></div>
+        <div class="flow-event flow-user"><span class="flow-arrow">↓</span><span data-i18n="flow.e.ask"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-avalider flow-new">LOT A VALIDER</span><span class="flow-desc" data-i18n="flow.s.avalider"></span></div>
+        <div class="flow-event flow-user"><span class="flow-arrow">↓</span><span data-i18n="flow.e.ok"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-done">DONE</span><span class="flow-desc" data-i18n="flow.s.done2"></span></div>
+        <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.ci"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-closed">✓ closed</span><span class="flow-desc" data-i18n="flow.s.closed"></span></div>
+        <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.lastlot"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-apublier flow-new">A PUBLIER</span><span class="flow-desc" data-i18n="flow.s.apublier"></span></div>
+        <div class="flow-event flow-user"><span class="flow-arrow">↓</span><span data-i18n="flow.e.gate4"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-prod">🚀 PROD</span><span class="flow-desc" data-i18n="flow.s.prod"></span></div>
+      </div>
+      <div class="flow-box flow-back">
+        <div class="flow-box-title" data-i18n="flow.back.title"></div>
+        <p data-i18n="flow.back.1"></p>
+        <p data-i18n="flow.back.2"></p>
+        <p data-i18n="flow.back.3"></p>
+        <p data-i18n="flow.back.4"></p>
+      </div>
+      <div class="flow-box">
+        <div class="flow-box-title" data-i18n="flow.mod.title"></div>
+        <p><span class="phase-badge badge-bloque">BLOQUE</span> <span data-i18n="flow.mod.bloque"></span></p>
+        <p><span class="phase-badge badge-abandonne">ABANDONNE</span> <span data-i18n="flow.mod.abandonne"></span></p>
+        <p><span class="phase-badge badge-human">VALID-HUMAINE</span> <span data-i18n="flow.mod.human"></span></p>
+      </div>
+    </aside>
+    </div>
     <div class="pipeline-note" data-i18n="wf.cycles"></div>
   </div>
 </section>
@@ -221,6 +263,8 @@
         <div class="label-chain">
           <div class="label-step"><span class="phase-badge badge-planning">PLANNING</span><span class="label-step-desc" data-i18n="github.l1"></span></div>
           <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-avalider">PLAN A VALIDER</span><span class="label-step-desc" data-i18n="github.lpv"></span></div>
+          <div class="label-arrow">→</div>
           <div class="label-step"><span class="phase-badge badge-pret">PRET</span><span class="label-step-desc" data-i18n="github.lp"></span></div>
           <div class="label-arrow">→</div>
           <div class="label-step"><span class="phase-badge badge-encours">EN COURS</span><span class="label-step-desc" data-i18n="github.l2"></span></div>
@@ -231,7 +275,11 @@
           <div class="label-arrow">→</div>
           <div class="label-step"><span class="phase-badge badge-done">DONE</span><span class="label-step-desc" data-i18n="github.l5"></span></div>
           <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-avalider">LOT A VALIDER</span><span class="label-step-desc" data-i18n="github.lv"></span></div>
+          <div class="label-arrow">→</div>
           <div class="label-step"><span class="phase-badge badge-closed">✓ closed</span><span class="label-step-desc" data-i18n="github.l6"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-apublier">A PUBLIER</span><span class="label-step-desc" data-i18n="github.lpub"></span></div>
         </div>
         <p class="label-note" data-i18n="github.labels.reset"></p>
       </div>
@@ -345,11 +393,12 @@
       <div class="feature-card"><div class="feature-icon">👤</div><div class="feature-body"><h3><span data-i18n="features.f22.title"></span></h3><p data-i18n="features.f22.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">🔑</div><div class="feature-body"><h3><span data-i18n="features.f23.title"></span></h3><p data-i18n="features.f23.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">🗂️</div><div class="feature-body"><h3><span data-i18n="features.f24.title"></span></h3><p data-i18n="features.f24.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">🐳</div><div class="feature-body"><h3><span data-i18n="features.f25.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f25.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">✅</div><div class="feature-body"><h3><span data-i18n="features.f26.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f26.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">⏱️</div><div class="feature-body"><h3><span data-i18n="features.f27.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f27.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">🔒</div><div class="feature-body"><h3><span data-i18n="features.f28.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f28.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">⚖️</div><div class="feature-body"><h3><span data-i18n="features.f29.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f29.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🐳</div><div class="feature-body"><h3><span data-i18n="features.f25.title"></span></h3><p data-i18n="features.f25.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">✅</div><div class="feature-body"><h3><span data-i18n="features.f26.title"></span></h3><p data-i18n="features.f26.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">⏱️</div><div class="feature-body"><h3><span data-i18n="features.f27.title"></span></h3><p data-i18n="features.f27.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🔒</div><div class="feature-body"><h3><span data-i18n="features.f28.title"></span></h3><p data-i18n="features.f28.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">⚖️</div><div class="feature-body"><h3><span data-i18n="features.f29.title"></span></h3><p data-i18n="features.f29.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🙋</div><div class="feature-body"><h3><span data-i18n="features.f30.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f30.desc"></p></div></div>
     </div>
     <figure class="panel-shot">
       <img src="assets/milestone-panel.png" alt="milestone-panel" loading="lazy">
