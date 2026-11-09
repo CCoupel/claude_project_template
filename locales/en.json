@@ -64,7 +64,7 @@
   "wf.cycles":         "Correction cycles max 3: REVIEW refuses → DEV fixes → REVIEW only. TEST-WRITER re-triggered only if scope changes (BREAKING/CHANGED in contracts/CHANGELOG.md).",
 
   "github.title":           "Native GitHub integration",
-  "github.subtitle":        "The CDP drives issues, milestones and labels through the deployer and the gh CLI, on the team leader's orders — no manual commands.",
+  "github.subtitle":        "The CDP drives issues, milestones and labels through the deployer and the gh CLI, which carries out its orders — no manual commands.",
   "github.labels.title":    "Issue lifecycle",
   "github.labels.desc":     "Every phase transition updates the label automatically — set by the deployer with gh, on the team leader's order.",
   "github.l1":              "Plan to draft or validate",

@@ -64,7 +64,7 @@
   "wf.cycles":         "Cycles correctifs max 3 : REVIEW refuse → DEV corrige → REVIEW seul. TEST-WRITER relancé uniquement si changement de scope (BREAKING/CHANGED dans contracts/CHANGELOG.md).",
 
   "github.title":           "Intégration GitHub native",
-  "github.subtitle":        "Le CDP pilote issues, milestones et labels via le deployer et la CLI gh, sur ordre du teamleader — sans commandes manuelles.",
+  "github.subtitle":        "Le CDP pilote issues, milestones et labels via le deployer et la CLI gh, qui exécute ses ordres — sans commandes manuelles.",
   "github.labels.title":    "Cycle de vie d'une issue",
   "github.labels.desc":     "Chaque transition de phase met à jour le label automatiquement — posé par le deployer avec gh, sur ordre du teamleader.",
   "github.l1":              "Plan à élaborer ou valider",
