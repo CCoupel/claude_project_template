@@ -160,6 +160,8 @@ TEMPLATE_claude/           │     ├── commands/
 > utilisée : `/init-project` la détecte et propose de **réinstaller à l'identique** (pas de mise
 > à jour forcée) plutôt que de refaire une migration v1/v2 → v3. Le registre des agents restaure de même
 > chaque agent — agents de stack `dev-*` et agents épinglés compris — à la version qu'il enregistre.
+> `/start-session` signale une mise à jour du template en comparant le commit synchronisé au **dernier tag**
+> publié — la même référence que celle déployée par `/init-project` (jamais le HEAD de `main`).
 
 ### Séparation template / projet
 

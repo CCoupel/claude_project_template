@@ -16,11 +16,15 @@ Si `TEMPLATE_claude/.template-source.json` existe :
 
 ```bash
 TEMPLATE_REPO=$(cat TEMPLATE_claude/.template-source.json | jq -r '.repo')
-TEMPLATE_BRANCH=$(cat TEMPLATE_claude/.template-source.json | jq -r '.branch')
 KNOWN_COMMIT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.commit // ""')
+KNOWN_TAG=$(cat TEMPLATE_claude/.template-source.json | jq -r '.tag // ""')
 SYNCED_AT=$(cat TEMPLATE_claude/.template-source.json | jq -r '.synced_at // ""')
 
-LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/commits/$TEMPLATE_BRANCH --jq '.sha' 2>/dev/null || echo "")
+# Meme reference que /init-project (« Fetch du Template depuis GitHub ») : le DERNIER TAG, jamais le HEAD de la
+# branche — /init-project deploie un tag ; comparer au HEAD redemanderait la mise a jour des qu'un commit
+# suit le dernier tag sur la branche.
+LATEST_TAG=$(gh api repos/$TEMPLATE_REPO/tags --jq '.[0].name // empty' 2>/dev/null || echo "")
+LATEST_COMMIT=$(gh api repos/$TEMPLATE_REPO/tags --jq '.[0].commit.sha // empty' 2>/dev/null || echo "")
 ```
 
 | Resultat | Action |
@@ -35,8 +39,8 @@ Si mise a jour disponible, afficher **avant de continuer** :
 ⚠️  Mise a jour du template disponible
 
    Template  : $TEMPLATE_REPO
-   Sync local : $SYNCED_AT ($KNOWN_COMMIT)
-   Disponible : $LATEST_COMMIT
+   Sync local : $KNOWN_TAG — $SYNCED_AT ($KNOWN_COMMIT)
+   Disponible : $LATEST_TAG ($LATEST_COMMIT)
 
    Il est recommande de synchroniser avant de demarrer la session.
    Lancez /init-project (option d) pour mettre a jour commandes et agents.
@@ -44,7 +48,7 @@ Si mise a jour disponible, afficher **avant de continuer** :
 ```
 
 Puis poser la question via `AskUserQuestion` (jamais en texte) :
-`"Mise a jour du template disponible — comment proceder ?"` — options : **Continuer quand meme** /
+`"Mise a jour du template disponible ($KNOWN_TAG → $LATEST_TAG) — comment proceder ?"` — options : **Continuer quand meme** /
 **Stopper et lancer /init-project** (Recommande).
 
 - Si **stopper** → stopper ici, l'utilisateur lance `/init-project`
