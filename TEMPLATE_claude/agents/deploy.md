@@ -91,13 +91,16 @@ reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
   avec l'etat (fermee / ouverte) de chaque issue.
 - **Demarrage d'un milestone** (`MILESTONE START vX.Y.Z`) et **lignes `Milestone : …`** d'un ordre : voir « Tache
   MILESTONE » ci-dessous.
-- **Ordre unique du GATE 2** (`Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 ; LOT-1 → #12 #15 ; LOT-2.1 → #18`) :
+- **Ordre unique du GATE 2** (`Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 ; LOT-1 « Authentification » → #12 #15 ; LOT-2 « Export » ; LOT-2.1 « Export CSV » → #18`) :
   1. **Verifier avant d'ecrire** : chaque issue de la liste `PRET` figure dans exactement un lot (ou l'ordre dit
-     `sans lot`) ; chaque lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ; chaque issue appartient au milestone courant.
+     `sans lot`) ; chaque lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ; un lot sans issue n'est admis que s'il a des
+     sous-lots dans l'ordre ; chaque objectif fait 100 caracteres au plus ; chaque issue appartient au milestone courant.
      Un ecart → `LABELS FAILED` avec le motif (`#18 sans lot`, `#21 hors milestone`, `Lot 2 mal nomme`), **aucun label pose**.
-  2. Creer les labels de lot absents du repo (`gh label create "LOT-n" --color "5319e7" --description "Lot n du milestone"`).
+  2. Creer ou mettre a jour chaque label de lot de l'ordre, parents compris, avec son objectif comme description
+     (`gh label create "LOT-n" --color "5319e7" --description "<objectif>" --force`) : titre du lot dans le panneau.
   3. Pour chaque issue : `gh issue edit <numero> --add-label "PRET,LOT-n" --remove-label "PLANNING"`.
-  4. Historique du milestone (Tache MILESTONE) : chaque lot de l'ordre → `⏳ planifie`.
+  4. Historique du milestone (Tache MILESTONE) : chaque lot de l'ordre portant des issues → `⏳ planifie` (un lot parent
+     sans issue propre n'a pas de ligne : ses sous-lots en ont).
   5. Rapport avec recapitulatif par issue — le teamleader le compare a la table du plan.
 
 ```

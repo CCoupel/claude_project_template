@@ -1,4 +1,17 @@
-export type Issue = { number: number; title: string; phase: string; /** Lot parent (`LOT-2` pour `LOT-2` ou `LOT-2.1`). */ lot: string | null; /** Label de lot tel que posé sur l'issue (couleur GitHub). */ lotLabel: string | null; isBlocked: boolean; /** Label `VALID-HUMAINE` : validation humaine requise. */ needsHuman: boolean }
+export type Issue = {
+  number: number
+  title: string
+  /** Label d'état (`PLANNING`… `DONE`), `SANS PHASE` sans label, `FERMÉE` pour une issue fermée. */
+  phase: string
+  /** Lot parent (`LOT-2` pour `LOT-2` ou `LOT-2.1`). */
+  lot: string | null
+  /** Unité de livraison : label de lot posé sur l'issue (`LOT-2.1`), en majuscules. */
+  lotLabel: string | null
+  isBlocked: boolean
+  /** Label `VALID-HUMAINE` : validation humaine requise. */
+  needsHuman: boolean
+  isClosed: boolean
+}
 export type MilestoneRow = { title: string; open: number; closed: number }
 /** Pull request ouverte, affichée quand aucun milestone n'est en cours. */
 export type PullRow = {
@@ -16,7 +29,14 @@ export type View = {
   isReleasing: boolean
   /** État du milestone en cours (ligne `**Etat** :` de sa description, GITHUB.md 3.0bis), ex. `⏸ a publier` ; absent sinon. */
   state?: string | null
+  /** Issues ouvertes du milestone en cours. */
   issues: Issue[]
+  /** Issues fermées du milestone en cours (lots livrés de l'arbre). */
+  closed: Issue[]
+  /** Issues ouvertes de chaque milestone ouvert (par titre) : contenu dépliable de la liste des milestones. */
+  byMilestone: Record<string, Issue[]>
+  /** Objectif de chaque lot / sous-lot (`LOT-2.1` → « Export CSV ») : description de son label. */
+  lotTitles: Record<string, string>
   milestones: MilestoneRow[]
   /** PR ouvertes, lues seulement quand aucun milestone n'est en cours (vide sinon). */
   prs: PullRow[]
@@ -50,6 +70,7 @@ export type Usage = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'milestone-panel': { view: View; usage: Usage }
+    /** `expanded` : lots / sous-lots dépliés ou repliés par l'utilisateur, clé `<milestone>|<LOT-n>`. */
+    'milestone-panel': { view: View; usage: Usage; expanded: Record<string, boolean> }
   }
 }
