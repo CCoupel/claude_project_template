@@ -7,6 +7,8 @@ export const PHASES = ['PLANNING', 'PLAN A VALIDER', 'PRET', 'EN COURS', 'EN REV
 export const AWAITING_USER = ['PLAN A VALIDER', 'LOT A VALIDER', 'A PUBLIER'] as const
 /** Phases comptées comme terminées dans la barre d'avancement (travail de l'équipe fini). */
 export const FINISHED = ['LOT A VALIDER', 'A PUBLIER', 'DONE'] as const
+/** État d'affichage d'une issue fermée (pas un label GitHub) : la plus avancée. */
+export const CLOSED = 'FERMÉE'
 
 type RawIssue = {
   number: number
@@ -59,9 +61,10 @@ const compareMilestones = (a: RawMilestone, b: RawMilestone) => {
   return compareTitles(a.title, b.title)
 }
 
-const lotLabelOf = (i: RawIssue) => i.labels.map(l => l.name).find(n => /^LOT-\d+(\.\d+)?$/i.test(n)) ?? null
+const LOT_RE = /^LOT-\d+(\.\d+)?$/i
+const lotLabelOf = (i: RawIssue) => i.labels.map(l => l.name).find(n => LOT_RE.test(n))?.toUpperCase() ?? null
 
-// Regroupement par lot : un sous-lot (`LOT-2.1`) appartient au lot parent (`LOT-2`), sans distinction.
+// Lot parent : `LOT-2` pour `LOT-2` comme pour ses sous-lots `LOT-2.1`, `LOT-2.2` (l'unité de livraison est `lotLabel`).
 const lotOf = (i: RawIssue) => lotLabelOf(i)?.replace(/\.\d+$/, '') ?? null
 
 const phaseOf = (i: RawIssue) =>
@@ -81,6 +84,8 @@ export const buildView = (
   rawIssues: RawIssue[],
   now: number,
   colors: Record<string, string> = {},
+  closedIssues: RawIssue[] = [],
+  descriptions: Record<string, string> = {},
 ): View => {
   const sorted = [...rawMilestones].sort(compareMilestones)
   const started = new Set(
@@ -95,19 +100,33 @@ export const buildView = (
     ? null
     : ((dated ?? sorted.find(isDone))?.title ?? null)
   const current = working ?? releasing
+  const toIssue = (i: RawIssue, isClosed: boolean): Issue => ({
+    number: i.number,
+    title: i.title,
+    phase: isClosed ? CLOSED : (phaseOf(i) ?? 'SANS PHASE'),
+    lot: lotOf(i),
+    lotLabel: lotLabelOf(i),
+    isBlocked: !isClosed && i.labels.some(l => l.name === 'BLOQUE'),
+    needsHuman: i.labels.some(l => l.name === 'VALID-HUMAINE'),
+    isClosed,
+  })
   const issues: Issue[] = current
-    ? rawIssues
-        .filter(i => i.milestone?.title === current)
-        .map(i => ({
-          number: i.number,
-          title: i.title,
-          phase: phaseOf(i) ?? 'SANS PHASE',
-          lot: lotOf(i),
-          lotLabel: lotLabelOf(i),
-          isBlocked: i.labels.some(l => l.name === 'BLOQUE'),
-          needsHuman: i.labels.some(l => l.name === 'VALID-HUMAINE'),
-        }))
+    ? rawIssues.filter(i => i.milestone?.title === current).map(i => toIssue(i, false))
     : []
+  // Issues ouvertes de chaque milestone ouvert : contenu dépliable de la liste quand aucun milestone n'est en cours.
+  const byMilestone: Record<string, Issue[]> = {}
+  for (const i of rawIssues) if (i.milestone) (byMilestone[i.milestone.title] ??= []).push(toIssue(i, false))
+  // Issues fermées du milestone en cours : sans elles, un lot livré disparaîtrait de l'arbre.
+  const closed: Issue[] = current
+    ? closedIssues.filter(i => i.milestone?.title === current).map(i => toIssue(i, true))
+    : []
+  // Objectif de chaque lot / sous-lot : description de son label (posée au GATE 2, GITHUB.md §9.11). L'ancienne
+  // description générique (« Lot du milestone », « Lot 2 du milestone » : labels créés avant 0.5.0) n'est pas un objectif : ignorée.
+  const lotTitles = Object.fromEntries(
+    Object.entries(descriptions)
+      .filter(([name, d]) => LOT_RE.test(name) && d.trim() !== '' && !/^lot( [\d.]+)? du milestone$/i.test(d.trim()))
+      .map(([n, d]) => [n.toUpperCase(), d.trim()]),
+  )
   // Liste affichée quand aucun milestone n'est en cours : sans version (`x`) en dernier, puis par progression
   // décroissante, puis par version croissante.
   const pct = (m: RawMilestone) => {
@@ -128,7 +147,7 @@ export const buildView = (
       closed: m.closed_issues,
     }))
   const state = current ? milestoneState(sorted.find(m => m.title === current)?.description) : null
-  return { current, isReleasing: releasing !== null, state, issues, milestones, prs: [], colors, updatedAt: now, error: null }
+  return { current, isReleasing: releasing !== null, state, issues, closed, lotTitles, byMilestone, milestones, prs: [], colors, updatedAt: now, error: null }
 }
 
 type RawPull = {
@@ -156,38 +175,78 @@ export const isGhPrCommand = (command: string) => /\bgh\s+pr\s+(create|merge|clo
 
 export const groupByPhase = (issues: Issue[]) =>
   // Du plus avancé au moins avancé, le backlog (sans phase) en dernier.
-  [...PHASES].reverse().concat('SANS PHASE' as never)
+  [CLOSED, ...[...PHASES].reverse(), 'SANS PHASE']
     .map(phase => ({ phase, issues: issues.filter(i => i.phase === phase) }))
     .filter(g => g.issues.length > 0)
 
-/**
- * Issues regroupées par lot (`LOT-N`) : lots les plus avancés d'abord (avancement moyen de leurs issues :
- * DONE, A PUBLIER, LOT A VALIDER, EN QA, EN REVIEW, EN COURS, PRET, PLAN A VALIDER, PLANNING, sans phase), puis les issues sans lot.
- * Sans aucun lot dans le milestone : un seul groupe `lot: null`, aucun intitulé à afficher.
- */
-export const groupByLot = (issues: Issue[]) => {
-  const num = (l: string) => parseInt(l.slice(4), 10)
-  const lots = [...new Set(issues.map(i => i.lot).filter((l): l is string => !!l))]
-  if (lots.length === 0) return [{ lot: null as string | null, issues }]
-  // Avancement : phase moyenne des issues du lot (un lot entièrement DONE passe avant un lot DONE + EN REVIEW),
-  // puis phase la plus avancée, puis numéro croissant.
-  const rank = (phase: string) => (PHASES as readonly string[]).indexOf(phase) + 1 // 0 = sans phase
-  const stats = (l: string) => {
-    const ranks = issues.filter(i => i.lot === l).map(i => rank(i.phase))
-    return { best: Math.max(...ranks), avg: ranks.reduce((a, b) => a + b, 0) / ranks.length }
-  }
-  lots.sort((a, b) => {
-    const x = stats(a)
-    const y = stats(b)
-    return y.avg - x.avg || y.best - x.best || num(a) - num(b)
-  })
-  const groups: { lot: string | null; issues: Issue[] }[] = lots.map(lot => ({
-    lot,
-    issues: issues.filter(i => i.lot === lot),
-  }))
-  const rest = issues.filter(i => !i.lot)
-  return rest.length > 0 ? [...groups, { lot: null, issues: rest }] : groups
+export type LotStatus = 'livré' | 'à valider' | 'en cours' | 'à venir'
+export type LotUnit = { id: string; title: string; issues: Issue[]; status: LotStatus }
+/** Lot de l'arbre : ses issues directes, ou celles de tous ses sous-lots (`subs`, unités de livraison). */
+export type LotNode = LotUnit & { subs: LotUnit[] }
+
+const NOT_STARTED = ['SANS PHASE', 'PLANNING', 'PLAN A VALIDER', 'PRET']
+
+/** Avancement d'un groupe d'issues : livré (toutes fermées), à valider, en cours ou à venir. */
+export const lotStatus = (issues: Issue[]): LotStatus => {
+  if (issues.length > 0 && issues.every(i => i.isClosed)) return 'livré'
+  if (issues.some(i => i.phase === 'LOT A VALIDER' || i.phase === 'A PUBLIER')) return 'à valider'
+  if (issues.some(i => !i.isClosed && !NOT_STARTED.includes(i.phase))) return 'en cours'
+  return 'à venir'
 }
+
+/** Issues comptées comme terminées : fermées, ou travail de l'équipe fini (FINISHED). */
+export const finishedCount = (issues: Issue[]) =>
+  issues.filter(i => i.isClosed || (FINISHED as readonly string[]).includes(i.phase)).length
+
+const lotKey = (id: string) => id.slice(4).split('.').map(n => parseInt(n, 10))
+
+/**
+ * Arbre des lots du milestone, dans l'ordre de livraison (numéro croissant : `LOT-1`, `LOT-2.1`, `LOT-2.2`, `LOT-3`),
+ * issues ouvertes et fermées. Un lot découpé (`LOT-2.1`…) porte ses sous-lots dans `subs` et, dans `issues`, toutes
+ * les leurs. Les issues sans lot forment un dernier nœud `SANS LOT`. Aucun lot dans le milestone : liste vide.
+ */
+export const buildLotTree = (issues: Issue[], titles: Record<string, string> = {}): LotNode[] => {
+  const ids = [...new Set(issues.map(i => i.lotLabel).filter((l): l is string => !!l))].sort((a, b) => {
+    const x = lotKey(a)
+    const y = lotKey(b)
+    return x[0] - y[0] || (x[1] ?? 0) - (y[1] ?? 0)
+  })
+  if (ids.length === 0) return []
+  const unit = (id: string, list: Issue[]): LotUnit => ({ id, title: titles[id] ?? '', issues: list, status: lotStatus(list) })
+  const nodes: LotNode[] = []
+  for (const id of ids) {
+    const parent = id.replace(/\.\d+$/, '')
+    let node = nodes.find(n => n.id === parent)
+    if (!node) {
+      node = { ...unit(parent, []), subs: [] }
+      nodes.push(node)
+    }
+    const list = issues.filter(i => i.lotLabel === id)
+    if (id === parent) node.issues = [...node.issues, ...list]
+    else node.subs.push(unit(id, list))
+  }
+  for (const n of nodes) {
+    if (n.subs.length > 0) n.issues = [...n.issues, ...n.subs.flatMap(s => s.issues)]
+    n.status = lotStatus(n.issues)
+  }
+  const rest = issues.filter(i => !i.lotLabel)
+  if (rest.length > 0) nodes.push({ ...unit('SANS LOT', rest), subs: [] })
+  return nodes
+}
+
+/** Unité de livraison en cours : la première (dans l'ordre) qui n'est pas livrée ; null si tout est livré. */
+export const currentUnit = (tree: LotNode[]): LotUnit | null =>
+  tree.filter(n => n.id !== 'SANS LOT').flatMap(n => (n.subs.length > 0 ? n.subs : [n])).find(u => u.status !== 'livré') ?? null
+
+/**
+ * Nœud déplié ou non : le choix de l'utilisateur (`toggles`, par id) prime ; à défaut sont dépliés les lots et
+ * sous-lots en cours ou à valider (un lot parent l'est dès qu'un de ses sous-lots l'est), ainsi que l'unité en cours
+ * et son lot parent (même encore à venir).
+ */
+export const isExpanded = (node: LotUnit, current: LotUnit | null, toggles: Record<string, boolean>) =>
+  toggles[node.id] ??
+  (node.status === 'en cours' || node.status === 'à valider' ||
+    (!!current && (current.id === node.id || current.id.replace(/\.\d+$/, '') === node.id)))
 
 /**
  * Répartit `width` cellules entre des effectifs, proportionnellement (plus fort reste) ;

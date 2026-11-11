@@ -1,7 +1,7 @@
 {
   "name": "milestone-panel",
-  "version": "0.4.0",
-  "description": "Panneau latéral : consommation du compte Claude en tête, puis issues ouvertes du milestone en cours groupées par phase, ou, sans milestone en cours, avancement des milestones et PR ouvertes.",
+  "version": "0.5.0",
+  "description": "Panneau latéral : consommation du compte Claude en tête, puis arbre dépliable des lots / sous-lots du milestone en cours (objectif, avancement, issues groupées par état), ou, sans milestone en cours, avancement des milestones et PR ouvertes.",
   "types": "./types/index.d.ts",
   "userConfig": {
     "propagationDelaySec": {

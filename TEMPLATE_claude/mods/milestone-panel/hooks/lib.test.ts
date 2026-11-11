@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildPrs, milestoneState, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageLabel, usageThresholds, usageWaitMessage } from './lib'
+import { allocate, buildPrs, milestoneState, buildUsage, buildLotTree, buildView, currentUnit, finishedCount, formatReset, groupByPhase, isExpanded, lotStatus, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageLabel, usageThresholds, usageWaitMessage } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -71,21 +71,6 @@ test('session teammate détectée par env ou flags, pas le team-leader', () => {
   expect(isTeammateSession([], 'claude --agent-id x@t --team-name t')).toBe(true)
 })
 
-test('regroupement par lot : triés par avancement, sans lot en dernier ; sans lot = un groupe nu', () => {
-  const issues = [
-    { number: 1, title: 'a', labels: lab('LOT-10', 'EN COURS'), milestone: { title: 'v1' } },
-    { number: 2, title: 'b', labels: lab('LOT-2'), milestone: { title: 'v1' } },
-    { number: 3, title: 'c', labels: lab('PLANNING'), milestone: { title: 'v1' } },
-    { number: 4, title: 'd', labels: lab('LOT-3'), milestone: { title: 'v1' } },
-    { number: 5, title: 'e', labels: lab('LOT-4', 'PLANNING'), milestone: { title: 'v1' } },
-  ]
-  const v = buildView([{ title: 'v1', due_on: null, open_issues: 5, closed_issues: 0 }], issues, 0)
-  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-10', 'LOT-4', 'LOT-2', 'LOT-3', null])
-  const plain = buildView([{ title: 'v1', due_on: null, open_issues: 1, closed_issues: 0 }], [issues[2]], 0)
-  expect(groupByLot(plain.issues)).toHaveLength(1)
-  expect(groupByLot(plain.issues)[0].lot).toBeNull()
-})
-
 test('allocate : somme = largeur, effectif non nul garde une cellule, ordre conservé', () => {
   const c = allocate([0, 1, 1, 7, 0], 20)
   expect(c.reduce((a, b) => a + b, 0)).toBe(20)
@@ -93,19 +78,6 @@ test('allocate : somme = largeur, effectif non nul garde une cellule, ordre cons
   expect(c[0]).toBe(0)
   expect(allocate([0, 0], 10)).toEqual([0, 0])
   expect(allocate([1, 99], 8).every((x, k) => (k === 0 ? x >= 1 : true))).toBe(true)
-})
-
-test('lots triés par avancement et non par numéro', () => {
-  const m = { title: 'v1' }
-  const issues = [
-    { number: 1, title: 'a', labels: lab('LOT-1', 'EN COURS'), milestone: m },
-    { number: 2, title: 'b', labels: lab('LOT-2', 'DONE'), milestone: m },
-    { number: 3, title: 'c', labels: lab('LOT-3', 'EN REVIEW'), milestone: m },
-    { number: 4, title: 'd', labels: lab('LOT-4', 'DONE'), milestone: m },
-    { number: 5, title: 'e', labels: lab('LOT-4'), milestone: m },
-  ]
-  const v = buildView([{ title: 'v1', due_on: null, open_issues: 5, closed_issues: 0 }], issues, 0)
-  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-2', 'LOT-3', 'LOT-4', 'LOT-1'])
 })
 
 test('PRET est une phase : classée entre PLANNING et EN COURS', () => {
@@ -117,7 +89,6 @@ test('PRET est une phase : classée entre PLANNING et EN COURS', () => {
   ]
   const v = buildView([{ title: 'v1', due_on: null, open_issues: 3, closed_issues: 0 }], issues, 0)
   expect(v.issues.map(i => i.phase)).toEqual(['PLANNING', 'PRET', 'EN COURS'])
-  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-3', 'LOT-2', 'LOT-1'])
   expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['EN COURS', 'PRET', 'PLANNING'])
 })
 
@@ -132,7 +103,6 @@ test('attentes de validation : PLAN A VALIDER après PLANNING, LOT A VALIDER et 
   ]
   const v = buildView([{ title: 'v1', due_on: '2026-11-01', open_issues: 5, closed_issues: 0 }], issues, 0)
   expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['DONE', 'A PUBLIER', 'LOT A VALIDER', 'EN QA', 'PLAN A VALIDER'])
-  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-1', 'LOT-5', 'LOT-2', 'LOT-3', 'LOT-4'])
 })
 
 test('sans due date, des issues seulement en PLAN A VALIDER ne démarrent pas le milestone', () => {
@@ -151,32 +121,85 @@ test('état du milestone lu dans sa description (ligne Etat du bloc historique)'
   expect(v.state).toBe('⏸ a publier')
 })
 
-test('sous-lots LOT-x.y : regroupés sous le lot parent, sans distinction', () => {
+test('arbre des lots : ordre de livraison par numéro, sous-lots sous leur parent, sans lot en dernier', () => {
   const m = { title: 'v1' }
   const issues = [
-    { number: 1, title: 'a', labels: lab('LOT-2.1', 'EN COURS'), milestone: m },
+    { number: 1, title: 'a', labels: lab('LOT-10', 'EN COURS'), milestone: m },
     { number: 2, title: 'b', labels: lab('LOT-2.2', 'PRET'), milestone: m },
-    { number: 3, title: 'c', labels: lab('LOT-1'), milestone: m },
+    { number: 3, title: 'c', labels: lab('PLANNING'), milestone: m },
+    { number: 4, title: 'd', labels: lab('LOT-2.1', 'DONE'), milestone: m },
+    { number: 5, title: 'e', labels: lab('lot-3', 'PRET'), milestone: m },
   ]
-  const v = buildView([{ title: 'v1', due_on: null, open_issues: 3, closed_issues: 0 }], issues, 0)
-  const groups = groupByLot(v.issues)
-  expect(groups.map(g => g.lot)).toEqual(['LOT-2', 'LOT-1'])
-  expect(groups[0].issues.map(i => i.number)).toEqual([1, 2])
-  expect(v.issues[0].lotLabel).toBe('LOT-2.1')
+  const v = buildView([{ title: 'v1', due_on: null, open_issues: 5, closed_issues: 0 }], issues, 0)
+  const tree = buildLotTree(v.issues)
+  expect(tree.map(n => n.id)).toEqual(['LOT-2', 'LOT-3', 'LOT-10', 'SANS LOT'])
+  expect(tree[0].subs.map(s => s.id)).toEqual(['LOT-2.1', 'LOT-2.2'])
+  expect(tree[0].issues.map(i => i.number)).toEqual([4, 2])
+  expect(tree[1].subs).toEqual([])
+  const plain = buildView([{ title: 'v1', due_on: null, open_issues: 1, closed_issues: 0 }], [issues[2]], 0)
+  expect(buildLotTree(plain.issues)).toEqual([])
 })
 
-test('un lot entièrement DONE passe avant un lot DONE + EN REVIEW', () => {
+test('issues fermées du milestone en cours : lot livré, comptées terminées, groupe FERMÉE en tête', () => {
   const m = { title: 'v1' }
-  const issues = [
-    { number: 1, title: 'a', labels: lab('LOT-2', 'DONE'), milestone: m },
-    { number: 2, title: 'b', labels: lab('LOT-2', 'EN REVIEW'), milestone: m },
-    { number: 3, title: 'c', labels: lab('LOT-4', 'DONE'), milestone: m },
-    { number: 4, title: 'd', labels: lab('LOT-4', 'DONE'), milestone: m },
-    { number: 5, title: 'e', labels: lab('LOT-1', 'DONE'), milestone: m },
-    { number: 6, title: 'f', labels: lab('LOT-6', 'EN QA'), milestone: m },
+  const open = [
+    { number: 3, title: 'c', labels: lab('LOT-2', 'EN COURS'), milestone: m },
+    { number: 4, title: 'd', labels: lab('LOT-2', 'DONE'), milestone: m },
   ]
-  const v = buildView([{ title: 'v1', due_on: null, open_issues: 6, closed_issues: 0 }], issues, 0)
-  expect(groupByLot(v.issues).map(g => g.lot)).toEqual(['LOT-1', 'LOT-4', 'LOT-2', 'LOT-6'])
+  const closed = [
+    { number: 1, title: 'a', labels: lab('LOT-1', 'DONE'), milestone: m },
+    { number: 2, title: 'b', labels: lab('LOT-1'), milestone: m },
+    { number: 5, title: 'e', labels: lab('LOT-2', 'DONE'), milestone: m },
+    { number: 9, title: 'z', labels: lab('LOT-1'), milestone: { title: 'v0' } },
+  ]
+  const v = buildView([{ title: 'v1', due_on: '2026-11-01', open_issues: 2, closed_issues: 3 }], open, 0, {}, closed)
+  expect(v.closed.map(i => i.number)).toEqual([1, 2, 5])
+  expect(v.closed.every(i => i.isClosed && i.phase === 'FERMÉE')).toBe(true)
+  const tree = buildLotTree([...v.issues, ...v.closed])
+  expect(tree.map(n => n.status)).toEqual(['livré', 'en cours'])
+  expect(finishedCount(tree[1].issues)).toBe(2)
+  expect(groupByPhase(tree[1].issues).map(g => g.phase)).toEqual(['FERMÉE', 'DONE', 'EN COURS'])
+  expect(currentUnit(tree)?.id).toBe('LOT-2')
+})
+
+test('avancement d\'un lot : livré, à valider, en cours, à venir', () => {
+  const v = (phase: string, isClosed = false) => ({ number: 1, title: 'a', phase, lot: null, lotLabel: null, isBlocked: false, needsHuman: false, isClosed })
+  expect(lotStatus([v('FERMÉE', true), v('FERMÉE', true)])).toBe('livré')
+  expect(lotStatus([v('FERMÉE', true), v('LOT A VALIDER')])).toBe('à valider')
+  expect(lotStatus([v('A PUBLIER')])).toBe('à valider')
+  expect(lotStatus([v('PRET'), v('EN REVIEW')])).toBe('en cours')
+  expect(lotStatus([v('PRET'), v('PLANNING'), v('SANS PHASE')])).toBe('à venir')
+})
+
+test('unité en cours = premier sous-lot non livré ; dépliage par défaut : en cours, à valider, unité en cours', () => {
+  const m = { title: 'v1' }
+  const open = [
+    { number: 2, title: 'b', labels: lab('LOT-2.2', 'EN COURS'), milestone: m },
+    { number: 3, title: 'c', labels: lab('LOT-3', 'PRET'), milestone: m },
+    { number: 6, title: 'f', labels: lab('LOT-4', 'EN COURS'), milestone: m },
+    { number: 7, title: 'g', labels: lab('LOT-5', 'LOT A VALIDER'), milestone: m },
+  ]
+  const closed = [
+    { number: 1, title: 'a', labels: lab('LOT-1'), milestone: m },
+    { number: 4, title: 'd', labels: lab('LOT-2.1'), milestone: m },
+  ]
+  const v = buildView([{ title: 'v1', due_on: '2026-11-01', open_issues: 4, closed_issues: 2 }], open, 0, {}, closed, {
+    'LOT-2': 'Export des données', 'LOT-2.2': ' Export PDF ', 'LOT-3': '', 'LOT-1': 'Lot 1 du milestone', 'LOT-2.1': 'Lot du milestone', 'EN COURS': 'Travail en cours',
+  })
+  expect(v.lotTitles).toEqual({ 'LOT-2': 'Export des données', 'LOT-2.2': 'Export PDF' })
+  const tree = buildLotTree([...v.issues, ...v.closed], v.lotTitles)
+  expect(tree.map(n => n.title)).toEqual(['', 'Export des données', '', '', ''])
+  expect(tree[1].subs.map(s => [s.title, s.status])).toEqual([['', 'livré'], ['Export PDF', 'en cours']])
+  const cur = currentUnit(tree)
+  expect(cur?.id).toBe('LOT-2.2')
+  const nodes = [tree[0], tree[1], ...tree[1].subs, tree[2], tree[3], tree[4]]
+  expect(nodes.map(n => [n.id, isExpanded(n, cur, {})])).toEqual([
+    ['LOT-1', false], ['LOT-2', true], ['LOT-2.1', false], ['LOT-2.2', true], ['LOT-3', false], ['LOT-4', true], ['LOT-5', true],
+  ])
+  expect(isExpanded(tree[1], cur, { 'LOT-2': false })).toBe(false)
+  expect(isExpanded(tree[0], cur, { 'LOT-1': true })).toBe(true)
+  expect(isExpanded(tree[3], cur, { 'LOT-4': false })).toBe(false)
+  expect(currentUnit(buildLotTree(v.closed))).toBe(null)
 })
 
 test('liste des milestones : sans version (x) en dernier, puis progression décroissante, puis version croissante', () => {

@@ -1,15 +1,19 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { Usage, View } from '../types'
-import { FINISHED, PHASES, allocate, buildPrs, buildUsage, buildView, formatReset, groupByLot, groupByPhase, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
-import type { Expectation } from './lib'
+import type { Issue, Usage, View } from '../types'
+import { CLOSED, FINISHED, PHASES, allocate, buildLotTree, buildPrs, buildUsage, buildView, currentUnit, finishedCount, formatReset, groupByPhase, isExpanded, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
+import type { Expectation, LotNode, LotStatus, LotUnit } from './lib'
 
 const PANE = 'milestone-panel'
+// États non démarrés : ░ dans les barres (milestone, lot, sous-lot).
+const NOT_STARTED = ['SANS PHASE', 'PLANNING', 'PLAN A VALIDER', 'PRET']
 const RETRY_MS = 15_000
 
-const empty: View = { current: null, issues: [], milestones: [], prs: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
+const empty: View = { current: null, issues: [], closed: [], lotTitles: {}, byMilestone: {}, milestones: [], prs: [], colors: {}, isReleasing: false, updatedAt: 0, error: null }
 const view = atom({ plugin: 'milestone-panel', key: 'view' } as const, empty)
+// Lots / sous-lots dépliés ou repliés à la main (clé `<milestone>|<LOT-n>`) ; remis à zéro par /panel-milestone.
+const expanded = atom({ plugin: 'milestone-panel', key: 'expanded' } as const, {} as Record<string, boolean>)
 const noUsage: Usage = { windows: [], source: null, updatedAt: 0, error: null }
 const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage'
 const USAGE_THROTTLE_MS = 20_000
@@ -174,11 +178,21 @@ async function refresh($: any) {
         'issue', 'list', '--state', 'open', '--limit', '500',
         '--json', 'number,title,labels,milestone',
       ]),
-      gh($, ['label', 'list', '--limit', '200', '--json', 'name,color']),
+      gh($, ['label', 'list', '--limit', '200', '--json', 'name,color,description']),
     ])
     const now = await $.clock.now()
     lastRefreshAt = now
-    const next = buildView(ms, issues, now, Object.fromEntries(labels.map((l: any) => [l.name, l.color])))
+    const colors = Object.fromEntries(labels.map((l: any) => [l.name, l.color]))
+    const descriptions = Object.fromEntries(labels.map((l: any) => [l.name, l.description ?? '']))
+    let next = buildView(ms, issues, now, colors, [], descriptions)
+    // Issues fermées du milestone en cours : les lots livrés restent dans l'arbre.
+    if (next.current) {
+      const closed = await gh($, [
+        'issue', 'list', '--state', 'closed', '--milestone', next.current, '--limit', '500',
+        '--json', 'number,title,labels,milestone',
+      ])
+      next = buildView(ms, issues, now, colors, closed, descriptions)
+    }
     // PR ouvertes : seulement quand aucun milestone n'est en cours (rien d'autre à suivre dans le panneau).
     if (!next.current)
       next.prs = buildPrs(await gh($, ['pr', 'list', '--state', 'open', '--limit', '50', '--json', 'number,title,headRefName,isDraft,reviewDecision']))
@@ -238,6 +252,7 @@ export const register: Register = (on, options) => {
     retries = 0
     lastRefreshAt = 0
     await update($, view, () => empty)
+    await update($, expanded, () => ({}))
     await $.ui.open({ id: PANE, title: 'Milestone' })
     await Promise.all([refresh($), refreshUsage($, true).catch(() => undefined)])
     $.ui.invalidate('ui.render')
@@ -293,7 +308,7 @@ export const register: Register = (on, options) => {
   }
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Text, Button } = $.ui.resolve(e)
     const v = await read($, view)
     const u = await read($, usage)
     const now = await $.clock.now()
@@ -342,7 +357,7 @@ export const register: Register = (on, options) => {
     const hex = (label: string, fallback: string) =>
       v.colors[label] ? `#${v.colors[label]}` : fallback
     const phaseColor = (phase: string) =>
-      phase === 'SANS PHASE' ? 'gray' : hex(phase, 'white')
+      phase === 'SANS PHASE' ? 'gray' : phase === CLOSED ? '#a371f7' : hex(phase, 'white')
     // Ordre de développement : fermées, puis phases du plus avancé au moins avancé, puis non démarrées.
     const ORDER = [...PHASES].reverse()
     const progress = (closed: number, byPhase: Record<string, number>, notStarted: number) => {
@@ -366,7 +381,7 @@ export const register: Register = (on, options) => {
         <Box flexDirection="column">
           <Text wrap="truncate-end">
             {segs.map((x, k) =>
-              x.label === 'non démarrées' ? (
+              x.label === 'non démarrées' || NOT_STARTED.includes(x.label) ? (
                 <Text dimColor>{'░'.repeat(cells[k])}</Text>
               ) : (
                 <Text color={x.color}>{'█'.repeat(cells[k])}</Text>
@@ -386,13 +401,107 @@ export const register: Register = (on, options) => {
       )
     }
 
-    // Libellés de phase alignés : « PHASE : #n titre », les suivantes « <blanc> : #n titre ».
-    const LABEL_W = Math.max(...PHASES.map(p => p.length), 'SANS PHASE'.length)
-    // Une ligne par issue : « LOT  PHASE : #n titre » ; lot et phase ne sont écrits que sur leur première ligne.
-    const lotGroups = groupByLot(v.issues)
-    const hasLots = lotGroups.some(g => g.lot !== null)
-    // 👤 (2 unités UTF-16, 2 colonnes) suffixe le lot s'il requiert une validation humaine.
-    const LOT_W = Math.max(...lotGroups.map(g => (g.lot ?? 'SANS LOT').length + (g.issues.some(x => x.needsHuman) ? 2 : 0)))
+    // Arbre des lots, dans l'ordre de livraison : « ▾ ✔ LOT-2  Objectif   barre nn/nn », sous-lots indentés dessous,
+    // issues groupées par état (du plus avancé au moins avancé). Une ligne de lot est un Button : clic (souris active,
+    // terminal plein écran), ou focus du panneau puis ↑↓ et Entrée, la déplie / replie. Par défaut seuls l'unité en cours et son lot parent sont dépliés.
+    const parentOf = (id: string) => id.replace(/\.\d+$/, '')
+    // Largeur affichée : 👤 et ⛔ prennent deux colonnes.
+    const cols = (t: string) => [...t].reduce((n, ch) => n + ((ch.codePointAt(0) ?? 0) > 0xffff || ch === '⛔' ? 2 : 1), 0)
+    const fit = (t: string, n: number) => {
+      if (cols(t) <= n) return t + ' '.repeat(n - cols(t))
+      let out = ''
+      for (const ch of t) {
+        if (cols(out + ch) > n - 1) break
+        out += ch
+      }
+      return out + '…' + ' '.repeat(Math.max(0, n - cols(out) - 1))
+    }
+    const stateName = (phase: string) => (phase === 'SANS PHASE' ? 'SANS ÉTAT' : phase)
+    const BAR_ORDER = [CLOSED, ...[...PHASES].reverse(), 'SANS PHASE']
+    // Barre segmentée par état : fermées, puis du plus avancé au moins avancé ; non démarrées en ░.
+    const stateBar = (issues: Issue[], width: number) => {
+      const segs = BAR_ORDER.map(p => ({ p, n: issues.filter(i => i.phase === p).length })).filter(x => x.n > 0)
+      const cells = allocate(segs.map(x => x.n), width)
+      return segs.map((x, k) =>
+        NOT_STARTED.includes(x.p)
+          ? <Text dimColor>{'░'.repeat(cells[k])}</Text>
+          : <Text color={phaseColor(x.p)}>{'█'.repeat(cells[k])}</Text>,
+      )
+    }
+    const ICON: Record<LotStatus, [string, string]> = {
+      'livré': ['✔', 'green'], 'à valider': ['⏸', 'yellow'], 'en cours': ['▶', 'cyan'], 'à venir': ['·', 'gray'],
+    }
+    const BW = Math.max(6, Math.min(14, columns - 42))
+    const RIGHT = BW + 7
+    // Issues d'un lot / sous-lot groupées par état : « ÉTAT : #n titre », l'état écrit sur la première ligne du groupe.
+    const rows = (issues: Issue[], indent: number) => {
+      const groups = groupByPhase(issues)
+      const SW = Math.max(...groups.map(g => stateName(g.phase).length))
+      return groups.flatMap(g =>
+        g.issues.map((i, k) => (
+          <Text wrap="truncate-end">
+            <Text>{' '.repeat(indent)}</Text>
+            <Text bold color={phaseColor(g.phase)}>{k === 0 ? stateName(g.phase).padEnd(SW) : ' '.repeat(SW)}</Text>
+            <Text dimColor>{' : '}</Text>
+            <Text color={i.isBlocked ? 'red' : undefined} dimColor={i.isClosed}>
+              {`${i.isBlocked ? '⛔' : ''}${i.needsHuman ? '👤' : ''}#${i.number} ${i.title}`}
+            </Text>
+          </Text>
+        )),
+      )
+    }
+    const toggles = (await read($, expanded)) ?? {}
+    // Arbre des lots d'un ensemble d'issues (milestone en cours, ou milestone déplié de la liste) : `prefix` scope les
+    // choix de dépliage (`<milestone>|`), `keyPrefix` les clés des Buttons, `base` l'indentation.
+    const lotTree = (issues: Issue[], prefix: string, keyPrefix: string, base: number) => {
+      const tree = buildLotTree(issues, v.lotTitles ?? {})
+      const unitNow = currentUnit(tree)
+      const mine: Record<string, boolean> = Object.fromEntries(
+        Object.entries(toggles).filter(([k]) => k.startsWith(prefix)).map(([k, b]) => [k.slice(prefix.length), b]),
+      )
+      const isOpen = (node: LotUnit) => isExpanded(node, unitNow, mine)
+      const head = (node: LotUnit, indent: number, label: string) => {
+        const opened = isOpen(node)
+        const byDefault = isExpanded(node, unitNow, {})
+        const [glyph, color] = ICON[node.status]
+        const human = node.issues.some(i => i.needsHuman && !i.isClosed) ? '👤' : ''
+        const blocked = !opened && node.issues.some(i => i.isBlocked) ? '⛔' : ''
+        const text = `${label}${human}${blocked}${node.title ? `  ${node.title}` : ''}`
+        const isCur = !!unitNow && (node.id === unitNow.id || node.id === parentOf(unitNow.id))
+        const k = prefix + node.id
+        return (
+          <Button
+            key={`lot:${keyPrefix}${node.id}`}
+            plain
+            onPress={() => void update($, expanded, m => ({ ...(m ?? {}), [k]: !((m ?? {})[k] ?? byDefault) }))}
+          >
+            <Text>{' '.repeat(indent)}</Text>
+            <Text dimColor>{opened ? '▾ ' : '▸ '}</Text>
+            <Text bold color={color}>{glyph}</Text>
+            <Text>{' '}</Text>
+            <Text bold={isCur} dimColor={node.status === 'livré' && !isCur} color={node.id === 'SANS LOT' ? 'gray' : hex(node.id, 'magenta')}>
+              {fit(text, Math.max(4, columns - RIGHT - indent - 4))}
+            </Text>
+            <Text>{' '}</Text>
+            {stateBar(node.issues, BW)}
+            <Text bold>{` ${String(finishedCount(node.issues)).padStart(2)}/${String(node.issues.length).padEnd(2)}`}</Text>
+          </Button>
+        )
+      }
+      // Sans aucun lot : les issues ouvertes, groupées par état.
+      const elements = tree.length === 0
+        ? rows(issues.filter(i => !i.isClosed), base)
+        : tree.flatMap((n: LotNode) => {
+            const out = [head(n, base, n.id)]
+            if (!isOpen(n)) return out
+            if (n.subs.length === 0) return [...out, ...rows(n.issues, base + 4)]
+            return [...out, ...n.subs.flatMap(sub => [head(sub, base + 2, sub.id.slice(4)), ...(isOpen(sub) ? rows(sub.issues, base + 6) : [])])]
+          })
+      return { elements, unitNow }
+    }
+    const curTree = lotTree([...v.issues, ...(v.closed ?? [])], `${v.current}|`, '', 0)
+    const unitNow = curTree.unitNow
+    const body = curTree.elements
     const maj = ` · maj ${new Date(v.updatedAt).toTimeString().slice(0, 5)}`
     const cur = v.milestones.find(m => m.title === v.current)
     const byPhase: Record<string, number> = {}
@@ -409,29 +518,11 @@ export const register: Register = (on, options) => {
               <Text bold color="cyan">{`Milestone ${v.current}`}</Text>
               {v.isReleasing && !v.state?.startsWith('⏸') && <Text bold color="yellow">{' — publication'}</Text>}
               {v.state?.startsWith('⏸') && <Text bold color="yellow">{` — ${v.state} : à toi`}</Text>}
+              {!v.isReleasing && !v.state?.startsWith('⏸') && unitNow && <Text color="cyan">{` — ${unitNow.id} ${unitNow.status}`}</Text>}
               <Text dimColor>{maj}</Text>
             </Text>
             {cur && progress(cur.closed, byPhase, v.issues.length - startedCount)}
-            {lotGroups.flatMap(lg =>
-              groupByPhase(lg.issues).flatMap((g, gi) =>
-                g.issues.map((i, k) => (
-                  <Text wrap="truncate-end">
-                    {hasLots && (
-                      <Text bold color={lg.lot ? hex(lg.issues.find(i => i.lotLabel)?.lotLabel ?? lg.lot, 'magenta') : 'gray'}>
-                        {(gi === 0 && k === 0 ? `${lg.lot ?? 'SANS LOT'}${lg.issues.some(x => x.needsHuman) ? '👤' : ''}` : '').padEnd(LOT_W + 1)}
-                      </Text>
-                    )}
-                    <Text bold color={phaseColor(g.phase)}>
-                      {k === 0 ? g.phase.padEnd(LABEL_W) : ' '.repeat(LABEL_W)}
-                    </Text>
-                    <Text dimColor>{': '}</Text>
-                    <Text color={i.isBlocked ? 'red' : undefined}>
-                      {`${i.isBlocked ? '⛔' : ''}${i.needsHuman ? '👤' : ''}#${i.number} ${i.title}`}
-                    </Text>
-                  </Text>
-                )),
-              ),
-            )}
+            {body}
           </Box>
         ) : (
           <Box flexDirection="column">
@@ -440,20 +531,35 @@ export const register: Register = (on, options) => {
               <Text dimColor>{maj}</Text>
             </Text>
             {v.milestones.length === 0 && <Text dimColor>Aucun milestone ouvert.</Text>}
-            {v.milestones.map(m => {
-              // Une ligne par milestone : « barre  %  fermées/total  titre », le titre étant tronqué en dernier.
+            {v.milestones.flatMap(m => {
+              // Une ligne par milestone : « ▸ barre  %  fermées/total  titre » (titre tronqué en dernier). C'est un Button :
+              // clic (ou focus puis Entrée) déplie ses issues ouvertes, en arbre de lots s'il en porte. Replié par défaut.
               const total = m.open + m.closed
               const n = total === 0 ? 0 : Math.round((m.closed / total) * 10)
               const pct = total === 0 ? 0 : Math.round((m.closed / total) * 100)
-              return (
-                <Text wrap="truncate-end">
+              const k = `ms|${m.title}`
+              const opened = toggles[k] ?? false
+              const counts = ` ${m.closed}/${total} `
+              const issues = v.byMilestone?.[m.title] ?? []
+              const row = (
+                <Button
+                  key={`ms:${m.title}`}
+                  plain
+                  onPress={() => void update($, expanded, t => ({ ...(t ?? {}), [k]: !((t ?? {})[k] ?? false) }))}
+                >
+                  <Text dimColor>{opened ? '▾ ' : '▸ '}</Text>
                   <Text color="#a371f7">{'█'.repeat(n)}</Text>
                   <Text dimColor>{'░'.repeat(10 - n)}</Text>
                   <Text bold>{` ${String(pct).padStart(3)}%`}</Text>
-                  <Text dimColor>{` ${m.closed}/${total} `}</Text>
-                  <Text bold color="cyan">{m.title}</Text>
-                </Text>
+                  <Text dimColor>{counts}</Text>
+                  <Text bold color="cyan">{fit(m.title, Math.max(4, columns - 17 - counts.length))}</Text>
+                </Button>
               )
+              if (!opened) return [row]
+              const inner = issues.length === 0
+                ? [<Text dimColor>{'  aucune issue ouverte'}</Text>]
+                : lotTree(issues, `${m.title}|`, `${m.title}|`, 2).elements
+              return [row, ...inner]
             })}
             <Box marginTop={1}>
               <Text bold>{`PR ouvertes (${v.prs.length})`}</Text>

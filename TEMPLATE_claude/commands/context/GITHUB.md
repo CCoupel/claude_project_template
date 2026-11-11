@@ -493,7 +493,7 @@ l'utilisateur** (GATE), jamais seulement a l'envoi de l'ordre suivant : une issu
 du GATE 2 avec `PRET`, §9.0 et §9.11) sur chaque issue de chaque lot, apres validation du plan (GATE 2). Ce n'est **pas** un label de phase : il se superpose a la
 phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot. **Label de validation humaine :** `VALID-HUMAINE` — pose par le CDP (via `deployer`, §9.13) sur chaque issue dont au moins un scenario de test est `HUMAIN`. Superpose a la phase, jamais retire par une transition ; son absence = issue auto-validable (la QA suffit). Un lot est « a validation humaine » si l'une de ses issues le porte.
 
-Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est l'unite de livraison ; le panneau regroupe par lot parent `LOT-N`).
+Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est l'unite de livraison ; le panneau l'affiche sous son lot parent `LOT-N`, dans l'ordre de livraison). La description du label porte l'objectif du lot (§9.11).
 
 Regles :
 - Les labels de phase (`PLANNING` → `PRET` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE` ⇄ `LOT A VALIDER` / `A PUBLIER`, avec `PLAN A VALIDER` entre `PLANNING` et `PRET`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
@@ -578,21 +578,23 @@ A la validation du plan par l'utilisateur, le CDP envoie a `deployer` **un seul 
 les issues du milestone **et** le label de lot de chacune (§9.11), construit a partir de la table « Lots » du plan
 valide (`_work/reports/plan-[timestamp].md`). Les issues passent ensuite a `EN COURS` lot par lot, a l'ordre DEV (§9.1).
 
-**Forme de l'ordre** (une ligne, tous les lots du plan, chaque issue de `ISSUE_NUMS[]` presente une fois) :
+**Forme de l'ordre** (une ligne, tous les lots du plan, chaque issue de `ISSUE_NUMS[]` presente une fois ; l'objectif
+de chaque lot entre « », recopie de la colonne Objectif ; un lot decoupe figure seul, sans issue, pour son objectif) :
 
 ```
-SendMessage({ to: "deployer", content: "Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 #19 ; LOT-1 → #12 #15 ; LOT-2.1 → #18 ; LOT-2.2 → #19" })
+SendMessage({ to: "deployer", content: "Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 #18 #19 ; LOT-1 « Authentification » → #12 #15 ; LOT-2 « Export des donnees » ; LOT-2.1 « Export CSV » → #18 ; LOT-2.2 « Export PDF » → #19" })
 ```
 
 Milestone a issue unique (pas de table « Lots ») : `Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 ; sans lot`.
 
 **Verifications de `deployer` avant d'executer** (refus = `LABELS FAILED` + motif, aucun label pose) :
 - chaque issue de la liste `PRET` apparait dans **exactement un** lot (ou l'ordre dit `sans lot`) ;
-- chaque nom de lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ;
+- chaque nom de lot respecte `^LOT-[0-9]+(\.[0-9]+)?$` ; un lot sans issue n'est admis que s'il a des sous-lots dans
+  l'ordre (`LOT-2` pour `LOT-2.1`) ; chaque objectif fait 100 caracteres au plus (limite GitHub d'une description) ;
 - les issues listees appartiennent au milestone courant (`gh issue view <numero> --json milestone`).
 
 ```bash
-gh label create "LOT-1" --color "5319e7" --description "Lot 1 du milestone"   # pour chaque lot absent du repo
+gh label create "LOT-1" --color "5319e7" --description "Authentification" --force   # chaque lot de l'ordre, parents compris : cree, ou met a jour l'objectif
 gh issue edit <numero> --add-label "PRET,LOT-1" --remove-label "PLANNING,PLAN A VALIDER"      # pour chaque issue, avec son lot
 ```
 
@@ -788,15 +790,20 @@ par lot. Les lots sont traites **un a la fois**, dans l'ordre (`LOT-1`, `LOT-2`�
 `EN COURS`/`EN REVIEW`/`EN QA`/`DONE`/`LOT A VALIDER`, les suivants restent `PRET` jusqu'a la fermeture des issues du lot precedent (CI verte, §9.5b).
 
 Nommage strict `LOT-<entier>` ou `LOT-<entier>.<entier>` (`^LOT-[0-9]+(\.[0-9]+)?$`, sans zero devant) : c'est ce que
-reconnait le panneau `milestone-panel` pour regrouper les issues par lot (sous-lots sous leur lot parent). Chaque issue du
-milestone porte un seul label de lot.
+reconnait le panneau `milestone-panel` pour construire l'arbre des lots (sous-lots sous leur lot parent, dans l'ordre de
+livraison). Chaque issue du milestone porte un seul label de lot.
+
+**Objectif du lot = description du label** : le panneau l'affiche comme titre du lot ou du sous-lot. Les labels
+`LOT-n` sont reutilises d'un milestone a l'autre : `deployer` reecrit leur description a chaque GATE 2
+(`gh label create … --force`), y compris celle du lot parent d'un decoupage (`LOT-2`, pose sur aucune issue).
 
 **Re-decoupage** (plan revu : issue entrante, GATE 2 repasse) : le CDP envoie un ordre de la meme forme, limite aux
-issues dont le lot change ou qui n'en ont pas encore (`Labels lots (GITHUB.md §9.11) : LOT-3 → #21 ; #18 : LOT-2.1 → LOT-2.2`).
+issues dont le lot change ou qui n'en ont pas encore, avec l'objectif de chaque lot nouveau ou modifie
+(`Labels lots (GITHUB.md §9.11) : LOT-3 « Tableau de bord » → #21 ; #18 : LOT-2.1 → LOT-2.2`).
 Les lots deja livres (issues fermees) ne sont jamais renumerotes ; un nouveau lot prend le numero suivant.
 
 ```bash
-gh label create "LOT-2.1" --color "5319e7" --description "Lot 2.1 du milestone"   # si absent
+gh label create "LOT-3" --color "5319e7" --description "Tableau de bord" --force   # lot nouveau ou objectif modifie
 gh issue edit <numero> --add-label "LOT-3"                                          # issue entrante
 gh issue edit <numero> --add-label "LOT-2.2" --remove-label "LOT-2.1"               # changement de lot
 ```

@@ -140,7 +140,7 @@ Analyser les demandes de features/bugfixes et produire un plan detaille avant to
 
 **4. Risques cachés** — Effets de bord non évidents, breaking changes potentiels, dépendances externes fragiles, points de sécurité.
 
-Ce raisonnement structure les phases et l'ordre des tâches du plan. Il ne figure pas dans le livrable — il informe sa qualité.
+Ce raisonnement structure le découpage en lots (section `## Lots`) et l'Arbre d'Exécution DEV (ordre technique, parallélisme). Il ne figure pas dans le livrable — il informe sa qualité.
 
 ---
 
@@ -340,14 +340,19 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 
 ## Taches
 
-### Phase 1 : <Nom>
-1. [ ] Tache 1
+> Taches groupees **par lot**, dans l'ordre de livraison de la table `## Lots` (un en-tete par unite livree : lot, ou
+> sous-lot s'il est decoupe). Pas de « phases » : l'ordre technique et le parallelisme des taches sont dans l'Arbre
+> d'Execution DEV ci-dessous, seule source suivie par le teamleader. Milestone a issue unique (pas de lots) : liste
+> simple, sans en-tete.
+
+### LOT-1 : <Objectif>
+1. [ ] Tache 1 (#12)
    - Fichier(s) : `path/to/file.ext`
    - Description : ...
-2. [ ] Tache 2
+2. [ ] Tache 2 (#15)
    - ...
 
-### Phase 2 : <Nom> *(déblocage : Phase 1 terminée)*
+### LOT-2.1 : <Objectif>
 ...
 
 ## Arbre d'Execution DEV
@@ -381,7 +386,8 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 ## Lots (obligatoire si le milestone compte 2 issues ou plus)
 
 > Decoupage du milestone en groupes d'issues livrables ensemble. Le teamleader pose `LOT-N` sur chaque issue
-> (`commands/context/GITHUB.md` §9.11) et le panneau `milestone-panel` regroupe les issues par lot.
+> (`commands/context/GITHUB.md` §9.11) et le panneau `milestone-panel` affiche l'arbre des lots et sous-lots, dans
+> l'ordre de livraison, avec leur objectif (description du label) et leur avancement.
 > Omettre la section uniquement pour une issue unique.
 >
 > **Un lot est independant et auto-suffisant : il peut etre livre seul.** Les lots sont traites **un a la fois, dans
@@ -409,12 +415,17 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 > - **Sous-lots (optionnel)** : un lot peut se decouper en sous-lots `LOT-<n>.<m>` (`LOT-2.1`, `LOT-2.2`…, `m` continu
 >   a partir de 1). **Le sous-lot est l'unite de livraison** (QUALIF, validation, push, CI, fermeture), traite dans l'ordre
 >   numerique (`2.1` < `2.2` < `3`) ; le lot parent ne sert qu'a regrouper (affichage), sans validation propre.
->   Un meme `n` n'est pas utilise a la fois seul (`LOT-2`) et decoupe (`LOT-2.1`).
+>   Un meme `n` n'est pas utilise a la fois seul (`LOT-2`) et decoupe (`LOT-2.1`). Un lot decoupe a sa propre ligne
+>   dans la table, colonne Issues `sous-lots`, pour porter son objectif commun (titre du groupe dans le panneau).
+> - **Objectif** : court (**100 caracteres max**, limite d'une description de label GitHub), formule comme un resultat
+>   livre (« Export CSV », « Authentification OAuth »). Il devient la description du label du lot au GATE 2 et le titre
+>   du lot dans le panneau.
 > - Un lot unique (`LOT-1` = toutes les issues) est valide quand rien ne justifie de decouper.
 
 | Lot | Issues | Objectif | Depend de |
 |-----|--------|----------|-----------|
 | LOT-1 | #12, #15 | <resultat livre> | aucun |
+| LOT-2 | sous-lots | <objectif commun des sous-lots> | — |
 | LOT-2.1 | #18 | <resultat livre> | LOT-1 (ou aucun) |
 | LOT-2.2 | #19 | <resultat livre> | LOT-2.1 |
 
@@ -473,7 +484,7 @@ Tu ne presentes jamais rien directement a l'utilisateur (cf. Mode Teammates). Le
 Plan d'implementation pret.
 
 Resume :
-- X taches en Y phases
+- X taches en Y lots
 - Composants : Backend, Frontend
 - Complexite : Moyenne
 - Maquette : <chemin du brouillon si interface, machine a etats ou architecture impactee ; sinon justification>
@@ -530,7 +541,7 @@ Type : [FEATURE|BUGFIX|REFACTOR]
 ```
 **PLANNER TERMINE**
 ---------------------------------------
-Taches : [nombre] taches en [nombre] phases
+Taches : [nombre] taches en [nombre] lots
 Composants : [liste des composants]
 Complexite : [Faible|Moyenne|Elevee]
 Statut : Plan pret pour validation

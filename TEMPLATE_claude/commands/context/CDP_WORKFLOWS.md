@@ -398,7 +398,7 @@ Lire `contracts/CHANGELOG.md` si FEATURE — signaler tout changement BREAKING l
 **→ Dès la validation (GATE 2 OUI), appliquer label `PRET`** sur toutes les issues de `ISSUE_NUMS[]` si non vide :
 
 ```
-SendMessage({ to: "deployer", content: "Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 ; LOT-1 → #12 ; LOT-2 → #15" })   // attendre LABELS DONE
+SendMessage({ to: "deployer", content: "Labels GATE 2 (GITHUB.md §9.0) : PRET sur #12 #15 ; LOT-1 « <objectif> » → #12 ; LOT-2 « <objectif> » → #15" })   // attendre LABELS DONE
 ```
 
 ---
@@ -897,7 +897,7 @@ la seule trace qui survit à un terminal tué.
 | Moment | Action CDP |
 |--------|------------|
 | Démarrage workflow | Créer le fichier avec `status: "in_progress"` et toutes les phases à `pending` |
-| GATE 2 validé | Copier le plan validé dans `.claude/workflow/plan-<version>.md` (lu puis écrit tel quel), renseigner `plan` ; table « Lots » → créer `lots` (tous `pending`) ; écrire `cadrage` (MILESTONE_CADRAGE.md section 4) |
+| GATE 2 validé | Copier le plan validé dans `.claude/workflow/plan-<version>.md` (lu puis écrit tel quel), renseigner `plan` ; table « Lots » → créer `lots` (tous `pending` ; une entrée par unité de livraison, sans les lignes `sous-lots` des lots parents) ; écrire `cadrage` (MILESTONE_CADRAGE.md section 4) |
 | Dispatch d'un agent | Passer la phase à `in_progress` (avec lots : `lots.current` et sa `phase`) |
 | Réception DONE conforme | Passer la phase à `completed`, enregistrer refs |
 | Renvoi pour correction | Laisser `in_progress`, incrémenter `cycles` |
