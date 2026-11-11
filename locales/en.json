@@ -139,7 +139,7 @@
   "features.f14.desc":  "A single working branch at a time, set by the teamleader — the only one allowed to switch it or go back to a previous commit. Agents consume it: they check it at start and send a request to the teamleader for any other operation. A bugfix started during a milestone joins the plan with top priority and ships with it. Worktrees stay free, with no branch created, and tests only run on committed code.",
 
   "features.f15.title": "Live milestone panel",
-  "features.f15.desc":  "A Claude Code mod, reserved for the teamleader, shows on the right of the terminal the Claude account usage (session, week, per-model limits), then the issues of the current milestone, grouped by batch and phase, in GitHub label colors. Segmented progress bar, batches sorted by progress, 👤 on issues needing human validation, refreshed on every event.",
+  "features.f15.desc":  "A Claude Code mod, reserved for the teamleader, shows on the right of the terminal the Claude account usage (session, week, per-model limits), then the batch tree of the current milestone, in delivery order: each batch and sub-batch with its goal, its status (delivered, awaiting validation, in progress, upcoming) and its progress bar. A click expands a batch into its issues, grouped by state in GitHub label colors; batches in progress are expanded by default. With no milestone started, each milestone of the list expands into its content. 👤 on issues needing human validation, refreshed on every event.",
   "features.f16.title": "Batches delivered one at a time",
   "features.f16.desc":  "The planner splits the milestone into independent batches (LOT-1, LOT-2.1…). One batch at a time: DEV, REVIEW, QA, then STAGING, your validation (GATE LOT), push, green CI, issues closed — then the next batch. Urgent release: ship the validated batches and move the rest to another milestone.",
   "features.f17.title": "States that say what is left to do",
@@ -170,7 +170,7 @@
   "features.f29.desc":  "/init-project detects the existing license or guides you to choose one (open source, proprietary, custom text), with holder and year, and creates the LICENSE file.",
   "features.f30.title": "Know when it's your turn",
   "features.f30.desc": "Three states say the team is waiting on you: PLAN A VALIDER (GATE 2), LOT A VALIDER (batch in QUALIF to test) and A PUBLIER (milestone ready for production). They show on issues, in the milestone state — even once every issue is closed — and in yellow in the milestone panel.",
-  "features.panel.caption": "The milestone panel in the teamleader's terminal: three-state progress bar, batches sorted by progress, one line per issue.",
+  "features.panel.caption": "The milestone panel in the teamleader's terminal: batch and sub-batch tree expandable with a click, progress bar per milestone, batch and sub-batch, issues grouped by state.",
 
   "install.title":       "Installation",
   "install.subtitle":    "The tmux launcher manages all your projects from a central hub.",

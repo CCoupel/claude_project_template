@@ -139,7 +139,7 @@
   "features.f14.desc":  "Une seule branche de travail à la fois, fixée par le teamleader — seul à pouvoir en changer ou revenir à un commit précédent. Les agents la consomment : ils la vérifient au démarrage et passent par une demande au teamleader pour toute autre opération. Un bugfix lancé pendant un milestone rejoint le plan en priorité et est livré avec lui. Les worktrees restent libres, sans branche créée, et les tests ne tournent que sur du code commité.",
 
   "features.f15.title": "Panneau milestone en direct",
-  "features.f15.desc":  "Un mod Claude Code, réservé au teamleader, affiche à droite du terminal la consommation du compte Claude (session, semaine, limites par modèle) puis les issues du milestone en cours, regroupées par lot et par phase, aux couleurs des labels GitHub. Barre d'avancement segmentée, lots triés par avancement, 👤 sur les issues à validation humaine, rafraîchi à chaque événement.",
+  "features.f15.desc":  "Un mod Claude Code, réservé au teamleader, affiche à droite du terminal la consommation du compte Claude (session, semaine, limites par modèle) puis l'arbre des lots du milestone en cours, dans l'ordre de livraison : chaque lot et sous-lot avec son objectif, son état (livré, à valider, en cours, à venir) et sa barre d'avancement. Un clic déplie un lot sur ses issues, groupées par état aux couleurs des labels GitHub ; les lots en cours sont dépliés d'office. Sans milestone démarré, chaque milestone de la liste se déplie sur son contenu. 👤 sur les issues à validation humaine, rafraîchi à chaque événement.",
   "features.f16.title": "Lots livrés un par un",
   "features.f16.desc":  "Le planner découpe le milestone en lots indépendants (LOT-1, LOT-2.1…). Un lot à la fois : DEV, REVIEW, QA, puis QUALIF, validation par vous (GATE LOT), push, CI verte, issues fermées — puis le lot suivant. Publication urgente : on publie les lots validés et on déplace les autres vers un autre milestone.",
   "features.f17.title": "Des états qui disent ce qui reste à faire",
@@ -170,7 +170,7 @@
   "features.f29.desc":  "/init-project détecte la licence existante ou vous guide pour en choisir une (libre, propriétaire, texte maison), avec titulaire et année, et crée le fichier LICENSE.",
   "features.f30.title": "Vous savez quand c'est à vous",
   "features.f30.desc": "Trois états disent que l'équipe attend votre décision : PLAN A VALIDER (GATE 2), LOT A VALIDER (lot en QUALIF à tester) et A PUBLIER (milestone prêt pour la prod). Ils s'affichent sur les issues, dans l'état du milestone — même quand toutes les issues sont fermées — et en jaune dans le panneau milestone.",
-  "features.panel.caption": "Le panneau milestone dans le terminal du teamleader : barre à trois couleurs d'état, lots triés par avancement, une ligne par issue.",
+  "features.panel.caption": "Le panneau milestone dans le terminal du teamleader : arbre des lots et sous-lots dépliable au clic, barre d'avancement par milestone, lot et sous-lot, issues groupées par état.",
 
   "install.title":       "Installation",
   "install.subtitle":    "Le launcher tmux gère tous vos projets depuis un hub central.",
