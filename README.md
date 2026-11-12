@@ -504,7 +504,7 @@ PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un reb
                                échec  : rollback infra → rapport au teamleader → routing agent
 ```
 
-**Milestone avec lots** — les lots sont traités **un à la fois** ; la boucle ci-dessus (DEV → REVIEW → QA) s'applique à chaque lot, mais le push et la fermeture des issues attendent la validation QUALIF du lot :
+**Milestone avec lots** — les lots sont traités **un à la fois, strictement** : le lot N+1 ne démarre qu'une fois le lot N validé, poussé et ses issues fermées sur CI verte (rien du lot suivant pendant la QUALIF, le GATE LOT ou la CI du lot courant). Le code d'un lot est commité sur la branche du milestone pendant le DEV, poussé seulement après le GATE LOT. La boucle ci-dessus (DEV → REVIEW → QA) s'applique à chaque lot :
 
 ```
 (DEV → REVIEW → QA du lot N, label DONE)

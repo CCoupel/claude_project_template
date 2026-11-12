@@ -397,7 +397,9 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 >
 > **Un lot est independant et auto-suffisant : il peut etre livre seul.** Les lots sont traites **un a la fois, dans
 > l'ordre** (`LOT-1`, puis `LOT-2`…) : a la fin d'un lot (QA validee) il est deploye en QUALIF et l'utilisateur le
-> valide ; il est alors pousse, la CI passe au vert, ses issues sont fermees, puis le lot suivant demarre. Si le milestone doit etre publie en urgence,
+> valide ; il est alors pousse, la CI passe au vert, ses issues sont fermees, puis le lot suivant demarre — jamais avant
+> (commite pendant le DEV, pousse apres le GATE LOT : `commands/context/GITHUB.md` §9.5b). Ne pas planifier de travail
+> du lot suivant en parallele de la QUALIF, du GATE LOT ou de la CI du lot courant. Si le milestone doit etre publie en urgence,
 > on publie les lots valides et les lots restants sont deplaces vers un autre milestone : un lot ne doit donc
 > **dependre que des lots qui le precedent**, jamais d'un lot suivant.
 >
