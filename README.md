@@ -635,20 +635,23 @@ docs/mockup/                          # configurable : docs.mockup_dir (project-
 ├── DECISIONS.md                      # contraintes de conception issues des refus utilisateur
 └── v11.0.1/                          # milestone en développement
     ├── ui/admin_nav_bar__compaction.html
-    ├── architecture/deploy_pipeline__build_publish_deploy.md
-    └── conception/session_state__reconnexion.md
+    ├── architecture/deploy_pipeline__build_publish_deploy.html
+    └── conception/session_state__reconnexion.html
 ```
 
 - **Nommage** : `<type>/<composant>__<feature>.<ext>` (double underscore entre composant et feature).
-- **Format** : HTML autonome (CSS/JS inline, aucune ressource externe) pour l'UI, Mermaid pour états/architecture, sinon le format le plus autonome et diffable — `.md` préféré pour toute maquette textuelle ; binaire accepté s'il n'existe aucune autre solution.
+- **Format** : **HTML autonome** (CSS/JS inline, aucune ressource externe) pour les trois types — schémas et dessins intégrés à la page (SVG inline, ou Mermaid embarqué inline). `.md` uniquement si le HTML n'est pas adapté (maquette purement textuelle), justifié dans le plan ; binaire en dernier recours.
+- **Propositions en onglets** : le brouillon présente **2 à 3 propositions** distinctes, sélectionnables par onglets (`<composant>__<feature>.propositions.html`) ; une seule uniquement si aucune alternative n'est crédible (justifié). Au GATE 2 l'utilisateur choisit un onglet ; le planner produit la version retenue, sans onglets (en-tête `proposition_retenue`), seule commitée — les propositions écartées ne sont pas conservées.
 - **Composant en entier** : une maquette montre toujours le composant dans son intégralité, mais peut ne couvrir qu'une partie de sa définition — elle **complète** alors les maquettes actives (`complete`) ou en **remplace** (`remplace`) d'autres, qui passent en « Obsolètes » dans `INDEX.md`.
 - **Immuabilité** : une maquette validée n'est jamais modifiée ; toute évolution est une nouvelle maquette qui référence les précédentes. L'en-tête porte composant, feature, version, type, issue, date de validation, `complete`, `remplace`.
 - **Refus** : les brouillons rejetés ne sont pas conservés, mais leurs raisons le sont, reformulées en contraintes durables dans `DECISIONS.md` (ex. « pas de bleu pour ce composant », « taille > 24px »). Le planner les respecte, QA les vérifie.
-- **Cycle** : le planner lit `INDEX.md` + `DECISIONS.md`, part des maquettes actives du composant et dessine un brouillon dans `_work/mockup/` ; le CDP le présente au GATE 2 en l'ouvrant directement dans Chrome par son chemin `file://` (jamais via un serveur HTTP local) — et rouvre le nouveau brouillon après chaque correction —, puis le commite et met à jour l'index à la validation. QA vérifie la conformité à **toutes** les maquettes actives des composants touchés.
+- **Cycle** : le planner lit `INDEX.md` + `DECISIONS.md`, part des maquettes actives du composant et dessine un brouillon dans `_work/mockup/` ; le CDP le présente au GATE 2 en l'ouvrant directement dans Chrome par son URL `file://` mappée (`browser.path_map`, voir ci-dessous — jamais via un serveur HTTP local) — et rouvre le nouveau brouillon après chaque correction —, puis le commite et met à jour l'index à la validation. QA vérifie la conformité à **toutes** les maquettes actives des composants touchés.
 - **Projet sans maquette de référence** : le planner dessine directement le nouvel état ; le CDP peut demander une capture d'écran de référence.
 - **Marketing** : les maquettes marketing (GATE 4d) sont distinctes — systématiques mais éphémères (`_work/`, non commitées), toujours basées sur la page publiée en production.
 
-Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §14. `/init-project` crée le squelette (`INDEX.md`, `DECISIONS.md`) de façon idempotente, y compris sur un projet existant.
+- **Ouverture dans Chrome** : Claude (conteneur du launcher) et Chrome (poste de l'utilisateur) ne voient pas le projet au même chemin. `/init-project` (Étape 9d, ou d1k sur un projet déjà initialisé) enregistre dans `project-config.json` la correspondance `browser.path_map` : racine vue par le projet ↔ racine vue par le launcher, et son OS (`windows` | `linux`), vérifiée par l'ouverture d'une page test. Brouillons de maquette, procédures de tests manuels et aperçu marketing de repli sont ouverts vers l'URL `file://` mappée (`C:\Users\moi\app` → `file:///C:/Users/moi/app/...`).
+
+Convention complète : `TEMPLATE_claude/commands/context/COMMON.md` §14 (§14.9 pour la correspondance de chemins). `/init-project` crée le squelette (`INDEX.md`, `DECISIONS.md`) de façon idempotente, y compris sur un projet existant.
 
 ### Suivi des issues GitHub
 

@@ -242,7 +242,7 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
 - `MARKETING BLOQUE — [raison]` → verification du site impossible (remote injoignable...) : ne rien publier,
   informer l'utilisateur de la raison et proposer de relancer `PREPARE` une fois le probleme resolu ; si la
   raison est « apercu Artifact impossible », presenter l'apercu local (`_work/marketing/preview.html`) au
-  GATE 4d a la place de l'URL.
+  GATE 4d a la place de l'URL, en l'ouvrant dans Chrome via l'URL `file://` mappee (`context/COMMON.md` 14.9).
 - `MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md` → lire le rapport, puis
   presenter a l'utilisateur ← **GATE 4d** :
   ```
