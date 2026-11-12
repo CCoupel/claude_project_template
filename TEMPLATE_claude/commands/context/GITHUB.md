@@ -694,6 +694,12 @@ Les lots sont traites **un a la fois**. Quand la QA valide le lot (`DONE`), il e
 presente a l'utilisateur (question et options : point « GATE LOT » du tableau de `agents/cdp.md`, avec le lien de la
 QUALIF et du rapport QA ; **lot sans issue `VALID-HUMAINE` : auto-valide, GATE LOT sans question** ; sinon synthese des tests, chemin de la procedure et ouverture dans Chrome : regle « GATE de validation par tests » de `agents/cdp.md`). Il n'y a **aucune** validation apres la CI du lot.
 
+**Strictement sequentiel** : le code du lot est **commite** sur la branche du milestone pendant le DEV (commits
+atomiques, merges des agents DEV), mais n'est **pousse** qu'apres le GATE LOT. Le CDP n'envoie **aucun ordre** (DEV,
+test-writer…) pour le lot suivant tant que les issues du lot courant ne sont pas fermees sur CI verte — ni pendant sa
+QUALIF, ni pendant son GATE LOT, ni pendant sa CI. Un refus au GATE LOT ou une CI non verte renvoie le **lot courant**
+en DEV ; le suivant reste `PRET`.
+
 ```
 QA valide → label DONE → Phase 5 (BUILD, PUBLISH QUALIF, DEPLOY QUALIF) → label LOT A VALIDER (§9.4b ; lot auto-valide :
   reste DONE, pas de question) → GATE LOT : l'utilisateur teste et valide
