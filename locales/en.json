@@ -32,7 +32,7 @@
   "wf.plan.desc":      "API contracts · contracts/CHANGELOG.md · Estimation",
   "wf.plan.sub":       "🧵 can delegate to sub-planner-N (independent issue groups)",
   "wf.plan.team":      "👥 re-evaluates the team: from the complete team defined at init, only the teammates the milestone needs",
-  "wf.gate2":          "Validate the plan, the scoping and the milestone team + alert BREAKING changes",
+  "wf.gate2":          "Validate the plan, the scoping and the milestone team, pick the mockup among 2 to 3 proposals + alert BREAKING changes",
   "wf.parallel":       "In parallel",
   "wf.dev":            "Development",
   "wf.dev.desc":       "Implementation following the contracts",
@@ -170,6 +170,8 @@
   "features.f29.desc":  "/init-project detects the existing license or guides you to choose one (open source, proprietary, custom text), with holder and year, and creates the LICENSE file.",
   "features.f30.title": "Know when it's your turn",
   "features.f30.desc": "Three states say the team is waiting on you: PLAN A VALIDER (GATE 2), LOT A VALIDER (batch in QUALIF to test) and A PUBLIER (milestone ready for production). They show on issues, in the milestone state — even once every issue is closed — and in yellow in the milestone panel.",
+  "features.f31.title": "Pick your mockup, opened in your browser",
+  "features.f31.desc": "Every interface, state machine or architecture change gets a self-contained HTML mockup, diagrams included. The planner draws 2 to 3 proposals in tabs; at GATE 2 you pick yours, and only that one is versioned with the code. The teamleader opens it straight in Chrome, even from a container: /init-project records where your machine sees the project (Windows or Linux).",
   "features.panel.caption": "The milestone panel in the teamleader's terminal: batch and sub-batch tree expandable with a click, progress bar per milestone, batch and sub-batch, issues grouped by state.",
 
   "install.title":       "Installation",

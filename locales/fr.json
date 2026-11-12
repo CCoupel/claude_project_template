@@ -32,7 +32,7 @@
   "wf.plan.desc":      "Contrats API · contracts/CHANGELOG.md · Estimation",
   "wf.plan.sub":       "🧵 peut déléguer à des sub-planner-N (groupes d'issues indépendants)",
   "wf.plan.team":      "👥 réévalue l'équipe : parmi l'équipe complète définie à l'init, seuls les teammates nécessaires au milestone",
-  "wf.gate2":          "Validation du plan, du cadrage et de l'équipe du milestone + alerte BREAKING changes",
+  "wf.gate2":          "Validation du plan, du cadrage et de l'équipe du milestone, choix de la maquette parmi 2 à 3 propositions + alerte BREAKING changes",
   "wf.parallel":       "En parallèle",
   "wf.dev":            "Développement",
   "wf.dev.desc":       "Implémentation selon les contrats",
@@ -170,6 +170,8 @@
   "features.f29.desc":  "/init-project détecte la licence existante ou vous guide pour en choisir une (libre, propriétaire, texte maison), avec titulaire et année, et crée le fichier LICENSE.",
   "features.f30.title": "Vous savez quand c'est à vous",
   "features.f30.desc": "Trois états disent que l'équipe attend votre décision : PLAN A VALIDER (GATE 2), LOT A VALIDER (lot en QUALIF à tester) et A PUBLIER (milestone prêt pour la prod). Ils s'affichent sur les issues, dans l'état du milestone — même quand toutes les issues sont fermées — et en jaune dans le panneau milestone.",
+  "features.f31.title": "Maquettes à choisir, ouvertes dans votre navigateur",
+  "features.f31.desc": "Toute interface, machine à états ou architecture touchée a sa maquette HTML autonome, schémas compris. Le planner y dessine 2 à 3 propositions en onglets ; au GATE 2 vous choisissez la vôtre, et seule celle-ci est versionnée avec le code. Le teamleader l'ouvre directement dans Chrome, même depuis un conteneur : /init-project enregistre où votre poste voit le projet (Windows ou Linux).",
   "features.panel.caption": "Le panneau milestone dans le terminal du teamleader : arbre des lots et sous-lots dépliable au clic, barre d'avancement par milestone, lot et sous-lot, issues groupées par état.",
 
   "install.title":       "Installation",
