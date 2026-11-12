@@ -503,8 +503,8 @@ docs/mockup/
 ├── DECISIONS.md                             # contraintes de conception retenues (voir 14.5)
 └── v<X.Y.Z>/                                # milestone en développement
     ├── ui/admin_nav_bar__compaction.html
-    ├── architecture/deploy_pipeline__build_publish_deploy.md
-    └── conception/session_state__reconnexion.md
+    ├── architecture/deploy_pipeline__build_publish_deploy.html
+    └── conception/session_state__reconnexion.html
 ```
 
 - `v<X.Y.Z>` : le milestone en cours (`milestone/vX.Y.Z`). Un hotfix rattaché à un milestone y dépose ses maquettes. Si le milestone est renuméroté, le dossier suit (`git mv`).
@@ -513,13 +513,30 @@ docs/mockup/
 
 ### 14.3 Format
 
-| Type | Format |
-|------|--------|
-| `ui` | HTML autonome : CSS/JS inline, images en data-URI, aucune ressource externe (pas de CDN, pas de police distante) |
-| Machine à états, architecture | Mermaid (`.md` avec bloc ```` ```mermaid ````) |
-| Autre cas | Le format **le plus autonome, indépendant et diffable** possible. Pour toute maquette textuelle, le **`.md` est préféré**. Un format binaire est accepté dans tous les cas **s'il n'existe aucune autre solution** (le SVG, textuel, reste préférable à un binaire) |
+**Le format standard est le HTML**, pour les trois types (`ui`, `conception`, `architecture`) :
+
+| Cas | Format |
+|-----|--------|
+| **Standard** (tous types) | **HTML autonome** : CSS/JS inline, images en data-URI, aucune ressource externe au chargement (pas de CDN, pas de police distante). Les **schémas et dessins y sont intégrés** (machine à états, architecture, flux, annotations d'une interface), au choix du planner : **SVG inline** dessiné dans la page, ou **Mermaid embarqué** — source Mermaid + librairie `mermaid` copiée inline dans le fichier (version figée, récupérée une fois à la production du brouillon, jamais référencée par URL) |
+| Exception : `.md` | **Uniquement si le HTML n'est pas adapté** (ex. maquette purement textuelle : format d'un fichier de configuration, sortie d'une CLI, structure d'un message). Le planner le justifie en une ligne dans le plan |
+| Dernier recours : binaire | Accepté **s'il n'existe aucune autre solution** |
 
 **Une maquette présente toujours le composant dans son intégralité**, y compris les parties inchangées. Elle peut néanmoins ne porter que sur une partie d'un composant : dans ce cas elle **complète** les maquettes actives du même composant (voir 14.4).
+
+**Propositions en onglets** — un brouillon HTML présente **2 à 3 propositions** distinctes, sélectionnables par des
+**onglets** en tête de page :
+
+- Chaque proposition est une vraie alternative (parti pris différent : disposition, interaction, découpage,
+  enchaînement d'états…), pas une variation cosmétique. Chacune respecte `DECISIONS.md` et présente le composant
+  **entier**.
+- Barre d'onglets : une lettre et un titre court par onglet (`A — Barre latérale`, `B — Menu compact`…), un seul
+  panneau visible à la fois (CSS/JS inline). Sous l'onglet actif, une ligne de parti pris (avantage / inconvénient).
+- Chaque panneau est un bloc autonome `<section data-proposition="A">…</section>`, sans dépendance aux autres panneaux.
+- **Une seule proposition** n'est admise que s'il n'existe aucune alternative crédible (détail imposé par une
+  maquette active, contrainte de `DECISIONS.md` qui fige le choix) — justifié en une ligne dans le plan, sans onglets.
+- Brouillon à onglets : `<composant>__<feature>.propositions.html`. La maquette validée (14.4) ne contient que la
+  proposition retenue, **sans onglets**, sous le nom définitif `<composant>__<feature>.html`.
+- Une maquette `.md` (exception ci-dessus) présente ses propositions en sections `## Proposition A — <titre>`.
 
 **En-tête obligatoire** (commentaire HTML en tête de fichier, ou front-matter YAML pour `.md`) :
 
@@ -531,17 +548,19 @@ mockup:
   type: ui
   issue: "#123"
   validee_le: 2026-09-25
+  proposition_retenue: "B — Menu compact"   # brouillon : propositions: ["A — …", "B — …", "C — …"]
   complete: []                # maquettes complétées (chemins) — les deux restent actives
   remplace: []                # maquettes remplacées (chemins) — les anciennes deviennent obsolètes
 ```
 
 ### 14.4 Cycle de vie et immuabilité
 
-1. **Brouillon** : produit par le planner dans `_work/mockup/` (non commité).
-2. **Validation** (GATE 2) : après accord explicite de l'utilisateur, le CDP copie la maquette à son emplacement définitif, la commite sur la branche du milestone et met à jour `INDEX.md`.
-3. **Immuable** : une maquette validée n'est **jamais modifiée**. Une évolution ultérieure crée une nouvelle maquette (dans le milestone courant) qui référence les précédentes via `complete` ou `remplace`.
-4. **Obsolescence** : quand une maquette en `remplace` une autre, le CDP déplace l'ancienne de la table « Actives » vers la table « Obsolètes » de `INDEX.md`, avec la référence de la remplaçante. Le fichier reste dans git.
-5. **Brouillons rejetés ou modifiés** : jamais conservés. Seules les **raisons** sont conservées (voir 14.5).
+1. **Brouillon** : produit par le planner dans `_work/mockup/` (non commité), avec ses 2 à 3 propositions en onglets (14.3).
+2. **Choix** (GATE 2) : le CDP ouvre le brouillon dans Chrome (14.9) et fait choisir une proposition à l'utilisateur. Le planner produit alors la **version retenue** (proposition choisie seule, sans onglets, en-tête `proposition_retenue`) — les propositions écartées ne sont pas conservées ; une raison de rejet exprimée par l'utilisateur devient une contrainte de `DECISIONS.md` (14.5).
+3. **Validation** (GATE 2) : après accord explicite de l'utilisateur, le CDP copie la version retenue à son emplacement définitif, la commite sur la branche du milestone et met à jour `INDEX.md`.
+4. **Immuable** : une maquette validée n'est **jamais modifiée**. Une évolution ultérieure crée une nouvelle maquette (dans le milestone courant) qui référence les précédentes via `complete` ou `remplace`.
+5. **Obsolescence** : quand une maquette en `remplace` une autre, le CDP déplace l'ancienne de la table « Actives » vers la table « Obsolètes » de `INDEX.md`, avec la référence de la remplaçante. Le fichier reste dans git.
+6. **Brouillons et propositions rejetés ou modifiés** : jamais conservés. Seules les **raisons** sont conservées (voir 14.5).
 
 **`INDEX.md`** (tenu exclusivement par le CDP) :
 
@@ -574,8 +593,8 @@ Exemple : retour « je ne veux pas cette couleur et fais plus gros » → contra
 
 | Agent | Règle |
 |-------|-------|
-| **planner** | Lit `INDEX.md` et `DECISIONS.md` **avant** de dessiner ; part des maquettes actives du composant comme base ; respecte toutes les contraintes de `DECISIONS.md` ; produit le brouillon dans `_work/mockup/` |
-| **CDP** | Présente au GATE 2 ; à la validation, commite, met à jour `INDEX.md` (actives/obsolètes) ; à chaque refus, met à jour `DECISIONS.md` ; arbitre les conflits |
+| **planner** | Lit `INDEX.md` et `DECISIONS.md` **avant** de dessiner ; part des maquettes actives du composant comme base ; respecte toutes les contraintes de `DECISIONS.md` ; produit le brouillon HTML à 2-3 propositions en onglets dans `_work/mockup/`, puis la version retenue après le choix de l'utilisateur |
+| **CDP** | Ouvre le brouillon dans Chrome (14.9) et fait choisir une proposition au GATE 2 ; à la validation, commite la version retenue, met à jour `INDEX.md` (actives/obsolètes) ; à chaque refus, met à jour `DECISIONS.md` ; arbitre les conflits |
 | **test-writer** | Dérive les scénarios de toutes les maquettes actives des composants touchés |
 | **qa** | Vérifie la conformité à **toutes** les maquettes actives des composants touchés et aux contraintes de `DECISIONS.md`, pas seulement à celle de la feature |
 
@@ -587,6 +606,70 @@ Un projet existant n'a pas de maquette pour ses composants. Le planner dessine d
 
 Les maquettes marketing (GATE 4d) sont **distinctes** des maquettes projet : systématiques mais **éphémères**. Elles partent toujours de la page publiée en production (ou, à l'initialisation d'un site sans page existante, d'une proposition à cadrer avec l'utilisateur), prennent la forme d'un aperçu Artifact construit depuis `MARKETING/index.html` (worktree de `gh-pages`, non commité tant que `PUBLISH` n'a pas eu lieu), ne sont jamais dans `docs/mockup/` et ne sont ni indexées ni versionnées. Le flag `mockup_ok` du GATE 4d est inchangé.
 
+
+Les maquettes marketing ne suivent pas la règle des propositions en onglets (14.3) : elles présentent une seule
+évolution du site existant.
+
+### 14.9 Ouvrir un fichier du projet dans Chrome (correspondance de chemins)
+
+Claude et Chrome ne voient pas forcément le projet au même chemin : avec Claude-Launcher, le projet est monté dans un
+conteneur (ex. `/workspace/mon-projet`) alors que Chrome tourne sur le poste de l'utilisateur (ex.
+`C:\Users\moi\mon-projet` ou `/home/moi/mon-projet`). La correspondance est définie à l'init (`/init-project`, Étape
+9d) dans `project-config.json` :
+
+```json
+"browser": {
+  "path_map": {
+    "project_root": "/workspace/mon-projet",
+    "launcher_root": "C:\\Users\\moi\\mon-projet",
+    "launcher_os": "windows"
+  }
+}
+```
+
+- `project_root` : racine du dépôt vue par Claude (`git rev-parse --show-toplevel`).
+- `launcher_root` : la même racine vue par le navigateur du poste qui exécute le launcher.
+- `launcher_os` : `windows` (lecteur `C:\…` ou chemin UNC `\\wsl.localhost\…`) ou `linux` (chemin `/…`, macOS compris).
+
+**Règle** : tout fichier du projet présenté à l'utilisateur dans Chrome — brouillon de maquette (GATE 2), procédure de
+tests manuels, aperçu marketing de repli — est ouvert via `mcp__claude-in-chrome__*` (`tabs_context_mcp`, puis
+`tabs_create_mcp` + `navigate`) vers l'URL `file://` **mappée** par `browser_url`, et son chemin relatif au repo est
+rappelé dans la question. **Jamais de serveur HTTP local** (`python -m http.server`, `npx serve`…) : le fichier est
+autonome. Sans Chrome, ou si l'ouverture échoue (page vide, fichier introuvable) : ne pas bloquer, afficher l'URL
+mappée et le chemin relatif, et signaler que `browser.path_map` est peut-être à corriger (`/init-project`, option
+« Autre » → Étape 9d). Jamais de fichier hors du repo du projet.
+
+```bash
+# browser_url CHEMIN — URL file:// a ouvrir dans Chrome pour un fichier du projet (relatif au repo ou absolu)
+browser_url() {
+  local cfg=.claude/project-config.json abs root lroot los rel
+  abs=$(realpath -m -- "$1")
+  root=$(jq -r '.browser.path_map.project_root // empty' "$cfg" 2>/dev/null)
+  lroot=$(jq -r '.browser.path_map.launcher_root // empty' "$cfg" 2>/dev/null)
+  los=$(jq -r '.browser.path_map.launcher_os // "linux"' "$cfg" 2>/dev/null)
+  if [ -z "$root" ] || [ -z "$lroot" ]; then          # pas de correspondance : meme chemin (WSL : wslpath)
+    root=$(git rev-parse --show-toplevel); lroot=$root; los=linux
+    command -v wslpath >/dev/null 2>&1 && { lroot=$(wslpath -m "$root"); los=windows; }
+  fi
+  root=${root%/}
+  case "$abs/" in "$root"/*) rel=${abs#"$root"} ;; *) echo "browser_url : hors du projet : $abs" >&2; return 1 ;; esac
+  _enc() { jq -rn --arg p "$1" '$p | split("/") | map(@uri) | join("/")'; }
+  if [ "$los" = windows ]; then
+    lroot=${lroot//\\//}; lroot=${lroot%/}
+    case "$lroot" in
+      //*)  printf 'file:%s%s\n' "$(_enc "$lroot")" "$(_enc "$rel")" ;;              # UNC \\serveur\partage\...
+      ?:*)  printf 'file:///%s%s%s\n' "${lroot:0:2}" "$(_enc "${lroot:2}")" "$(_enc "$rel")" ;;  # C:\...
+      *)    echo "browser_url : launcher_root Windows invalide : $lroot" >&2; return 1 ;;
+    esac
+  else
+    printf 'file://%s%s\n' "$(_enc "${lroot%/}")" "$(_enc "$rel")"
+  fi
+}
+```
+
+Exemples : `docs/mockup/v1.2.0/ui/nav__compact.html` avec `/workspace/app` ↔ `C:\Users\moi\app` (windows) →
+`file:///C:/Users/moi/app/docs/mockup/v1.2.0/ui/nav__compact.html` ; avec `\\wsl.localhost\Ubuntu\home\moi\app` →
+`file://wsl.localhost/Ubuntu/home/moi/app/...` ; avec `/home/moi/app` (linux) → `file:///home/moi/app/...`.
 ---
 
 ## 15. Plan de Tests
