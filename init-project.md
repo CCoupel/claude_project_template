@@ -1796,12 +1796,14 @@ correspondance depend du poste et du backend, et c'est **Claude-Launcher ≥ v5.
 reglage `browser_paths` de sa config). Regle, sources et conversion : `TEMPLATE_claude/commands/context/COMMON.md`
 14.9 (fonction `browser_url`).
 
-1. **`CL_BROWSER_PATH_MAP` posee** (launcher a jour) → **aucune question**. Afficher la correspondance effective pour
+1. **`CL_BROWSER_PATH_MAP` fournie** (`launcher_browser_map` repond : environnement tmux de la session, sinon du
+   processus — launcher a jour) → **aucune question**. Afficher la correspondance effective pour
    ce projet (prefixe `container` retenu ↔ `host`, `os`) puis jouer la verification (point 3). `[]` → « aucun
    navigateur declare par le launcher : les fichiers seront affiches par leur chemin », sans verification. Echec de
    la verification → la correction se fait dans `browser_paths` du launcher (le dire, avec l'URL essayee), jamais
    dans `project-config.json`. Un `browser.path_map` deja present est conserve tel quel (repli sans launcher).
-2. **Variable absente** (projet lance sans Claude-Launcher, ou launcher anterieur) → **repli** `browser.path_map` :
+2. **Variable absente** (`launcher_browser_map` en echec : projet lance sans Claude-Launcher, ou launcher anterieur) →
+   **repli** `browser.path_map` :
    - Detecter (lecture seule) : `PROJECT_ROOT=$(git rev-parse --show-toplevel)` ; WSL (`command -v wslpath`) →
      racine Windows proposee `wslpath -w "$PROJECT_ROOT"` ; conteneur (`/.dockerenv`, `/run/.containerenv`,
      `KUBERNETES_SERVICE_HOST`, `HOSTNAME` en `claude-launcher-*`) → racine du poste non detectable : le signaler
@@ -3281,7 +3283,7 @@ Lecture seule ici : jouer la detection et la composition de l'Etape 9c (`templat
 #### Etape d1k — Correspondance de chemins pour Chrome
 
 Lecture seule ici : jouer l'Etape 9d sans question.
-- `CL_BROWSER_PATH_MAP` posee → `[=] ouverture Chrome — fournie par Claude-Launcher : <container> ↔ <host> (<os>)`
+- `launcher_browser_map` repond → `[=] ouverture Chrome — fournie par Claude-Launcher : <container> ↔ <host> (<os>)`
   (`[]` → `aucun navigateur declare par le launcher`) ; un `browser.path_map` present est garde comme repli.
 - Variable absente, `browser.path_map` absent → `[+] browser.path_map — a definir (launcher sans CL_BROWSER_PATH_MAP :
   repli projet ; mettre a jour Claude-Launcher le fournirait)`.

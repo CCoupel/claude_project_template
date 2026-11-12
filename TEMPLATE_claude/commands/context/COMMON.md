@@ -617,8 +617,11 @@ conteneur (ex. `/share/MFS/ROOT/...`) alors que Chrome tourne sur le poste de l'
 `\\nas\MFS\ROOT\...`, `C:\Users\moi\...` ou `/home/moi/...`). La correspondance dépend du **poste et du backend**,
 pas du projet : c'est le **launcher** qui la fournit. Sources, par ordre de priorité :
 
-1. **`CL_BROWSER_PATH_MAP`** (variable d'environnement posée par Claude-Launcher **≥ v5.9.0** dans chaque session, réglage
-   `browser_paths` de sa config) — tableau JSON de préfixes, la plus longue correspondance l'emporte :
+1. **`CL_BROWSER_PATH_MAP`** (posée par Claude-Launcher **≥ v5.9.0**, réglage `browser_paths` de sa config) —
+   tableau JSON de préfixes, la plus longue correspondance l'emporte. Le launcher la pose dans l'**environnement de la
+   session tmux du projet** (hub pour un projet sur l'hôte, tmux du conteneur sinon) à chaque rattachement : elle est
+   lue **d'abord dans tmux** (`tmux show-environment`, valeur courante même si la config a changé après le lancement
+   de Claude), puis dans l'environnement du processus (`launcher_browser_map`) :
    ```
    CL_BROWSER_PATH_MAP=[{"container":"/share/MFS/ROOT","host":"\\\\nas\\MFS\\ROOT","os":"windows"}]
    ```
@@ -639,18 +642,31 @@ tests manuels, aperçu marketing de repli — est ouvert via `mcp__claude-in-chr
 rappelé dans la question. **Jamais de serveur HTTP local** (`python -m http.server`, `npx serve`…) : le fichier est
 autonome. Sans Chrome, ou si l'ouverture échoue (page vide, fichier introuvable, URL `file://` refusée par
 l'extension — option « Autoriser l'accès aux URL de fichier ») : ne pas bloquer, afficher l'URL mappée et le chemin
-relatif, et indiquer **la source à corriger** (`browser_paths` du launcher si `CL_BROWSER_PATH_MAP` est posée, sinon
+relatif, et indiquer **la source à corriger** (`browser_paths` du launcher si `launcher_browser_map` répond, sinon
 `/init-project`, option « Autre » → Étape 9d). Jamais de fichier hors du repo du projet.
 
 ```bash
+# launcher_browser_map — affiche CL_BROWSER_PATH_MAP fournie par le launcher ; code 1 si absente (launcher anterieur
+# ou projet hors launcher). tmux d'abord (session, puis global) : la valeur courante, meme posee apres le lancement de
+# Claude ; "-CL_BROWSER_PATH_MAP" (variable retiree) vaut absence. Puis l'environnement du processus.
+launcher_browser_map() {
+  local v
+  if [ -n "$TMUX" ] && command -v tmux >/dev/null 2>&1; then
+    v=$(tmux show-environment CL_BROWSER_PATH_MAP 2>/dev/null || tmux show-environment -g CL_BROWSER_PATH_MAP 2>/dev/null)
+    case "$v" in CL_BROWSER_PATH_MAP=*) printf '%s\n' "${v#CL_BROWSER_PATH_MAP=}"; return 0 ;; esac
+  fi
+  [ -n "${CL_BROWSER_PATH_MAP+x}" ] && { printf '%s\n' "$CL_BROWSER_PATH_MAP"; return 0; }
+  return 1
+}
+
 # browser_url CHEMIN — URL file:// a ouvrir dans Chrome pour un fichier du projet (relatif au repo ou absolu).
 # Sortie : l'URL ; code 1 = hors projet ou aucune correspondance, 2 = aucun navigateur ([]) — afficher le chemin.
 browser_url() {
   local cfg=.claude/project-config.json abs map root lroot los rel
   abs=$(realpath -m -- "$1")
   case "$abs/" in "$(git rev-parse --show-toplevel)"/*) ;; *) echo "browser_url : hors du projet : $abs" >&2; return 1 ;; esac
-  if [ -n "${CL_BROWSER_PATH_MAP+x}" ]; then
-    map=$CL_BROWSER_PATH_MAP                                                          # 1. launcher
+  if map=$(launcher_browser_map); then
+    :                                                                                 # 1. launcher (tmux, puis env)
   else
     map=$(jq -c '[.browser.path_map // empty | {container: .project_root, host: .launcher_root, os: .launcher_os}]' "$cfg" 2>/dev/null)
     if [ -z "$map" ] || [ "$map" = "[]" ]; then                                       # 3. aucune : meme chemin
