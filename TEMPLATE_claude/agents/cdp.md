@@ -344,7 +344,7 @@ Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide 
    rappelé aussi dans le texte de la question.
 3. **Ouverture automatique dans Chrome** : ouvrir chaque procédure via les outils `mcp__claude-in-chrome__*`
    (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL `file://` **mappée** du document —
-   `context/COMMON.md` 14.9, `browser_url <chemin>` selon `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max, le reste est
+   `context/COMMON.md` 14.9, `browser_url <chemin>` : `CL_BROWSER_PATH_MAP` du launcher, repli `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max, le reste est
    seulement listé). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, afficher le chemin absolu et le dire
    dans la synthèse. Ne jamais ouvrir de fichier hors du repo du projet.
 

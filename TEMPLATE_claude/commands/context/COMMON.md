@@ -613,53 +613,67 @@ Les maquettes marketing ne suivent pas la règle des propositions en onglets (14
 ### 14.9 Ouvrir un fichier du projet dans Chrome (correspondance de chemins)
 
 Claude et Chrome ne voient pas forcément le projet au même chemin : avec Claude-Launcher, le projet est monté dans un
-conteneur (ex. `/workspace/mon-projet`) alors que Chrome tourne sur le poste de l'utilisateur (ex.
-`C:\Users\moi\mon-projet` ou `/home/moi/mon-projet`). La correspondance est définie à l'init (`/init-project`, Étape
-9d) dans `project-config.json` :
+conteneur (ex. `/share/MFS/ROOT/...`) alors que Chrome tourne sur le poste de l'utilisateur (ex.
+`\\nas\MFS\ROOT\...`, `C:\Users\moi\...` ou `/home/moi/...`). La correspondance dépend du **poste et du backend**,
+pas du projet : c'est le **launcher** qui la fournit. Sources, par ordre de priorité :
 
-```json
-"browser": {
-  "path_map": {
-    "project_root": "/workspace/mon-projet",
-    "launcher_root": "C:\\Users\\moi\\mon-projet",
-    "launcher_os": "windows"
-  }
-}
-```
-
-- `project_root` : racine du dépôt vue par Claude (`git rev-parse --show-toplevel`).
-- `launcher_root` : la même racine vue par le navigateur du poste qui exécute le launcher.
-- `launcher_os` : `windows` (lecteur `C:\…` ou chemin UNC `\\wsl.localhost\…`) ou `linux` (chemin `/…`, macOS compris).
+1. **`CL_BROWSER_PATH_MAP`** (variable d'environnement posée par Claude-Launcher **≥ v5.9.0** dans chaque session, réglage
+   `browser_paths` de sa config) — tableau JSON de préfixes, la plus longue correspondance l'emporte :
+   ```
+   CL_BROWSER_PATH_MAP=[{"container":"/share/MFS/ROOT","host":"\\\\nas\\MFS\\ROOT","os":"windows"}]
+   ```
+   `container` : préfixe vu par Claude ; `host` : le même dossier vu par le navigateur (`C:\…`, UNC `\\serveur\…` dont
+   `\\wsl.localhost\…`, ou `/…`) ; `os` : `windows` | `linux` (macOS = `linux` ; absent = déduit de `host`).
+   `[]` = aucun navigateur ne peut ouvrir ces fichiers : afficher seulement le chemin. Variable présente = le launcher
+   fait foi ; une correspondance fausse se corrige dans la config du launcher (`browser_paths`), jamais dans le projet.
+2. **`browser.path_map`** de `project-config.json` — **repli** pour un projet lancé sans Claude-Launcher, ou avec un
+   launcher antérieur qui ne pose pas la variable (défini par `/init-project`, Étape 9d) :
+   ```json
+   "browser": { "path_map": { "project_root": "/home/moi/app", "launcher_root": "C:\\Users\\moi\\app", "launcher_os": "windows" } }
+   ```
+3. **Aucune** : même chemin (`linux`) ; sous WSL, `wslpath -m` (`windows`).
 
 **Règle** : tout fichier du projet présenté à l'utilisateur dans Chrome — brouillon de maquette (GATE 2), procédure de
 tests manuels, aperçu marketing de repli — est ouvert via `mcp__claude-in-chrome__*` (`tabs_context_mcp`, puis
 `tabs_create_mcp` + `navigate`) vers l'URL `file://` **mappée** par `browser_url`, et son chemin relatif au repo est
 rappelé dans la question. **Jamais de serveur HTTP local** (`python -m http.server`, `npx serve`…) : le fichier est
-autonome. Sans Chrome, ou si l'ouverture échoue (page vide, fichier introuvable) : ne pas bloquer, afficher l'URL
-mappée et le chemin relatif, et signaler que `browser.path_map` est peut-être à corriger (`/init-project`, option
-« Autre » → Étape 9d). Jamais de fichier hors du repo du projet.
+autonome. Sans Chrome, ou si l'ouverture échoue (page vide, fichier introuvable, URL `file://` refusée par
+l'extension — option « Autoriser l'accès aux URL de fichier ») : ne pas bloquer, afficher l'URL mappée et le chemin
+relatif, et indiquer **la source à corriger** (`browser_paths` du launcher si `CL_BROWSER_PATH_MAP` est posée, sinon
+`/init-project`, option « Autre » → Étape 9d). Jamais de fichier hors du repo du projet.
 
 ```bash
-# browser_url CHEMIN — URL file:// a ouvrir dans Chrome pour un fichier du projet (relatif au repo ou absolu)
+# browser_url CHEMIN — URL file:// a ouvrir dans Chrome pour un fichier du projet (relatif au repo ou absolu).
+# Sortie : l'URL ; code 1 = hors projet ou aucune correspondance, 2 = aucun navigateur ([]) — afficher le chemin.
 browser_url() {
-  local cfg=.claude/project-config.json abs root lroot los rel
+  local cfg=.claude/project-config.json abs map root lroot los rel
   abs=$(realpath -m -- "$1")
-  root=$(jq -r '.browser.path_map.project_root // empty' "$cfg" 2>/dev/null)
-  lroot=$(jq -r '.browser.path_map.launcher_root // empty' "$cfg" 2>/dev/null)
-  los=$(jq -r '.browser.path_map.launcher_os // "linux"' "$cfg" 2>/dev/null)
-  if [ -z "$root" ] || [ -z "$lroot" ]; then          # pas de correspondance : meme chemin (WSL : wslpath)
-    root=$(git rev-parse --show-toplevel); lroot=$root; los=linux
-    command -v wslpath >/dev/null 2>&1 && { lroot=$(wslpath -m "$root"); los=windows; }
+  case "$abs/" in "$(git rev-parse --show-toplevel)"/*) ;; *) echo "browser_url : hors du projet : $abs" >&2; return 1 ;; esac
+  if [ -n "${CL_BROWSER_PATH_MAP+x}" ]; then
+    map=$CL_BROWSER_PATH_MAP                                                          # 1. launcher
+  else
+    map=$(jq -c '[.browser.path_map // empty | {container: .project_root, host: .launcher_root, os: .launcher_os}]' "$cfg" 2>/dev/null)
+    if [ -z "$map" ] || [ "$map" = "[]" ]; then                                       # 3. aucune : meme chemin
+      root=$(git rev-parse --show-toplevel)
+      if command -v wslpath >/dev/null 2>&1; then map=$(jq -cn --arg c "$root" --arg h "$(wslpath -m "$root")" '[{container:$c,host:$h,os:"windows"}]')
+      else map=$(jq -cn --arg c "$root" '[{container:$c,host:$c,os:"linux"}]'); fi
+    fi                                                                                # 2. sinon : project-config
   fi
-  root=${root%/}
-  case "$abs/" in "$root"/*) rel=${abs#"$root"} ;; *) echo "browser_url : hors du projet : $abs" >&2; return 1 ;; esac
+  [ "$(jq -r 'length' <<<"$map" 2>/dev/null)" = 0 ] && { echo "browser_url : aucun navigateur (CL_BROWSER_PATH_MAP=[]) : $abs" >&2; return 2; }
+  { read -r root; read -r lroot; read -r los; } < <(jq -r --arg p "$abs" '
+      [ .[] | select(.container and .host) | .container |= rtrimstr("/")
+        | select((.container + "/") as $c | ($p + "/") | startswith($c)) ]
+      | sort_by(-(.container | length)) | .[0] // empty
+      | .container, .host, (.os // (if (.host | test("^([A-Za-z]:|[\\\\/]{2})")) then "windows" else "linux" end))' <<<"$map")
+  [ -n "$root" ] || { echo "browser_url : aucune correspondance pour $abs (CL_BROWSER_PATH_MAP / browser.path_map)" >&2; return 1; }
+  rel=${abs#"$root"}
   _enc() { jq -rn --arg p "$1" '$p | split("/") | map(@uri) | join("/")'; }
   if [ "$los" = windows ]; then
     lroot=${lroot//\\//}; lroot=${lroot%/}
     case "$lroot" in
-      //*)  printf 'file:%s%s\n' "$(_enc "$lroot")" "$(_enc "$rel")" ;;              # UNC \\serveur\partage\...
-      ?:*)  printf 'file:///%s%s%s\n' "${lroot:0:2}" "$(_enc "${lroot:2}")" "$(_enc "$rel")" ;;  # C:\...
-      *)    echo "browser_url : launcher_root Windows invalide : $lroot" >&2; return 1 ;;
+      //*)  printf 'file:%s%s\n' "$(_enc "$lroot")" "$(_enc "$rel")" ;;                          # UNC \\serveur\partage\...
+      ?:*)  printf 'file:///%s%s%s\n' "${lroot:0:2}" "$(_enc "${lroot:2}")" "$(_enc "$rel")" ;;   # C:\...
+      *)    echo "browser_url : chemin Windows invalide : $lroot" >&2; return 1 ;;
     esac
   else
     printf 'file://%s%s\n' "$(_enc "${lroot%/}")" "$(_enc "$rel")"
@@ -667,9 +681,9 @@ browser_url() {
 }
 ```
 
-Exemples : `docs/mockup/v1.2.0/ui/nav__compact.html` avec `/workspace/app` ↔ `C:\Users\moi\app` (windows) →
-`file:///C:/Users/moi/app/docs/mockup/v1.2.0/ui/nav__compact.html` ; avec `\\wsl.localhost\Ubuntu\home\moi\app` →
-`file://wsl.localhost/Ubuntu/home/moi/app/...` ; avec `/home/moi/app` (linux) → `file:///home/moi/app/...`.
+Exemples : `/share/MFS/ROOT/p/app/docs/x.html` avec `/share/MFS/ROOT` ↔ `\\nas\MFS\ROOT` (windows) →
+`file://nas/MFS/ROOT/p/app/docs/x.html` ; `/workspace/app` ↔ `C:\Users\moi\app` →
+`file:///C:/Users/moi/app/docs/x.html` ; `/home/moi/app` (linux) → `file:///home/moi/app/docs/x.html`.
 ---
 
 ## 15. Plan de Tests
