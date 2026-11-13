@@ -343,9 +343,11 @@ Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide 
 2. **Chemin du document de tests** : chemin relatif au repo de chaque procédure concernée (et du rapport QA),
    rappelé aussi dans le texte de la question.
 3. **Ouverture automatique dans Chrome** : ouvrir chaque procédure via les outils `mcp__claude-in-chrome__*`
-   (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL `file://` **mappée** du document —
-   `context/COMMON.md` 14.9, `browser_url <chemin>` : `CL_BROWSER_PATH_MAP` du launcher, repli `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max, le reste est
-   seulement listé). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, afficher le chemin absolu et le dire
+   (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL **mappée** du document —
+   `context/COMMON.md` 14.9, `browser_url <chemin>` : serveur web du launcher `http://localhost:8081/…` via
+   `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max,
+   le reste est seulement listé). Chaque procédure est aussi donnée par son **chemin absolu exact** dans la synthèse
+   (repli : l'utilisateur ouvre le fichier lui-même). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, le dire
    dans la synthèse. Ne jamais ouvrir de fichier hors du repo du projet.
 
 Aucune procédure manuelle pour le périmètre (tests 100 % automatisés) : le préciser dans la synthèse, sans ouverture.
