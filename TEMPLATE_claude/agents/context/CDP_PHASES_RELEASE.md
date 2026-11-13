@@ -108,7 +108,7 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 ### Methode de test
 [Prerequis, donnees de test, acces requis — depuis le fichier de procedure]
 
-**Document de tests** : [chemin(s) de `tests/procedures/...` — ouvert(s) automatiquement dans Chrome]
+**Document de tests** : [chemin(s) absolu(s) exact(s) de `tests/procedures/...` — ouvert(s) automatiquement dans Chrome (URL)]
 
 ```
 
@@ -242,7 +242,8 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
 - `MARKETING BLOQUE — [raison]` → verification du site impossible (remote injoignable...) : ne rien publier,
   informer l'utilisateur de la raison et proposer de relancer `PREPARE` une fois le probleme resolu ; si la
   raison est « apercu Artifact impossible », presenter l'apercu local (`_work/marketing/preview.html`) au
-  GATE 4d a la place de l'URL, en l'ouvrant dans Chrome via l'URL `file://` mappee (`context/COMMON.md` 14.9).
+  GATE 4d a la place de l'URL, en l'ouvrant dans Chrome via l'URL mappee (`context/COMMON.md` 14.9 : serveur web
+  du launcher, repli `file://`) et en donnant son chemin absolu exact.
 - `MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md` → lire le rapport, puis
   presenter a l'utilisateur ← **GATE 4d** :
   ```

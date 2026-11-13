@@ -610,12 +610,13 @@ Les maquettes marketing (GATE 4d) sont **distinctes** des maquettes projet : sys
 Les maquettes marketing ne suivent pas la règle des propositions en onglets (14.3) : elles présentent une seule
 évolution du site existant.
 
-### 14.9 Ouvrir un fichier du projet dans Chrome (correspondance de chemins)
+### 14.9 Ouvrir un fichier du projet dans Chrome (serveur web du launcher, correspondance de chemins)
 
-Claude et Chrome ne voient pas forcément le projet au même chemin : avec Claude-Launcher, le projet est monté dans un
-conteneur (ex. `/share/MFS/ROOT/...`) alors que Chrome tourne sur le poste de l'utilisateur (ex.
-`\\nas\MFS\ROOT\...`, `C:\Users\moi\...` ou `/home/moi/...`). La correspondance dépend du **poste et du backend**,
-pas du projet : c'est le **launcher** qui la fournit. Sources, par ordre de priorité :
+Claude et Chrome ne voient pas forcément le projet au même endroit : avec Claude-Launcher, le projet est monté dans un
+conteneur (ex. `/share/MFS/ROOT/...`) alors que Chrome tourne sur le poste de l'utilisateur. C'est le **launcher** qui
+dit comment Chrome atteint un fichier du projet. Depuis **v5.9.0**, il embarque un **serveur web** qui sert les fichiers
+par leur chemin absolu (`http://localhost:8081<chemin absolu>`, un dossier affiche sa liste) : c'est la voie normale.
+L'URL `file://` ne reste qu'en repli, hors launcher. Sources, par ordre de priorité :
 
 1. **`CL_BROWSER_PATH_MAP`** (posée par Claude-Launcher **≥ v5.9.0**, réglage `browser_paths` de sa config) —
    tableau JSON de préfixes, la plus longue correspondance l'emporte. Le launcher la pose dans l'**environnement de la
@@ -623,27 +624,43 @@ pas du projet : c'est le **launcher** qui la fournit. Sources, par ordre de prio
    lue **d'abord dans tmux** (`tmux show-environment`, valeur courante même si la config a changé après le lancement
    de Claude), puis dans l'environnement du processus (`launcher_browser_map`) :
    ```
-   CL_BROWSER_PATH_MAP=[{"container":"/share/MFS/ROOT","host":"\\\\nas\\MFS\\ROOT","os":"windows"}]
+   CL_BROWSER_PATH_MAP=[{"container":"/","host":"http://localhost:8081","os":"url"}]           # serveur web du launcher
+   CL_BROWSER_PATH_MAP=[{"container":"/share/MFS/ROOT","host":"\\\\nas\\MFS\\ROOT","os":"windows"}]   # file:// mappé
    ```
-   `container` : préfixe vu par Claude ; `host` : le même dossier vu par le navigateur (`C:\…`, UNC `\\serveur\…` dont
-   `\\wsl.localhost\…`, ou `/…`) ; `os` : `windows` | `linux` (macOS = `linux` ; absent = déduit de `host`).
-   `[]` = aucun navigateur ne peut ouvrir ces fichiers : afficher seulement le chemin. Variable présente = le launcher
-   fait foi ; une correspondance fausse se corrige dans la config du launcher (`browser_paths`), jamais dans le projet.
-2. **`browser.path_map`** de `project-config.json` — **repli** pour un projet lancé sans Claude-Launcher, ou avec un
-   launcher antérieur qui ne pose pas la variable (défini par `/init-project`, Étape 9d) :
+   `container` : préfixe vu par Claude ; `host` : la base vue par le navigateur — URL `http(s)://…` (serveur web du
+   launcher : le chemin relatif au préfixe y est ajouté, segments encodés), ou dossier `C:\…`, UNC `\\serveur\…` (dont
+   `\\wsl.localhost\…`), `/…` (URL `file://`) ; `os` : `url` | `windows` | `linux` (macOS = `linux` ; absent = déduit
+   de `host`). `[]` = aucun navigateur ne peut ouvrir ces fichiers : afficher seulement le chemin. Variable présente =
+   le launcher fait foi ; une correspondance fausse se corrige dans la config du launcher (`browser_paths`), jamais
+   dans le projet.
+2. **`browser.path_map`** de `project-config.json` — **repli** `file://` pour un projet lancé sans Claude-Launcher, ou
+   avec un launcher antérieur à v5.9.0 qui ne pose pas la variable (défini par `/init-project`, Étape 9d) :
    ```json
    "browser": { "path_map": { "project_root": "/home/moi/app", "launcher_root": "C:\\Users\\moi\\app", "launcher_os": "windows" } }
    ```
 3. **Aucune** : même chemin (`linux`) ; sous WSL, `wslpath -m` (`windows`).
 
+**Appariement du navigateur** (serveur web du launcher) : quand plusieurs navigateurs sont connectés à
+`claude-in-chrome`, le launcher indique dans le contexte de session (`CL_BROWSER_HINT`, injecté au démarrage) comment
+identifier celui du hub — page `/__claude-launcher__/pair` ouverte dans chaque navigateur, celui qui affiche « ✓ »
+est le bon. Suivre cette procédure **avant la première action Chrome** de la session, garder ce navigateur
+sélectionné et l'indiquer à l'utilisateur ; plusieurs « ✓ » ou aucun → demander à l'utilisateur. Ne pas recopier la
+procédure (URL, jeton) dans le projet : elle appartient au launcher.
+
 **Règle** : tout fichier du projet présenté à l'utilisateur dans Chrome — brouillon de maquette (GATE 2), procédure de
 tests manuels, aperçu marketing de repli — est ouvert via `mcp__claude-in-chrome__*` (`tabs_context_mcp`, puis
-`tabs_create_mcp` + `navigate`) vers l'URL `file://` **mappée** par `browser_url`, et son chemin relatif au repo est
-rappelé dans la question. **Jamais de serveur HTTP local** (`python -m http.server`, `npx serve`…) : le fichier est
-autonome. Sans Chrome, ou si l'ouverture échoue (page vide, fichier introuvable, URL `file://` refusée par
-l'extension — option « Autoriser l'accès aux URL de fichier ») : ne pas bloquer, afficher l'URL mappée et le chemin
-relatif, et indiquer **la source à corriger** (`browser_paths` du launcher si `launcher_browser_map` répond, sinon
-`/init-project`, option « Autre » → Étape 9d). Jamais de fichier hors du repo du projet.
+`tabs_create_mcp` + `navigate`) vers l'URL **mappée** par `browser_url` (`http://localhost:8081/…` avec le serveur
+web du launcher, `file://…` en repli). **Le projet ne lance jamais son propre serveur HTTP** (`python -m http.server`,
+`npx serve`…) : le fichier est autonome, et le serveur web du launcher n'est pas un serveur du projet.
+
+**Toujours donner le chemin exact** : la réponse qui présente le fichier (texte du message **et** question
+`AskUserQuestion`, qui peut masquer le texte qui la précède) indique, en plus de l'URL ouverte, le **chemin absolu
+exact** du fichier (`realpath`) et son chemin relatif au repo — c'est le repli de l'utilisateur, qui peut toujours
+ouvrir le fichier lui-même. Sans Chrome, ou si l'ouverture échoue (page vide, 404 du serveur du launcher, fichier
+introuvable, URL `file://` refusée par l'extension — option « Autoriser l'accès aux URL de fichier ») : ne pas
+bloquer, afficher l'URL mappée et ces chemins, et indiquer **la source à corriger** (`browser_paths` du launcher si
+`launcher_browser_map` répond, sinon `/init-project`, option « Autre » → Étape 9d). Jamais de fichier hors du repo du
+projet.
 
 ```bash
 # launcher_browser_map — affiche CL_BROWSER_PATH_MAP fournie par le launcher ; code 1 si absente (launcher anterieur
@@ -659,10 +676,11 @@ launcher_browser_map() {
   return 1
 }
 
-# browser_url CHEMIN — URL file:// a ouvrir dans Chrome pour un fichier du projet (relatif au repo ou absolu).
-# Sortie : l'URL ; code 1 = hors projet ou aucune correspondance, 2 = aucun navigateur ([]) — afficher le chemin.
+# browser_url CHEMIN — URL a ouvrir dans Chrome pour un fichier du projet (relatif au repo ou absolu) :
+# http(s):// (serveur web du launcher) ou file:// (repli). Sortie : l'URL ; code 1 = hors projet ou aucune
+# correspondance, 2 = aucun navigateur ([]) — afficher le chemin.
 browser_url() {
-  local cfg=.claude/project-config.json abs map root lroot los rel
+  local cfg=.claude/project-config.json abs map ok root lroot los rel
   abs=$(realpath -m -- "$1")
   case "$abs/" in "$(git rev-parse --show-toplevel)"/*) ;; *) echo "browser_url : hors du projet : $abs" >&2; return 1 ;; esac
   if map=$(launcher_browser_map); then
@@ -676,28 +694,34 @@ browser_url() {
     fi                                                                                # 2. sinon : project-config
   fi
   [ "$(jq -r 'length' <<<"$map" 2>/dev/null)" = 0 ] && { echo "browser_url : aucun navigateur (CL_BROWSER_PATH_MAP=[]) : $abs" >&2; return 2; }
-  { read -r root; read -r lroot; read -r los; } < <(jq -r --arg p "$abs" '
+  { read -r ok; read -r root; read -r lroot; read -r los; } < <(jq -r --arg p "$abs" '
       [ .[] | select(.container and .host) | .container |= rtrimstr("/")
         | select((.container + "/") as $c | ($p + "/") | startswith($c)) ]
       | sort_by(-(.container | length)) | .[0] // empty
-      | .container, .host, (.os // (if (.host | test("^([A-Za-z]:|[\\\\/]{2})")) then "windows" else "linux" end))' <<<"$map")
-  [ -n "$root" ] || { echo "browser_url : aucune correspondance pour $abs (CL_BROWSER_PATH_MAP / browser.path_map)" >&2; return 1; }
-  rel=${abs#"$root"}
+      | "ok", .container, .host,
+        (.os // (if (.host | test("^https?://")) then "url"
+                 elif (.host | test("^([A-Za-z]:|[\\\\/]{2})")) then "windows" else "linux" end))' <<<"$map")
+  [ "$ok" = ok ] || { echo "browser_url : aucune correspondance pour $abs (CL_BROWSER_PATH_MAP / browser.path_map)" >&2; return 1; }
+  rel=${abs#"$root"}                                                # conteneur "/" : root vide, rel = chemin absolu
   _enc() { jq -rn --arg p "$1" '$p | split("/") | map(@uri) | join("/")'; }
-  if [ "$los" = windows ]; then
-    lroot=${lroot//\\//}; lroot=${lroot%/}
-    case "$lroot" in
-      //*)  printf 'file:%s%s\n' "$(_enc "$lroot")" "$(_enc "$rel")" ;;                          # UNC \\serveur\partage\...
-      ?:*)  printf 'file:///%s%s%s\n' "${lroot:0:2}" "$(_enc "${lroot:2}")" "$(_enc "$rel")" ;;   # C:\...
-      *)    echo "browser_url : chemin Windows invalide : $lroot" >&2; return 1 ;;
-    esac
-  else
-    printf 'file://%s%s\n' "$(_enc "${lroot%/}")" "$(_enc "$rel")"
-  fi
+  case "$los" in
+    url)                                                                              # serveur web du launcher
+      printf '%s%s\n' "${lroot%/}" "$(_enc "$rel")" ;;
+    windows)
+      lroot=${lroot//\\//}; lroot=${lroot%/}
+      case "$lroot" in
+        //*)  printf 'file:%s%s\n' "$(_enc "$lroot")" "$(_enc "$rel")" ;;                          # UNC \\serveur\partage\...
+        ?:*)  printf 'file:///%s%s%s\n' "${lroot:0:2}" "$(_enc "${lroot:2}")" "$(_enc "$rel")" ;;   # C:\...
+        *)    echo "browser_url : chemin Windows invalide : $lroot" >&2; return 1 ;;
+      esac ;;
+    *)
+      printf 'file://%s%s\n' "$(_enc "${lroot%/}")" "$(_enc "$rel")" ;;
+  esac
 }
 ```
 
-Exemples : `/share/MFS/ROOT/p/app/docs/x.html` avec `/share/MFS/ROOT` ↔ `\\nas\MFS\ROOT` (windows) →
+Exemples : `/share/MFS/ROOT/p/app/docs/x.html` avec `/` ↔ `http://localhost:8081` (url) →
+`http://localhost:8081/share/MFS/ROOT/p/app/docs/x.html` ; avec `/share/MFS/ROOT` ↔ `\\nas\MFS\ROOT` (windows) →
 `file://nas/MFS/ROOT/p/app/docs/x.html` ; `/workspace/app` ↔ `C:\Users\moi\app` →
 `file:///C:/Users/moi/app/docs/x.html` ; `/home/moi/app` (linux) → `file:///home/moi/app/docs/x.html`.
 ---

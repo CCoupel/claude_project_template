@@ -51,7 +51,7 @@ jamais du texte brut listant des lettres dans le chat :
     |
     v
 [CONFIGURATION] --> Questions ou deduction
-    |                  (dont ouverture Chrome : CL_BROWSER_PATH_MAP du launcher, sinon repli, Etape 9d)
+    |                  (dont ouverture Chrome : serveur web du launcher via CL_BROWSER_PATH_MAP, sinon repli file://, Etape 9d)
     |
     v
 [GENERATION] --> project-config.json + agents dev-* + registre des agents
@@ -1791,18 +1791,22 @@ Ecriture a la Finalisation (section 5, « Environnement conteneur »).
 ### Etape 9d : Ouverture des fichiers dans Chrome (correspondance de chemins)
 
 Le teamleader ouvre dans Chrome (MCP `claude-in-chrome`) les brouillons de maquette, les procedures de tests manuels
-et l'apercu marketing de repli, en `file://`. Claude et Chrome ne voient pas forcement le projet au meme chemin : la
-correspondance depend du poste et du backend, et c'est **Claude-Launcher ≥ v5.9.0 qui la fournit** (`CL_BROWSER_PATH_MAP`,
-reglage `browser_paths` de sa config). Regle, sources et conversion : `TEMPLATE_claude/commands/context/COMMON.md`
-14.9 (fonction `browser_url`).
+et l'apercu marketing de repli, et donne toujours leur chemin absolu exact (repli : l'utilisateur ouvre le fichier
+lui-meme). Claude et Chrome ne voient pas forcement le projet au meme endroit : c'est **Claude-Launcher ≥ v5.9.0 qui
+le dit** (`CL_BROWSER_PATH_MAP`, reglage `browser_paths` de sa config) — normalement vers son **serveur web embarque**
+(`http://localhost:8081<chemin absolu>`, `os: url`), sinon vers une URL `file://` mappee. Sans launcher (ou launcher
+anterieur a v5.9.0), repli `file://` par `browser.path_map`. Regle, sources et conversion :
+`TEMPLATE_claude/commands/context/COMMON.md` 14.9 (fonction `browser_url`, appariement du navigateur).
 
 1. **`CL_BROWSER_PATH_MAP` fournie** (`launcher_browser_map` repond : environnement tmux de la session, sinon du
    processus — launcher a jour) → **aucune question**. Afficher la correspondance effective pour
-   ce projet (prefixe `container` retenu ↔ `host`, `os`) puis jouer la verification (point 3). `[]` → « aucun
+   ce projet (prefixe `container` retenu ↔ `host`, `os` ; ex. `/ ↔ http://localhost:8081 (url)` = serveur web du
+   launcher) puis jouer la verification (point 3). `[]` → « aucun
    navigateur declare par le launcher : les fichiers seront affiches par leur chemin », sans verification. Echec de
    la verification → la correction se fait dans `browser_paths` du launcher (le dire, avec l'URL essayee), jamais
    dans `project-config.json`. Un `browser.path_map` deja present est conserve tel quel (repli sans launcher).
-2. **Variable absente** (`launcher_browser_map` en echec : projet lance sans Claude-Launcher, ou launcher anterieur) →
+2. **Variable absente** (`launcher_browser_map` en echec : projet lance sans Claude-Launcher, ou launcher anterieur a
+   v5.9.0) →
    **repli** `browser.path_map` :
    - Detecter (lecture seule) : `PROJECT_ROOT=$(git rev-parse --show-toplevel)` ; WSL (`command -v wslpath`) →
      racine Windows proposee `wslpath -w "$PROJECT_ROOT"` ; conteneur (`/.dockerenv`, `/run/.containerenv`,
@@ -1824,9 +1828,10 @@ reglage `browser_paths` de sa config). Regle, sources et conversion : `TEMPLATE_
      Normaliser la reponse : OS deduit de la forme (`X:\…` ou `\\…` → `windows`, `/…` → `linux`), sans separateur final.
    - Ecriture dans `project-config.json` (section 1, `browser.path_map`).
 3. **Verification** (si Chrome est disponible) : creer `_work/tmp/browser-check.html` (« Correspondance OK »), l'ouvrir
-   avec `browser_url`, lire la page (`get_page_text`) : texte attendu → OK ; sinon afficher l'URL essayee et, en repli
+   avec `browser_url` (serveur web du launcher : apres l'appariement du navigateur, COMMON.md 14.9), lire la page (`get_page_text`) : texte attendu → OK ; sinon afficher l'URL essayee et, en repli
    (point 2), reposer la question (2 essais, puis enregistrer tel quel avec `⚠ correspondance non verifiee` au message
-   de fin). URL `file://` refusee par l'extension → rappeler l'option « Autoriser l'accès aux URL de fichier » de
+   de fin). 404 / page inaccessible du serveur web du launcher → corriger `browser_paths` du launcher (ou verifier
+   que le navigateur apparie est bien celui du hub). URL `file://` refusee par l'extension → rappeler l'option « Autoriser l'accès aux URL de fichier » de
    l'extension Claude in Chrome.
 
 ---
@@ -2037,7 +2042,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `marketing.site` | Defaut `"auto"` : un site marketing est attendu (branche `gh-pages`, uniquement — `MARKETING/` en est le worktree git, jamais un dossier de la branche de code) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
 | `issues.close_on` | Etape 7. `ci` (defaut ; absent = `ci`) : issue fermee sur CI verte apres QA ; `validation` : issue laissee ouverte en `DONE` jusqu'a une validation utilisateur qui la couvre (GATE LOT explicite, sinon GATE 4) — `commands/context/GITHUB.md` §9.5 |
 | `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/COMMON.md` §14) |
-| `browser.path_map` | Etape 9d. **Repli** quand Claude-Launcher ne fournit pas `CL_BROWSER_PATH_MAP` (projet lance sans launcher, ou launcher anterieur) : correspondance de chemins pour ouvrir un fichier du projet dans Chrome en `file://` — `project_root` (racine vue par Claude), `launcher_root` (meme racine vue par le poste qui execute Chrome), `launcher_os` (`windows` \| `linux`). Non pose si la variable est fournie. Absent = meme chemin (WSL : `wslpath -m`). Regle : `context/COMMON.md` 14.9 |
+| `browser.path_map` | Etape 9d. **Repli** quand Claude-Launcher ne fournit pas `CL_BROWSER_PATH_MAP` (projet lance sans launcher, ou launcher anterieur a v5.9.0, sans serveur web) : correspondance de chemins pour ouvrir un fichier du projet dans Chrome en `file://` — `project_root` (racine vue par Claude), `launcher_root` (meme racine vue par le poste qui execute Chrome), `launcher_os` (`windows` \| `linux`). Non pose si la variable est fournie. Absent = meme chemin (WSL : `wslpath -m`). Regle : `context/COMMON.md` 14.9 |
 | `commands.env` | Etape 9b. Prefixe shell evalue par tout agent avant ses commandes `commands.*` (chaine d'outils native de l'OS — `context/COMMON.md` 15.10). Ex. sous WSL : `export PATH=$HOME/.nvm/versions/node/v22.11.0/bin:/usr/local/go/bin:$PATH`. Vide si les outils du PATH sont deja natifs |
 | `commands.test_related` | Boucle DEV : tests lies aux fichiers source modifies, `{FILES}` = liste de fichiers. Stack : `npx vitest related --run {FILES}` / `npx jest --findRelatedTests {FILES}` — vide pour Go/pytest (les dev-* utilisent alors `commands.test_targeted` sur les paquets/dossiers touches) |
 | `commands.test_fast` | **Obsolete** (conserve s'il existe, plus utilise par les dev-*) : il relancait toute la suite hors tag `slow`. Remplace par `commands.test_related` / `commands.test_targeted` |
@@ -3439,7 +3444,7 @@ Synchronisation depuis github.com/<repo>
   [~] .claude-launcher/env-template.yaml — local web/node_modules, watch web/package-lock.json
 
   Ouverture dans Chrome (etape d1k) :
-  [=] ouverture Chrome — fournie par Claude-Launcher : /share/MFS/ROOT ↔ \\nas\MFS\ROOT (windows)
+  [=] ouverture Chrome — fournie par Claude-Launcher : / ↔ http://localhost:8081 (url)
 
   Graphe des fichiers de définition locaux (etape d1e, etat avant mise a jour) :
   [⛓] CLAUDE.md:42 → .claude/agents/old.md          ← lien casse (cible absente)
