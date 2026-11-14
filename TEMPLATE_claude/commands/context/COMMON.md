@@ -539,6 +539,20 @@ docs/mockup/
   proposition retenue, **sans onglets**, sous le nom définitif `<composant>__<feature>.html`.
 - Une maquette `.md` (exception ci-dessus) présente ses propositions en sections `## Proposition A — <titre>`.
 
+**Maquettes de schémas — versions horizontales et verticales** : une maquette dont l'objet est un **schéma**
+(types `conception` et `architecture` : machine à états, architecture, flux, déploiement…) présente **2 à 3 versions
+horizontales et 2 à 3 versions verticales**, soit **4 à 6 propositions** au choix :
+
+- Horizontale = schéma qui se lit de gauche à droite (plus large que haut) ; verticale = de haut en bas (plus haut
+  que large). Chaque version reste une vraie alternative (découpage, regroupement, enchaînement…), pas la même
+  disposition simplement pivotée — une version verticale peut reprendre le parti pris d'une horizontale, mais pas
+  toutes.
+- Lettres continues (`A`…`F`), l'orientation en tête du titre : `A — Horizontal · Flux en ligne`,
+  `D — Vertical · Couches empilées`. Barre d'onglets en **deux groupes** libellés « Horizontal » et « Vertical ».
+- L'exception « une seule proposition » ne s'applique pas : minimum 2 horizontales + 2 verticales.
+- Les maquettes `ui` restent à 2 à 3 propositions ; un schéma intégré à une maquette `ui` (annotation) n'est pas
+  concerné.
+
 **En-tête obligatoire** (commentaire HTML en tête de fichier, ou front-matter YAML pour `.md`) :
 
 ```
@@ -549,7 +563,7 @@ mockup:
   type: ui
   issue: "#123"
   validee_le: 2026-09-25
-  proposition_retenue: "B — Menu compact"   # brouillon : propositions: ["A — …", "B — …", "C — …"]
+  proposition_retenue: "B — Menu compact"   # brouillon : propositions: ["A — …", "B — …", "C — …"] (schéma : "A — Horizontal · …" … "F — Vertical · …")
   complete: []                # maquettes complétées (chemins) — les deux restent actives
   remplace: []                # maquettes remplacées (chemins) — les anciennes deviennent obsolètes
 ```
