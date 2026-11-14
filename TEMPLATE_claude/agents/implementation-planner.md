@@ -271,7 +271,7 @@ Convention complete : `context/COMMON.md` section 14 (emplacement, nommage, form
 - Presenter le composant **dans son integralite**, y compris les parties inchangees (la maquette peut ne porter que sur une partie du composant : elle en complete alors une precedente).
 - **Format standard : HTML autonome**, pour les trois types — schemas et dessins integres a la page (SVG inline, ou Mermaid embarque : librairie copiee inline, jamais referencee par URL). `.md` **uniquement si le HTML n'est pas adapte** (maquette purement textuelle), justifie en une ligne dans le plan ; binaire en dernier recours (section 14.3).
 - **2 a 3 propositions** distinctes (vraies alternatives, pas des variations cosmetiques), selectionnables par **onglets** en tete de page : lettre + titre court par onglet, une ligne de parti pris (avantage / inconvenient), un panneau autonome `<section data-proposition="A">` par proposition, chacune presentant le composant entier et respectant `DECISIONS.md`. Une seule proposition uniquement si aucune alternative n'est credible — justifie dans le plan.
-- **Maquette de schema** (`conception` / `architecture`) : **2 a 3 versions horizontales + 2 a 3 versions verticales** (4 a 6 propositions), lettres `A`…`F`, orientation en tete du titre (`A — Horizontal · …`, `D — Vertical · …`), onglets en deux groupes « Horizontal » / « Vertical » ; chaque version est une vraie alternative, pas la meme disposition pivotee ; pas d'exception a une seule proposition (section 14.3).
+- **Tout schema ou dessin** (`conception`, `architecture`, ou schema/dessin integre a une maquette `ui`) : **2 a 3 versions horizontales + 2 a 3 versions verticales** (4 a 6 propositions), lettres `A`…`F`, orientation en tete du titre (`A — Horizontal · …`, `D — Vertical · …`), onglets en deux groupes « Horizontal » / « Vertical » ; chaque version est une vraie alternative, pas la meme disposition pivotee ; pas d'exception a une seule proposition (section 14.3).
 - Brouillon dans `_work/mockup/<version>/<type>/<composant>__<feature>.propositions.html` (jamais directement dans `docs/`), en-tete obligatoire avec `propositions: ["A — …", "B — …"]` (section 14.3).
 - **Apres le choix de l'utilisateur** (ordre `MAQUETTE RETENUE <lettre> — <fichier brouillon>` du teamleader) : produire la **version retenue** `_work/mockup/<version>/<type>/<composant>__<feature>.html` — proposition choisie seule, **sans onglets**, en-tete `proposition_retenue` (+ `complete`/`remplace`) — puis repondre DONE avec son chemin. Le teamleader la commite apres validation.
 
@@ -322,7 +322,7 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 ## Maquette (si interface, machine a etats ou architecture impactee)
 - Type : <ui / conception / architecture>
 - Brouillon : <chemin `_work/mockup/....propositions.html`>
-- Propositions : <A — titre : parti pris ; B — … ; C — …> (ou « une seule : <justification> ») — schema : <A–C Horizontal · … ; D–F Vertical · …> + recommandee
+- Propositions : <A — titre : parti pris ; B — … ; C — …> (ou « une seule : <justification> ») — schema/dessin : <A–C Horizontal · … ; D–F Vertical · …> + recommandee
 - Format : <HTML | `.md` : justification>
 - Complete / remplace : <maquettes actives referencees, ou "aucune">
 - Contraintes `DECISIONS.md` appliquees : <liste, ou "aucune">
