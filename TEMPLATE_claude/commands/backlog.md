@@ -188,21 +188,40 @@ gh api repos/{owner}/{repo}/milestones \
   --jq '.[] | select(.state=="open") | {number, title, open_issues, closed_issues}'
 ```
 
+Si l'utilisateur a précisé le milestone dans sa demande (ex : `pour v1.3.0`, `dans le milestone courant`)
+→ l'utiliser directement (résoudre son titre exact), sans question.
+
+Sinon, **recommander** un milestone : l'issue n'est jamais créée orpheline (`context/GITHUB.md` section 2.3).
+Analyser le contenu de l'issue au regard de chaque milestone ouvert (titre, description, issues et lots déjà
+associés) :
+
+| Indice | Milestone recommandé |
+|--------|----------------------|
+| Bug sur une fonctionnalité du milestone en cours, ou correctif bloquant/urgent | courant (en développement) |
+| Prolonge directement le périmètre du milestone en cours (même module, même lot) et ne décale pas sa livraison | courant |
+| Nouvelle feature, ou milestone courant déjà verrouillé (lot à valider, PROD imminente) | suivant |
+| Thème proche du titre/description d'un autre milestone ouvert | celui-là |
+
 Afficher le titre **complet** de chaque milestone (`.title` tel quel — version + nom
 descriptif s'il existe, ne jamais le tronquer à la version seule) et demander via `AskUserQuestion` :
-`"Associer cette issue à quel milestone ?"` — une option par milestone (label = titre complet, description =
-`N issues ouvertes`) + **Aucun milestone** (4 options maximum : au-delà, ne proposer que les plus récents).
+`"Associer cette issue à quel milestone ?"` — le milestone recommandé en **première** option avec le suffixe
+`(Recommandé)` et en description la justification courte (ex : `bug sur l'export livré dans ce milestone`),
+puis les autres milestones ouverts (description = `N issues ouvertes`), 4 options maximum (au-delà, garder les
+plus proches du contenu). **Pas d'option « Aucun milestone »** ; l'option libre « Other » permet de nommer un
+nouveau milestone.
 
-Exemple d'options : `v1.2.0 — Authentification OAuth2` (3 issues ouvertes) / `v1.3.0` (0 issue ouverte) / `Aucun milestone`.
+Exemple d'options : `v1.3.0 — Export (Recommandé)` (nouvelle feature, v1.2.0 en lot à valider) / `v1.2.0 — Authentification OAuth2` (3 issues ouvertes).
 
 Le choix de l'utilisateur donne directement `TITLE` (le titre exact du milestone selectionné,
 utilise tel quel a l'etape 3 — aucune reconstruction a partir de la version).
 
-Si aucun milestone ouvert :
+Si aucun milestone ouvert (ou si l'utilisateur en nomme un qui n'existe pas) :
 ```
-Aucun milestone actif. Créer un milestone d'abord avec /milestone new <version>, ou continuer sans.
+Aucun milestone ouvert ne convient. L'issue doit être rattachée à un milestone.
 ```
-Puis `AskUserQuestion` : `"Continuer sans milestone ?"` — options : **Continuer sans milestone** / **Annuler** (créer un milestone d'abord).
+Puis `AskUserQuestion` : `"Créer le milestone <version recommandée> pour cette issue ?"` — options :
+**Créer <version recommandée> (Recommandé)** (version calculée selon `context/COMMON.md` 5.2 : patch pour un bug,
+minor pour une feature) / **Annuler**. Sur accord, dérouler `/milestone new <version>` puis reprendre à l'étape 3.
 
 ### Etape 3 — Créer l'issue
 
@@ -210,7 +229,7 @@ Puis `AskUserQuestion` : `"Continuer sans milestone ?"` — options : **Continue
 gh issue create \
   --title "<$ARGUMENTS>" \
   --label "<bug|feature>" \
-  --milestone "<TITLE>" \   # omis si aucun milestone sélectionné
+  --milestone "<TITLE>" \   # toujours présent — jamais d'issue orpheline
   --body ""
 ```
 
@@ -219,7 +238,7 @@ gh issue create \
 ```
 ✅ Issue créée : #<numero> — <titre>
    Label     : <bug|feature>
-   Milestone : <TITLE ou "aucun">
+   Milestone : <TITLE>
    URL       : https://github.com/{owner}/{repo}/issues/<numero>
 
 Pour l'implémenter :

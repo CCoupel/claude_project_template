@@ -71,6 +71,19 @@ gh issue view <numero> --json number,title,body,labels,assignees,milestone,state
 
 ### 2.3 Creer une issue
 
+> **Regle : aucune issue orpheline.** Toute issue creee (par une commande, un agent, le CDP ou
+> une NR en echec) est rattachee a un milestone `OPEN` des sa creation — `--milestone` n'est
+> jamais omis :
+> - milestone precise par l'utilisateur (dans la demande ou la definition de l'issue) → l'utiliser ;
+> - sinon → analyser le contenu de l'issue (type, perimetre, urgence, lots du milestone) et
+>   **recommander** le milestone le plus adequat — courant, suivant ou autre — via `AskUserQuestion`
+>   (option recommandee en premier, suffixe `(Recommande)`, description = justification courte) ;
+>   cote agent, remonter ce choix par `[NOM] BLOQUE` + `Questions:` (format unique) ;
+> - aucun milestone ouvert ne convient → proposer d'en creer un (`/milestone new <version>`) avant
+>   de creer l'issue. Jamais d'option « Aucun milestone ».
+>
+> Voir aussi `commands/context/COMMON.md` section 5.4 (Regle d'Or) et `commands/backlog.md` Etape 2.
+
 ```bash
 gh issue create \
   --title "<titre>" \
