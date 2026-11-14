@@ -539,6 +539,22 @@ docs/mockup/
   proposition retenue, **sans onglets**, sous le nom définitif `<composant>__<feature>.html`.
 - Une maquette `.md` (exception ci-dessus) présente ses propositions en sections `## Proposition A — <titre>`.
 
+**Schémas et dessins — versions horizontales et verticales** : **tout schéma ou dessin** d'une maquette, quel qu'en
+soit le type (`conception`, `architecture`, mais aussi un schéma ou une illustration intégré à une maquette `ui` :
+machine à états, architecture, flux, déploiement, annotations, parcours…), est présenté en **2 à 3 versions
+horizontales et 2 à 3 versions verticales**, soit **4 à 6 propositions** au choix :
+
+- Horizontale = schéma qui se lit de gauche à droite (plus large que haut) ; verticale = de haut en bas (plus haut
+  que large). Chaque version reste une vraie alternative (découpage, regroupement, enchaînement…), pas la même
+  disposition simplement pivotée — une version verticale peut reprendre le parti pris d'une horizontale, mais pas
+  toutes.
+- Lettres continues (`A`…`F`), l'orientation en tête du titre : `A — Horizontal · Flux en ligne`,
+  `D — Vertical · Couches empilées`. Barre d'onglets en **deux groupes** libellés « Horizontal » et « Vertical ».
+- L'exception « une seule proposition » ne s'applique pas : minimum 2 horizontales + 2 verticales.
+- Une maquette `ui` sans schéma ni dessin (écran seul) reste à 2 à 3 propositions. Une maquette `ui` qui contient un
+  schéma ou un dessin suit la règle : ses 4 à 6 propositions portent sur ce schéma/dessin, l'écran autour restant
+  celui de sa proposition.
+
 **En-tête obligatoire** (commentaire HTML en tête de fichier, ou front-matter YAML pour `.md`) :
 
 ```
@@ -549,7 +565,7 @@ mockup:
   type: ui
   issue: "#123"
   validee_le: 2026-09-25
-  proposition_retenue: "B — Menu compact"   # brouillon : propositions: ["A — …", "B — …", "C — …"]
+  proposition_retenue: "B — Menu compact"   # brouillon : propositions: ["A — …", "B — …", "C — …"] (schéma : "A — Horizontal · …" … "F — Vertical · …")
   complete: []                # maquettes complétées (chemins) — les deux restent actives
   remplace: []                # maquettes remplacées (chemins) — les anciennes deviennent obsolètes
 ```
