@@ -206,7 +206,7 @@
   "working.step1.title": "Démarrer la session",
   "working.step1.desc":  "Claude lit l'état du projet : version courante, milestone actif, travail en cours.",
   "working.step2.title": "Cadrer le travail",
-  "working.step2.desc":  "Créer le jalon cible, puis l'issue associée — ou en rechercher une existante dans le backlog. Au lancement, le milestone reçoit son cadrage, léger ou complet.",
+  "working.step2.desc":  "Créer le jalon cible, puis l'issue associée — jamais orpheline : le milestone recommandé d'après son contenu est proposé en premier — ou en rechercher une existante dans le backlog. Au lancement, le milestone reçoit son cadrage, léger ou complet.",
   "working.step3.title": "Développer",
   "working.step3.desc":  "Le CDP orchestre la suite : plan et cadrage validés ensemble, puis développement, tests, revue et QA selon le cadrage.",
   "working.step4.title": "Valider",
@@ -233,7 +233,7 @@
   "commands.hotfix":           "Correctif urgent production — deploy direct sans attendre QUALIF, rattaché au milestone actif en cours",
   "commands.refactor":         "Refactoring sans changement fonctionnel — QA exécutée avant ET après pour garantir la non-régression",
   "commands.backlog-list":     "Lister les issues GitHub ouvertes",
-  "commands.backlog-search":   "Rechercher une issue par mot-clé et lancer automatiquement le workflow correspondant à son label (feature, bug, hotfix…)",
+  "commands.backlog-search":   "Rechercher une issue par mot-clé, ou la créer rattachée au milestone recommandé (courant, suivant ou autre) — jamais d'issue orpheline — puis lancer le workflow correspondant à son label (feature, bug, hotfix…)",
   "commands.milestone-new":    "Créer un milestone GitHub et y associer des issues existantes — sans date : la due date est posée au démarrage du dev",
   "commands.milestone-status": "Afficher la progression du milestone actif (barre %, issues fermées/ouvertes)",
   "commands.milestone-close":  "Clôturer le milestone — propose de reporter, fermer ou laisser ouvertes les issues encore non terminées",
@@ -250,7 +250,7 @@
   "commands.marketing":        "Génère les release notes et met à jour ce site depuis le milestone clos et le CHANGELOG — déclenché automatiquement par /deploy prod, ou invocable seul pour une version donnée",
 
   "roadmap.title":   "Roadmap",
-  "roadmap.source":  "Générée en temps réel depuis les milestones et issues GitHub.",
+  "roadmap.source":  "Générée en temps réel depuis les dernières releases et les milestones ouverts GitHub.",
   "roadmap.loading": "Chargement depuis GitHub…",
 
   "footer.made": "Généré par",

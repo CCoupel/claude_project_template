@@ -67,21 +67,27 @@
     const l = t[lang()] || t.fr;
 
     try {
-      const [msOpen, msClosed] = await Promise.all([
+      const [msOpen, releases] = await Promise.all([
         fetch(`${API}/repos/${REPO}/milestones?state=open&sort=due_on&direction=asc&per_page=5`).then(r => r.json()),
-        fetch(`${API}/repos/${REPO}/milestones?state=closed&sort=due_on&direction=desc&per_page=2`).then(r => r.json()),
+        fetch(`${API}/repos/${REPO}/releases?per_page=2`).then(r => r.json()),
       ]);
 
       const cols = [];
 
-      /* Closed milestones (delivered) */
-      for (const ms of (msClosed || []).slice(0, 2)) {
-        const issues = await fetch(`${API}/repos/${REPO}/issues?milestone=${ms.number}&state=all&per_page=10`).then(r => r.json());
+      /* Latest releases (delivered) — PRs listed in the generated notes */
+      for (const rel of (Array.isArray(releases) ? releases : []).slice(0, 2)) {
+        const prs = [...(rel.body || '').matchAll(/^\* (.+?) by @\S+ in \S+\/pull\/(\d+)/gm)]
+          .map(m => ({ title: m[1], number: m[2], state: 'closed' }));
+        const date = (rel.published_at || '').slice(0, 10);
         cols.push(`
           <div class="roadmap-col">
-            ${colHeader(ms, l)}
+            <div class="roadmap-col-header">
+              <span class="status-dot status-done"></span>
+              <span><a href="${rel.html_url}" target="_blank" rel="noopener">${rel.tag_name}</a></span>
+            </div>
+            <div class="milestone-progress-label">${l.delivered}${date ? ' · ' + date : ''}</div>
             <div class="roadmap-items">
-              ${(issues || []).map(issueItem).join('') || `<div class="roadmap-item"><span class="roadmap-item-title" style="color:var(--muted)">${l.noIssues}</span></div>`}
+              ${prs.map(issueItem).join('') || `<div class="roadmap-item"><span class="roadmap-item-title" style="color:var(--muted)">${l.noIssues}</span></div>`}
             </div>
           </div>`);
       }
