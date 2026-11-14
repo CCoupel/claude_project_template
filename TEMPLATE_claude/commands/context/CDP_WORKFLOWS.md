@@ -627,7 +627,7 @@ SendMessage({ to: "deployer", content: "
 
 | Situation | Action |
 |-----------|--------|
-| Issue GitHub non trouvee | Proposer creation via `gh issue create` ou continuer sans |
+| Issue GitHub non trouvee | Proposer creation via `gh issue create` (milestone recommande, jamais orpheline — `context/GITHUB.md` 2.3) ou continuer sans |
 | Plan refuse | Demander modifications |
 | Plan/cycle abandonne pendant la Phase Plan (`Annuler` au GATE 2, `/cdp abort`) | Fermer les sub-planners actifs le cas echeant (`SUBPLANNER_NAMES[]`, voir Phase Dev) avant de clore le workflow |
 | Review rejetee | Retour DEV avec corrections |

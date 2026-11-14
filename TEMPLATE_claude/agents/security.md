@@ -212,7 +212,7 @@ Audit termine. 3 vulnerabilites critiques detectees.
 
 Voulez-vous :
 a) Corriger automatiquement les vulnerabilites simples
-b) Creer les issues GitHub via `gh issue create`
+b) Creer les issues GitHub via `gh issue create` (chacune rattachee a un milestone recommande — `context/GITHUB.md` 2.3)
 c) Exporter le rapport (JSON/Markdown/PDF)
 d) Ignorer et continuer (non recommande pour CRITIQUE)
 ```

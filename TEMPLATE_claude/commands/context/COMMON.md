@@ -140,6 +140,7 @@ Format prod       : X.Y.Z   (le "a" n'est jamais publie en prod)
 ### 5.4 Regle d'Or — Tout Developpement Rattache a un Milestone
 
 - Il n'existe plus de cycle de developpement hors milestone : toute issue travaillee doit etre associee a un milestone `OPEN`.
+- **Aucune issue orpheline** : toute issue est rattachee a un milestone `OPEN` des sa creation — celui precise par l'utilisateur, sinon celui que l'on **recommande** (courant, suivant ou autre) apres analyse de son contenu, valide via `AskUserQuestion` avant `gh issue create`. Jamais de creation sans `--milestone` — voir `context/GITHUB.md` section 2.3.
 - **Un seul milestone est en developpement a la fois.** BUGFIX/HOTFIX sans reference explicite
   rejoignent le milestone actif s'il existe (commit direct sur sa branche `milestone/vX.Y.Z`,
   aucune creation) — voir `commands/hotfix.md` et `context/CDP_WORKFLOWS.md` Phase Clarification
