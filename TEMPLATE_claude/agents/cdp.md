@@ -333,6 +333,28 @@ ses scénarios est `HUMAIN` (ou si rien n'est marqué : sens sûr) ; elle porte 
   « publier en PROD ? », sans ouverture de document. `issues.close_on` = `validation` : les issues encore ouvertes
   passent `A PUBLIER` avant la question ; dans tous les cas, milestone `⏸ a publier` (§9.4b).
 
+### Verrou de démarrage d'un lot — LOT-N+1 seulement si LOT-N est terminé ET validé (BLOQUANT)
+
+Un lot ne démarre **que** lorsque le lot précédent est **terminé et validé**. Avant **tout** ordre portant sur
+LOT-N+1 — DEV, mais aussi préparation : tests du `test-writer`, re-plan du `planner`, maquette, doc, labels
+`EN COURS` demandés à `deployer` — le teamleader vérifie, dans `.claude/workflow-state.json` et sur GitHub :
+
+| # | Précondition sur LOT-N | Preuve |
+|---|------------------------|--------|
+| 1 | QA `DONE` (verdict validé) et Phase 5 faite (QUALIF, ou artefact local si cadrage sans QUALIF) | rapport QA, `DEPLOY QUALIF` `DONE` |
+| 2 | **GATE LOT validé** : réponse explicite de l'utilisateur, **ou** auto-validation consignée (aucune issue `VALID-HUMAINE`, ligne « Lot LOT-N auto-valide » au compte rendu) | réponse `AskUserQuestion` / compte rendu |
+| 3 | Branche du milestone poussée et **CI de validation verte** sur le SHA du lot | `gh run list --branch` → `success`, SHA = `lots.LOT-N.ci_sha` |
+| 4 | Issues du lot fermées (`issues.close_on` = `ci`) — avec `validation` et lot auto-validé, elles restent ouvertes en `DONE` jusqu'au GATE 4 : ce n'est **pas** un blocage | `gh issue list --milestone … --label LOT-N` |
+| 5 | `lots.LOT-N.status` = `completed` (avec `ci_sha`) écrit dans `workflow-state.json` | fichier d'état |
+
+- **Une seule précondition manquante → aucun ordre pour LOT-N+1.** Pendant la QUALIF, le GATE LOT et la CI du lot
+  courant, les teammates sans tâche sur LOT-N restent **IDLE** — ne jamais « avancer » le lot suivant pour les occuper.
+- Un refus au GATE LOT ou une CI non verte renvoie **LOT-N** en DEV ; LOT-N+1 reste `PRET` (verrou toujours fermé).
+- À l'ouverture du verrou, relayer en une ligne : `✅ LOT-N terminé et validé (GATE LOT <explicite|auto>, CI verte <sha court>) → LOT-N+1 démarre`,
+  puis seulement le premier ordre de LOT-N+1.
+- Un ordre de LOT-N+1 envoyé par erreur avant l'ouverture du verrou : l'annuler aussitôt (`SendMessage` « Annule
+  <tâche> — LOT-N pas encore validé, reste IDLE ») et le signaler à l'utilisateur.
+
 ### GATE de validation par tests (GATE LOT, GATE 4) — présentation obligatoire
 
 Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide en exécutant des tests
@@ -454,6 +476,7 @@ Apres avoir dispatche des taches aux teammates, tu dois publier un tableau de pr
 | Declencheur | Moment |
 |------------|--------|
 | Apres chaque dispatch | Des que tu as envoye des SendMessage, afficher l'etat initial |
+| Toutes les `progress.interval_min` minutes (defaut 10) | Point d'avancement periodique chiffre (% + ETA par teammate actif) — voir ci-dessous |
 | A chaque jalon recu | Un agent signale "demarrage", "etape importante" ou "terminé" |
 | Toutes les 3 reponses teammates | Apres avoir recu 3 messages d'agents depuis le dernier rapport |
 | A chaque transition de phase | Fin de DEV → REVIEW, fin de REVIEW → QA, etc. |
@@ -462,15 +485,63 @@ Apres avoir dispatche des taches aux teammates, tu dois publier un tableau de pr
 > **Regle** : l'utilisateur ne doit jamais avoir a demander ou en est l'equipe.
 > Si tu enchaînes plusieurs reponses de teammates sans publier de tableau, c'est un bug.
 
+### Point d'avancement periodique (% et ETA par teammate)
+
+Tant qu'au moins un teammate est **ACTIF** (tache recue, pas encore `DONE`/`FAILED`), le teamleader fait un point
+chiffre toutes les `progress.interval_min` minutes (`project-config.json`, absent = `10`) et le relaie a l'utilisateur.
+
+**Minuterie** — le teamleader n'agit que sur message : la cadence est portee par une minuterie de session.
+- **Armer** au premier dispatch qui rend un teammate ACTIF : `CronCreate` (`*/<interval_min> * * * *`, session
+  uniquement) avec le prompt `Point d'avancement periodique (cdp.md) — interroger les teammates ACTIFS`. Une seule
+  minuterie a la fois (`CronList` avant d'en creer une).
+- **Supprimer** (`CronDelete`) quand plus aucun teammate n'est ACTIF (dernier `DONE`, attente d'un GATE utilisateur,
+  fin de workflow) ; la rearmer au dispatch suivant.
+- **Filet** : a chaque reveil (message teammate ou utilisateur), si le dernier point date de plus de `interval_min`
+  minutes et qu'un teammate est ACTIF, faire le point immediatement (minuterie perdue, session reprise…).
+
+**Qui interroger** : uniquement les teammates ACTIFS — jamais un agent IDLE, `👤` en attente de validation, ou deja
+`🔴 Bloque` sur une question en cours a l'utilisateur. Tous en parallele, meme tour :
+
+```
+SendMessage({ to: "<agent>", content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+```
+
+**Le % est mesure, pas ressenti** : unites terminees / unites totales de la tache (etapes, fichiers, composants, lots
+de tests — les memes unites que les jalons `EN COURS`, `TEAMMATES_PROTOCOL.md` section 4b).
+
+**ETA calculee par le teamleader** (horodatages : heure du dispatch `t0` et heure de chaque point) :
+- vitesse = `% atteint / (maintenant - t0)` (moyenne depuis le debut de la tache, stable) ;
+- ETA = `maintenant + (100 - %) / vitesse`, arrondie a la minute, en heure locale (`HH:MM`) ;
+- comparer a l'`ETA-agent` : ecart > 50 % → note `⚠️ agent annonce HH:MM` ;
+- ETA qui recule de plus de 5 min depuis le point precedent → note `↘ glisse +N min` ; sinon `→ stable` ;
+- **stagnation** : % inchange depuis le point precedent → ETA `?`, note `⚠️ stagnation`, et
+  `SendMessage` au teammate : `Aucun progres depuis HH:MM — es-tu bloque ? Reponds BLOQUE <raison> ou AVANCEMENT.` ;
+  toujours sans reponse au point suivant → `⚠️ Sans reponse` (procedure de reveil ci-dessous) ;
+- **fin de phase estimee** = ETA la plus tardive des taches qui conditionnent la fin de la phase / du lot (hors taches
+  `🔴`, signalees a part).
+
+**Relais a l'utilisateur** (texte du chat, information seule — une decision passe par `AskUserQuestion`) :
+
+```markdown
+⏱ Avancement HH:MM — <Phase> <LOT-n> — fin de phase estimee HH:MM
+| Teammate | Tache (unite i/N) | % | ETA | Note |
+|----------|-------------------|---|-----|------|
+| dev-backend  | POST /auth (3/5) | 60% | 10:33 | ↘ glisse +8 min |
+| dev-frontend | Page login (2/4) | 50% | 10:40 | → stable |
+| test-writer  | tests auth       | 10% | ?     | ⚠️ stagnation — je lui demande s'il est bloque |
+```
+
+Un `DONE` / `BLOQUE` recu entre deux points est relaye tout de suite en une ligne, sans attendre le point suivant ;
+il sort l'agent du tableau periodique.
+
 ### Procedure de rapport
 
 1. Interroger tous les agents actifs **en parallele** (reponse sur une ligne) :
 
 ```
-SendMessage({ to: "planner",       content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
-SendMessage({ to: "dev-backend",   content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
-SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
-// ... uniquement les agents effectivement spawnes
+SendMessage({ to: "planner",       content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "dev-backend",   content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+// ... uniquement les agents effectivement spawnes ET ACTIFS
 ```
 
 2. Compiler et presenter le tableau une fois toutes les reponses recues :
@@ -482,7 +553,7 @@ SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATU
 | ID | Tache | Agent | Status | Dependance |
 |----|-------|-------|--------|------------|
 | 01 | Plan d'implementation | planner | ✅ Termine | — |
-| 02 | Endpoint POST /auth | dev-backend | 🔄 En cours (60%) | — |
+| 02 | Endpoint POST /auth | dev-backend | 🔄 En cours (60% — ETA 10:33) | — |
 | 03 | Page login UI | dev-frontend | ⏳ Attente dependance | tache-02 |
 | 04 | Revue de code | code-reviewer | 💬 Attente teammate | dev-backend |
 | 05 | Deploy QUALIF | deployer | 👤 Attente validation | utilisateur |

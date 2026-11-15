@@ -302,8 +302,10 @@ perf:     Amelioration de performance
 
 ### 8.0 Confinement dans le projet (OBLIGATOIRE)
 
-Jamais de worktree, dossier ou fichier de travail hors du dossier du projet (`../`, `/tmp`, `$TMPDIR`, `~/`).
-Worktree git → `.claude/worktrees/<nom>` ; temporaire → `_work/tmp/` (gitignore). Les supprimer en fin de tache.
+Jamais de worktree, dossier ou fichier de travail hors du dossier du projet (`../`, `~/`, chemin absolu hors du repo).
+Worktree git → `.claude/worktrees/<nom>` ; temporaire utile au projet → `_work/tmp/` (gitignore) ; temporaire **non
+vital** (jetable, lu par personne d'autre, sans contenu prive) → `/tmp` autorise (`mktemp -d /tmp/<projet>-<agent>-XXXX`).
+Les supprimer en fin de tache. Regle complete : `agents/context/COMMON.md` « Confinement des Fichiers de Travail ».
 Element prive durable (jamais commite, hors `.env`/`<env>.env`) → `PRIVATE/GLOBAL/` ou `PRIVATE/<ENV>/`
 (gitignore, partage par les worktrees, jamais copie ni purge) — voir section « Éléments privés » de `CLAUDE.md`.
 

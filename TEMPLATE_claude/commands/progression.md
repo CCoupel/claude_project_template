@@ -19,19 +19,22 @@ Le teamleader envoie une demande de statut à chaque agent actif **en parallele*
 `dev-*` sont ceux de la table `## Agents Disponibles` de `CLAUDE.md` (une ligne par instance, ex. `dev-firmware-capteur`) :
 
 ```
-SendMessage({ to: "planner",       content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "dev-backend",   content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "dev-frontend",  content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "dev-firmware",  content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "code-reviewer", content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "qa",            content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "doc-updater",   content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "deployer",      content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "infra",         content: "Donne-moi ton statut de progression." })
-SendMessage({ to: "security",      content: "Donne-moi ton statut de progression." })
+SendMessage({ to: "planner",       content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "dev-backend",   content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "dev-frontend",  content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "dev-firmware",  content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "code-reviewer", content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "qa",            content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "doc-updater",   content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "deployer",      content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "infra",         content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "security",      content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
 ```
 
 > N'envoyer qu'aux agents effectivement spawnes dans la team — ignorer les absents.
+> Format de reponse et calcul de l'ETA (vitesse moyenne depuis le dispatch) : `agents/cdp.md` « Point d'avancement
+> periodique ». Ce point est aussi fait automatiquement toutes les `progress.interval_min` minutes (defaut 10) tant
+> qu'un teammate est actif — `/progression` le declenche a la demande.
 
 ## Rapport de Synthese
 
@@ -44,7 +47,7 @@ Une fois toutes les reponses recues, afficher :
 | ID | Tache | Agent | Status | Dependance |
 |----|-------|-------|--------|------------|
 | 01 | [nom tache] | [agent] | ✅ Termine | — |
-| 02 | [nom tache] | [agent] | 🔄 En cours (X%) | — |
+| 02 | [nom tache] | [agent] | 🔄 En cours (X% — ETA HH:MM) | — |
 | 03 | [nom tache] | [agent] | ⏳ Attente dependance | tache-02 |
 | 04 | [nom tache] | [agent] | 💬 Attente teammate | dev-backend |
 | 05 | [nom tache] | [agent] | 👤 Attente validation | utilisateur |

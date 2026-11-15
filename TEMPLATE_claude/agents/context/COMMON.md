@@ -26,11 +26,18 @@ Ces axes s'appliquent en continu pendant le travail (conception, implementation,
 ## Confinement des Fichiers de Travail (OBLIGATOIRE)
 
 Tout fichier ou dossier cree pendant le travail reste **dans le dossier du projet** — jamais `../`,
-chemin absolu hors du repo, `/tmp`, `$TMPDIR` ou `~/`.
+chemin absolu hors du repo ou `~/`. Seule exception : `/tmp` / `$TMPDIR` pour le temporaire **non vital** (ci-dessous).
 
 - **Worktree git** : `.claude/worktrees/<nom>` uniquement (jamais `../<repo>-<nom>`, jamais `/tmp/...`) ; `MARKETING/` pour le site.
-- **Fichier / dossier temporaire** : `_work/tmp/` (`mkdir -p _work/tmp`, `mktemp -p _work/tmp`, ou `TMPDIR="$PWD/_work/tmp"`) ; supprimer en fin de tache.
-- Si un outil impose un emplacement externe et ne peut pas etre redirige : **BLOQUE** et demander au teamleader.
+- **Fichier / dossier temporaire utile au projet** (lu par un autre agent ou une etape suivante, backup avant
+  ecrasement, fichier d'une procedure du template, contenu prive) : `_work/tmp/` (`mkdir -p _work/tmp`,
+  `mktemp -p _work/tmp`, ou `TMPDIR="$PWD/_work/tmp"`) ; supprimer en fin de tache.
+- **Temporaire non vital** (jetable, perdu sans consequence, lu par personne d'autre : scratch d'une commande, sortie
+  brute filtree sur place, telechargement d'outil, cache de build/test) : `/tmp` autorise, dans un dossier unique
+  `mktemp -d /tmp/<projet>-<agent>-XXXX`, supprime en fin de tache. Doute → `_work/tmp/`. Jamais de worktree,
+  livrable, rapport/handoff ni element prive dans `/tmp` (partage par tout le poste/conteneur).
+- Si un outil impose un emplacement externe : accepte pour du non vital ; sinon, s'il ne peut pas etre redirige :
+  **BLOQUE** et demander au teamleader.
 
 ## Elements Prives — `PRIVATE/` (OBLIGATOIRE)
 
@@ -40,7 +47,7 @@ config locale d'un poste) va dans `PRIVATE/` (racine, gitignore), range par port
 au projet) ou `PRIVATE/<ENV>/` (propre a un environnement, ex. `PRIVATE/PROD/kubeconfig`). Exceptions, liees a la
 structure du projet : `PRIVATE/gitconfig` (racine), `.env` et `.claude/agents/environments/<env>.env` gardent
 leurs emplacements fixes (une variable designant un fichier d'acces y pointe : `KUBECONFIG=PRIVATE/PROD/kubeconfig`) ;
-le temporaire reste dans `_work/tmp/`. `PRIVATE/` est **partage** : un seul exemplaire (checkout principal), jamais
+le temporaire prive reste dans `_work/tmp/` (jamais `/tmp`). `PRIVATE/` est **partage** : un seul exemplaire (checkout principal), jamais
 copie — depuis un worktree, `"$(git rev-parse --path-format=absolute --git-common-dir)/../PRIVATE"`. Structure et
 contenu attendu : `infra` ; `deployer` lit seulement ; tout teammate range lui-meme ce qu'il produit de prive ;
 nouveau sous-dossier hors `GLOBAL/`/`<ENV>/` : demander au teamleader. Jamais de valeur secrete inventee. Jamais de

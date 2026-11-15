@@ -1977,6 +1977,9 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
   "issues": {
     "close_on": "ci"
   },
+  "progress": {
+    "interval_min": 10
+  },
   "commands": {
     "env": "<ENV_CMD : prefixe shell de la chaine native, ex. export PATH=...>",
     "build": "<BUILD_CMD>",
@@ -2041,6 +2044,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
 | `marketing.site` | Defaut `"auto"` : un site marketing est attendu (branche `gh-pages`, uniquement — `MARKETING/` en est le worktree git, jamais un dossier de la branche de code) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
 | `issues.close_on` | Etape 7. `ci` (defaut ; absent = `ci`) : issue fermee sur CI verte apres QA ; `validation` : issue laissee ouverte en `DONE` jusqu'a une validation utilisateur qui la couvre (GATE LOT explicite, sinon GATE 4) — `commands/context/GITHUB.md` §9.5 |
+| `progress.interval_min` | Defaut `10` (absent = `10`, aucune question, modifiable a la main ; projet deja initialise : rien a migrer). Cadence en minutes du point d'avancement periodique du teamleader (% et ETA par teammate actif) — `agents/cdp.md` « Point d'avancement periodique » |
 | `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/COMMON.md` §14) |
 | `browser.path_map` | Etape 9d. **Repli** quand Claude-Launcher ne fournit pas `CL_BROWSER_PATH_MAP` (projet lance sans launcher, ou launcher anterieur a v5.9.0, sans serveur web) : correspondance de chemins pour ouvrir un fichier du projet dans Chrome en `file://` — `project_root` (racine vue par Claude), `launcher_root` (meme racine vue par le poste qui execute Chrome), `launcher_os` (`windows` \| `linux`). Non pose si la variable est fournie. Absent = meme chemin (WSL : `wslpath -m`). Regle : `context/COMMON.md` 14.9 |
 | `commands.env` | Etape 9b. Prefixe shell evalue par tout agent avant ses commandes `commands.*` (chaine d'outils native de l'OS — `context/COMMON.md` 15.10). Ex. sous WSL : `export PATH=$HOME/.nvm/versions/node/v22.11.0/bin:/usr/local/go/bin:$PATH`. Vide si les outils du PATH sont deja natifs |
@@ -3297,6 +3301,31 @@ Lecture seule ici : jouer l'Etape 9d sans question.
 - Sinon → `[=] browser.path_map — <launcher_root> (<launcher_os>), repli projet`.
 - A l'etape d5 : verification de l'Etape 9d (point 3) dans tous les cas ; pour `[+]`/`[~]`, question du point 2 et
   ecriture de `browser.path_map` seul (migration additive, le reste du fichier inchange).
+
+#### Etape d1l — Section « Confinement des fichiers de travail » de CLAUDE.md
+
+Section hors bloc `TEAMLEADER_PROTOCOL` (non resynchronisee par d6). Un projet initialise avant l'exception `/tmp`
+(temporaire non vital) a l'ancienne version, qui interdit `/tmp` en contradiction avec `agents/context/COMMON.md`.
+Lecture seule ici :
+
+```bash
+grep -q '^## Confinement des fichiers de travail' CLAUDE.md \
+  && ! awk '/^## Confinement des fichiers de travail/{p=1;next} p&&/^## /{exit} p' CLAUDE.md | grep -q 'non vital' \
+  && echo "[~] CLAUDE.md — Confinement : exception /tmp (temporaire non vital) a ajouter"
+```
+
+- Sortie vide (section a jour, ou absente : rien a migrer) → rien au rapport d4.
+- `[~]` → a l'etape d5, montrer le diff de la section (`## Confinement des fichiers de travail` jusqu'au `## ` suivant)
+  avec celle de `TEMPLATE_claude/CLAUDE_TEMPLATE.md` et la remplacer apres accord, le reste de `CLAUDE.md` inchange :
+
+```bash
+mkdir -p _work/tmp
+awk '/^## Confinement des fichiers de travail/{p=1} p&&/^## /&&!/^## Confinement/{exit} p' TEMPLATE_claude/CLAUDE_TEMPLATE.md > _work/tmp/confinement.md
+awk 'FNR==NR{s=s $0 "\n"; next}
+     /^## Confinement des fichiers de travail/{printf "%s", s; skip=1; next}
+     skip&&/^## /{skip=0} !skip' _work/tmp/confinement.md CLAUDE.md > CLAUDE.md.tmp \
+  && mv CLAUDE.md.tmp CLAUDE.md && rm -f _work/tmp/confinement.md && echo "✓ CLAUDE.md — section Confinement mise a jour"
+```
 
 #### Etape d2 — Calculer les noms deployes attendus
 
