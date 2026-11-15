@@ -454,6 +454,7 @@ Apres avoir dispatche des taches aux teammates, tu dois publier un tableau de pr
 | Declencheur | Moment |
 |------------|--------|
 | Apres chaque dispatch | Des que tu as envoye des SendMessage, afficher l'etat initial |
+| Toutes les `progress.interval_min` minutes (defaut 10) | Point d'avancement periodique chiffre (% + ETA par teammate actif) — voir ci-dessous |
 | A chaque jalon recu | Un agent signale "demarrage", "etape importante" ou "terminé" |
 | Toutes les 3 reponses teammates | Apres avoir recu 3 messages d'agents depuis le dernier rapport |
 | A chaque transition de phase | Fin de DEV → REVIEW, fin de REVIEW → QA, etc. |
@@ -462,15 +463,63 @@ Apres avoir dispatche des taches aux teammates, tu dois publier un tableau de pr
 > **Regle** : l'utilisateur ne doit jamais avoir a demander ou en est l'equipe.
 > Si tu enchaînes plusieurs reponses de teammates sans publier de tableau, c'est un bug.
 
+### Point d'avancement periodique (% et ETA par teammate)
+
+Tant qu'au moins un teammate est **ACTIF** (tache recue, pas encore `DONE`/`FAILED`), le teamleader fait un point
+chiffre toutes les `progress.interval_min` minutes (`project-config.json`, absent = `10`) et le relaie a l'utilisateur.
+
+**Minuterie** — le teamleader n'agit que sur message : la cadence est portee par une minuterie de session.
+- **Armer** au premier dispatch qui rend un teammate ACTIF : `CronCreate` (`*/<interval_min> * * * *`, session
+  uniquement) avec le prompt `Point d'avancement periodique (cdp.md) — interroger les teammates ACTIFS`. Une seule
+  minuterie a la fois (`CronList` avant d'en creer une).
+- **Supprimer** (`CronDelete`) quand plus aucun teammate n'est ACTIF (dernier `DONE`, attente d'un GATE utilisateur,
+  fin de workflow) ; la rearmer au dispatch suivant.
+- **Filet** : a chaque reveil (message teammate ou utilisateur), si le dernier point date de plus de `interval_min`
+  minutes et qu'un teammate est ACTIF, faire le point immediatement (minuterie perdue, session reprise…).
+
+**Qui interroger** : uniquement les teammates ACTIFS — jamais un agent IDLE, `👤` en attente de validation, ou deja
+`🔴 Bloque` sur une question en cours a l'utilisateur. Tous en parallele, meme tour :
+
+```
+SendMessage({ to: "<agent>", content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+```
+
+**Le % est mesure, pas ressenti** : unites terminees / unites totales de la tache (etapes, fichiers, composants, lots
+de tests — les memes unites que les jalons `EN COURS`, `TEAMMATES_PROTOCOL.md` section 4b).
+
+**ETA calculee par le teamleader** (horodatages : heure du dispatch `t0` et heure de chaque point) :
+- vitesse = `% atteint / (maintenant - t0)` (moyenne depuis le debut de la tache, stable) ;
+- ETA = `maintenant + (100 - %) / vitesse`, arrondie a la minute, en heure locale (`HH:MM`) ;
+- comparer a l'`ETA-agent` : ecart > 50 % → note `⚠️ agent annonce HH:MM` ;
+- ETA qui recule de plus de 5 min depuis le point precedent → note `↘ glisse +N min` ; sinon `→ stable` ;
+- **stagnation** : % inchange depuis le point precedent → ETA `?`, note `⚠️ stagnation`, et
+  `SendMessage` au teammate : `Aucun progres depuis HH:MM — es-tu bloque ? Reponds BLOQUE <raison> ou AVANCEMENT.` ;
+  toujours sans reponse au point suivant → `⚠️ Sans reponse` (procedure de reveil ci-dessous) ;
+- **fin de phase estimee** = ETA la plus tardive des taches qui conditionnent la fin de la phase / du lot (hors taches
+  `🔴`, signalees a part).
+
+**Relais a l'utilisateur** (texte du chat, information seule — une decision passe par `AskUserQuestion`) :
+
+```markdown
+⏱ Avancement HH:MM — <Phase> <LOT-n> — fin de phase estimee HH:MM
+| Teammate | Tache (unite i/N) | % | ETA | Note |
+|----------|-------------------|---|-----|------|
+| dev-backend  | POST /auth (3/5) | 60% | 10:33 | ↘ glisse +8 min |
+| dev-frontend | Page login (2/4) | 50% | 10:40 | → stable |
+| test-writer  | tests auth       | 10% | ?     | ⚠️ stagnation — je lui demande s'il est bloque |
+```
+
+Un `DONE` / `BLOQUE` recu entre deux points est relaye tout de suite en une ligne, sans attendre le point suivant ;
+il sort l'agent du tableau periodique.
+
 ### Procedure de rapport
 
 1. Interroger tous les agents actifs **en parallele** (reponse sur une ligne) :
 
 ```
-SendMessage({ to: "planner",       content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
-SendMessage({ to: "dev-backend",   content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
-SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATUS X%] | [une ligne]" })
-// ... uniquement les agents effectivement spawnes
+SendMessage({ to: "planner",       content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+SendMessage({ to: "dev-backend",   content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
+// ... uniquement les agents effectivement spawnes ET ACTIFS
 ```
 
 2. Compiler et presenter le tableau une fois toutes les reponses recues :
@@ -482,7 +531,7 @@ SendMessage({ to: "dev-frontend",  content: "Statut — format: [AGENT] | [STATU
 | ID | Tache | Agent | Status | Dependance |
 |----|-------|-------|--------|------------|
 | 01 | Plan d'implementation | planner | ✅ Termine | — |
-| 02 | Endpoint POST /auth | dev-backend | 🔄 En cours (60%) | — |
+| 02 | Endpoint POST /auth | dev-backend | 🔄 En cours (60% — ETA 10:33) | — |
 | 03 | Page login UI | dev-frontend | ⏳ Attente dependance | tache-02 |
 | 04 | Revue de code | code-reviewer | 💬 Attente teammate | dev-backend |
 | 05 | Deploy QUALIF | deployer | 👤 Attente validation | utilisateur |

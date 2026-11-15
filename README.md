@@ -799,6 +799,7 @@ Objectif : **ne jamais rejouer le même test sur le même code sans raison**, et
 
 - **Arborescence par lots** : le `test-writer` range les tests de spécification en `tests/integration/<theme>/<lot>/`, `e2e/<theme>/<lot>/`, `tests/procedures/<theme>/<lot>/` (`<theme>` = domaine fonctionnel ; un lot = au plus `testing.lot_max_tests` cas, défaut 50). Le chemin porte l'identité (auto-documenté) ; les tests unitaires restent colocalisés avec le code.
 - **Progression QA** : `qa` exécute **lot par lot** et envoie un jalon au teamleader à chaque fin de lot (`QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 tests, 2 KO`), relayé à l'utilisateur en une ligne — plus d'effet tunnel. Règle générale dans le protocole teammates (§4b) : toute tâche à plusieurs unités envoie un jalon `EN COURS` par unité au teamleader, qui le relaie. Les échanges coordinateur ↔ sous-agents (planner, code-reviewer, qa) suivent les mêmes règles : ordres et retours par références de fichiers, jamais de contenu inline ; jalons des sous-agents agrégés par le coordinateur.
+- **Point d'avancement périodique** : tant qu'un teammate est actif, le teamleader lui demande toutes les `progress.interval_min` minutes (`project-config.json`, défaut 10 — minuterie de session `CronCreate` armée au premier dispatch, supprimée quand plus personne n'est actif) un état chiffré `[NOM] | X% | unité i/N | ETA-agent | une ligne` (% = unités terminées / total), calcule l'ETA de chacun (vitesse moyenne depuis le dispatch, écart avec l'estimation de l'agent, glissement, stagnation → `?` + relance) et relaie à l'utilisateur un tableau `⏱ Avancement HH:MM` avec la fin de phase estimée (`agents/cdp.md` « Point d'avancement périodique »).
 - **Index `tests/INDEX.md`** : ne porte que l'état qui change — une ligne par **lot** (chemin, niveau, composant, feature, statut, tags), plus des lignes fichier pour les exceptions (quarantaine). Un lot sans ligne est traité `feature`. Statuts : `feature` (milestone en cours), `regression` (features livrées — promus par le CDP au déploiement PROD ; un test de reproduction de bugfix naît `regression`), `quarantaine` (échec connu ou instable, raison + issue — ne bloque pas le verdict). Tags : `smoke`, `critical`, `slow`. 
 - **Propriété** : le `test-writer` écrit les tests de spécification (contrats, critères, maquettes) ; les `dev-*` n'écrivent que des tests unitaires internes et ne lancent que la **boucle rapide** (build, lint, typecheck, tests liés à leurs fichiers modifiés — jamais la suite complète).
 - **QA par cycle** : suite **feature** d'abord (KO → retour DEV immédiat, sans NR) ; si OK, NR **impactées** par le diff (`testing.components`) — `testing.regression_at_qa` = `gated` (défaut) \| `parallel` \| `none`.
@@ -849,7 +850,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 
 | Commande | Description |
 |----------|-------------|
-| `/progression` | Tableau de bord temps réel — statut de chaque agent actif |
+| `/progression` | Tableau de bord temps réel — statut, % et ETA de chaque agent actif (aussi fait automatiquement toutes les `progress.interval_min` min) |
 | `/team-status` | État de la team (tableau agents + statut IDLE/EN COURS) — lecture seule |
 | `/team-delete [--force]` | Ferme les teammates IDLE ; `--force` ferme tous les teammates, y compris ceux EN COURS |
 

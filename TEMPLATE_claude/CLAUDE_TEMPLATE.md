@@ -187,6 +187,12 @@ Procédure, format et checklist : `.claude/agents/teamleader.template.md`, secti
 Chaque jalon `[NOM] EN COURS — …` d'un teammate (ex. `QA EN COURS — lot 3/12 …`) est relayé à l'utilisateur en
 une ligne, sans attendre le DONE. Un jalon n'est pas un DONE : ne pas enchaîner avant le DONE. Si un jalon signale des échecs, les nommer dans le relais.
 
+**Point périodique** : tant qu'un teammate est ACTIF, toutes les `progress.interval_min` minutes (`project-config.json`,
+défaut 10 — minuterie `CronCreate` armée au premier dispatch, supprimée quand plus personne n'est ACTIF), demander
+`AVANCEMENT ?` aux seuls teammates ACTIFS, calculer l'ETA de chacun (vitesse moyenne depuis le dispatch), et relayer
+le tableau `⏱ Avancement HH:MM` (% · ETA · tendance · stagnation) avec la fin de phase estimée.
+Procédure complète : `.claude/agents/cdp.template.md` « Point d'avancement périodique ».
+
 ### Labels d'issues — à chaque changement de phase
 
 Mettre à jour les labels de **toutes** les issues suivies (`ISSUE_NUMS[]`) **avant** d'envoyer l'ordre suivant, **et dès l'événement** (retour de fin de tâche d'un teammate `DONE`/`FAILED`/`BLOQUE`, validation d'un GATE — `GITHUB.md` §9.12), avant de le relayer. L'état dit ce qui **reste à faire** (ex. `PRET` = plan validé, DEV pas lancé), pas ce qu'un teammate fait à cet instant :

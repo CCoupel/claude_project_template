@@ -180,6 +180,18 @@ Exemple QA : `QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 test
   l'agent reste ACTIF jusqu'au DONE.
 - Tout mot-clé de jalon propre à un agent est documenté à l'identique dans `<agent>.md` ET `cdp.md` (règle de la section 3).
 
+**Demande `AVANCEMENT ?`** (point périodique du teamleader, `cdp.md` « Point d'avancement périodique ») : répondre
+**immédiatement, en une ligne**, sans interrompre ni changer la tâche, puis reprendre :
+
+```
+SendMessage({ to: "team-lead", content: "[NOM] | <X>% | <unité> i/N (<nom>) | ETA-agent ~<N> min | <une ligne : RAS ou anomalie>" })
+```
+
+- `<X>%` = unités terminées / unités totales (les mêmes unités que les jalons), jamais une impression ; tâche sans
+  découpage → estimer sur les étapes de l'ordre et le dire (`étape 1/1`).
+- `ETA-agent` = ta propre estimation du temps restant ; inconnue → `?`.
+- Bloqué → répondre `[NOM] BLOQUE — <raison>` (section 4) au lieu d'un pourcentage.
+
 ---
 
 ## 5. Commande CLEAR
