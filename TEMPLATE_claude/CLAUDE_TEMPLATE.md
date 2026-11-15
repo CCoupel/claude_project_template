@@ -219,20 +219,26 @@ SendMessage({
 ## Confinement des fichiers de travail — INTERDIT de sortir du projet
 
 **Tout fichier ou dossier créé pendant le travail reste DANS le dossier du projet.** Jamais de
-`../`, de chemin absolu hors du repo, ni de `/tmp`, `$TMPDIR`, `~/` ou `mktemp` sans `-p` pointant dans le projet.
+`../`, de chemin absolu hors du repo, ni de `~/`. **Seule exception : `/tmp`** (ou `$TMPDIR`) pour un temporaire
+**non vital** au projet (voir ci-dessous).
 
 | Besoin | Emplacement obligatoire |
 |--------|-------------------------|
 | Worktree git (isolation d'exécution, sans nouvelle branche) | `.claude/worktrees/<nom>` — jamais `../<repo>-<nom>` ni `/tmp/...` |
 | Worktree du site marketing | `MARKETING/` (racine du projet) |
-| Fichier / dossier temporaire (scratch, sortie intermédiaire, `.tmp`, backup) | `_work/tmp/` (créé à la demande, gitignoré) |
+| Fichier / dossier temporaire **utile au projet** (sortie intermédiaire lue par un autre agent ou une étape suivante, backup avant écrasement, fichier d'une procédure du template, contenu privé ou issu de `PRIVATE/`) | `_work/tmp/` (créé à la demande, gitignoré) |
+| Temporaire **non vital** (jetable : scratch d'une seule commande, sortie brute filtrée sur place, téléchargement d'outil, cache de build/test) — perdu sans conséquence, lu par personne d'autre | `/tmp` autorisé : `mktemp -d /tmp/<projet>-<agent>-XXXX` (jamais un nom fixe partagé) |
 | Ordres du teamleader (> 3 lignes), rapports et handoffs inter-agents | `_work/tasks/`, `_work/reports/`, `_work/handoff/` |
 
 - Fichiers temporaires : `mkdir -p _work/tmp && mktemp -p _work/tmp ...` ; les supprimer en fin de tâche.
+- `/tmp` : uniquement pour le non vital. En cas de doute (un autre agent ou une reprise en aurait besoin, contenu
+  sensible — `/tmp` est partagé par tout le poste/conteneur) → `_work/tmp/`. Jamais de worktree, de livrable, de
+  rapport/handoff ni d'élément privé dans `/tmp`. Supprimer son dossier `/tmp/<projet>-…` en fin de tâche.
 - Worktrees : `git worktree add --detach .claude/worktrees/<nom> <ref>` (sans créer de branche) puis `git worktree remove` en fin de tâche.
 - Branche courante : fixée par le teamleader seul ; les agents ne font ni `checkout`/`switch`/`reset` ni retour à un commit précédent dans le checkout principal (`BRANCH REQUEST` au teamleader) — voir `agents/context/COMMON.md`.
 - Ces dossiers sont gitignorés (`_work/`, `.claude/worktrees/`) — ne jamais les commiter.
-- Si un outil impose un emplacement externe, rediriger via `TMPDIR=$PWD/_work/tmp` ; en cas d'impossibilité, **BLOQUE** et demande au teamleader/utilisateur.
+- Si un outil impose un emplacement externe : accepté s'il s'agit de temporaire non vital (`/tmp`, `$TMPDIR`) ;
+  sinon rediriger via `TMPDIR=$PWD/_work/tmp` ; en cas d'impossibilité, **BLOQUE** et demande au teamleader/utilisateur.
 
 ---
 
@@ -257,7 +263,7 @@ PRIVATE/
 | Élément privé lié à un environnement | `PRIVATE/<ENV>/` (ex. `PRIVATE/PROD/kubeconfig`, `PRIVATE/QUALIF/deploy_key`) |
 | Élément privé commun au projet | `PRIVATE/GLOBAL/` (ex. `PRIVATE/GLOBAL/ACCES.md`, `PRIVATE/GLOBAL/dumps/`) |
 | Variables lues par `/deploy` (globales, par environnement) | `.env`, `.claude/agents/environments/<env>.env` — emplacements fixes liés à la structure du projet, **pas** dans `PRIVATE/` ; une variable qui désigne un fichier d'accès pointe dans `PRIVATE/<ENV>/` (ex. `KUBECONFIG=PRIVATE/PROD/kubeconfig`) |
-| Fichier temporaire de travail | `_work/tmp/` (purgé, pas un stockage durable) |
+| Fichier temporaire de travail | `_work/tmp/` (purgé, pas un stockage durable) — jamais `/tmp` pour un contenu privé |
 
 - **`PRIVATE/` est partagé** : un seul exemplaire, à la racine du checkout principal, utilisé par tous les
   teammates — jamais copié (copier un secret le multiplie). Depuis un worktree :

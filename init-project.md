@@ -3302,6 +3302,31 @@ Lecture seule ici : jouer l'Etape 9d sans question.
 - A l'etape d5 : verification de l'Etape 9d (point 3) dans tous les cas ; pour `[+]`/`[~]`, question du point 2 et
   ecriture de `browser.path_map` seul (migration additive, le reste du fichier inchange).
 
+#### Etape d1l — Section « Confinement des fichiers de travail » de CLAUDE.md
+
+Section hors bloc `TEAMLEADER_PROTOCOL` (non resynchronisee par d6). Un projet initialise avant l'exception `/tmp`
+(temporaire non vital) a l'ancienne version, qui interdit `/tmp` en contradiction avec `agents/context/COMMON.md`.
+Lecture seule ici :
+
+```bash
+grep -q '^## Confinement des fichiers de travail' CLAUDE.md \
+  && ! awk '/^## Confinement des fichiers de travail/{p=1;next} p&&/^## /{exit} p' CLAUDE.md | grep -q 'non vital' \
+  && echo "[~] CLAUDE.md — Confinement : exception /tmp (temporaire non vital) a ajouter"
+```
+
+- Sortie vide (section a jour, ou absente : rien a migrer) → rien au rapport d4.
+- `[~]` → a l'etape d5, montrer le diff de la section (`## Confinement des fichiers de travail` jusqu'au `## ` suivant)
+  avec celle de `TEMPLATE_claude/CLAUDE_TEMPLATE.md` et la remplacer apres accord, le reste de `CLAUDE.md` inchange :
+
+```bash
+mkdir -p _work/tmp
+awk '/^## Confinement des fichiers de travail/{p=1} p&&/^## /&&!/^## Confinement/{exit} p' TEMPLATE_claude/CLAUDE_TEMPLATE.md > _work/tmp/confinement.md
+awk 'FNR==NR{s=s $0 "\n"; next}
+     /^## Confinement des fichiers de travail/{printf "%s", s; skip=1; next}
+     skip&&/^## /{skip=0} !skip' _work/tmp/confinement.md CLAUDE.md > CLAUDE.md.tmp \
+  && mv CLAUDE.md.tmp CLAUDE.md && rm -f _work/tmp/confinement.md && echo "✓ CLAUDE.md — section Confinement mise a jour"
+```
+
 #### Etape d2 — Calculer les noms deployes attendus
 
 ```bash
