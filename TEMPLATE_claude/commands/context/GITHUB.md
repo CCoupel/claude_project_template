@@ -709,8 +709,10 @@ QUALIF et du rapport QA ; **lot sans issue `VALID-HUMAINE` : auto-valide, GATE L
 
 **Strictement sequentiel** : le code du lot est **commite** sur la branche du milestone pendant le DEV (commits
 atomiques, merges des agents DEV), mais n'est **pousse** qu'apres le GATE LOT. Le CDP n'envoie **aucun ordre** (DEV,
-test-writer…) pour le lot suivant tant que les issues du lot courant ne sont pas fermees sur CI verte — ni pendant sa
-QUALIF, ni pendant son GATE LOT, ni pendant sa CI. Un refus au GATE LOT ou une CI non verte renvoie le **lot courant**
+test-writer…) pour le lot suivant tant que le lot courant n'est pas **termine et valide** — GATE LOT valide (explicite
+ou auto-valide), CI verte, issues fermees (sauf `close_on` = `validation` sur lot auto-valide) — ni pendant sa
+QUALIF, ni pendant son GATE LOT, ni pendant sa CI. Preconditions verifiees avant tout ordre : `agents/cdp.md`
+« Verrou de demarrage d'un lot ». Un refus au GATE LOT ou une CI non verte renvoie le **lot courant**
 en DEV ; le suivant reste `PRET`.
 
 ```

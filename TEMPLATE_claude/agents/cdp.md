@@ -333,6 +333,28 @@ ses scénarios est `HUMAIN` (ou si rien n'est marqué : sens sûr) ; elle porte 
   « publier en PROD ? », sans ouverture de document. `issues.close_on` = `validation` : les issues encore ouvertes
   passent `A PUBLIER` avant la question ; dans tous les cas, milestone `⏸ a publier` (§9.4b).
 
+### Verrou de démarrage d'un lot — LOT-N+1 seulement si LOT-N est terminé ET validé (BLOQUANT)
+
+Un lot ne démarre **que** lorsque le lot précédent est **terminé et validé**. Avant **tout** ordre portant sur
+LOT-N+1 — DEV, mais aussi préparation : tests du `test-writer`, re-plan du `planner`, maquette, doc, labels
+`EN COURS` demandés à `deployer` — le teamleader vérifie, dans `.claude/workflow-state.json` et sur GitHub :
+
+| # | Précondition sur LOT-N | Preuve |
+|---|------------------------|--------|
+| 1 | QA `DONE` (verdict validé) et Phase 5 faite (QUALIF, ou artefact local si cadrage sans QUALIF) | rapport QA, `DEPLOY QUALIF` `DONE` |
+| 2 | **GATE LOT validé** : réponse explicite de l'utilisateur, **ou** auto-validation consignée (aucune issue `VALID-HUMAINE`, ligne « Lot LOT-N auto-valide » au compte rendu) | réponse `AskUserQuestion` / compte rendu |
+| 3 | Branche du milestone poussée et **CI de validation verte** sur le SHA du lot | `gh run list --branch` → `success`, SHA = `lots.LOT-N.ci_sha` |
+| 4 | Issues du lot fermées (`issues.close_on` = `ci`) — avec `validation` et lot auto-validé, elles restent ouvertes en `DONE` jusqu'au GATE 4 : ce n'est **pas** un blocage | `gh issue list --milestone … --label LOT-N` |
+| 5 | `lots.LOT-N.status` = `completed` (avec `ci_sha`) écrit dans `workflow-state.json` | fichier d'état |
+
+- **Une seule précondition manquante → aucun ordre pour LOT-N+1.** Pendant la QUALIF, le GATE LOT et la CI du lot
+  courant, les teammates sans tâche sur LOT-N restent **IDLE** — ne jamais « avancer » le lot suivant pour les occuper.
+- Un refus au GATE LOT ou une CI non verte renvoie **LOT-N** en DEV ; LOT-N+1 reste `PRET` (verrou toujours fermé).
+- À l'ouverture du verrou, relayer en une ligne : `✅ LOT-N terminé et validé (GATE LOT <explicite|auto>, CI verte <sha court>) → LOT-N+1 démarre`,
+  puis seulement le premier ordre de LOT-N+1.
+- Un ordre de LOT-N+1 envoyé par erreur avant l'ouverture du verrou : l'annuler aussitôt (`SendMessage` « Annule
+  <tâche> — LOT-N pas encore validé, reste IDLE ») et le signaler à l'utilisateur.
+
 ### GATE de validation par tests (GATE LOT, GATE 4) — présentation obligatoire
 
 Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide en exécutant des tests

@@ -193,6 +193,14 @@ défaut 10 — minuterie `CronCreate` armée au premier dispatch, supprimée qua
 le tableau `⏱ Avancement HH:MM` (% · ETA · tendance · stagnation) avec la fin de phase estimée.
 Procédure complète : `.claude/agents/cdp.template.md` « Point d'avancement périodique ».
 
+### Lots — démarrage du suivant seulement si le précédent est terminé ET validé
+
+**Aucun ordre** (DEV, tests, plan, maquette, doc, labels `EN COURS`) pour LOT-N+1 tant que LOT-N n'a pas : QA `DONE`
++ QUALIF, **GATE LOT validé** (par l'utilisateur, ou auto-validé sans issue `VALID-HUMAINE`), CI verte sur son SHA,
+issues fermées (sauf `close_on` = `validation`), `lots.LOT-N.status` = `completed`. Pendant QUALIF / GATE LOT / CI,
+les teammates restent IDLE. Ouverture relayée : `✅ LOT-N terminé et validé (…) → LOT-N+1 démarre`.
+Préconditions et preuves : `.claude/agents/cdp.template.md` « Verrou de démarrage d'un lot ».
+
 ### Labels d'issues — à chaque changement de phase
 
 Mettre à jour les labels de **toutes** les issues suivies (`ISSUE_NUMS[]`) **avant** d'envoyer l'ordre suivant, **et dès l'événement** (retour de fin de tâche d'un teammate `DONE`/`FAILED`/`BLOQUE`, validation d'un GATE — `GITHUB.md` §9.12), avant de le relayer. L'état dit ce qui **reste à faire** (ex. `PRET` = plan validé, DEV pas lancé), pas ce qu'un teammate fait à cet instant :
