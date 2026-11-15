@@ -506,7 +506,7 @@ l'utilisateur** (GATE), jamais seulement a l'envoi de l'ordre suivant : une issu
 du GATE 2 avec `PRET`, §9.0 et §9.11) sur chaque issue de chaque lot, apres validation du plan (GATE 2). Ce n'est **pas** un label de phase : il se superpose a la
 phase, n'est jamais retire par une transition et reste jusqu'a la fin du milestone. Une issue appartient a un seul lot. **Label de validation humaine :** `VALID-HUMAINE` — pose par le CDP (via `deployer`, §9.13) sur chaque issue dont au moins un scenario de test est `HUMAIN`. Superpose a la phase, jamais retire par une transition ; son absence = issue auto-validable (la QA suffit). Un lot est « a validation humaine » si l'une de ses issues le porte.
 
-Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est l'unite de livraison ; le panneau l'affiche sous son lot parent `LOT-N`, dans l'ordre de livraison). La description du label porte l'objectif du lot (§9.11).
+Notation `LOT-N` ou, pour un sous-lot, `LOT-N.M` (le sous-lot est une unite de developpement — DEV, REVIEW, QA — enchainee sans validation utilisateur ; le lot parent `LOT-N` est l'unite de livraison — QUALIF, GATE LOT, push, CI, fermeture ; le panneau affiche le sous-lot sous son lot parent, dans l'ordre de livraison). La description du label porte l'objectif du lot (§9.11).
 
 Regles :
 - Les labels de phase (`PLANNING` → `PRET` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE` ⇄ `LOT A VALIDER` / `A PUBLIER`, avec `PLAN A VALIDER` entre `PLANNING` et `PRET`) sont **mutuellement exclusifs** (un seul a la fois), **sauf** `EN REVIEW` + `EN QA`
@@ -700,6 +700,13 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE,PLAN A VALIDE
 
 ### 9.5b Lot : QUALIF, validation, push (GATE LOT)
 
+> **Lot decoupe en sous-lots** (`LOT-N.1`, `LOT-N.2`…) : chaque sous-lot fait DEV → REVIEW → QA (code commite sur la
+> branche du milestone, **non pousse**) ; QA `DONE` → ses issues passent `DONE` (ouvertes) et le sous-lot suivant
+> demarre **sans question a l'utilisateur**. Apres le **dernier** sous-lot, le deroulement ci-dessous s'applique une
+> seule fois au **lot parent entier** (toutes les issues de ses sous-lots) : QUALIF, GATE LOT (a validation humaine si
+> une issue d'un sous-lot porte `VALID-HUMAINE`, sinon auto-valide), push, CI, fermeture. Un refus au GATE LOT ne
+> renvoie que les issues concernees, dans leur sous-lot.
+
 > Cadrage sans QUALIF (`agents/context/MILESTONE_CADRAGE.md` section 5) : « deploye en QUALIF » se lit « BUILD seul,
 > artefact local » — le GATE LOT porte sur cet artefact ; le reste du deroulement est inchange.
 
@@ -808,7 +815,9 @@ Le planner decide du decoupage (table « Lots » du plan) ; le CDP le **recopie*
 `deployer` **execute** — c'est le seul acteur qui ecrit des labels (section 9). Les labels de **tous** les lots sont poses
 en une fois, apres GATE 2 et avant le premier ordre DEV, jamais lot par lot. Les labels de phase s'appliquent ensuite
 par lot. Les lots sont traites **un a la fois**, dans l'ordre (`LOT-1`, `LOT-2`…) : le lot en cours est
-`EN COURS`/`EN REVIEW`/`EN QA`/`DONE`/`LOT A VALIDER`, les suivants restent `PRET` jusqu'a la fermeture des issues du lot precedent (CI verte, §9.5b).
+`EN COURS`/`EN REVIEW`/`EN QA`/`DONE`/`LOT A VALIDER`, les suivants restent `PRET` jusqu'a la fermeture des issues du lot precedent (CI verte, §9.5b). Dans un lot decoupe, les
+sous-lots s'enchainent de la meme facon (un seul a la fois), mais le passage de l'un au suivant se fait a la QA `DONE`,
+sans validation utilisateur ni push (§9.5b).
 
 Nommage strict `LOT-<entier>` ou `LOT-<entier>.<entier>` (`^LOT-[0-9]+(\.[0-9]+)?$`, sans zero devant) : c'est ce que
 reconnait le panneau `milestone-panel` pour construire l'arbre des lots (sous-lots sous leur lot parent, dans l'ordre de
