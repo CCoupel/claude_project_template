@@ -897,11 +897,12 @@ la seule trace qui survit à un terminal tué.
 | Moment | Action CDP |
 |--------|------------|
 | Démarrage workflow | Créer le fichier avec `status: "in_progress"` et toutes les phases à `pending` |
-| GATE 2 validé | Copier le plan validé dans `.claude/workflow/plan-<version>.md` (lu puis écrit tel quel), renseigner `plan` ; table « Lots » → créer `lots` (tous `pending` ; une entrée par unité de livraison, sans les lignes `sous-lots` des lots parents) ; écrire `cadrage` (MILESTONE_CADRAGE.md section 4) |
+| GATE 2 validé | Copier le plan validé dans `.claude/workflow/plan-<version>.md` (lu puis écrit tel quel), renseigner `plan` ; table « Lots » → créer `lots` (tous `pending` ; une entrée par lot non découpé et par sous-lot, sans les lignes `sous-lots` des lots parents) ; écrire `cadrage` (MILESTONE_CADRAGE.md section 4) |
 | Dispatch d'un agent | Passer la phase à `in_progress` (avec lots : `lots.current` et sa `phase`) |
 | Réception DONE conforme | Passer la phase à `completed`, enregistrer refs |
 | Renvoi pour correction | Laisser `in_progress`, incrémenter `cycles` |
-| Lot : CI verte après GATE LOT | Lot `completed` + `ci_sha`, lot suivant `in_progress`, phases DEV et suivantes remises à `pending` |
+| Sous-lot (pas le dernier de son lot) : QA `DONE` | Sous-lot `qa_done`, sous-lot suivant `in_progress`, phases DEV et suivantes remises à `pending` (aucune validation, aucun push) |
+| Lot : CI verte après GATE LOT | Lot `completed` + `ci_sha` (lot découpé : tous ses sous-lots `completed` + même `ci_sha`), lot suivant `in_progress`, phases DEV et suivantes remises à `pending` |
 | Échec définitif | Passer à `failed`, noter la raison |
 | Fin du workflow (dernière phase `completed` — ex. GATE 4 PROD validé — ou abandon confirmé par l'utilisateur) | `status: "completed"` (ou `"abandoned"`) — la prochaine session purge `_work/` normalement |
 

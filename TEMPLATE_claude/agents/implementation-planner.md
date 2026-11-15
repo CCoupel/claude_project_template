@@ -398,7 +398,7 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 >
 > **Un lot est independant et auto-suffisant : il peut etre livre seul.** Les lots sont traites **un a la fois, dans
 > l'ordre** (`LOT-1`, puis `LOT-2`…) : a la fin d'un lot (QA validee) il est deploye en QUALIF et l'utilisateur le
-> valide ; il est alors pousse, la CI passe au vert, ses issues sont fermees, puis le lot suivant demarre — jamais avant
+> valide (lot decoupe : apres son dernier sous-lot, les sous-lots s'enchainant sans validation) ; il est alors pousse, la CI passe au vert, ses issues sont fermees, puis le lot suivant demarre — jamais avant
 > (commite pendant le DEV, pousse apres le GATE LOT : `commands/context/GITHUB.md` §9.5b). Ne pas planifier de travail
 > du lot suivant en parallele de la QUALIF, du GATE LOT ou de la CI du lot courant. Si le milestone doit etre publie en urgence,
 > on publie les lots valides et les lots restants sont deplaces vers un autre milestone : un lot ne doit donc
@@ -421,8 +421,11 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 >   3. **Theme / composant** : a valeur egale, regrouper les issues qui touchent les memes composants ou fichiers.
 >   4. **Livrabilite** : le resultat de chaque lot est valide seul (colonne « Objectif »).
 > - **Sous-lots (optionnel)** : un lot peut se decouper en sous-lots `LOT-<n>.<m>` (`LOT-2.1`, `LOT-2.2`…, `m` continu
->   a partir de 1). **Le sous-lot est l'unite de livraison** (QUALIF, validation, push, CI, fermeture), traite dans l'ordre
->   numerique (`2.1` < `2.2` < `3`) ; le lot parent ne sert qu'a regrouper (affichage), sans validation propre.
+>   a partir de 1). **Le sous-lot est une unite de developpement** (DEV → REVIEW → QA), traitee dans l'ordre numerique
+>   (`2.1` < `2.2` < `3`) : les sous-lots s'enchainent **sans validation utilisateur**, chacun demarrant quand le
+>   precedent est valide par la QA. **Le lot parent est l'unite de livraison** : apres son dernier sous-lot, QUALIF,
+>   GATE LOT (validation utilisateur seulement si une issue d'un de ses sous-lots porte `VALID-HUMAINE`), push, CI,
+>   fermeture — une seule fois pour tout le lot.
 >   Un meme `n` n'est pas utilise a la fois seul (`LOT-2`) et decoupe (`LOT-2.1`). Un lot decoupe a sa propre ligne
 >   dans la table, colonne Issues `sous-lots`, pour porter son objectif commun (titre du groupe dans le panneau).
 > - **Objectif** : court (**100 caracteres max**, limite d'une description de label GitHub), formule comme un resultat

@@ -199,6 +199,9 @@ Procédure complète : `.claude/agents/cdp.template.md` « Point d'avancement p�
 + QUALIF, **GATE LOT validé** (par l'utilisateur, ou auto-validé sans issue `VALID-HUMAINE`), CI verte sur son SHA,
 issues fermées (sauf `close_on` = `validation`), `lots.LOT-N.status` = `completed`. Pendant QUALIF / GATE LOT / CI,
 les teammates restent IDLE. Ouverture relayée : `✅ LOT-N terminé et validé (…) → LOT-N+1 démarre`.
+**Sous-lots** (`LOT-N.M`) : un à la fois, dans l'ordre ; `LOT-N.M+1` démarre dès la QA `DONE` de `LOT-N.M`, **sans
+validation utilisateur** (ni QUALIF, ni push). Ta validation n'intervient qu'au niveau du lot parent, après son
+dernier sous-lot, et seulement si une de ses issues porte `VALID-HUMAINE`.
 Préconditions et preuves : `.claude/agents/cdp.template.md` « Verrou de démarrage d'un lot ».
 
 ### Labels d'issues — à chaque changement de phase

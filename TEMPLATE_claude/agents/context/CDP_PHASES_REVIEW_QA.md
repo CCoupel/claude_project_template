@@ -128,6 +128,10 @@ SendMessage({ to: "doc-updater", content: "
 **Apres reception :**
 - DONE →
   > `ISSUE_NUMS[]` non vide → label `DONE` sur toutes les issues, remove `EN QA`/`EN REVIEW`/`EN COURS`/`PLANNING`/`PRET`
+  **Sous-lot qui n'est pas le dernier de son lot** (`LOT-N.M`, il reste `LOT-N.M+1`) : ni Phase 5, ni GATE LOT, ni push —
+  `lots.LOT-N.M.status` = `qa_done`, relais `✅ LOT-N.M validé par la QA → LOT-N.M+1 démarre`, puis retour Phase DEV
+  sur le sous-lot suivant (`PRET` → `EN COURS`), sans question à l'utilisateur. **Dernier sous-lot** : la suite
+  ci-dessous s'applique au lot parent entier.
   **Milestone avec lots** : pas de push ici — le lot passe d'abord en **Phase 5** (QUALIF, GATE LOT : issues `LOT A VALIDER`
   pendant que l'utilisateur teste et valide, `GITHUB.md` §9.4b), puis le CDP pousse la branche et attend la CI (`GITHUB.md` §9.5b) ; CI verte → issues du lot fermées
   → lot suivant (retour Phase DEV, `PRET` → `EN COURS`) ; plus de lot → fin du milestone (GATE 4 pour PROD).
