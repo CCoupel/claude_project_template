@@ -51,7 +51,7 @@ CI pour PROD), voir `agents/infra.md` section 3 (principe BORE).
 ## Prerequis
 
 - [ ] Un candidat (`/build`) existe pour la version a publier
-- [ ] PROD uniquement : documentation a jour, CHANGELOG mis a jour, publication QUALIF deja
+- [ ] PROD uniquement : documentation a jour, **`README.md` du projet a jour**, CHANGELOG mis a jour, publication QUALIF deja
       validee (sauf hotfix)
 
 ## Workflow

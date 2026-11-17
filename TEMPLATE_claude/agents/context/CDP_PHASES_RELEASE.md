@@ -15,7 +15,17 @@
 >   « BUILD seul depuis la branche [branche] — Cadrage : sans QUALIF. [Avec lots : Lot : LOT-N] Retourne : DONE + version [X.Y.Z.a] + chemin de
 >   l'artefact `build/candidate_vX.Y.Z/` » ; le GATE LOT / GATE 4 porte sur cet artefact local (procedure de test
 >   adaptee au local, « Binaire a tester » = ce chemin). NR complete inchangee. Historique : `🧪 en validation locale — <X.Y.Z.a>`.
-> - `cadrage.doc == dev` → pas de DOC FINALIZE : le GATE 4 n'attend pas `doc-updater`.
+> - `cadrage.doc == dev` → pas de DOC FINALIZE : le GATE 4 n'attend pas `doc-updater` — mais la mise a jour du
+>   `README.md` reste due avant PROD : ordre a l'agent DEV concerne (meme regle, voir « README avant PROD » ci-dessous).
+
+> **README avant PROD (obligatoire)** : avant toute publication en production, le `README.md` du projet est mis a
+> jour pour refleter l'etat livre (fonctionnalites, installation, configuration, variables d'environnement, usage).
+> Cette mise a jour a lieu en Phase 5 (DOC FINALIZE) — jamais en Phase 6, puisque PROD = zero modification. Le GATE 4
+> ne s'ouvre pas tant que le README n'est pas a jour (ou explicitement « inchange » avec une raison).
+> **Milestone avec lots** : une seule mise a jour, pendant le **dernier lot** (son DOC FINALIZE), couvrant tous les
+> lots du milestone — les DOC FINALIZE des lots precedents ne touchent pas au README (ligne `README : differe au
+> dernier lot`). Publication anticipee au GATE LOT : le lot qui vient d'etre valide devient le dernier — ordre
+> `DOC FINALIZE — README` a `doc-updater` (`doc: dev` : a l'agent DEV) sur les lots valides, DONE attendu avant le GATE 4.
 
 **Validation infra (avant de lancer) :**
 ```
@@ -56,8 +66,12 @@ SendMessage({ to: "doc-updater", content: "
   DOC FINALIZE — completer la documentation initiee en Phase 4.
   Ajouter : version dev courante [X.Y.Z] (a titre indicatif — le build QUALIF exact, avec son `a`,
   est rapporte separement par deployer), release notes, resultats QA si pertinents.
+  [Sans lots, ou dernier lot :] OBLIGATOIRE avant PROD : mettre a jour README.md du projet pour
+  refleter l'etat livre par tout le milestone (fonctionnalites, installation, configuration,
+  variables d'environnement, usage) ; si rien ne change, le dire avec la raison.
+  [Lot non dernier :] Ne pas toucher README.md — mise a jour differee au dernier lot.
   Ne pas toucher {VERSION_FILE} — `a` est gere exclusivement par deployer.
-  Retourne : DONE + fichiers modifies + SHA commit doc.
+  Retourne : DONE + fichiers modifies + ligne README (mis a jour | inchange — raison) + SHA commit doc.
 " })
 ```
 
@@ -69,7 +83,9 @@ SendMessage({ to: "doc-updater", content: "
 
 **GATE 4 — s'ouvre uniquement quand TOUT est termine :**
 
-Attendre DONE de deployer ET DONE de doc-updater (sauf `cadrage.doc == dev`) ET (si `testing.full_regression_at` est `qualif` ou `build`)
+Attendre DONE de deployer ET DONE de doc-updater (sauf `cadrage.doc == dev` : DONE de l'agent DEV charge du README)
+ET README a jour (ligne README du rapport du dernier lot : `mis a jour` ou `inchange — raison` ; absente ou `differe` →
+redemander, GATE 4 ferme) ET (si `testing.full_regression_at` est `qualif` ou `build`)
 le verdict VALIDATED de la NR complete avant de presenter a l'utilisateur. L'utilisateur n'est jamais invite
 a valider une QUALIF dont la NR est KO ou pas encore terminee.
 
@@ -87,6 +103,7 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 **Version deployee (QUALIF)** : [X.Y.Z.a — depuis le rapport deployer]   **Branche** : [branche]   **URL** : [url qualif]
 **Binaire a tester** : [chemin exact — depuis le champ "Binaire" du rapport DEPLOY DONE]
 **Documentation** : finalisee (SHA [sha])
+**README** : [mis a jour | inchange — raison] (prerequis PROD)
 
 > Tout est pret. Tester les scenarios ci-dessous, puis valider via la question qui suit (`AskUserQuestion`).
 > Apres validation : aucune modification — PROD est purement mecanique.

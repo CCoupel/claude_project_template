@@ -16,7 +16,7 @@
 - [ ] Un candidat (`/build`) existe pour la version a publier
 - [ ] `infrastructure.environments[<env>].access.verified.status == "ok"` (registre/depot de
       publication joignable — meme regle et meme conduite que pour DEPLOY ci-dessous)
-- [ ] PROD uniquement : documentation a jour, CHANGELOG mis a jour, publication QUALIF deja
+- [ ] PROD uniquement : documentation a jour, **`README.md` du projet a jour**, CHANGELOG mis a jour, publication QUALIF deja
       validee pour ce candidat — **sauf hotfix** ou ordre portant `Cadrage : sans QUALIF`
       (`context/MILESTONE_CADRAGE.md` section 5), ou PUBLISH PROD part directement du BUILD valide au GATE 4
       (voir Mode Teammates)
