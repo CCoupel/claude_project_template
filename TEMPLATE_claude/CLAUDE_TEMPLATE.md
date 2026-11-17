@@ -2,7 +2,7 @@
 
 > **Repo** : `{ORG}/{PROJECT}`
 > **Branche principale** : `main`
-> **Versionnement** : `X.Y.Z.a` en dev / `X.Y.Z` en prod — voir `.claude/commands/context/COMMON.template.md` section 5
+> **Versionnement** : `X.Y.Z.a` en dev / `X.Y.Z` en prod — voir `.claude/commands/context/VERSIONING.template.md` section 5
 
 ---
 

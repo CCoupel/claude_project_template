@@ -82,7 +82,7 @@ gh issue view <numero> --json number,title,body,labels,assignees,milestone,state
 > - aucun milestone ouvert ne convient → proposer d'en creer un (`/milestone new <version>`) avant
 >   de creer l'issue. Jamais d'option « Aucun milestone ».
 >
-> Voir aussi `context/COMMON.md` section 5.4 (Regle d'Or) et `commands/backlog.md` Etape 2.
+> Voir aussi `context/VERSIONING.md` section 5.4 (Regle d'Or) et `commands/backlog.md` Etape 2.
 
 ```bash
 gh issue create \
@@ -219,7 +219,7 @@ gh api repos/{owner}/{repo}/milestones \
 # Milestone correspondant a une version — matching par PREFIXE, jamais par titre exact ni sur
 # un separateur precis (le titre reel peut porter un nom descriptif apres le prefixe, avec un
 # separateur non garanti — convention " — " via /milestone new, mais milestones plus
-# anciens/manuels parfois en " - " ou autre ; voir 3.2 et context/COMMON.md section 5.7). Seul
+# anciens/manuels parfois en " - " ou autre ; voir 3.2 et context/VERSIONING.md section 5.7). Seul
 # compte le caractere suivant le prefixe : ni chiffre ni point.
 gh api repos/{owner}/{repo}/milestones \
   --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
@@ -539,7 +539,7 @@ Ce tableau et la section 9 sont la **seule definition** des statuts : les autres
 
 ### 8.3 Mapping Labels → Segment de Version
 
-Utilise par `/milestone new` (Etape 6) et a chaque association d'issue en cours de cycle (`gh issue edit --milestone`) pour verifier que le saut de version choisi correspond a la nature des issues associees — voir `context/COMMON.md` section 5.7. Verification **non-bloquante** : simple avertissement en cas d'ecart.
+Utilise par `/milestone new` (Etape 6) et a chaque association d'issue en cours de cycle (`gh issue edit --milestone`) pour verifier que le saut de version choisi correspond a la nature des issues associees — voir `context/VERSIONING.md` section 5.7. Verification **non-bloquante** : simple avertissement en cas d'ecart.
 
 | Label | Segment attendu | Force |
 |-------|------------------|-------|

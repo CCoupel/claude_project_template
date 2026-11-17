@@ -185,7 +185,7 @@ verbeuse ou un log de build complet coute facilement 20 000 a 50 000 tokens pour
 
 ## Gestion des Versions (OBLIGATOIRE)
 
-> **Reference complete** (cycle de vie detaille, exemple, regle du milestone) : `commands/context/COMMON.md` section 5.
+> **Reference complete** (cycle de vie detaille, exemple, regle du milestone) : `commands/context/VERSIONING.md` section 5.
 > **Qui incremente quoi** (agents dev/deploy) : `context/DEV_COMMON.md`.
 
 Format : `X.Y.Z.a` en dev/qualif, `X.Y.Z` en prod (le `a` n'est jamais publie en prod).
@@ -211,7 +211,7 @@ PLAN -> [validation] -> DEV (TEST-WRITER en Batch 1) -> [REVIEW ∥ QA] -> DOC -
 
 **[validation] = Points de validation utilisateur obligatoires**
 **[REVIEW ∥ QA] = executes en parallele apres DEV** (repli sequentiel si `qa_parallelizable == false`, voir `context/QUALITY.md` section 12)
-**Plan de tests** : `context/COMMON.md` section 15
+**Plan de tests** : `context/TEST_PLAN.md` section 15
 
 ### Transmission de Contexte
 
@@ -258,4 +258,4 @@ Les fichiers `context/` partagés (`context/COMMON.md`, `context/GITHUB.md`, `co
 | `CHANGELOG.md` | Historique des versions |
 | `{VERSION_FILE}` | Version actuelle |
 | `contracts/*.md` | Contrats API |
-| `docs/mockup/INDEX.md`, `DECISIONS.md` | Maquettes actives et contraintes de conception (`commands/context/COMMON.md` section 14) |
+| `docs/mockup/INDEX.md`, `DECISIONS.md` | Maquettes actives et contraintes de conception (`commands/context/MOCKUPS.md` section 14) |

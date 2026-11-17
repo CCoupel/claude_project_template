@@ -39,7 +39,7 @@ Sinon -> workflow normal.
 | `coverage` | Rapport de couverture (`commands.coverage`) |
 | `quick` | Lots tagues `smoke` de `tests/INDEX.md` |
 
-Plan de tests : `context/COMMON.md` section 15.
+Plan de tests : `context/TEST_PLAN.md` section 15.
 
 ## Exemples
 

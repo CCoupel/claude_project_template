@@ -110,7 +110,7 @@ est sans test-writer — `agents/context/MILESTONE_CADRAGE.md` section 5), **ava
 
 ### 6. QA
 
-- Test de reproduction (doit maintenant passer), puis NR impactees du composant (`context/COMMON.md` section 15)
+- Test de reproduction (doit maintenant passer), puis NR impactees du composant (`context/TEST_PLAN.md` section 15)
 - Verification specifique du scenario du bug
 - Build OK
 - Par defaut, demarre des que TEST-WRITER a livre ses scripts — en parallele de REVIEW, sans attendre son

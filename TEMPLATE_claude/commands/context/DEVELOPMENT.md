@@ -72,7 +72,7 @@ git branch --show-current
 
 ### Etape 2 : Version (jamais a la charge de DEV)
 
-`X.Y.Z` est fixe integralement par le titre du milestone actif — voir `context/COMMON.md` section 5.7. `a` est un compteur de build gere exclusivement par `deploy` (tache BUILD, agnostique a l'environnement). DEV ne touche jamais `{VERSION_FILE}`, quel que soit le type de commit (feature ou bugfix).
+`X.Y.Z` est fixe integralement par le titre du milestone actif — voir `context/VERSIONING.md` section 5.7. `a` est un compteur de build gere exclusivement par `deploy` (tache BUILD, agnostique a l'environnement). DEV ne touche jamais `{VERSION_FILE}`, quel que soit le type de commit (feature ou bugfix).
 
 ### Etape 3 : Implementer
 
@@ -90,7 +90,7 @@ Suivre l'ordre et les conventions de ton template de stack (`dev-*.template.md` 
 # Tests — boucle rapide uniquement : tests lies a tes fichiers modifies, hors tag `slow`
 # (`commands.test_related` avec {FILES}, sinon `commands.test_targeted` sur les paquets/dossiers touches),
 # avec la chaine native de l'OS (`commands.env`).
-# La suite complete ({TEST_CMD}) est jouee par QA, jamais ici (context/COMMON.md 15.2, 15.10).
+# La suite complete ({TEST_CMD}) est jouee par QA, jamais ici (context/TEST_PLAN.md 15.2, 15.10).
 ```
 
 Commit local uniquement — **pas de push**. Tous les agents (dev, review, qa) travaillent sur

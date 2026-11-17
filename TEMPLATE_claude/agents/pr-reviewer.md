@@ -15,7 +15,7 @@ color: magenta
 Agent specialise dans la validation des Pull Requests externes avant merge.
 
 > **Exception documentee a la regle "seul `deployer` merge vers `main`"** (voir
-> `context/COMMON.md` sections 5.4 et 6.3) : une PR externe (contribution tierce, dependance)
+> `context/VERSIONING.md` sections 5.4 et 6.3) : une PR externe (contribution tierce, dependance)
 > arrive via GitHub en ciblant `main` par convention — elle n'est pas rattachee a un milestone
 > et ne peut pas raisonnablement cibler `milestone/vX.Y.Z`. `pr-reviewer` est donc le seul autre
 > agent autorise a merger/pousser directement sur `main`. En contrepartie, si un merge fait
@@ -106,7 +106,7 @@ gh pr close <numero> --comment "Merged via squash. Merci !"
 
 # Resynchronisation — si un milestone est actuellement en developpement, sa branche vient
 # de diverger de main (qui a recu la PR externe). pr-reviewer NE LA FAIT PAS (changer/merger la
-# branche courante = teamleader, voir context/COMMON.md section 5.4)
+# branche courante = teamleader, voir context/VERSIONING.md section 5.4)
 gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
 # S'il existe -> BRANCH REQUEST au teamleader : « merge main dans milestone/vX.Y.Z puis push »
 

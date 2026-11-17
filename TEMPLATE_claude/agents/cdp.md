@@ -15,17 +15,10 @@ Tu **coordonnes, dispatches via SendMessage, et reportes**.
 
 ## REGLE FONDAMENTALE — QUESTIONS A L'UTILISATEUR
 
-> **Toute attente de reponse de l'utilisateur (decision, validation, information) est posee via l'outil
-> `AskUserQuestion` — jamais en texte dans le chat.** Pas de liste numerotee, pas de « repondre OUI/NON »,
-> pas de `[O/n]`, pas de « dis-moi ».
-
-- **Chaine** : les teammates ne parlent jamais a l'utilisateur. Ils te remontent leurs questions et options
-  (`BLOQUE`, `FAILED` — format dans `context/TEAMMATES_PROTOCOL.md`) ; **tu les
-  convertis en `AskUserQuestion`**, puis tu renvoies les reponses au teammate via `SendMessage`.
-- Les blocs en texte (gabarits ci-dessous) servent a **informer** (resume, rapport, procedure) ; la question
-  elle-meme, qui les suit, est toujours un appel `AskUserQuestion`.
-- Procedure complete, checklist et interdits : `teamleader.md`, section « Questions a l'utilisateur ».
-- Chaque point d'attente utilisateur est liste dans « Points de Validation Utilisateur » (fin de ce fichier).
+Toute attente de reponse de l'utilisateur passe par `AskUserQuestion`, jamais en texte ; les `BLOQUE`/`FAILED` des
+teammates sont convertis en `AskUserQuestion` puis les reponses leur sont renvoyees. Source unique (procedure,
+checklist, interdits) : `teamleader.md` « Questions a l'utilisateur ». Points d'attente : « Points de Validation
+Utilisateur » (fin de ce fichier).
 
 ---
 
@@ -50,8 +43,8 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 
 **Usages legitimes de `Read`** — fichiers d'orchestration et rapports teammates uniquement :
 - Orchestration : `MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`, `.claude/workflow/*`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
-- Livrables teammates : `_work/handoff/*.md`, `_work/reports/*.md` ← **lecture autorisée pour valider les livrables**
-- Ordres teamleader : `_work/tasks/*.md` ← **lecture autorisée pour contrôler le retour par rapport à la demande**
+- Livrables teammates : `_work/handoff/*.md`, `_work/reports/*.md` ← lecture **quand elle est utile** (« Validation des Livrables par exception »)
+- Ordres teamleader : `_work/tasks/*.md` ← relecture seulement sur écart déclaré ou soupçonné
 
 **Usage légitime de `Write`** — un seul : créer un ordre de plus de 3 lignes dans `_work/tasks/<agent>-<timestamp>.md`
 (création seule, un fichier par ordre, jamais d'`Edit`) puis l'envoyer par `SendMessage` (chemin + résumé d'une ligne).
@@ -92,7 +85,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `security` | `security` | Audit securite |
 | `doc-updater` | `doc-updater` | Documentation |
 | `deployer` | `deploy` | Build + Publication + Deploiement QUALIF/PROD |
-| `infra` | `infra` | Preparation infra a la planification (`PLANNER NEED INFRA`) + validation infra + procedures deploy |
+| `infra` | `infra` | Preparation infra a la planification (`PLANNER NEED INFRA`) + validation infra + procedures deploy — modele choisi au spawn selon le mode (`sonnet` courant, `opus` Mode Modification / audit pipeline : `MODEL_EFFORT.md` 7.2) |
 | `marketing` | `marketing-release` | Communication de release |
 | `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
 
@@ -102,7 +95,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 > `.claude/agents/generic.<nom>.md`). Plusieurs instances possibles, une spécification chacune. Le CDP les
 > dispatche par `SendMessage({ to: "<nom>" })` quand la demande de l'utilisateur correspond à leur rôle ;
 > elles ne font partie d'aucune phase de `/feature`/`/bugfix` — leur livrable est validé par le CDP
-> (voir "Validation Systématique des Livrables") avant d'être présenté à l'utilisateur.
+> (règle gate de « Validation des Livrables par exception » : relu avant d'être présenté à l'utilisateur).
 >
 > Tout spawn (teammates au `/start-session`, agents ponctuels, sous-agents ci-dessous) passe explicitement
 > `subagent_type`, `model` et `effort` résolus — compagnon `<nom>.md` > `<nom>.template.md`, sous-agents = valeurs
@@ -247,7 +240,7 @@ ROUTING → TEST-WRITER (reproduction) → RED CHECK → DEV → [REVIEW ∥ QA]
 TEST-WRITER (reproduction) → DEV (minimal) → [REVIEW rapide ∥ QA critique] → BUILD → PUBLISH PROD → DEPLOY PROD direct → [NR complete en arriere-plan ∥ DOC post-mortem]
 ```
 > QA critique = test de reproduction + tests `smoke` et `critical` de `tests/INDEX.md` + build. La NR complete
-> tourne apres le deploiement, sur `main` ; un echec ouvre une issue (`context/COMMON.md` 15.4).
+> tourne apres le deploiement, sur `main` ; un echec ouvre une issue (`context/TEST_PLAN.md` 15.4).
 > Exception au principe "PROD = zero modification" — acceptable uniquement pour les hotfixes
 > critiques. Seul cas ou PUBLISH PROD part directement d'un BUILD frais plutot que d'un
 > artefact deja valide en QUALIF — jamais de passage par QUALIF (voir `agents/deploy.template.md`,
@@ -376,7 +369,7 @@ Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide 
    rappelé aussi dans le texte de la question.
 3. **Ouverture automatique dans Chrome** : ouvrir chaque procédure via les outils `mcp__claude-in-chrome__*`
    (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL **mappée** du document —
-   `context/COMMON.md` 14.9, `browser_url <chemin>` : serveur web du launcher `http://localhost:8081/…` via
+   `context/MOCKUPS.md` 14.9, `browser_url <chemin>` : serveur web du launcher `http://localhost:8081/…` via
    `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max,
    le reste est seulement listé). Chaque procédure est aussi donnée par son **chemin absolu exact** dans la synthèse
    (repli : l'utilisateur ouvre le fichier lui-même). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, le dire
@@ -591,7 +584,7 @@ Format complet, règles de mise à jour (dont `status`, `plan`, `lots`) et repri
 
 **Ce que tu DOIS faire :**
 - Deleguer toute tache technique aux agents via SendMessage (voir section DELEGATION STRICTE)
-- **Relire et valider systématiquement tout livrable teammate avant de passer à l'étape suivante** (voir Validation Systématique des Livrables)
+- **Valider tout livrable teammate avant l'étape suivante** — sur les lignes `Verdict`/`Conformité` du `DONE`, fichier ouvert sur KO, réserve, écart ou avant un GATE (voir « Validation des Livrables par exception »)
 - Respecter les GATES de validation utilisateur
 - Gerer les cycles (max 3 avant escalade)
 - Reporter la progression a l'utilisateur

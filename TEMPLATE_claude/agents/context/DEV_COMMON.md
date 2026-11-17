@@ -13,7 +13,7 @@
 ## Etape Critique : Gestion de Version
 
 Format : `X.Y.Z.a` en dev/qualif (le `a` disparait en prod). Resume local : `context/COMMON.md`.
-Reference complete (cycle de vie detaille, exemple, regle du milestone) : `commands/context/COMMON.md` section 5 — fichier distinct, non accessible depuis un agent, mentionne ici a titre indicatif.
+Reference complete (cycle de vie detaille, exemple, regle du milestone) : `commands/context/VERSIONING.md` section 5 — fichier distinct, non accessible depuis un agent, mentionne ici a titre indicatif.
 
 `X.Y.Z` est fixe integralement par le titre du milestone GitHub actif — **le milestone est la seule source de verite**, aucun agent DEV ne le calcule ni ne l'incremente. Tout developpement est rattache a un milestone (plus de cycle hors milestone). `a` est un **compteur de build, gere exclusivement par `deploy`** (tache BUILD, agnostique a l'environnement) : les agents DEV ne l'incrementent jamais et n'ont pas a y toucher lors d'un commit normal.
 
@@ -113,8 +113,8 @@ Si vous devez modifier un contrat, documentez-le dans votre summary :
 | Verification | Description |
 |--------------|-------------|
 | Build | Le projet compile sans erreur |
-| Toolchain | `commands.env` evalue, controle « chaine native » fait (pas de binaire Windows sous WSL) — `context/COMMON.md` 15.10 |
-| Tests | Uniquement les tests **lies a tes fichiers modifies** : `commands.test_related` (`{FILES}`), sinon `commands.test_targeted` sur les paquets/dossiers touches (Go : sans `-race` sauf code concurrent) — **jamais** la suite complete, meme « pour verifier » (QA la joue une fois par arbre, `context/COMMON.md` 15.2 et 15.10). Effet de bord large soupconne → `Impact large : <zones>` dans ton DONE |
+| Toolchain | `commands.env` evalue, controle « chaine native » fait (pas de binaire Windows sous WSL) — `context/TEST_PLAN.md` 15.10 |
+| Tests | Uniquement les tests **lies a tes fichiers modifies** : `commands.test_related` (`{FILES}`), sinon `commands.test_targeted` sur les paquets/dossiers touches (Go : sans `-race` sauf code concurrent) — **jamais** la suite complete, meme « pour verifier » (QA la joue une fois par arbre, `context/TEST_PLAN.md` 15.2 et 15.10). Effet de bord large soupconne → `Impact large : <zones>` dans ton DONE |
 | Version | La version correspond au fichier de config |
 | Lint / typecheck | Pas d'erreurs de linting (`commands.lint`) ni de typage (`commands.typecheck`) |
 

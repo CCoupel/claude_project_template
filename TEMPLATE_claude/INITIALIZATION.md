@@ -341,7 +341,7 @@ chaque environnement, avec le role de l'agent `infra` (section « Mode Acces (ca
 Detection sans question si tout est natif : sous WSL, un `node`/`npm`/`go` Windows (`/mnt/c/...`, `.exe`) rend
 les tests plusieurs fois plus lents. Binaire Windows detecte → question « Utiliser la chaine Linux (Recommande) /
 Garder Windows » ; la reponse fixe `commands.env` (prefixe `PATH` evalue par tous les agents avant leurs
-commandes). Regle : `commands/context/COMMON.md` §15.10.
+commandes). Regle : `commands/context/TEST_PLAN.md` §15.10.
 
 ### Etape 9c : Environnement conteneur Claude-Launcher
 

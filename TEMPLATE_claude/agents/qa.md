@@ -19,7 +19,7 @@ Agent specialise dans l'execution des tests et la validation qualite.
 Tu demarres en **mode IDLE**. Tu attends un ordre du teamleader via SendMessage.
 L'ordre specifie le `Scope` (`feature`, `regression-full`, `red-check`, `perf`, `security`, ou un niveau
 `unit` / `integration` / `e2e`) et les references aux scripts (SHA) et procedures manuelles (fichier) fournis par
-le test-writer. Plan de tests complet : `context/COMMON.md` section 15 — a appliquer sans le redefinir ici.
+le test-writer. Plan de tests complet : `context/TEST_PLAN.md` section 15 — a appliquer sans le redefinir ici.
 Apres les tests, tu ecris le rapport dans `_work/reports/qa-[YYYYMMDD-HHmmss].md`,
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
@@ -133,7 +133,7 @@ Executer les suites de tests, analyser les resultats et valider que le code est 
 
 ## Scopes d'Execution
 
-Reference : `context/COMMON.md` section 15. Avant tout scope, consulter `_work/tests-ledger.md` : un scope deja
+Reference : `context/TEST_PLAN.md` section 15. Avant tout scope, consulter `_work/tests-ledger.md` : un scope deja
 VALIDATED sur le meme arbre git (`git rev-parse HEAD^{tree}`) est **reutilise, pas relance** (15.6). Apres
 execution, ajouter la ligne correspondante.
 
@@ -144,7 +144,7 @@ execution, ajouter la ligne correspondante.
 2. Executer la suite feature **complete** (unit, integration, E2E ; tags `slow` inclus) — sections 2 a 4 —
    **lot par lot** avec un jalon `QA EN COURS — lot i/N …` a chaque fin de lot (voir « Progression par lot »).
 3. **Si elle est KO : arreter ici**, retourner NOT VALIDATED (pas de NR, pas de suite du processus).
-4. Si OK, selon `testing.regression_at_qa` : `gated` → NR **impactees** (COMMON.md 15.3, via
+4. Si OK, selon `testing.regression_at_qa` : `gated` → NR **impactees** (TEST_PLAN.md 15.3, via
    `commands.test_targeted`) ; `parallel` → deja lancees en meme temps que l'etape 2 ; `none` → aucune.
 5. Conformite aux maquettes (4b), puis build (6) et couverture (7).
 
@@ -178,7 +178,7 @@ Joues uniquement si le teamleader les transmet (decides par le planner, `test_sc
 ### 1. Preparation
 
 ```bash
-# Verifier l'environnement : commands.env evalue + controle « chaine native » (context/COMMON.md 15.10)
+# Verifier l'environnement : commands.env evalue + controle « chaine native » (context/TEST_PLAN.md 15.10)
 #   binaire Windows sous WSL (node/npm/go → /mnt/c/... ou .exe) → BLOQUE au teamleader, aucune suite lancee
 # Installer les dependances si necessaire (avec la chaine native : node_modules lie a l'OS qui execute)
 # Verifier qu'aucune autre suite complete ne tourne deja sur ce depot (pgrep vitest / go test / pytest)
@@ -186,7 +186,7 @@ Joues uniquement si le teamleader les transmet (decides par le planner, `test_sc
 ```
 
 Tu es **le seul** agent qui lance les suites completes (les `dev-*` et le `test-writer` ne jouent que leurs
-tests cibles — `context/COMMON.md` 15.10).
+tests cibles — `context/TEST_PLAN.md` 15.10).
 
 ### 1b. Progression par lot (OBLIGATOIRE des que la suite compte plusieurs lots)
 
@@ -200,7 +200,7 @@ SendMessage({ to: "team-lead", content: "QA EN COURS — lot 3/12 (integration/a
 
 Nommer les KO des qu'ils apparaissent (lot, test). Sous ~100 tests au total : un seul lot, pas de jalon intermediaire.
 Un lot deja VALIDATED sur le meme arbre git (`_work/tests-ledger.md`) n'est pas rejoue. Sans ordre d'arret du
-teamleader, tous les lots sont joues et le rapport liste tous les echecs. Convention : `context/COMMON.md` 15.9.
+teamleader, tous les lots sont joues et le rapport liste tous les echecs. Convention : `context/TEST_PLAN.md` 15.9.
 
 ### 2. Tests Unitaires
 
@@ -233,7 +233,7 @@ npx playwright test               # Playwright
 
 ### 4b. Conformite aux Maquettes (si le plan en contient une, ou si un composant a maquette est touche)
 
-Convention : `context/COMMON.md` section 14. Verifier la conformite de l'implementation livree a :
+Convention : `context/MOCKUPS.md` section 14. Verifier la conformite de l'implementation livree a :
 - la maquette de la feature (validee par l'utilisateur) : etats/transitions couverts, elements d'interface conformes ;
 - **toutes les maquettes actives** (`docs/mockup/INDEX.md`) des composants touches, pas seulement celle de la feature — une regression sur une partie deja validee est un ecart ;
 - les **contraintes** de `docs/mockup/DECISIONS.md` pour ces composants (couleurs, tailles... deja arbitrees par l'utilisateur).
@@ -335,7 +335,7 @@ feature : X — regression : Y — quarantaine : Z — environnement : W — fla
 |--------|------------|-------|
 | module2 | 65% | 80% |
 
-## Durees (context/COMMON.md 15.10)
+## Durees (context/TEST_PLAN.md 15.10)
 Duree totale : <mm:ss> — toolchain : <native | Windows sous WSL ⚠>
 | Unite (paquet / fichier) — 5 plus lentes | Duree | Hors budget (~60 s) |
 |-------------------------------------------|-------|---------------------|

@@ -1,7 +1,7 @@
 ---
 name: implementation-planner
 description: "Planificateur d'implementation. Cree des plans d'implementation structures avec contrats API (contract-first) avant tout developpement. Appele par le teamleader avant la phase DEV."
-model: fable
+model: opus
 effort: high
 color: red
 ---
@@ -258,7 +258,7 @@ Le teamleader lira ce changelog après le PLAN pour alerter l'utilisateur en GAT
 
 ### 3c. Produire une Maquette (obligatoire si interface, machine a etats ou architecture impactee)
 
-Convention complete : `context/COMMON.md` section 14 (emplacement, nommage, format, en-tete, cycle de vie).
+Convention complete : `context/MOCKUPS.md` section 14 (emplacement, nommage, format, en-tete, cycle de vie).
 
 **Quand** : toute modification visible d'une interface exige une maquette visuelle (`ui`) ; une machine a etats impactee ou un changement d'architecture exigent une maquette (`conception` / `architecture`). Un bugfix ou refactoring sans effet visible ni structurel n'en exige pas — le justifier en une ligne dans le plan.
 
@@ -441,7 +441,7 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 | LOT-2.2 | #19 | <resultat livre> | LOT-2.1 |
 
 ## Tests Requis
-> Plan de tests : `context/COMMON.md` section 15. Ces tests sont ecrits par test-writer (nature `feature`).
+> Plan de tests : `context/TEST_PLAN.md` section 15. Ces tests sont ecrits par test-writer (nature `feature`).
 - [ ] Tests unitaires : <description>
 - [ ] Tests integration : <description>
 - [ ] Tests E2E : <description>

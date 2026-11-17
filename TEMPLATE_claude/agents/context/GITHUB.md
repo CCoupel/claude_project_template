@@ -82,7 +82,7 @@ gh issue view <numero> --json number,title,body,labels,assignees,milestone,state
 > - aucun milestone ouvert ne convient → proposer d'en creer un (`/milestone new <version>`) avant
 >   de creer l'issue. Jamais d'option « Aucun milestone ».
 >
-> Voir aussi `commands/context/COMMON.md` section 5.4 (Regle d'Or) et `commands/backlog.md` Etape 2.
+> Voir aussi `commands/context/VERSIONING.md` section 5.4 (Regle d'Or) et `commands/backlog.md` Etape 2.
 
 ```bash
 gh issue create \
@@ -213,7 +213,7 @@ gh api repos/{owner}/{repo}/milestones \
 # Milestone correspondant a une version — matching par PREFIXE, jamais par titre exact ni sur
 # un separateur precis (le titre reel peut porter un nom descriptif apres le prefixe, avec un
 # separateur non garanti — convention " — " via /milestone new, mais milestones plus
-# anciens/manuels parfois en " - " ou autre ; voir context/COMMON.md section 5.7). Seul compte
+# anciens/manuels parfois en " - " ou autre ; voir context/VERSIONING.md section 5.7). Seul compte
 # le caractere suivant le prefixe : ni chiffre ni point.
 gh api repos/{owner}/{repo}/milestones \
   --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest

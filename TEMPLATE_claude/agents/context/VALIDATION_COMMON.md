@@ -157,7 +157,7 @@ Un bon rapport de validation :
 
 ### QA
 - Focus : Fonctionnement, tests, build, couverture
-- Verifications : suite feature puis NR impactees (unit, integration, E2E), conformite maquettes, build ; NR complete a part (`context/COMMON.md` section 15)
+- Verifications : suite feature puis NR impactees (unit, integration, E2E), conformite maquettes, build ; NR complete a part (`context/TEST_PLAN.md` section 15)
 - Position : APRES DEV, en parallele de REVIEW (defaut) ; avant DOC
 
 ---

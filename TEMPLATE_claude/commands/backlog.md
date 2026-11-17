@@ -39,7 +39,7 @@ gh issue list --state open --limit 50 \
 
 3. Trier les groupes de milestones :
    - **Milestones versionnés** — titre `vX.Y`, `vX.Y.Z`, ou `vX.Y.Z — <nom>` (le nom descriptif
-     est optionnel, voir `context/COMMON.md` section 5.7) → extraire le **préfixe** `vX.Y[.Z]`
+     est optionnel, voir `context/VERSIONING.md` section 5.7) → extraire le **préfixe** `vX.Y[.Z]`
      avant tout " — " et trier numériquement croissant sur `X`, puis `Y`, puis `Z` (pas un tri
      alphabétique sur le titre entier : `v1.9` doit passer avant `v1.10`, et le nom après " — "
      ne doit jamais influencer le tri).
@@ -220,7 +220,7 @@ Si aucun milestone ouvert (ou si l'utilisateur en nomme un qui n'existe pas) :
 Aucun milestone ouvert ne convient. L'issue doit être rattachée à un milestone.
 ```
 Puis `AskUserQuestion` : `"Créer le milestone <version recommandée> pour cette issue ?"` — options :
-**Créer <version recommandée> (Recommandé)** (version calculée selon `context/COMMON.md` 5.2 : patch pour un bug,
+**Créer <version recommandée> (Recommandé)** (version calculée selon `context/VERSIONING.md` 5.2 : patch pour un bug,
 minor pour une feature) / **Annuler**. Sur accord, dérouler `/milestone new <version>` puis reprendre à l'étape 3.
 
 ### Etape 3 — Créer l'issue

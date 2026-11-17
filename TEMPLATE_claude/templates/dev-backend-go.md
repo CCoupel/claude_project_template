@@ -112,7 +112,7 @@ func TestCreateUser(t *testing.T) {
 # Build
 go build -o bin/server ./cmd/server
 
-# Tests — boucle DEV : seulement les paquets touches (suite complete = QA, context/COMMON.md 15.10)
+# Tests — boucle DEV : seulement les paquets touches (suite complete = QA, context/TEST_PLAN.md 15.10)
 go test ./internal/foo -run 'TestBar'     # sans -race, sauf code concurrent touche
 go test -race ./internal/foo              # code concurrent touche
 

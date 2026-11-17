@@ -74,7 +74,7 @@ Sinon -> workflow normal.
 
 ### 1bis. MILESTONE (automatique)
 
-Tout developpement est rattache a un milestone — voir `context/COMMON.md` section 5.4. Un seul
+Tout developpement est rattache a un milestone — voir `context/VERSIONING.md` section 5.4. Un seul
 milestone est en developpement a la fois (regle d'or) — le hotfix ne cree jamais de milestone
 parallele a un cycle deja en cours.
 
@@ -87,7 +87,7 @@ gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
   `context/CDP_WORKFLOWS.md` Phase Init (Git).
 - **Aucun milestone actif** -> creer automatiquement le milestone dedie `X.Y.Z+1` (Z+1 sur la
   derniere version prod livree), sans validation utilisateur prealable (urgence prod) — logique
-  de `/milestone new` (`commands/milestone.md` Mode NEW, `context/COMMON.md` section 5.7).
+  de `/milestone new` (`commands/milestone.md` Mode NEW, `context/VERSIONING.md` section 5.7).
   `{VERSION_FILE}` est positionne sur `X.Y.Z+1.0`.
 
 **Cadrage** (`agents/context/MILESTONE_CADRAGE.md` section 6) : toujours le cadrage fixe du flux hotfix (pas de planner

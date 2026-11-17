@@ -1,7 +1,7 @@
 ---
 name: infra
 description: "Agent infrastructure. Gere Dockerfiles, Helm charts, docker-compose et pipelines CI/CD. Applique le principe BORE (promotion sans rebuild ou rebuild deterministe depuis la meme source figee, selon l'environnement). Ne modifie jamais le code applicatif. Appele par le teamleader avant les agents DEV si la feature necessite des changements d'infrastructure."
-model: opus
+model: sonnet
 effort: medium
 color: orange
 ---
@@ -37,6 +37,10 @@ docker-compose, configurations CI/CD. Ne modifie jamais le code applicatif.
 - **Mode Validation** : appelé par le teamleader avant chaque deploy (QUALIF et PROD) pour vérifier la cohérence entre la procédure de déploiement et l'infrastructure définie
 - **Mode Outil** : appelé par le teamleader sur un `BLOQUE outil manquant` d'un teammate (voir ci-dessous)
 - Commande directe `/infra <description>`
+
+> **Modèle selon le mode** (`context/MODEL_EFFORT.md` section 7.2) : `sonnet` (défaut du frontmatter) pour les modes
+> Outil, Accès, Préparation et Validation ; `opus` pour le Mode Modification et la génération / l'audit complet du
+> pipeline (section 3bis, `/init-project`). Le teamleader spawne `infra` avec le modèle du mode demandé.
 
 ## Perimetre
 

@@ -159,7 +159,7 @@ npm run dev
 npm run build
 
 # Tests — boucle DEV : seulement les tests lies a tes fichiers modifies (suite complete = QA,
-# context/COMMON.md 15.10). Node/npm de l'OS qui execute (sous WSL : Node Linux, jamais npm Windows).
+# context/TEST_PLAN.md 15.10). Node/npm de l'OS qui execute (sous WSL : Node Linux, jamais npm Windows).
 npx vitest related --run src/foo.ts src/bar.ts   # Vitest (Jest : npx jest --findRelatedTests <fichiers>)
 
 # Linter
