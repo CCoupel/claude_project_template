@@ -100,7 +100,7 @@ Dans la phase COLLECTE, recuperer les donnees du milestone correspondant a la ve
 # Milestone cloture correspondant a la version — matching par PREFIXE, jamais par titre exact
 # (le titre reel peut porter un nom descriptif apres un separateur non garanti — convention
 # " — " via /milestone new, mais milestones plus anciens/manuels parfois en " - " ou autre,
-# voir context/COMMON.md section 5.7)
+# voir context/VERSIONING.md section 5.7)
 TITLE=$(gh api repos/{owner}/{repo}/milestones \
   --jq '.[] | select(.title == "<version>" or ((.title | ltrimstr("<version>")) as $rest
         | $rest != .title and ($rest == "" or ($rest[0:1] | test("[0-9.]") | not)))) | .title')
@@ -285,7 +285,7 @@ voir `agents/context/CDP_PHASES_RELEASE.md` (Phase 6) et `agents/marketing-relea
 Task({
   name: "marketing",                  // nom canonique (table « Agents Disponibles ») — fichier marketing-release
   subagent_type: "marketing-release",
-  model: <modèle résolu>, effort: <effort résolu>,   // TEAMMATES_PROTOCOL.md section 7 : compagnon marketing-release.md > marketing-release.template.md
+  model: <modèle résolu>, effort: <effort résolu>,   // MODEL_EFFORT.md section 7 : compagnon marketing-release.md > marketing-release.template.md
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.template.md puis .claude/agents/marketing-release.template.md (et .claude/agents/marketing-release.md s'il existe — adaptations projet). Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
 })
 ```

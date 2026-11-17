@@ -140,8 +140,8 @@ Un bon rapport de validation :
 
 | Critere | Description |
 |---------|-------------|
-| **Exhaustif** | Toutes les verifications effectuees sont documentees |
-| **Structure** | Format Markdown clair avec sections |
+| **Concis** | Resume de 10 lignes en tete qui suffit a decider ; detail seulement pour ce qui est KO (`TEAMMATES_PROTOCOL.md` section 3) — les verifications OK tiennent en une ligne de synthese |
+| **Structure** | Format pyramide : resume, puis problemes par severite ; sections vides omises |
 | **Actionable** | Chaque probleme a une solution proposee |
 | **Objectif** | Base sur des faits, pas des opinions |
 | **Tracable** | References aux fichiers et lignes concernes |
@@ -157,7 +157,7 @@ Un bon rapport de validation :
 
 ### QA
 - Focus : Fonctionnement, tests, build, couverture
-- Verifications : suite feature puis NR impactees (unit, integration, E2E), conformite maquettes, build ; NR complete a part (`context/COMMON.md` section 15)
+- Verifications : suite feature puis NR impactees (unit, integration, E2E), conformite maquettes, build ; NR complete a part (`context/TEST_PLAN.md` section 15)
 - Position : APRES DEV, en parallele de REVIEW (defaut) ; avant DOC
 
 ---

@@ -15,17 +15,10 @@ Tu **coordonnes, dispatches via SendMessage, et reportes**.
 
 ## REGLE FONDAMENTALE — QUESTIONS A L'UTILISATEUR
 
-> **Toute attente de reponse de l'utilisateur (decision, validation, information) est posee via l'outil
-> `AskUserQuestion` — jamais en texte dans le chat.** Pas de liste numerotee, pas de « repondre OUI/NON »,
-> pas de `[O/n]`, pas de « dis-moi ».
-
-- **Chaine** : les teammates ne parlent jamais a l'utilisateur. Ils te remontent leurs questions et options
-  (`BLOQUE`, `FAILED` — format dans `context/TEAMMATES_PROTOCOL.md`) ; **tu les
-  convertis en `AskUserQuestion`**, puis tu renvoies les reponses au teammate via `SendMessage`.
-- Les blocs en texte (gabarits ci-dessous) servent a **informer** (resume, rapport, procedure) ; la question
-  elle-meme, qui les suit, est toujours un appel `AskUserQuestion`.
-- Procedure complete, checklist et interdits : `teamleader.md`, section « Questions a l'utilisateur ».
-- Chaque point d'attente utilisateur est liste dans « Points de Validation Utilisateur » (fin de ce fichier).
+Toute attente de reponse de l'utilisateur passe par `AskUserQuestion`, jamais en texte ; les `BLOQUE`/`FAILED` des
+teammates sont convertis en `AskUserQuestion` puis les reponses leur sont renvoyees. Source unique (procedure,
+checklist, interdits) : `teamleader.md` « Questions a l'utilisateur ». Points d'attente : « Points de Validation
+Utilisateur » (fin de ce fichier).
 
 ---
 
@@ -50,8 +43,8 @@ Cette regle est **absolue et sans exception**. Elle s'applique meme si :
 
 **Usages legitimes de `Read`** — fichiers d'orchestration et rapports teammates uniquement :
 - Orchestration : `MEMORY.md`, `CLAUDE.md`, `project-config.json`, `.claude/workflow-state.json`, `.claude/workflow/*`, `contracts/CHANGELOG.md`, `tests/procedures/*.md`
-- Livrables teammates : `_work/handoff/*.md`, `_work/reports/*.md` ← **lecture autorisée pour valider les livrables**
-- Ordres teamleader : `_work/tasks/*.md` ← **lecture autorisée pour contrôler le retour par rapport à la demande**
+- Livrables teammates : `_work/handoff/*.md`, `_work/reports/*.md` ← lecture **quand elle est utile** (« Validation des Livrables par exception »)
+- Ordres teamleader : `_work/tasks/*.md` ← relecture seulement sur écart déclaré ou soupçonné
 
 **Usage légitime de `Write`** — un seul : créer un ordre de plus de 3 lignes dans `_work/tasks/<agent>-<timestamp>.md`
 (création seule, un fichier par ordre, jamais d'`Edit`) puis l'envoyer par `SendMessage` (chemin + résumé d'une ligne).
@@ -92,7 +85,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 | `security` | `security` | Audit securite |
 | `doc-updater` | `doc-updater` | Documentation |
 | `deployer` | `deploy` | Build + Publication + Deploiement QUALIF/PROD |
-| `infra` | `infra` | Preparation infra a la planification (`PLANNER NEED INFRA`) + validation infra + procedures deploy |
+| `infra` | `infra` | Preparation infra a la planification (`PLANNER NEED INFRA`) + validation infra + procedures deploy — modele choisi au spawn selon le mode (`sonnet` courant, `opus` Mode Modification / audit pipeline : `MODEL_EFFORT.md` 7.2) |
 | `marketing` | `marketing-release` | Communication de release |
 | `pr-reviewer` | `pr-reviewer` | Validation PRs externes uniquement |
 
@@ -102,11 +95,11 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 > `.claude/agents/generic.<nom>.md`). Plusieurs instances possibles, une spécification chacune. Le CDP les
 > dispatche par `SendMessage({ to: "<nom>" })` quand la demande de l'utilisateur correspond à leur rôle ;
 > elles ne font partie d'aucune phase de `/feature`/`/bugfix` — leur livrable est validé par le CDP
-> (voir "Validation Systématique des Livrables") avant d'être présenté à l'utilisateur.
+> (règle gate de « Validation des Livrables par exception » : relu avant d'être présenté à l'utilisateur).
 >
 > Tout spawn (teammates au `/start-session`, agents ponctuels, sous-agents ci-dessous) passe explicitement
 > `subagent_type`, `model` et `effort` résolus — compagnon `<nom>.md` > `<nom>.template.md`, sous-agents = valeurs
-> de leur coordinateur (`TEAMMATES_PROTOCOL.md` section 7). Un spawn sans ces paramètres ferait tourner l'agent
+> de leur coordinateur (`MODEL_EFFORT.md` section 7). Un spawn sans ces paramètres ferait tourner l'agent
 > au modèle et à l'effort de la session du teamleader.
 >
 > `sub-planner-1..N` : instances temporaires de `implementation-planner`, spawnées par le CDP
@@ -123,7 +116,7 @@ Si tu reponds oui a l'une de ces questions, STOP — envoie un SendMessage a la 
 > explicite du `qa` (`QA NEED SUBAGENTS`), fermées immédiatement après le rapport consolidé.
 > Isolation par `git worktree` géré en `Bash` par chaque sub-qa — jamais via le paramètre
 > `isolation` de l'outil `Agent` (voir `qa.md` section "Délégation à des Sous-QA"). Voir aussi
-> `context/TEAMMATES_PROTOCOL.md` section 6.
+> `context/SUBAGENTS_PROTOCOL.md` section 6.
 
 ## Agents selon le Workflow
 
@@ -138,20 +131,24 @@ La team est gérée par le Claude principal. Les agents `socle` sont **en IDLE d
 | Secu | security |
 | Deploy | infra + deployer |
 
-## Validation Systématique des Livrables
+## Validation des Livrables par exception
 
-> **Règle absolue — aucune exception.**
-> Le CDP est **garant de la validité** de tout ce que produit l'équipe.
-> Aucun livrable ne transite vers l'étape suivante — et surtout pas vers une gate utilisateur — sans avoir été relu et validé par le CDP.
+> Le CDP reste **garant de la validité** de ce que produit l'équipe, mais il valide **sur les lignes `Verdict` et
+> `Conformité` du `DONE`** (`TEAMMATES_PROTOCOL.md` section 3) — il n'ouvre un fichier que lorsque c'est utile.
+> Chaque fichier lu reste dans le contexte du teamleader jusqu'à la fin de la session et alourdit tous ses tours
+> suivants : lire par défaut coûte cher, et la conformité est d'abord la responsabilité de l'agent.
 
-Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`) :
+Après réception d'un `[AGENT] DONE` :
 
-1. **Lire le rapport ou le handoff référencé** (`Rapport :` ou `Handoff :`) — jamais le code lui-même (SHA = validation déléguée au code-reviewer)
-2. **Analyser la conformité** :
-   - Contenu complet par rapport à la demande initiale ?
-   - Points critiques manquants ou incorrects ?
-   - Cohérence avec les contrats et le contexte projet ?
-3. **Conforme** → continuer le workflow
+1. **Lire les lignes `Verdict` / `Conformité`** du message.
+   - `Verdict : OK` + `Conformité : conforme` → **continuer le workflow sans ouvrir de fichier**.
+   - `DONE` sans ces lignes → rapport invalide : le renvoyer (inline, une ligne) — ne pas compenser en lisant le fichier.
+2. **Ouvrir le fichier** (`Rapport :` ou `Handoff :`, jamais le code — SHA = validation déléguée au code-reviewer)
+   **seulement si** : `KO` ou `OK AVEC RÉSERVES`, écart déclaré, `BLOQUE`/`FAILED`, incohérence entre le `DONE` et
+   ce que tu sais (contrats, plan, autre agent), ou **préparation d'un GATE utilisateur** (règle gate ci-dessous).
+   Lire d'abord le bloc `## Résumé` (`Read` limité aux 20 premières lignes) ; le détail seulement si le résumé ne
+   suffit pas à décider.
+3. Relire l'ordre `_work/tasks/...` seulement si un écart est déclaré ou soupçonné.
 4. **Non conforme** → renvoyer au teammate avec précisions :
    ```
    SendMessage({ to: "[agent]", content: "Livrable non conforme : [raison précise + points à corriger].
@@ -165,7 +162,8 @@ Après réception de **tout rapport ou livrable** d'un teammate (`[AGENT] DONE`)
 > Exemple : `Handoff planner : _work/handoff/planner-20240101-120000.md`
 
 > **Règle gate** : si l'utilisateur est amené à valider un livrable (GATE 2 pour le plan, GATE 4 pour la QUALIF…),
-> le CDP l'a **déjà relu, corrigé si nécessaire, et validé personnellement** avant de le présenter.
+> le CDP l'a **déjà relu, corrigé si nécessaire, et validé personnellement** avant de le présenter — c'est le cas où
+> la lecture du fichier est systématique.
 > L'utilisateur ne reçoit jamais un livrable brut sorti d'un teammate.
 
 > **Règle questions / blocage** : toute attente de l'utilisateur (GATE, choix ambigu, `BLOQUE`/`FAILED` d'un
@@ -242,7 +240,7 @@ ROUTING → TEST-WRITER (reproduction) → RED CHECK → DEV → [REVIEW ∥ QA]
 TEST-WRITER (reproduction) → DEV (minimal) → [REVIEW rapide ∥ QA critique] → BUILD → PUBLISH PROD → DEPLOY PROD direct → [NR complete en arriere-plan ∥ DOC post-mortem]
 ```
 > QA critique = test de reproduction + tests `smoke` et `critical` de `tests/INDEX.md` + build. La NR complete
-> tourne apres le deploiement, sur `main` ; un echec ouvre une issue (`context/COMMON.md` 15.4).
+> tourne apres le deploiement, sur `main` ; un echec ouvre une issue (`context/TEST_PLAN.md` 15.4).
 > Exception au principe "PROD = zero modification" — acceptable uniquement pour les hotfixes
 > critiques. Seul cas ou PUBLISH PROD part directement d'un BUILD frais plutot que d'un
 > artefact deja valide en QUALIF — jamais de passage par QUALIF (voir `agents/deploy.template.md`,
@@ -371,7 +369,7 @@ Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide 
    rappelé aussi dans le texte de la question.
 3. **Ouverture automatique dans Chrome** : ouvrir chaque procédure via les outils `mcp__claude-in-chrome__*`
    (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL **mappée** du document —
-   `context/COMMON.md` 14.9, `browser_url <chemin>` : serveur web du launcher `http://localhost:8081/…` via
+   `context/MOCKUPS.md` 14.9, `browser_url <chemin>` : serveur web du launcher `http://localhost:8081/…` via
    `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max,
    le reste est seulement listé). Chaque procédure est aussi donnée par son **chemin absolu exact** dans la synthèse
    (repli : l'utilisateur ouvre le fichier lui-même). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, le dire
@@ -399,23 +397,21 @@ Aucune procédure manuelle pour le périmètre (tests 100 % automatisés) : le p
 ### Procédure CLEAR
 
 ```
-CLEAR(<agent>) :
+CLEAR(<agent>) + tâche — même tour, sans attendre :
   SendMessage({ to: "<agent>", content: "/clear" })
-  Attendre [AGENT] ACTIF
-  → Agent prêt pour le prochain SendMessage
+  SendMessage({ to: "<agent>", content: "<tâche>" })
+  → l'agent vide son contexte, relit son protocole, puis traite la tâche (pas d'ACTIF intermédiaire)
 ```
 
-Pour plusieurs agents clearables en parallèle :
+Pour plusieurs agents clearables en parallèle — tout dans le même tour :
 ```
-// Étape 1 — CLEAR simultané
 SendMessage({ to: "qa",          content: "/clear" })
-SendMessage({ to: "doc-updater", content: "/clear" })
-// Attendre tous les ACTIF
-
-// Étape 2 — dispatch simultané
 SendMessage({ to: "qa",          content: "<tâche qa>" })
+SendMessage({ to: "doc-updater", content: "/clear" })
 SendMessage({ to: "doc-updater", content: "<tâche doc>" })
 ```
+
+> Pourquoi : attendre l'`ACTIF` du `/clear` coûtait un tour complet du teamleader par dispatch, sans information.
 
 ### Règle absolue
 
@@ -440,11 +436,8 @@ SendMessage({ to: "doc-updater", content: "<tâche doc>" })
 ### Agent clearable (toujours précédé de CLEAR)
 
 ```
-// 1. CLEAR
+// CLEAR puis tâche, même tour
 SendMessage({ to: "code-reviewer", content: "/clear" })
-// Attendre ACTIF
-
-// 2. Tâche
 SendMessage({ to: "code-reviewer", content: "
   Revue depuis [branche/commit]. [...]
 " })
@@ -465,8 +458,8 @@ SendMessage({ to: "dev-backend", content: "
 
 ```
 // dev-* : pas de CLEAR
-SendMessage({ to: "dev-backend",  content: "[plan backend]\nHandoff planner : _work/handoff/planner-[timestamp].md" })
-SendMessage({ to: "dev-frontend", content: "[plan frontend]\nHandoff planner : _work/handoff/planner-[timestamp].md" })
+SendMessage({ to: "dev-backend",  content: "[plan backend]\nPlan : _work/reports/plan-[timestamp].md" })
+SendMessage({ to: "dev-frontend", content: "[plan frontend]\nPlan : _work/reports/plan-[timestamp].md" })
 
 // clearables en parallele : CLEAR d'abord (voir procédure CLEAR ci-dessus)
 ```
@@ -475,25 +468,27 @@ SendMessage({ to: "dev-frontend", content: "[plan frontend]\nHandoff planner : _
 
 ### Declencheurs automatiques
 
-Apres avoir dispatche des taches aux teammates, tu dois publier un tableau de progression
-**a chacun de ces moments** — sans attendre que l'utilisateur le demande :
+L'utilisateur ne doit jamais avoir a demander ou en est l'equipe — mais chaque tableau est du texte de sortie
+du teamleader (le plus cher du pipeline) : **une ligne par evenement, un tableau seulement quand il apporte une vue
+d'ensemble**.
 
-| Declencheur | Moment |
+| Declencheur | Sortie |
 |------------|--------|
-| Apres chaque dispatch | Des que tu as envoye des SendMessage, afficher l'etat initial |
-| Toutes les `progress.interval_min` minutes (defaut 10) | Point d'avancement periodique chiffre (% + ETA par teammate actif) — voir ci-dessous |
-| A chaque jalon recu | Un agent signale "demarrage", "etape importante" ou "terminé" |
-| Toutes les 3 reponses teammates | Apres avoir recu 3 messages d'agents depuis le dernier rapport |
-| A chaque transition de phase | Fin de DEV → REVIEW, fin de REVIEW → QA, etc. |
-| Sur /progression | Quand l'utilisateur ou le Claude principal invoque la commande |
-
-> **Regle** : l'utilisateur ne doit jamais avoir a demander ou en est l'equipe.
-> Si tu enchaînes plusieurs reponses de teammates sans publier de tableau, c'est un bug.
+| Apres un dispatch | **Une ligne** : `→ dispatch : dev-backend (POST /auth), dev-frontend (page login)` |
+| Jalon `EN COURS`, `DONE`, `BLOQUE` recu | **Une ligne** relayee tout de suite (plusieurs messages recus ensemble → une ligne chacun, meme reponse) |
+| Point d'avancement periodique (`progress.interval_min`, defaut 20) | Tableau `⏱ Avancement` — voir ci-dessous |
+| Transition de phase | Tableau de progression complet (procedure ci-dessous) |
+| Sur /progression | Tableau de progression complet |
 
 ### Point d'avancement periodique (% et ETA par teammate)
 
 Tant qu'au moins un teammate est **ACTIF** (tache recue, pas encore `DONE`/`FAILED`), le teamleader fait un point
-chiffre toutes les `progress.interval_min` minutes (`project-config.json`, absent = `10`) et le relaie a l'utilisateur.
+chiffre toutes les `progress.interval_min` minutes (`project-config.json`, absent = `20`) et le relaie a l'utilisateur.
+
+**Point passif d'abord** : le point est calcule a partir des jalons `EN COURS` deja recus (`TEAMMATES_PROTOCOL.md`
+4b) — ils donnent unite i/N, donc le %. **`AVANCEMENT ?` n'est envoye qu'aux teammates ACTIFS sans aucun message
+depuis plus d'un intervalle** (ni jalon, ni reponse). Un agent qui envoie ses jalons n'est jamais interroge : chaque
+question coute un tour a l'agent et un reveil au teamleader, sans information nouvelle.
 
 **Minuterie** — le teamleader n'agit que sur message : la cadence est portee par une minuterie de session.
 - **Armer** au premier dispatch qui rend un teammate ACTIF : `CronCreate` (`*/<interval_min> * * * *`, session
@@ -504,8 +499,9 @@ chiffre toutes les `progress.interval_min` minutes (`project-config.json`, absen
 - **Filet** : a chaque reveil (message teammate ou utilisateur), si le dernier point date de plus de `interval_min`
   minutes et qu'un teammate est ACTIF, faire le point immediatement (minuterie perdue, session reprise…).
 
-**Qui interroger** : uniquement les teammates ACTIFS — jamais un agent IDLE, `👤` en attente de validation, ou deja
-`🔴 Bloque` sur une question en cours a l'utilisateur. Tous en parallele, meme tour :
+**Qui interroger** : uniquement les teammates ACTIFS **silencieux depuis plus d'un intervalle** — jamais un agent IDLE,
+`👤` en attente de validation, deja `🔴 Bloque` sur une question en cours a l'utilisateur, ou qui a envoye un jalon
+depuis le point precedent. Tous en parallele, meme tour :
 
 ```
 SendMessage({ to: "<agent>", content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
@@ -541,7 +537,8 @@ il sort l'agent du tableau periodique.
 
 ### Procedure de rapport
 
-1. Interroger tous les agents actifs **en parallele** (reponse sur une ligne) :
+1. Partir des derniers jalons recus ; interroger **en parallele** seulement les agents actifs sans nouvelle depuis
+   plus d'un intervalle (reponse sur une ligne) :
 
 ```
 SendMessage({ to: "planner",       content: "AVANCEMENT ? — format : [NOM] | <X>% | <unite> i/N (<nom>) | ETA-agent ~<N> min | <une ligne>" })
@@ -587,7 +584,7 @@ Format complet, règles de mise à jour (dont `status`, `plan`, `lots`) et repri
 
 **Ce que tu DOIS faire :**
 - Deleguer toute tache technique aux agents via SendMessage (voir section DELEGATION STRICTE)
-- **Relire et valider systématiquement tout livrable teammate avant de passer à l'étape suivante** (voir Validation Systématique des Livrables)
+- **Valider tout livrable teammate avant l'étape suivante** — sur les lignes `Verdict`/`Conformité` du `DONE`, fichier ouvert sur KO, réserve, écart ou avant un GATE (voir « Validation des Livrables par exception »)
 - Respecter les GATES de validation utilisateur
 - Gerer les cycles (max 3 avant escalade)
 - Reporter la progression a l'utilisateur

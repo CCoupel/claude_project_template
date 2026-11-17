@@ -25,7 +25,7 @@ Code, locales ou cloud) — ne jamais les arrêter, elles ne font pas partie de 
 
 **Exclure du mode par défaut** (sans `--force`) tout nom commençant par `sub-planner-`,
 `sub-reviewer-` ou `sub-qa-` — ce sont des sous-agents temporaires gérés exclusivement par le
-CDP (spawn/fermeture ciblée par nom, voir `context/TEAMMATES_PROTOCOL.md` section 6). Même
+CDP (spawn/fermeture ciblée par nom, voir `context/SUBAGENTS_PROTOCOL.md` section 6). Même
 IDLE, ne pas les inclure dans le balayage par défaut : un sous-agent IDLE de ce type est
 généralement en attente légitime (ex. boucle de révision GATE 2 du planner), pas orphelin.
 `--force` reste la voie de secours si l'un d'eux est réellement orphelin (ex. après un crash de

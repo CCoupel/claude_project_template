@@ -13,7 +13,7 @@
 ## Etape Critique : Gestion de Version
 
 Format : `X.Y.Z.a` en dev/qualif (le `a` disparait en prod). Resume local : `context/COMMON.md`.
-Reference complete (cycle de vie detaille, exemple, regle du milestone) : `commands/context/COMMON.md` section 5 — fichier distinct, non accessible depuis un agent, mentionne ici a titre indicatif.
+Reference complete (cycle de vie detaille, exemple, regle du milestone) : `commands/context/VERSIONING.md` section 5 — fichier distinct, non accessible depuis un agent, mentionne ici a titre indicatif.
 
 `X.Y.Z` est fixe integralement par le titre du milestone GitHub actif — **le milestone est la seule source de verite**, aucun agent DEV ne le calcule ni ne l'incremente. Tout developpement est rattache a un milestone (plus de cycle hors milestone). `a` est un **compteur de build, gere exclusivement par `deploy`** (tache BUILD, agnostique a l'environnement) : les agents DEV ne l'incrementent jamais et n'ont pas a y toucher lors d'un commit normal.
 
@@ -113,8 +113,8 @@ Si vous devez modifier un contrat, documentez-le dans votre summary :
 | Verification | Description |
 |--------------|-------------|
 | Build | Le projet compile sans erreur |
-| Toolchain | `commands.env` evalue, controle « chaine native » fait (pas de binaire Windows sous WSL) — `context/COMMON.md` 15.10 |
-| Tests | Uniquement les tests **lies a tes fichiers modifies** : `commands.test_related` (`{FILES}`), sinon `commands.test_targeted` sur les paquets/dossiers touches (Go : sans `-race` sauf code concurrent) — **jamais** la suite complete, meme « pour verifier » (QA la joue une fois par arbre, `context/COMMON.md` 15.2 et 15.10). Effet de bord large soupconne → `Impact large : <zones>` dans ton DONE |
+| Toolchain | `commands.env` evalue, controle « chaine native » fait (pas de binaire Windows sous WSL) — `context/TEST_PLAN.md` 15.10 |
+| Tests | Uniquement les tests **lies a tes fichiers modifies** : `commands.test_related` (`{FILES}`), sinon `commands.test_targeted` sur les paquets/dossiers touches (Go : sans `-race` sauf code concurrent) — **jamais** la suite complete, meme « pour verifier » (QA la joue une fois par arbre, `context/TEST_PLAN.md` 15.2 et 15.10). Effet de bord large soupconne → `Impact large : <zones>` dans ton DONE |
 | Version | La version correspond au fichier de config |
 | Lint / typecheck | Pas d'erreurs de linting (`commands.lint`) ni de typage (`commands.typecheck`) |
 
@@ -197,35 +197,18 @@ Plusieurs instances d'une meme categorie (ex. deux `dev-firmware-*`) se parallel
 
 ---
 
-## Format de Summary
+## Format de Summary (= handoff `_work/handoff/<agent>-<timestamp>.md`, ≤ 40 lignes)
 
-Chaque agent DEV doit produire un summary structure :
+Lu par les agents en aval (code-reviewer, test-writer, qa, autre dev) — pas par le teamleader, qui decide sur le `DONE` :
 
 ```markdown
-# [Agent] Implementation Summary
-
-## Version
-- X.Y.Z : [inchangee | Z incremente — nouveau cycle bugfix, voir Commits]
-- `a` : gere par `deploy`, non modifie par cet agent
-
-## Files Modified
-
-### [fichier]
-- [Description des modifications]
-
-## Tests Results
-- Total: N tests
-- Passed: N
-- Failed: 0
-- Coverage: XX%
-
-## Commits
-1. `feat(scope): Description`
-
-## Verification
-- [x] Build OK
-- [x] Tests PASS
-- [x] Server starts OK (if applicable)
-- [x] Version verified
-- [x] [Autres verifications specifiques]
+# [Agent] — <tache> — <SHA>
+Version : X.Y.Z [inchangee | Z incremente] (`a` gere par deploy)
+Fichiers : `path/a.go` (nouvel endpoint POST /auth), `path/b.go` (validation)   ← une ligne par fichier, quoi et pourquoi
+Tests lies : N/N OK (commande lancee : <cmd>)
+Decisions : <choix non evident et sa raison>            (omettre si aucun)
+Points d'attention aval : <ce que reviewer/test-writer doivent regarder>  (omettre si aucun)
+Impact large : <zones>                                 (omettre si aucun)
 ```
+
+Pas de checklist de verifications OK (le `DONE` les resume en `Verdict`), pas de copie du plan ni de diff.

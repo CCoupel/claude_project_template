@@ -103,7 +103,7 @@ Ce fichier centralise les patterns partages par les commandes `/code-review`, `/
 
 Boucle DEV : tests lies aux fichiers modifies (`commands.test_related`, `{FILES}`) ou tests cibles
 (`commands.test_targeted`, `{TARGETS}` = fichiers ou dossiers) ; duree des suites (chaine native, petits paquets,
-runner regle) : voir `context/COMMON.md` section 15 (15.10). Un scope deja VALIDATED sur le meme arbre git n'est pas rejoue
+runner regle) : voir `context/TEST_PLAN.md` section 15 (15.10). Un scope deja VALIDATED sur le meme arbre git n'est pas rejoue
 (`_work/tests-ledger.md`).
 
 ### 7bis. CI_CMD et tests de timing
@@ -198,8 +198,8 @@ runner regle) : voir `context/COMMON.md` section 15 (15.10). Un scope deja VALID
 | code-reviewer | NE PAS corriger le code (juste reviewer) |
 | code-reviewer | NE PAS approuver si issue critique securite |
 | QA | NE PAS modifier de code (juste tester) |
-| test-writer | NE PAS executer les suites de l'equipe : uniquement ses propres fichiers (compilation + RED, COMMON.md 15.10) |
-| dev-* | NE PAS lancer la suite complete : uniquement les tests lies aux fichiers modifies (COMMON.md 15.10) |
+| test-writer | NE PAS executer les suites de l'equipe : uniquement ses propres fichiers (compilation + RED, TEST_PLAN.md 15.10) |
+| dev-* | NE PAS lancer la suite complete : uniquement les tests lies aux fichiers modifies (TEST_PLAN.md 15.10) |
 | Tous | NE PAS ignorer les duplications |
 
 ---
@@ -216,7 +216,7 @@ runner regle) : voir `context/COMMON.md` section 15 (15.10). Un scope deja VALID
 2. **Plan** : Creer plan de corrections/ameliorations
 3. **Validation utilisateur** : Confirmer le plan
 4. **Developpement** : Appliquer les corrections
-5. **QA** : Valider les changements (scope `feature` puis NR impactees — `context/COMMON.md` 15)
+5. **QA** : Valider les changements (scope `feature` puis NR impactees — `context/TEST_PLAN.md` 15)
 6. **Documentation** : Mettre a jour si necessaire
 
 ---
@@ -280,5 +280,5 @@ Dans les commandes Qualite, referencer ce fichier :
 - Tests : section 7
 - Rapports : sections 8-9
 - Dispatch Review/QA (parallelisation) : section 12
-- Plan de tests (natures feature/NR, index, scopes QA, NR complete) : `context/COMMON.md` section 15
+- Plan de tests (natures feature/NR, index, scopes QA, NR complete) : `context/TEST_PLAN.md` section 15
 ```

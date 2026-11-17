@@ -33,7 +33,7 @@ SendMessage({ to: "security",      content: "AVANCEMENT ? — format : [NOM] | <
 
 > N'envoyer qu'aux agents effectivement spawnes dans la team — ignorer les absents.
 > Format de reponse et calcul de l'ETA (vitesse moyenne depuis le dispatch) : `agents/cdp.md` « Point d'avancement
-> periodique ». Ce point est aussi fait automatiquement toutes les `progress.interval_min` minutes (defaut 10) tant
+> periodique ». Ce point est aussi fait automatiquement toutes les `progress.interval_min` minutes (defaut 20) tant
 > qu'un teammate est actif — `/progression` le declenche a la demande.
 
 ## Rapport de Synthese

@@ -219,7 +219,7 @@ Une fois toutes les ❓ résolues, construire le plan complet.
 
 [EC-02] 🔴 Référence cassée — context/DEPLOY.md  [Auto]
   Action : Remplacer la référence dans commands/feature.md
-           par "Voir context/COMMON.md section 5"
+           par "Voir context/VERSIONING.md section 5"
   Gain   : Référence résolue
 
 [EC-03] 🔴 Contradiction MEMORY — règle de branche  [Auto : doc fait foi]

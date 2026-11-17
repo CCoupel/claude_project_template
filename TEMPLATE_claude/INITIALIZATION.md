@@ -341,7 +341,7 @@ chaque environnement, avec le role de l'agent `infra` (section « Mode Acces (ca
 Detection sans question si tout est natif : sous WSL, un `node`/`npm`/`go` Windows (`/mnt/c/...`, `.exe`) rend
 les tests plusieurs fois plus lents. Binaire Windows detecte → question « Utiliser la chaine Linux (Recommande) /
 Garder Windows » ; la reponse fixe `commands.env` (prefixe `PATH` evalue par tous les agents avant leurs
-commandes). Regle : `commands/context/COMMON.md` §15.10.
+commandes). Regle : `commands/context/TEST_PLAN.md` §15.10.
 
 ### Etape 9c : Environnement conteneur Claude-Launcher
 
@@ -502,7 +502,7 @@ Criteres de validation), remplie avec les reponses de l'Etape 5c, et ajout d'une
 ### 2ter. Adequation modele/effort des agents
 
 Une fois tous les agents connus, Claude confronte les reponses de l'init a la grille de
-`agents/context/TEAMMATES_PROTOCOL.md` section 7.1 et affiche un **retour high level** (agents probablement sous-
+`agents/context/MODEL_EFFORT.md` section 7.1 et affiche un **retour high level** (agents probablement sous-
 ou sur-dimensionnes, avec suggestion et motif). S'il y a au moins une alerte : revoir agent par agent
 (recommande), appliquer les suggestions, ou garder les defauts. Les choix sont ecrits dans le frontmatter
 (`model:` / `effort:`) du compagnon ; un agent deja surcharge par le projet n'est jamais signale.

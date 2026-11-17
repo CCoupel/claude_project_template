@@ -188,7 +188,7 @@ uvicorn app.main:app --reload  # FastAPI
 python manage.py runserver      # Django
 
 # Tests — boucle DEV : seulement les tests lies a tes fichiers modifies (suite complete = QA,
-# context/COMMON.md 15.10)
+# context/TEST_PLAN.md 15.10)
 pytest tests/test_foo.py -k 'bar'
 
 # Linter

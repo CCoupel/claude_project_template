@@ -242,7 +242,7 @@ milestone (issues fermees, labels) est deja fige avant le lancement du deploieme
 - `MARKETING BLOQUE — [raison]` → verification du site impossible (remote injoignable...) : ne rien publier,
   informer l'utilisateur de la raison et proposer de relancer `PREPARE` une fois le probleme resolu ; si la
   raison est « apercu Artifact impossible », presenter l'apercu local (`_work/marketing/preview.html`) au
-  GATE 4d a la place de l'URL, en l'ouvrant dans Chrome via l'URL mappee (`context/COMMON.md` 14.9 : serveur web
+  GATE 4d a la place de l'URL, en l'ouvrant dans Chrome via l'URL mappee (`context/MOCKUPS.md` 14.9 : serveur web
   du launcher, repli `file://`) et en donnant son chemin absolu exact.
 - `MARKETING PRET — rapport: _work/reports/marketing-[timestamp].md` → lire le rapport, puis
   presenter a l'utilisateur ← **GATE 4d** :
@@ -292,7 +292,7 @@ gh issue list --milestone "<title>" --state open --json number,title,labels
   ```
 
 **Apres DEPLOY PROD reussi — promotion des tests** : dans `tests/INDEX.md`, passer de `feature` a
-`regression` tous les lots du milestone deploye (`context/COMMON.md` 15.1 ; creer la ligne d'un lot qui n'en aurait pas) et commiter (`test(index): promote
+`regression` tous les lots du milestone deploye (`context/TEST_PLAN.md` 15.1 ; creer la ligne d'un lot qui n'en aurait pas) et commiter (`test(index): promote
 vX.Y.Z tests to regression`).
 
 Informer l'utilisateur du resultat du deploiement (et de la publication marketing si applicable).

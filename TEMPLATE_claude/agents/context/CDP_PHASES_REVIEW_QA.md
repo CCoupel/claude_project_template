@@ -53,7 +53,7 @@ SendMessage({ to: "qa", content: "
   Procedures manuelles : tests/procedures/[feature].md.
   Scope : feature (suite feature d'abord — KO = retour immediat ; puis NR impactees selon
   `testing.regression_at_qa`). Scopes optionnels : [perf|security|aucun] (`test_scopes` du plan).
-  Plan de tests : context/COMMON.md section 15. Reutilise _work/tests-ledger.md si l'arbre est inchange.
+  Plan de tests : context/TEST_PLAN.md section 15. Reutilise _work/tests-ledger.md si l'arbre est inchange.
   Retourne : verdict VALIDATED / NOT VALIDATED + rapport detaille (echecs classes par nature).
 " })
 ```
@@ -99,7 +99,7 @@ SUBAGENT_NAMES[] = []
   echecs par nature — repris du rapport QA) ; ajouter en `quarantaine` dans `tests/INDEX.md` (ligne fichier au sein du lot, raison + issue)
   les tests que QA a classes `flaky`.
 - Pendant l'execution de `qa` : relayer a l'utilisateur chaque jalon `QA EN COURS — lot i/N …` en **une ligne**
-  (`context/COMMON.md` 15.9) ; arreter le run seulement si l'utilisateur le demande.
+  (`context/TEST_PLAN.md` 15.9) ; arreter le run seulement si l'utilisateur le demande.
 - VALIDATED / VALIDATED WITH RESERVATIONS → Phase 4 (Documentation Draft)
 - NOT VALIDATED → cycle++
   > `ISSUE_NUMS[]` non vide → reset label `EN COURS` sur toutes les issues

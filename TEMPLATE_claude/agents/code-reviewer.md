@@ -22,7 +22,7 @@ Apres la revue, tu ecris le rapport dans `_work/reports/code-review-[YYYYMMDD-HH
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "CODE-REVIEWER DONE\nRapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "CODE-REVIEWER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -30,7 +30,7 @@ Tu ne contactes jamais l'utilisateur directement.
 ## Délégation à des Sous-Reviewers (optionnel)
 
 > Mécanisme réservé au code-reviewer sur ce type de tâche — aucun autre teammate n'est autorisé
-> à spawner ou fermer d'autres teammates (cf. `context/TEAMMATES_PROTOCOL.md` section 6).
+> à spawner ou fermer d'autres teammates (cf. `context/SUBAGENTS_PROTOCOL.md` section 6).
 
 Pour un diff volumineux (nombreux fichiers, plusieurs composants), sous-traiter la revue par
 dimension du Checklist ci-dessous plutôt que de tout traiter séquentiellement soi-même. Grouper
@@ -77,7 +77,7 @@ Retour : `DONE` + chemin du rapport uniquement.
 
 ### 4. Recevoir et consolider
 
-Agreger les jalons des sous-reviewers en un seul jalon `CODE-REVIEWER EN COURS` pour le teamleader si la revue dure (`TEAMMATES_PROTOCOL.md` section 6).
+Agreger les jalons des sous-reviewers en un seul jalon `CODE-REVIEWER EN COURS` pour le teamleader si la revue dure (`SUBAGENTS_PROTOCOL.md` section 6).
 Attendre tous les sous-reviewers (`DONE` ou `BLOQUE`) avant de conclure — jamais fail-fast :
 - **Verdict final** = le pire niveau de sévérité trouvé, toutes dimensions confondues (une seule
   CRITIQUE dans une dimension → verdict global REFUSE/CORRECTIONS REQUISES, même si les autres
@@ -164,6 +164,11 @@ Analyser le code implemente pour detecter les problemes de qualite, securite, pe
 
 ## Format du Rapport
 
+> **Format pyramide obligatoire** (`context/TEAMMATES_PROTOCOL.md` section 3) : le premier bloc (résumé + verdict)
+> tient en 10 lignes et suffit au teamleader pour décider ; ensuite **seulement ce qui est KO ou à corriger** ;
+> toute section sans contenu est **omise** (pas de « aucun », pas de tableau vide) ; jamais de liste de ce qui
+> passe ; extraits ≤ 10 lignes, sortie complète dans `_work/tmp/` (chemin seul). Cible ≤ 80 lignes.
+
 ```markdown
 # Revue de Code
 
@@ -192,10 +197,6 @@ Analyser le code implemente pour detecter les problemes de qualite, securite, pe
 ### [MINEUR] Titre
 - ...
 
-## Points Positifs
-- Point 1
-- Point 2
-
 ## Verdict Final
 [ ] APPROUVE - Pret pour merge
 [X] CORRECTIONS REQUISES - Voir problemes critiques
@@ -218,24 +219,6 @@ Analyser le code implemente pour detecter les problemes de qualite, securite, pe
 4. **Proportionne** - Adapter au contexte
 5. **Educatif** - Expliquer le pourquoi
 
-## Interaction Post-Revue
-
-```
-Revue de code terminee.
-
-Resume :
-- 2 problemes critiques
-- 1 probleme majeur
-- 3 suggestions mineures
-
-Action requise : Corriger les problemes critiques.
-
-Voulez-vous :
-a) Voir le rapport detaille
-b) Lancer les corrections automatiques
-c) Ignorer et continuer (non recommande)
-```
-
 ## Configuration
 
 Adapter la revue selon `.claude/project-config.json` :
@@ -247,45 +230,5 @@ Adapter la revue selon `.claude/project-config.json` :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List CODE-REVIEWER
-
-```json
-[
-  {"content": "Analyser les fichiers modifies", "status": "in_progress", "activeForm": "Analyzing modified files"},
-  {"content": "Verifier la qualite du code", "status": "pending", "activeForm": "Checking code quality"},
-  {"content": "Verifier la securite (OWASP)", "status": "pending", "activeForm": "Checking security"},
-  {"content": "Verifier la performance", "status": "pending", "activeForm": "Checking performance"},
-  {"content": "Verifier les tests", "status": "pending", "activeForm": "Checking tests"},
-  {"content": "Generer le rapport de revue", "status": "pending", "activeForm": "Generating review report"}
-]
-```
-
-### Notifications CODE-REVIEWER
-
-**Demarrage** :
-```
-**CODE-REVIEWER DEMARRE**
----------------------------------------
-Branche : [branche]
-Fichiers a analyser : [nombre]
-Focus : [qualite|securite|performance|all]
----------------------------------------
-```
-
-**Succes** :
-```
-CODE-REVIEWER DONE
-Rapport : _work/reports/code-review-[YYYYMMDD-HHmmss].md
-```
-
-**Erreur** :
-```
-**CODE-REVIEWER ERREUR**
----------------------------------------
-Etape : [Etape en cours]
-Probleme : [Description]
-Action requise : [Solution proposee]
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`). Mots-clés de fin (identiques à « Mode Teammates » et à `cdp.md`) : `CODE-REVIEWER DONE`.

@@ -21,7 +21,7 @@ Apres l'ecriture des tests, tu commites les fichiers, tu relis chaque livrable p
 la coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "TEST-WRITER DONE\nFichiers : [liste des fichiers de tests]\nSHA : <commit-sha>" })
+SendMessage({ to: "team-lead", content: "TEST-WRITER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste des fichiers de tests]\nSHA : <commit-sha>" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -35,12 +35,12 @@ A partir du **plan d'implementation et des contrats API** (avant que le code soi
 ## Declenchement
 
 - **Phase DEV (TDD)** : appele par le teamleader en **Batch 1**, en parallele des agents dev — les tests sont definis a partir du plan et des contrats, avant que le code soit final (un seul declenchement de reference)
-- **Bugfix** : appele **avant** le DEV pour livrer le test de reproduction, que QA verifie en `red-check` (voir `context/COMMON.md` 15.5)
+- **Bugfix** : appele **avant** le DEV pour livrer le test de reproduction, que QA verifie en `red-check` (voir `context/TEST_PLAN.md` 15.5)
 - Re-declenche uniquement si un changement de scope est documente dans `contracts/CHANGELOG.md` (BREAKING ou CHANGED), ou sur demande explicite du teamleader
 
 ## Index et Natures de Tests
 
-Plan de tests complet : `context/COMMON.md` section 15. Tu es le proprietaire des tests de **specification**
+Plan de tests complet : `context/TEST_PLAN.md` section 15. Tu es le proprietaire des tests de **specification**
 (contrats, criteres d'acceptation, maquettes). Les `dev-*` n'ecrivent que des tests unitaires internes
 (boite blanche), dans des fichiers distincts — ne pas les dupliquer.
 
@@ -48,7 +48,7 @@ Tu ranges les tests de specification en **lots** : `<racine-famille>/<theme>/<lo
 (`tests/integration/`, `e2e/` ou `tests/e2e/`, `tests/procedures/`) — `<theme>` = domaine fonctionnel,
 `<lot>` = sous-ensemble coherent, **max `testing.lot_max_tests` cas de test (defaut 50)** : au-dela, scinder le lot.
 Un scenario `smoke`/`critical` isole a son propre lot. Le chemin porte l'identite (famille, theme, lot) ;
-les tests unitaires restent colocalises avec le code, hors arborescence. Convention : `context/COMMON.md` 15.1.
+les tests unitaires restent colocalises avec le code, hors arborescence. Convention : `context/TEST_PLAN.md` 15.1.
 
 Pour chaque **lot** que tu crees, ajoute une ligne a `tests/INDEX.md` **dans le meme commit** (chemin du dossier,
 termine par `/`) : `| Chemin | Niveau | Composant | Feature | Statut | Tags |`. Une ligne fichier n'existe que
@@ -74,7 +74,7 @@ Tout ajout de test doit etre additionnel — ne pas remplacer, ne pas supprimer.
 
 - Lire le plan d'implementation (fourni par le teamleader ou dans le dernier message du planner)
 - Lire les contrats API (`contracts/`) — **source principale** : les tests doivent valider ces contrats
-- Si le plan contient une **maquette** (interface, machine a etats ou architecture) : s'y referer, ainsi qu'a **toutes les maquettes actives** des composants touches (`docs/mockup/INDEX.md`) et aux contraintes de `docs/mockup/DECISIONS.md`, pour deriver les scenarios de test (etats/transitions a couvrir, elements d'interface a verifier, non-regression des parties deja validees). Voir `context/COMMON.md` section 14
+- Si le plan contient une **maquette** (interface, machine a etats ou architecture) : s'y referer, ainsi qu'a **toutes les maquettes actives** des composants touches (`docs/mockup/INDEX.md`) et aux contraintes de `docs/mockup/DECISIONS.md`, pour deriver les scenarios de test (etats/transitions a couvrir, elements d'interface a verifier, non-regression des parties deja validees). Voir `context/MOCKUPS.md` section 14
 - Lire `contracts/CHANGELOG.md` pour identifier les changements BREAKING/CHANGED si re-declenchement
 - Le code implemente est une reference secondaire (peut ne pas etre final au moment du declenchement)
 - Identifier le framework de test en place (`project-config.json`)
@@ -234,7 +234,7 @@ Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disp
 
 ## Regles
 
-1. **N'executer que tes propres tests** — compilation de tes fichiers, puis RED attendu (ou vert si le code existe deja), via `commands.test_targeted` sur tes seuls fichiers/dossiers, avec la chaine native (`commands.env`). Jamais les suites de l'equipe ni la suite complete : c'est le role de QA (`context/COMMON.md` 15.10)
+1. **N'executer que tes propres tests** — compilation de tes fichiers, puis RED attendu (ou vert si le code existe deja), via `commands.test_targeted` sur tes seuls fichiers/dossiers, avec la chaine native (`commands.env`). Jamais les suites de l'equipe ni la suite complete : c'est le role de QA (`context/TEST_PLAN.md` 15.10)
 2. **Couvrir les contrats** — chaque endpoint/comportement defini dans `contracts/` doit avoir un test
 3. **Couvrir le plan** — chaque critere d'acceptance du plan doit avoir un test ou une procedure
 4. **Lisibilite** — un test doit se lire comme une specification
@@ -255,51 +255,5 @@ Lire `.claude/project-config.json` pour :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List TEST-WRITER
-
-```json
-[
-  {"content": "Lire le plan et les contrats API", "status": "in_progress", "activeForm": "Reading plan and contracts"},
-  {"content": "Explorer le code implemente", "status": "pending", "activeForm": "Exploring implementation"},
-  {"content": "Ecrire les tests unitaires", "status": "pending", "activeForm": "Writing unit tests"},
-  {"content": "Ecrire les tests d'integration", "status": "pending", "activeForm": "Writing integration tests"},
-  {"content": "Ecrire les tests E2E", "status": "pending", "activeForm": "Writing E2E tests"},
-  {"content": "Ecrire les procedures manuelles QA", "status": "pending", "activeForm": "Writing QA manual procedures"},
-  {"content": "Commiter les fichiers de tests", "status": "pending", "activeForm": "Committing test files"}
-]
-```
-
-### Notifications TEST-WRITER
-
-**Demarrage** :
-```
-**TEST-WRITER DEMARRE**
----------------------------------------
-Branche : [branche]
-Feature : [description]
-Frameworks : [frameworks detectes]
----------------------------------------
-```
-
-**Succes** :
-```
-TEST-WRITER DONE
-Fichiers : [liste des fichiers de tests et procedures]
-SHA : [sha]
-Validation humaine : #12 oui (scenarios 2, 3) ; #15 non ; [une ligne par issue du plan]
-```
-
-`Validation humaine` : une issue est `oui` si au moins un de ses scenarios est `HUMAIN` (ou si elle n'a aucun
-scenario marque) ; sinon `non`. Le CDP s'en sert pour poser le label `VALID-HUMAINE` (`GITHUB.md` §9.13).
-
-**Erreur** :
-```
-**TEST-WRITER ERREUR**
----------------------------------------
-Etape : [Etape en cours]
-Probleme : [Description]
-Action requise : [Solution proposee]
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`). Mots-clés de fin (identiques à « Mode Teammates » et à `cdp.md`) : `TEST-WRITER DONE`.

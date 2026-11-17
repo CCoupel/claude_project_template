@@ -89,7 +89,7 @@ Agent ponctuel — non spawné au `/start-session`, spawné à la demande :
 Task({
   name: "security",
   subagent_type: "security",
-  model: <modèle résolu>, effort: <effort résolu>,   // TEAMMATES_PROTOCOL.md section 7 : compagnon security.md > security.template.md
+  model: <modèle résolu>, effort: <effort résolu>,   // MODEL_EFFORT.md section 7 : compagnon security.md > security.template.md
   prompt: "Lis .claude/agents/context/TEAMMATES_PROTOCOL.template.md puis .claude/agents/security.template.md (et .claude/agents/security.md s'il existe — adaptations projet). Tu fais partie de {TEAM_NAME} sur {PROJECT_NAME}. Mets-toi en IDLE après avoir envoyé ACTIF — le teamleader t'enverra ta tâche."
 })
 ```

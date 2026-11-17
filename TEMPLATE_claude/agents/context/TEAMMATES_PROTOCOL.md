@@ -33,12 +33,15 @@
 
 ```
 Lire l'ordre : message court, ou fichier `_work/tasks/...` référencé (voir « Ordres du teamleader » ci-dessous)
-SendMessage({ to: "team-lead", content: "[NOM] ACTIF" })   ← confirmer réception
-Exécuter la tâche
+Exécuter la tâche                      ← pas d'accusé de réception : le premier jalon ou le DONE en tient lieu
 Écrire le livrable dans un fichier
-SendMessage({ to: "team-lead", content: "[NOM] DONE\n<références fichiers>" })
+SendMessage({ to: "team-lead", content: "[NOM] DONE\n<verdict + références fichiers>" })
 Retour en IDLE
 ```
+
+> **Économie de tokens** : chaque message reçu réveille le teamleader (un tour complet de son contexte). Aucun
+> message sans information : pas d'`ACTIF` à la réception d'une tâche (seulement au spawn), pas de « bien reçu »,
+> pas de « je commence ». `ACTIF` reste l'**état** d'un agent qui travaille (tâche reçue, pas encore `DONE`).
 
 ### Ordres du teamleader — au-delà de 3 lignes, un fichier
 
@@ -55,9 +58,9 @@ SendMessage({ to: "<agent>", content: "Tâche : _work/tasks/<agent>-<timestamp>.
 - Le fichier contient : le périmètre, les fichiers à lire (plan, handoff, contrats) et les livrables attendus
   avec leurs chemins. Pas d'extrait de code ni de contenu copié d'un autre fichier : une référence suffit.
 - **Exceptions inline** (toujours courts) : `/clear`, réponses à un `BLOQUE`, correction de rapport invalide.
-- À la réception : lire le fichier **avant** d'envoyer `ACTIF`. Fichier introuvable → `[NOM] BLOQUE` (raison en une ligne).
-- Le teamleader garde le droit de relire `_work/tasks/*.md` pour contrôler le `DONE` par rapport à la demande
-  initiale (voir `teamleader.md`).
+- À la réception : lire le fichier avant d'agir. Fichier introuvable → `[NOM] BLOQUE` (raison en une ligne).
+- C'est **toi** qui confrontes ton livrable à l'ordre avant le `DONE` (ligne `Conformité :`, section 3) : le
+  teamleader ne relit l'ordre et ton rapport qu'en cas de doute (`cdp.md` « Validation des Livrables par exception »).
 
 ---
 
@@ -67,18 +70,43 @@ SendMessage({ to: "<agent>", content: "Tâche : _work/tasks/<agent>-<timestamp>.
 
 | Type d'agent | Livrable | Emplacement |
 |---|---|---|
-| dev-*, test-writer | Code commité | SHA uniquement dans le message |
-| planner, code-reviewer, qa, security | Rapport | `_work/reports/[agent]-[YYYYMMDD-HHmmss].md` |
-| Tous | Handoff | `_work/handoff/[agent]-[YYYYMMDD-HHmmss].md` |
+| dev-*, test-writer | Code commité + handoff | SHA dans le message ; `_work/handoff/[agent]-[YYYYMMDD-HHmmss].md` (lu par les agents en aval : reviewer, test-writer, qa, autre dev) |
+| planner, code-reviewer, qa, security, pr-reviewer, infra | Rapport | `_work/reports/[agent]-[YYYYMMDD-HHmmss].md` — **pas de handoff en plus** |
+| Autres (doc-updater, deployer, marketing, generic) | Rapport **seulement s'il apporte une information** que le `DONE` ne porte pas | `_work/reports/...` |
 | teamleader | Ordre (> 3 lignes) | `_work/tasks/[agent]-[YYYYMMDD-HHmmss].md` |
 
-Format du message DONE :
+**Un `DONE` = au plus un fichier** (handoff **ou** rapport) — jamais le même contenu écrit deux fois.
+
+Format du message DONE — les 2 premières lignes suffisent au teamleader pour décider sans ouvrir de fichier :
 ```
 [NOM] DONE
-Handoff : _work/handoff/[agent]-[timestamp].md
+Verdict : OK | OK AVEC RÉSERVES | KO — <résumé en une ligne : chiffres clés, ex. « 148/150 tests, 2 KO feature »>
+Conformité : conforme à l'ordre | écart : <une ligne>
+Handoff : _work/handoff/[agent]-[timestamp].md   (dev-*, test-writer)
 Rapport : _work/reports/[agent]-[timestamp].md   (si applicable)
 SHA : <commit>                                    (si applicable)
 ```
+
+- `Verdict` reprend le verdict propre de l'agent (`APPROVED`/`REJECTED`, `VALIDATED`/`NOT VALIDATED`…) quand il
+  en a un. `Conformité` = confrontation honnête à l'ordre : tout livrable manquant, partiel ou hors périmètre est un écart.
+- Le teamleader **ne lit le fichier que** sur `KO`, `OK AVEC RÉSERVES`, un écart, un `BLOQUE`, ou pour préparer un GATE
+  utilisateur. Un `DONE` sans ligne `Verdict`/`Conformité` est un rapport invalide (renvoyé pour correction).
+
+### Rapports et handoffs — concis, en pyramide
+
+Chaque fichier est écrit pour être **lu en partie** :
+
+1. **En tête, un bloc `## Résumé` de 10 lignes maximum** : verdict, chiffres clés, liste des points bloquants
+   (une ligne chacun avec `fichier:ligne`), action attendue. Le teamleader le lit avec `Read` limité aux
+   20 premières lignes ; il doit suffire à décider.
+2. **Ensuite, le détail — uniquement pour ce qui est KO ou à corriger** : problème, `fichier:ligne`, correction
+   proposée. Jamais : ce qui passe (liste des tests verts, modules au-dessus du seuil, « points positifs »),
+   paraphrase de l'ordre ou du plan, contenu copié d'un autre fichier (une référence suffit), log brut.
+3. **Extraits de sortie** : 10 lignes utiles maximum par échec (message + premières lignes de stack) ; la sortie
+   complète, si elle peut servir, va dans `_work/tmp/` et le rapport n'en donne que le chemin.
+
+Cible : **rapport ≤ 80 lignes, handoff ≤ 40 lignes** (fichiers touchés, décisions prises, points d'attention pour
+l'aval). Au-delà, c'est presque toujours du contenu qui n'est pas KO.
 
 Format en cas de blocage :
 ```
@@ -175,12 +203,17 @@ Exemple QA : `QA EN COURS — lot 3/12 (integration/auth/login) — 148/612 test
 
 - Un jalon = une ligne, métadonnées uniquement (pas de contenu inline, cf. section 3) ; les anomalies sont nommées
   dès qu'elles apparaissent.
-- Obligatoire dès que la tâche compte plus d'une unité significative (ex. QA : plus d'un lot). Sous ce seuil, ACTIF puis DONE suffisent.
+- Obligatoire dès que la tâche compte plus d'une unité significative (ex. QA : plus d'un lot). Sous ce seuil, le DONE suffit.
+- **Cadence plafonnée** (chaque jalon réveille le teamleader) : un jalon au plus toutes les **5 minutes**, ou à
+  chaque palier de **25 %** si c'est plus espacé — les unités terminées entre-temps sont regroupées dans le jalon
+  suivant (`lots 4-6/12`). Exception : une **anomalie bloquante** (KO qui arrête la suite, environnement cassé) part
+  tout de suite.
 - Le teamleader relaie chaque jalon à l'utilisateur en **une ligne** (`teamleader.md`). Un jalon n'est pas un DONE :
   l'agent reste ACTIF jusqu'au DONE.
 - Tout mot-clé de jalon propre à un agent est documenté à l'identique dans `<agent>.md` ET `cdp.md` (règle de la section 3).
 
-**Demande `AVANCEMENT ?`** (point périodique du teamleader, `cdp.md` « Point d'avancement périodique ») : répondre
+**Demande `AVANCEMENT ?`** (envoyée seulement à un agent resté silencieux plus d'un intervalle — `cdp.md` « Point
+d'avancement périodique ») : répondre
 **immédiatement, en une ligne**, sans interrompre ni changer la tâche, puis reprendre :
 
 ```
@@ -202,107 +235,23 @@ Si tu reçois `/clear` via SendMessage :
 1. Exécuter /clear                    ← vide le contexte de conversation
 2. Re-lire .claude/agents/context/TEAMMATES_PROTOCOL.template.md
 3. Re-lire .claude/agents/<nom>.template.md (+ compagnon .claude/agents/<nom>.md s'il existe)
-4. SendMessage({ to: "team-lead", content: "[NOM] ACTIF" })
-5. Passer en IDLE — attendre la prochaine tâche
+4. Traiter le message suivant de ta boîte (la tâche, envoyée par le teamleader dans le même tour que le /clear) ;
+   boîte vide → IDLE
 ```
 
 Tu repars dans le même état qu'au démarrage de session — contexte propre, prêt pour une nouvelle tâche.
+**Pas d'`ACTIF` après un `/clear`** : le teamleader enchaîne `/clear` puis la tâche sans attendre (un aller-retour
+de moins par dispatch). Seul le spawn donne lieu à un `ACTIF`.
 
 ---
 
-## 6. Exception — Sous-agents temporaires (`planner`, `code-reviewer`, `qa` uniquement)
+## 6. Sous-agents temporaires — voir `SUBAGENTS_PROTOCOL.md`
 
-Toutes les règles ci-dessus supposent une communication exclusive avec le teamleader. **Trois exceptions
-existent**, chacune limitée à l'agent concerné :
+Délégation de `planner`, `code-reviewer` et `qa` à des sous-agents (spawn par le teamleader, échanges P2P, format des
+retours) : `.claude/agents/context/SUBAGENTS_PROTOCOL.template.md` — à lire seulement si tu es l'un de ces
+coordinateurs **et** que tu délègues.
 
-- `planner` peut demander au teamleader de spawner des `sub-planner-N` temporaires et communiquer avec
-  eux **directement, sans relayer via le teamleader** — protocole complet dans
-  `agents/implementation-planner.md` section "Délégation à des Sous-Planners". Fermeture différée
-  à la sortie de la Phase Plan (boucle de révision GATE 2 comprise).
-- `code-reviewer` peut demander au teamleader de spawner des `sub-reviewer-<dimension>` temporaires,
-  même principe — protocole complet dans `agents/code-reviewer.md` section "Délégation à des
-  Sous-Reviewers". Fermeture immédiate après consolidation (pas de boucle de révision côté
-  review).
-- `qa` peut demander au teamleader de spawner des `sub-qa-<scope>` temporaires, même principe —
-  protocole complet dans `agents/qa.md` section "Délégation à des Sous-QA". Fermeture immédiate
-  après consolidation. Particularité : chaque sub-qa isole son exécution avec un `git worktree --detach`
-  (sans branche, sur du code commité) créé/nettoyé en `Bash` — jamais via le paramètre `isolation` de l'outil `Agent`, qui change la
-  classification du spawn (voir `agents/qa.md` pour le détail).
+## 7. Modèle et effort — voir `MODEL_EFFORT.md`
 
-Aucun autre teammate n'est autorisé à ce pattern. Les sous-agents temporaires eux-mêmes suivent
-une variante minimale du protocole standard : ils rapportent `ACTIF`/`DONE`/`BLOQUÉ` à l'agent
-qui les a fait spawner (pas au teamleader), et ne spawnent jamais rien eux-mêmes. Ils ne ferment
-jamais leur propre process — seul le teamleader les ferme (`TaskStop`), jamais l'agent coordinateur ni
-eux-mêmes.
-
-### Communication coordinateur ↔ sous-agents — mêmes règles que vers le teamleader
-
-L'échange direct (planner/code-reviewer/qa ↔ leurs sous-agents) reste **fichier-first** pour économiser les tokens :
-
-- **Ordre (coordinateur → sous-agent)** : périmètre + **chemin du rapport attendu** (`_work/reports/<agent>-<scope>-<timestamp>.md`)
-  + références des fichiers à lire (plan, handoff, contrats). Pas de contenu copié dans le message.
-- **Retour (sous-agent → coordinateur)** : le contenu (problèmes, verdict, tâches, risques) est **écrit dans le rapport** ;
-  le message ne contient que `[NOM] DONE` + le chemin du rapport (+ SHA si applicable), ou `BLOQUE` + raison en une ligne.
-  Jamais de contenu inline — le coordinateur lit le fichier lui-même.
-- **Handoff** : un sous-agent qui produit un handoff l'écrit dans `_work/handoff/<sous-agent>-<timestamp>.md` et le référence
-  dans son `DONE` ; seul le coordinateur le lit (le teamleader ne voit que le rapport consolidé).
-- **Jalons** : un sous-agent envoie ses jalons `EN COURS` (format section 4b) à son **coordinateur**, pas au teamleader.
-  Le coordinateur les agrège en **un seul jalon** pour le teamleader (ex. `QA EN COURS — sub-qa 2/3 terminés (unit OK, integration en cours) — 412/612 tests, 2 KO`).
-- Aucun autre échange direct entre teammates n'est autorisé : toute autre demande passe par le teamleader.
-
----
-
-## 7. Modèle et effort — résolution au spawn
-
-Chaque agent, teamleader compris, a un `model:` et un `effort:` dans le frontmatter de son `<nom>.template.md` :
-c'est la **valeur par défaut du template**. Un compagnon `<nom>.md` peut commencer par un frontmatter ne contenant
-que `model:` et/ou `effort:` pour la **surcharger** (toute autre clé y est ignorée). Résolution, par priorité :
-
-1. frontmatter du compagnon `<nom>.md` (instance générique : `generic.<nom>.md`, puis `generic.md`) ;
-2. frontmatter du template `<nom>.template.md`.
-
-**Au spawn**, celui qui spawne (le teamleader, seul à le faire) lit ces frontmatters et passe les valeurs résolues
-**explicitement** à l'outil : `Task({ name, subagent_type: "<nom>", model: <résolu>, effort: <résolu>, prompt })`.
-Jamais d'héritage implicite : un spawn sans `model`/`effort` fait tourner le teammate au modèle et à l'effort de la
-session du teamleader, ce qui annule tout le réglage ci-dessous.
-
-- **Sous-agents temporaires** (`sub-planner-N`, `sub-reviewer-<dimension>`, `sub-qa-<scope>`) : valeurs résolues de
-  leur coordinateur (`planner`, `code-reviewer`, `qa`), sauf valeur explicite dans la demande de spawn.
-- **Teamleader** : le Claude principal ne peut pas changer son propre modèle ; `/init-project` écrit les valeurs
-  résolues (`teamleader.md` > `teamleader.template.md`) dans `.claude/settings.json` (`model`, `effortLevel`), et
-  `/start-session` vérifie que la session tourne avec elles. Ne pas éditer `settings.json` à la main : modifier le
-  compagnon puis relancer `/init-project` (mises à jour).
-
-Valeurs par défaut du template :
-
-| Agent | Modèle | Effort | Pourquoi |
-|-------|--------|--------|----------|
-| teamleader | `opus` | `medium` | Tient une machine à états à chaque tour : la capacité compte, pas la profondeur de réflexion |
-| `planner` | `fable` | `high` | Une fois par milestone ; porte lots, contrats et ordre — une erreur coûte des cycles à toute l'équipe |
-| `infra` | `opus` | `medium` | Validation à chaque déploiement ; la profondeur ne sert qu'à l'audit initial du pipeline |
-| `security` | `sonnet` | `high` | Ponctuel (`/secu`), rare donc marginal |
-| `code-reviewer` | `sonnet` | `medium` | À chaque lot, jusqu'à 3 cycles, plus les sous-reviewers : l'effort le plus sollicité du pipeline, d'où `medium` (un `high` y serait le plus coûteux) |
-| `dev-*`, `test-writer`, `qa`, `pr-reviewer`, `deploy`, `generic` | `sonnet` | `medium` | Exécution bornée par un plan et des contrats |
-| `marketing` | `sonnet` | `low` | Rédaction depuis des données GitHub |
-| `doc-updater` | `haiku` | `low` | Mise à jour de documents |
-
-### 7.1 Adéquation au projet — signaux de réévaluation
-
-Ces valeurs sont calibrées pour un projet applicatif « moyen ». `/init-project` (Génération de la Configuration,
-section 2ter) confronte les réponses de l'init à la grille ci-dessous et **alerte** quand un agent semble
-sous- ou sur-dimensionné ; il ne surcharge jamais rien sans validation.
-
-| Signal (source) | Agents concernés | Suggestion |
-|-----------------|------------------|------------|
-| Données sensibles, paiements ou authentification (Étape 10) | `security` / `code-reviewer` | `opus` / `high` ; `code-reviewer` effort `high` |
-| Firmware, temps réel, concurrence fine (Étapes 5, 5d) | `dev-firmware*` (ou `dev-*` concerné) | effort `high` |
-| Stack sans template dédié — `dev-generic` (Étape 5d) | instance `dev-generic` | effort `high` (moins de garde-fous dans le template) |
-| Plusieurs composants ou instances multiples (≥ 3 agents de stack) | `implementation-planner`, `code-reviewer` | conserver `fable`/`high` ; `code-reviewer` effort `high` |
-| Déploiement complexe (`kubernetes-helm`, ≥ 3 environnements, `rebuild-ci`) (Étape 8) | `infra`, `deploy` | `infra` conserver `opus` ; `deploy` effort `high` |
-| Aucun déploiement distant, ou `promote` local seul (Étape 8) | `infra` | `sonnet` / `medium` |
-| Petit projet : prototype, script, composant unique, sans environnement (Étapes 1, 8) | `implementation-planner`, `qa`, `test-writer` | planner `opus`/`medium` ; `qa`/`test-writer` effort `low` |
-| Budget ou quota contraint (cadrage, contraintes q13-q17) | tous sauf teamleader | descendre d'un cran l'effort, `opus`→`sonnet` hors planner |
-| Rédaction longue ou analyse (instance `generic.<nom>`, Étape 5c) | l'instance | `opus` / `medium` |
-
-Un agent dont le compagnon porte déjà une surcharge `model:`/`effort:` est une décision du projet : il n'est **pas**
-signalé, seulement listé en revue détaillée.
+Résolution au spawn (compagnon > template), valeurs par défaut et signaux de réévaluation :
+`.claude/agents/context/MODEL_EFFORT.template.md` — concerne celui qui spawne, pas le teammate.

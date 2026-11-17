@@ -50,7 +50,7 @@ gh repo view --json owner,name --jq '"repos/" + .owner.login + "/" + .name'
 
 ### Etape 2 — Completer et valider la version cible
 
-> Voir `context/COMMON.md` section 5.7 — le titre du milestone fixe integralement `X.Y.Z`, seule source de verite pour tout le cycle. Le titre GitHub complet est `vX.Y.Z` ou `vX.Y.Z — <nom>` : la version est toujours le prefixe, le nom (optionnel) est purement descriptif et ne participe a aucun calcul.
+> Voir `context/VERSIONING.md` section 5.7 — le titre du milestone fixe integralement `X.Y.Z`, seule source de verite pour tout le cycle. Le titre GitHub complet est `vX.Y.Z` ou `vX.Y.Z — <nom>` : la version est toujours le prefixe, le nom (optionnel) est purement descriptif et ne participe a aucun calcul.
 
 **a) `X` et `Y` obligatoires** — si `<version>` n'en precise pas un, le demander explicitement a l'utilisateur avant de continuer (jamais de valeur par defaut) :
 via `AskUserQuestion` (texte libre via « Autre », avec 2-3 propositions d'exemple tirées des milestones existants) :
@@ -312,7 +312,7 @@ Si des issues sont encore ouvertes, proposer :
 2 issues non terminees. Que faire ?
 
   [A] Reporter vers le prochain milestone
-      → Entrer la prochaine version (ex: v1.5.0, voir context/COMMON.md section 5) — et
+      → Entrer la prochaine version (ex: v1.5.0, voir context/VERSIONING.md section 5) — et
         optionnellement son nom si un nouveau milestone doit etre cree
   [B] Fermer toutes les issues et cloturer
       → Les issues seront fermees avec le commentaire "Cloture avec le milestone <TITLE>"

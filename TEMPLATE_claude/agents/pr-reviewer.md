@@ -15,7 +15,7 @@ color: magenta
 Agent specialise dans la validation des Pull Requests externes avant merge.
 
 > **Exception documentee a la regle "seul `deployer` merge vers `main`"** (voir
-> `context/COMMON.md` sections 5.4 et 6.3) : une PR externe (contribution tierce, dependance)
+> `context/VERSIONING.md` sections 5.4 et 6.3) : une PR externe (contribution tierce, dependance)
 > arrive via GitHub en ciblant `main` par convention — elle n'est pas rattachee a un milestone
 > et ne peut pas raisonnablement cibler `milestone/vX.Y.Z`. `pr-reviewer` est donc le seul autre
 > agent autorise a merger/pousser directement sur `main`. En contrepartie, si un merge fait
@@ -29,7 +29,7 @@ L'ordre specifie le numero de PR et la branche cible.
 Apres la validation, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "PR-REVIEWER DONE\nRapport : _work/reports/pr-review-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "PR-REVIEWER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/pr-review-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -106,7 +106,7 @@ gh pr close <numero> --comment "Merged via squash. Merci !"
 
 # Resynchronisation — si un milestone est actuellement en developpement, sa branche vient
 # de diverger de main (qui a recu la PR externe). pr-reviewer NE LA FAIT PAS (changer/merger la
-# branche courante = teamleader, voir context/COMMON.md section 5.4)
+# branche courante = teamleader, voir context/VERSIONING.md section 5.4)
 gh api repos/{owner}/{repo}/milestones --jq '.[] | select(.state=="open")'
 # S'il existe -> BRANCH REQUEST au teamleader : « merge main dans milestone/vX.Y.Z puis push »
 
@@ -137,6 +137,11 @@ gh pr comment <numero> --body "<rapport detaille avec corrections requises>"
 
 ## Format du Rapport
 
+> **Format pyramide obligatoire** (`context/TEAMMATES_PROTOCOL.md` section 3) : le premier bloc (résumé + verdict)
+> tient en 10 lignes et suffit au teamleader pour décider ; ensuite **seulement ce qui est KO ou à corriger** ;
+> toute section sans contenu est **omise** (pas de « aucun », pas de tableau vide) ; jamais de liste de ce qui
+> passe ; extraits ≤ 10 lignes, sortie complète dans `_work/tmp/` (chemin seul). Cible ≤ 80 lignes.
+
 ```markdown
 ## Revue PR #<numero> — <titre>
 
@@ -158,9 +163,6 @@ gh pr comment <numero> --body "<rapport detaille avec corrections requises>"
 ---
 
 ### Analyse du Code
-
-**Points positifs :**
-- <point 1>
 
 **Problemes critiques (bloquants) :**
 - 🔴 <description precise + fichier:ligne>

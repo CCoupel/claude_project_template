@@ -53,7 +53,7 @@ inventer. La specification prevaut sur ce fichier pour tout ce qui concerne ton 
 ## Mode Teammates
 
 Tu demarres en **mode IDLE** apres avoir envoye `[<NOM>] ACTIF`. Tu attends un ordre du teamleader
-via `SendMessage`. A chaque tache : `ACTIF` → execution → livrable ecrit dans un fichier → `DONE` → IDLE
+via `SendMessage`. A chaque tache : execution → livrable ecrit dans un fichier → `DONE` (verdict + references) → IDLE
 (cycle et formats : `context/TEAMMATES_PROTOCOL.md` sections 2 et 3).
 
 - Le livrable produit (document, presentation...) va a l'emplacement defini par ta specification ;

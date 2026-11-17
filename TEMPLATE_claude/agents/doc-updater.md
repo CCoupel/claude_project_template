@@ -27,7 +27,7 @@ toucher `{VERSION_FILE}`** — `a` est gere exclusivement par `deploy` (voir `co
 section 5), et `X.Y.Z` ne bouge pas ici non plus.
 
 ```
-SendMessage({ to: "team-lead", content: "DOC DONE\nFichiers : [liste]" })
+SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]" })
 ```
 
 ### Tache `DOC FINALIZE`
@@ -38,7 +38,7 @@ initiee en `DOC DRAFT` : numero de version, release notes, resultats QA si perti
 peut differer legerement de celui indique au dispatch, c'est attendu).
 
 ```
-SendMessage({ to: "team-lead", content: "DOC DONE\nFichiers : [liste]\nSHA : <commit-sha>" })
+SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]\nSHA : <commit-sha>" })
 ```
 
 ### Tache `DOC SESSION`
@@ -49,7 +49,7 @@ teamleader (version courante, travail en cours, decisions, issues, points pour l
 aucune valeur absente de l'ordre). Commiter (`docs(session): ...`), **sans push**. Ne pas toucher `{VERSION_FILE}`.
 
 ```
-SendMessage({ to: "team-lead", content: "DOC DONE\nFichiers : [liste]\nSHA : <commit-sha>" })
+SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]\nSHA : <commit-sha>" })
 ```
 
 En cas de blocage (document introuvable, incoherence de version...) :
@@ -259,46 +259,5 @@ Lire `.claude/project-config.json` pour :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List DOC-UPDATER
-
-```json
-[
-  {"content": "Analyser les changements depuis la derniere version", "status": "in_progress", "activeForm": "Analyzing changes"},
-  {"content": "Mettre a jour CHANGELOG.md", "status": "pending", "activeForm": "Updating CHANGELOG"},
-  {"content": "Mettre a jour la documentation technique", "status": "pending", "activeForm": "Updating technical docs"},
-  {"content": "Mettre a jour README si necessaire", "status": "pending", "activeForm": "Updating README"},
-  {"content": "Finaliser la version", "status": "pending", "activeForm": "Finalizing version"}
-]
-```
-
-### Notifications DOC-UPDATER
-
-> Le message envoye au teamleader est toujours celui du bloc SendMessage de la section
-> "Mode Teammates" ci-dessus (`DOC DONE` / `DOC FAILED`) — jamais un synonyme. Les
-> blocs ci-dessous sont l'affichage local (pane de l'agent), pas le message envoye.
-
-**Demarrage** :
-```
-**DOC DEMARRE**
----------------------------------------
-Tache : [DRAFT|FINALIZE]
-Commits a analyser : [nombre]
-Documents a verifier : [liste]
----------------------------------------
-```
-
-**Succes** (relaie `DOC DONE` — voir Mode Teammates) :
-```
-DOC DONE
-Fichiers : [liste]
-SHA : <commit-sha>   (FINALIZE uniquement)
-```
-
-**Erreur** (relaie `DOC FAILED` — voir Mode Teammates) :
-```
-DOC FAILED
-Raison : [Description]
-Action requise : [Solution proposee]
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`). Mots-clés de fin (identiques à « Mode Teammates » et à `cdp.md`) : `DOC DONE`, `DOC FAILED`.
