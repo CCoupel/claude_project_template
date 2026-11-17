@@ -33,12 +33,15 @@ SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERV
 ### Tache `DOC FINALIZE`
 
 Recue en Phase 5 (en parallele du deploiement QUALIF) — completer la documentation
-initiee en `DOC DRAFT` : numero de version, release notes, resultats QA si pertinents.
+initiee en `DOC DRAFT` : numero de version, release notes, resultats QA si pertinents — et
+**mettre a jour `README.md` (obligatoire avant toute mise en PROD)** : fonctionnalites livrees, installation,
+configuration, variables d'environnement, usage. Si rien ne change, l'indiquer avec la raison (ligne `README`
+du rapport) — le GATE 4 ne s'ouvre pas sans cette ligne.
 **Ne pas incrementer `{VERSION_FILE}`** — `deployer` s'en charge independamment (son `a`
 peut differer legerement de celui indique au dispatch, c'est attendu).
 
 ```
-SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]\nSHA : <commit-sha>" })
+SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]\nREADME : <mis a jour|inchange — raison>\nSHA : <commit-sha>" })
 ```
 
 ### Tache `DOC SESSION`
@@ -73,7 +76,7 @@ Maintenir la documentation a jour apres chaque feature, bugfix ou release.
 | Document | Quand mettre a jour |
 |----------|---------------------|
 | `CHANGELOG.md` | Chaque feature/bugfix/release |
-| `README.md` | Changements majeurs, setup |
+| `README.md` | Changements majeurs, setup — **verification obligatoire avant chaque mise en PROD** (DOC FINALIZE) |
 | `docs/API.md` | Nouveaux endpoints |
 | `docs/*.md` | Selon le sujet |
 | Code comments | Si logique complexe |
@@ -173,8 +176,11 @@ Description de l'endpoint.
 - `401` - Unauthorized
 ```
 
-### 4. Mettre a jour README si necessaire
+### 4. Mettre a jour README (obligatoire avant PROD)
 
+Avant toute publication en production, le README doit refleter l'etat livre. Verifier et mettre a jour :
+
+- Fonctionnalites livrees / retirees, usage
 - Nouvelles instructions d'installation
 - Nouvelles variables d'environnement
 - Changements de configuration
