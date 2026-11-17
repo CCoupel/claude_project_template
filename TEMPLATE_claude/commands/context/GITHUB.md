@@ -740,7 +740,8 @@ retour DEV|PLAN`), publication anticipee (`LOT-N → ⇢ reporte — vers <miles
 
 **Publication anticipee** (option du GATE LOT) : les lots restants (issues `PRET`) sont deplaces vers un autre
 milestone (`gh issue edit <numero> --milestone "<TITLE>"` ; le label `LOT-N` les suit) puis le milestone est publie
-avec les seuls lots valides (GATE 4 / Phase 6).
+avec les seuls lots valides (GATE 4 / Phase 6) — apres la mise a jour du `README.md` sur ces lots, le lot valide
+devenant le dernier (`agents/context/CDP_PHASES_RELEASE.md`, « README avant PROD »).
 
 ### 9.6 Rejet à GATE 4 (validation utilisateur refusée)
 

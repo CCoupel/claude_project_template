@@ -546,7 +546,7 @@ PUSH → CI de validation ── verte : issues du lot N fermées (DONE conserv�
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
 | LOT | Milestone avec lots : lot déployé en QUALIF (auto-validé si aucune issue `VALID-HUMAINE`) | Valider le lot (suivant / publier en PROD) ou refuser |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
-| 4 | BUILD+PUBLISH+DEPLOY QUALIF, DOC (finalize) DONE avec **README du projet à jour** **et** NR complète VALIDATED — toujours posé | OUI (publish/deploy prod) ou NON (retour DEV ou PLAN) |
+| 4 | BUILD+PUBLISH+DEPLOY QUALIF, DOC (finalize) DONE avec **README du projet à jour** (avec lots : mis à jour au dernier lot uniquement) **et** NR complète VALIDATED — toujours posé | OUI (publish/deploy prod) ou NON (retour DEV ou PLAN) |
 | 4b | Procédure QUALIF incohérente | Corriger avant build/publish/deploy |
 | 4c | Procédure PROD incohérente | Corriger avant publish/deploy |
 | 4d | Maquette de communication prête | Valider la communication de release |

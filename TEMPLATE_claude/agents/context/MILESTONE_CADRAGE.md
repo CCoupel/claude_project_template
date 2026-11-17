@@ -126,7 +126,7 @@ agents `milestone` si `plan` est renseigne, sinon rien de plus — memes regles 
 | `review: false` | REVIEW ∥ QA | Pas de dispatch `code-reviewer` : QA seule ; son verdict ouvre la suite. Un cycle = un NOT VALIDATED de QA. |
 | `qualif: false` | Phase 5 | BUILD seul (pas de PUBLISH/DEPLOY QUALIF) ; GATE LOT / GATE 4 sur l'artefact local `build/candidate_vX.Y.Z/` (procedure de test adaptee au local). NR complete inchangee. |
 | `qualif: false` | Phase 6 | PUBLISH PROD sans prerequis « publication validee sur l'environnement precedent » — l'ordre au `deployer` le precise (`Cadrage : sans QUALIF`). |
-| `doc: dev` | DOC draft / finalize | Pas de `doc-updater` : chaque ordre DEV demande la mise a jour de `CHANGELOG.md` (et de la doc touchee) dans le commit ; GATE 4 s'ouvre sans attendre DOC finalize, mais **apres** la mise a jour du `README.md` (ordre a l'agent DEV concerne, prerequis PROD). |
+| `doc: dev` | DOC draft / finalize | Pas de `doc-updater` : chaque ordre DEV demande la mise a jour de `CHANGELOG.md` (et de la doc touchee) dans le commit ; GATE 4 s'ouvre sans attendre DOC finalize, mais **apres** la mise a jour du `README.md` (ordre a l'agent DEV concerne, prerequis PROD ; avec lots : au dernier lot). |
 
 ## 6. Cas particuliers
 
