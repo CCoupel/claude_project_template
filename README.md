@@ -362,11 +362,11 @@ spécialisés, valide leurs livrables et reporte la progression.
 peut commencer par un frontmatter ne contenant que `model:` et/ou `effort:` — il prime sur le template. Au
 `/start-session`, le teamleader résout ces valeurs et les passe **explicitement** au spawn (`subagent_type`, `model`,
 `effort`) ; sans cela un teammate hériterait du modèle et de l'effort de la session. Les sous-agents temporaires
-héritent de leur coordinateur. Règle complète : `agents/context/TEAMMATES_PROTOCOL.md` section 7.
+héritent de leur coordinateur. Règle complète : `agents/context/MODEL_EFFORT.md` section 7.
 
 **Adéquation au projet** : `/init-project` (section 2ter de la génération, étape d6a en synchronisation) confronte
 les réponses de l'init (sécurité, firmware, nombre de composants, déploiement, taille, budget du cadrage) à la grille
-de `TEAMMATES_PROTOCOL.md` §7.1 et affiche un **retour high level** : agents probablement sous- ou sur-dimensionnés,
+de `MODEL_EFFORT.md` §7.1 et affiche un **retour high level** : agents probablement sous- ou sur-dimensionnés,
 avec suggestion et motif. S'il y a au moins une alerte, il demande s'il faut **revoir agent par agent**, appliquer
 les suggestions ou garder les défauts ; les choix sont écrits dans le frontmatter des compagnons. Un agent qui a déjà
 une surcharge projet n'est jamais signalé.
@@ -421,7 +421,7 @@ l'agent coordinateur gère le dispatch, la collecte et la consolidation.
 | `code-reviewer` | `sub-reviewer-<dimension>` | Dimensions de la revue (sécurité, performance...) | Immédiate — après consolidation du verdict |
 | `qa` | `sub-qa-<scope>` | Scopes de tests (unit/integration/e2e...), chacun isolé dans son propre `git worktree --detach` (sans branche, code commité) créé/nettoyé en `Bash` | Immédiate — après consolidation du verdict |
 
-Détail complet du protocole : `TEMPLATE_claude/agents/context/TEAMMATES_PROTOCOL.md` section 6.
+Détail complet du protocole : `TEMPLATE_claude/agents/context/SUBAGENTS_PROTOCOL.md` section 6.
 
 ---
 

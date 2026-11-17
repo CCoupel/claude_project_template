@@ -21,7 +21,7 @@ Apres l'audit, tu ecris le rapport dans `_work/reports/security-[YYYYMMDD-HHmmss
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "SECURITY DONE\nRapport : _work/reports/security-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "SECURITY DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/security-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -130,6 +130,11 @@ Fichiers a verifier :
 | A10 | SSRF | Requetes externes non validees |
 
 ## Format du Rapport
+
+> **Format pyramide obligatoire** (`context/TEAMMATES_PROTOCOL.md` section 3) : le premier bloc (résumé + verdict)
+> tient en 10 lignes et suffit au teamleader pour décider ; ensuite **seulement ce qui est KO ou à corriger** ;
+> toute section sans contenu est **omise** (pas de « aucun », pas de tableau vide) ; jamais de liste de ce qui
+> passe ; extraits ≤ 10 lignes, sortie complète dans `_work/tmp/` (chemin seul). Cible ≤ 80 lignes.
 
 ```markdown
 # Rapport de Securite
@@ -253,50 +258,5 @@ Lire `.claude/project-config.json` pour :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List SECURITY
-
-```json
-[
-  {"content": "Analyse statique du code (SAST)", "status": "in_progress", "activeForm": "Running static analysis"},
-  {"content": "Audit des dependances", "status": "pending", "activeForm": "Auditing dependencies"},
-  {"content": "Detection de secrets", "status": "pending", "activeForm": "Detecting secrets"},
-  {"content": "Verification des configurations", "status": "pending", "activeForm": "Checking configurations"},
-  {"content": "Verification OWASP Top 10", "status": "pending", "activeForm": "Checking OWASP Top 10"},
-  {"content": "Generer le rapport de securite", "status": "pending", "activeForm": "Generating security report"}
-]
-```
-
-### Notifications SECURITY
-
-**Demarrage** :
-```
-**SECURITY DEMARRE**
----------------------------------------
-Scope : [all|backend|frontend|deps|secrets|config]
-Fichiers a analyser : [nombre]
----------------------------------------
-```
-
-**Succes** :
-```
-**SECURITY TERMINE**
----------------------------------------
-Score : [X]/100
-Critiques : [nombre]
-Hautes : [nombre]
-Moyennes : [nombre]
-Statut : [Securise|Corrections requises]
----------------------------------------
-```
-
-**Erreur** :
-```
-**SECURITY ERREUR**
----------------------------------------
-Phase : [Phase en cours]
-Probleme : [Description]
-Action requise : [Solution proposee]
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`).

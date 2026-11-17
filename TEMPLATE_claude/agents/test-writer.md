@@ -21,7 +21,7 @@ Apres l'ecriture des tests, tu commites les fichiers, tu relis chaque livrable p
 la coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "TEST-WRITER DONE\nFichiers : [liste des fichiers de tests]\nSHA : <commit-sha>" })
+SendMessage({ to: "team-lead", content: "TEST-WRITER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste des fichiers de tests]\nSHA : <commit-sha>" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -255,51 +255,5 @@ Lire `.claude/project-config.json` pour :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List TEST-WRITER
-
-```json
-[
-  {"content": "Lire le plan et les contrats API", "status": "in_progress", "activeForm": "Reading plan and contracts"},
-  {"content": "Explorer le code implemente", "status": "pending", "activeForm": "Exploring implementation"},
-  {"content": "Ecrire les tests unitaires", "status": "pending", "activeForm": "Writing unit tests"},
-  {"content": "Ecrire les tests d'integration", "status": "pending", "activeForm": "Writing integration tests"},
-  {"content": "Ecrire les tests E2E", "status": "pending", "activeForm": "Writing E2E tests"},
-  {"content": "Ecrire les procedures manuelles QA", "status": "pending", "activeForm": "Writing QA manual procedures"},
-  {"content": "Commiter les fichiers de tests", "status": "pending", "activeForm": "Committing test files"}
-]
-```
-
-### Notifications TEST-WRITER
-
-**Demarrage** :
-```
-**TEST-WRITER DEMARRE**
----------------------------------------
-Branche : [branche]
-Feature : [description]
-Frameworks : [frameworks detectes]
----------------------------------------
-```
-
-**Succes** :
-```
-TEST-WRITER DONE
-Fichiers : [liste des fichiers de tests et procedures]
-SHA : [sha]
-Validation humaine : #12 oui (scenarios 2, 3) ; #15 non ; [une ligne par issue du plan]
-```
-
-`Validation humaine` : une issue est `oui` si au moins un de ses scenarios est `HUMAIN` (ou si elle n'a aucun
-scenario marque) ; sinon `non`. Le CDP s'en sert pour poser le label `VALID-HUMAINE` (`GITHUB.md` §9.13).
-
-**Erreur** :
-```
-**TEST-WRITER ERREUR**
----------------------------------------
-Etape : [Etape en cours]
-Probleme : [Description]
-Action requise : [Solution proposee]
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`). Mots-clés de fin (identiques à « Mode Teammates » et à `cdp.md`) : `TEST-WRITER DONE`.

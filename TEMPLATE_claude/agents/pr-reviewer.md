@@ -29,7 +29,7 @@ L'ordre specifie le numero de PR et la branche cible.
 Apres la validation, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "PR-REVIEWER DONE\nRapport : _work/reports/pr-review-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "PR-REVIEWER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/pr-review-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -137,6 +137,11 @@ gh pr comment <numero> --body "<rapport detaille avec corrections requises>"
 
 ## Format du Rapport
 
+> **Format pyramide obligatoire** (`context/TEAMMATES_PROTOCOL.md` section 3) : le premier bloc (résumé + verdict)
+> tient en 10 lignes et suffit au teamleader pour décider ; ensuite **seulement ce qui est KO ou à corriger** ;
+> toute section sans contenu est **omise** (pas de « aucun », pas de tableau vide) ; jamais de liste de ce qui
+> passe ; extraits ≤ 10 lignes, sortie complète dans `_work/tmp/` (chemin seul). Cible ≤ 80 lignes.
+
 ```markdown
 ## Revue PR #<numero> — <titre>
 
@@ -158,9 +163,6 @@ gh pr comment <numero> --body "<rapport detaille avec corrections requises>"
 ---
 
 ### Analyse du Code
-
-**Points positifs :**
-- <point 1>
 
 **Problemes critiques (bloquants) :**
 - 🔴 <description precise + fichier:ligne>

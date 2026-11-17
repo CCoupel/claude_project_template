@@ -37,7 +37,7 @@ l'effectif attendu, pas seulement les agents des taches en cours.
 
 ```
 SendMessage({ to: "<nom>", content: "<tâche complète>" })
-→ Attendre ACTIF + DONE
+→ Attendre le DONE (Verdict + Conformité + références) — pas d'accusé de réception
 ```
 
 Ordre de plus de 3 lignes : `Write` dans `_work/tasks/<agent>-<timestamp>.md`, puis `SendMessage` avec le chemin +
@@ -497,7 +497,8 @@ pour chaque nom de la liste "Sub-reviewers a fermer" :
 **Étape 2, seulement ensuite** :
 
 |-- Recevoir DONE code-reviewer + ref fichier rapport
-|-- CDP lit le rapport et valide la conformite
+|-- CDP valide sur les lignes Verdict / Conformite du DONE (rapport ouvert seulement sur KO, reserves ou ecart —
+|   cdp.md « Validation des Livrables par exception » ; un REJECTED/NOT VALIDATED se transmet au dev par le chemin du rapport)
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
         |-- APPROVED / APPROVED WITH RESERVATIONS ->
@@ -549,7 +550,8 @@ pour chaque nom de la liste "Sub-qa a fermer" :
 **Étape 2, seulement ensuite** : traiter le verdict VALIDATED/NOT VALIDATED.
 
 |-- Recevoir DONE + ref fichier rapport (ou annulation reçue entre-temps, voir Phase Review REJECTED)
-|-- CDP lit le rapport et valide la conformite
+|-- CDP valide sur les lignes Verdict / Conformite du DONE (rapport ouvert seulement sur KO, reserves ou ecart —
+|   cdp.md « Validation des Livrables par exception » ; un REJECTED/NOT VALIDATED se transmet au dev par le chemin du rapport)
     |-- Non conforme -> renvoyer pour correction (hors cycle)
     |-- Conforme :
         |-- VALIDATED                   -> Phase Doc (automatique) :
@@ -927,7 +929,7 @@ Détection et reprise : `commands/start-session.md` étapes 2 et 4bis. Principes
   présent.
 
 > **Limite connue** : `SUBPLANNER_NAMES[]`/`SUBREVIEWER_NAMES[]`/`SUBAGENT_NAMES[]` (sous-agents
-> temporaires, voir `context/TEAMMATES_PROTOCOL.md` section 6) ne sont pas persistés dans ce
+> temporaires, voir `context/SUBAGENTS_PROTOCOL.md` section 6) ne sont pas persistés dans ce
 > fichier — un crash/redémarrage de session pendant une délégation active peut laisser des
 > sous-agents orphelins. Après un `resume`, lancer `/team-status` et fermer manuellement
 > (`TaskStop`, ou `/team-delete --force` — voir `team-delete.md`) tout `sub-planner-*`/

@@ -197,35 +197,18 @@ Plusieurs instances d'une meme categorie (ex. deux `dev-firmware-*`) se parallel
 
 ---
 
-## Format de Summary
+## Format de Summary (= handoff `_work/handoff/<agent>-<timestamp>.md`, ≤ 40 lignes)
 
-Chaque agent DEV doit produire un summary structure :
+Lu par les agents en aval (code-reviewer, test-writer, qa, autre dev) — pas par le teamleader, qui decide sur le `DONE` :
 
 ```markdown
-# [Agent] Implementation Summary
-
-## Version
-- X.Y.Z : [inchangee | Z incremente — nouveau cycle bugfix, voir Commits]
-- `a` : gere par `deploy`, non modifie par cet agent
-
-## Files Modified
-
-### [fichier]
-- [Description des modifications]
-
-## Tests Results
-- Total: N tests
-- Passed: N
-- Failed: 0
-- Coverage: XX%
-
-## Commits
-1. `feat(scope): Description`
-
-## Verification
-- [x] Build OK
-- [x] Tests PASS
-- [x] Server starts OK (if applicable)
-- [x] Version verified
-- [x] [Autres verifications specifiques]
+# [Agent] — <tache> — <SHA>
+Version : X.Y.Z [inchangee | Z incremente] (`a` gere par deploy)
+Fichiers : `path/a.go` (nouvel endpoint POST /auth), `path/b.go` (validation)   ← une ligne par fichier, quoi et pourquoi
+Tests lies : N/N OK (commande lancee : <cmd>)
+Decisions : <choix non evident et sa raison>            (omettre si aucun)
+Points d'attention aval : <ce que reviewer/test-writer doivent regarder>  (omettre si aucun)
+Impact large : <zones>                                 (omettre si aucun)
 ```
+
+Pas de checklist de verifications OK (le `DONE` les resume en `Verdict`), pas de copie du plan ni de diff.

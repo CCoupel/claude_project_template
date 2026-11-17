@@ -1978,7 +1978,7 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
     "close_on": "ci"
   },
   "progress": {
-    "interval_min": 10
+    "interval_min": 20
   },
   "commands": {
     "env": "<ENV_CMD : prefixe shell de la chaine native, ex. export PATH=...>",
@@ -2044,7 +2044,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
 | `marketing.site` | Defaut `"auto"` : un site marketing est attendu (branche `gh-pages`, uniquement — `MARKETING/` en est le worktree git, jamais un dossier de la branche de code) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
 | `issues.close_on` | Etape 7. `ci` (defaut ; absent = `ci`) : issue fermee sur CI verte apres QA ; `validation` : issue laissee ouverte en `DONE` jusqu'a une validation utilisateur qui la couvre (GATE LOT explicite, sinon GATE 4) — `commands/context/GITHUB.md` §9.5 |
-| `progress.interval_min` | Defaut `10` (absent = `10`, aucune question, modifiable a la main ; projet deja initialise : rien a migrer). Cadence en minutes du point d'avancement periodique du teamleader (% et ETA par teammate actif) — `agents/cdp.md` « Point d'avancement periodique » |
+| `progress.interval_min` | Defaut `20` (absent = `20`, aucune question, modifiable a la main ; projet deja initialise : rien a migrer). Cadence en minutes du point d'avancement periodique du teamleader (% et ETA par teammate actif) — `agents/cdp.md` « Point d'avancement periodique » |
 | `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/COMMON.md` §14) |
 | `browser.path_map` | Etape 9d. **Repli** quand Claude-Launcher ne fournit pas `CL_BROWSER_PATH_MAP` (projet lance sans launcher, ou launcher anterieur a v5.9.0, sans serveur web) : correspondance de chemins pour ouvrir un fichier du projet dans Chrome en `file://` — `project_root` (racine vue par Claude), `launcher_root` (meme racine vue par le poste qui execute Chrome), `launcher_os` (`windows` \| `linux`). Non pose si la variable est fournie. Absent = meme chemin (WSL : `wslpath -m`). Regle : `context/COMMON.md` 14.9 |
 | `commands.env` | Etape 9b. Prefixe shell evalue par tout agent avant ses commandes `commands.*` (chaine d'outils native de l'OS — `context/COMMON.md` 15.10). Ex. sous WSL : `export PATH=$HOME/.nvm/versions/node/v22.11.0/bin:/usr/local/go/bin:$PATH`. Vide si les outils du PATH sont deja natifs |
@@ -2133,7 +2133,7 @@ specification repond `BLOQUE` au demarrage). Le fichier est **tracke git**, jama
 (le compagnon `generic.md` sans nom reste, lui, un compagnon classique du template `generic.template.md`).
 Si l'instance justifie un autre modele ou effort que `generic.template.md` (`sonnet` / `medium`), ajouter en tete
 de la specification un frontmatter ne contenant que `model:` et/ou `effort:` (ex. `opus` pour un redacteur de
-documents longs) — resolu au spawn, voir `agents/context/TEAMMATES_PROTOCOL.md` section 7. Ce choix est
+documents longs) — resolu au spawn, voir `agents/context/MODEL_EFFORT.md` section 7. Ce choix est
 revu avec les autres agents a la section 2ter ci-dessous.
 
 Ajouter une ligne par instance dans la table `## Agents Disponibles` de `CLAUDE.md` :
@@ -2143,7 +2143,7 @@ Le CDP les connait via cette table et `agents.generic[]` (voir `agents/cdp.md`).
 ### 2ter. Adequation modele/effort des agents
 
 Une fois tous les agents connus (communs, de stack, instances `generic.<nom>`), verifier que leurs modele et effort
-resolus (compagnon > template, `agents/context/TEAMMATES_PROTOCOL.md` section 7) conviennent a **ce** projet.
+resolus (compagnon > template, `agents/context/MODEL_EFFORT.md` section 7) conviennent a **ce** projet.
 Claude confronte les reponses de l'init (`project-config.json`, `docs/CADRAGE.md` s'il existe) a la grille de la
 section 7.1 du meme fichier. Aucun agent n'est surcharge sans validation.
 
@@ -2736,7 +2736,7 @@ Les règles critiques du teamleader sont dans `CLAUDE.md` (bloc `TEAMLEADER_PROT
 
 Déployer `TEMPLATE_claude/settings.json` dans `.claude/settings.json` si absent, puis y écrire le **modèle et
 l'effort du teamleader** résolus depuis les frontmatters (`.claude/agents/teamleader.md` compagnon s'il en a un,
-sinon `.claude/agents/teamleader.template.md` — règle `agents/context/TEAMMATES_PROTOCOL.md` section 7). Les
+sinon `.claude/agents/teamleader.template.md` — règle `agents/context/MODEL_EFFORT.md` section 7). Les
 autres clés de `settings.json` ne sont jamais touchées ; `model` et `effortLevel` sont **dérivées** (toute édition
 manuelle est écrasée à la prochaine sync — la surcharge se fait dans le compagnon) :
 

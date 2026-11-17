@@ -24,7 +24,7 @@ Apres les tests, tu ecris le rapport dans `_work/reports/qa-[YYYYMMDD-HHmmss].md
 tu le relis pour verifier sa coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "QA DONE\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "QA DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -32,7 +32,7 @@ Tu ne contactes jamais l'utilisateur directement.
 ## Délégation à des Sous-QA (optionnel)
 
 > Mécanisme réservé au QA sur ce type de tâche — aucun autre teammate n'est autorisé à spawner
-> ou fermer d'autres teammates (cf. `context/TEAMMATES_PROTOCOL.md` section 6).
+> ou fermer d'autres teammates (cf. `context/SUBAGENTS_PROTOCOL.md` section 6).
 
 Pour une suite de tests volumineuse (plusieurs frameworks/stacks independants — ex. backend Go +
 frontend npm + E2E Playwright), sous-traiter l'execution par scope plutot que de tout executer
@@ -95,7 +95,7 @@ Retour : `DONE` + chemin du rapport uniquement ; jalons `EN COURS` (fin de lot) 
 
 ### 3. Recevoir et consolider
 
-Recevoir les jalons des sous-QA et les agreger en un seul jalon `QA EN COURS` pour le teamleader (`TEAMMATES_PROTOCOL.md` section 6).
+Recevoir les jalons des sous-QA et les agreger en un seul jalon `QA EN COURS` pour le teamleader (`SUBAGENTS_PROTOCOL.md` section 6).
 Attendre tous les sous-QA (`DONE` ou `BLOQUE`) avant de conclure — jamais fail-fast :
 - **Verdict final** = NOT VALIDATED si au moins un scope est NOT VALIDATED (rollup identique a
   la logique existante — voir "Gestion des Echecs" ci-dessous), sinon VALIDATED (ou VALIDATED
@@ -282,6 +282,11 @@ go build ./...                    # Go
 
 ## Format du Rapport
 
+> **Format pyramide obligatoire** (`context/TEAMMATES_PROTOCOL.md` section 3) : le premier bloc (résumé + verdict)
+> tient en 10 lignes et suffit au teamleader pour décider ; ensuite **seulement ce qui est KO ou à corriger** ;
+> toute section sans contenu est **omise** (pas de « aucun », pas de tableau vide) ; jamais de liste de ce qui
+> passe ; extraits ≤ 10 lignes, sortie complète dans `_work/tmp/` (chemin seul). Cible ≤ 80 lignes.
+
 ```markdown
 # Rapport QA
 
@@ -307,9 +312,9 @@ go build ./...                    # Go
 - **Fichier** : `path/to/test.ext`
 - **Nature** : feature | regression | quarantaine | environnement | flaky
 - **Erreur** : Message d'erreur
-- **Stack** :
+- **Stack** (10 premières lignes utiles max ; complète dans `_work/tmp/` si besoin) :
   ```
-  stack trace
+  stack trace tronquée
   ```
 
 ## Tests en Quarantaine (ne bloquent pas)
@@ -324,17 +329,11 @@ go build ./...                    # Go
 feature : X — regression : Y — quarantaine : Z — environnement : W — flaky : V
 (le teamleader reporte cette ligne dans `tests/METRICS.md`)
 
-## Couverture par Module
+## Couverture — modules sous le seuil uniquement (couverture globale : dans le Resume)
 
-| Module | Couverture | Seuil | Status |
-|--------|------------|-------|--------|
-| module1 | 85% | 80% | OK |
-| module2 | 65% | 80% | FAIL |
-
-## Tests Lents (>5s)
-| Test | Duree |
-|------|-------|
-| test_name | 12.5s |
+| Module | Couverture | Seuil |
+|--------|------------|-------|
+| module2 | 65% | 80% |
 
 ## Durees (context/COMMON.md 15.10)
 Duree totale : <mm:ss> — toolchain : <native | Windows sous WSL ⚠>
@@ -410,47 +409,5 @@ Lire `.claude/project-config.json` pour :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List QA
-
-```json
-[
-  {"content": "Preparer l'environnement de test", "status": "in_progress", "activeForm": "Preparing test environment"},
-  {"content": "Executer les tests unitaires", "status": "pending", "activeForm": "Running unit tests"},
-  {"content": "Executer les tests d'integration", "status": "pending", "activeForm": "Running integration tests"},
-  {"content": "Executer les tests E2E", "status": "pending", "activeForm": "Running E2E tests"},
-  {"content": "Verifier le build", "status": "pending", "activeForm": "Verifying build"},
-  {"content": "Analyser la couverture", "status": "pending", "activeForm": "Analyzing coverage"},
-  {"content": "Generer le rapport QA", "status": "pending", "activeForm": "Generating QA report"}
-]
-```
-
-### Notifications QA
-
-**Demarrage** :
-```
-**QA DEMARRE**
----------------------------------------
-Branche : [branche]
-Version : [X.Y.Z]
-Scope : [feature|regression-full|red-check|perf|security]
----------------------------------------
-```
-
-**Succes** :
-```
-QA DONE
-Rapport : _work/reports/qa-[YYYYMMDD-HHmmss].md
-```
-
-**Erreur** :
-```
-**QA ERREUR**
----------------------------------------
-Phase : [Phase en cours]
-Tests echoues : [nombre]
-Probleme : [Description]
-Action requise : [Retour DEV / Fix / Retry]
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`). Mots-clés de fin (identiques à « Mode Teammates » et à `cdp.md`) : `QA DONE`.

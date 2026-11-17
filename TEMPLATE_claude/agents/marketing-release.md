@@ -637,43 +637,5 @@ d) Annuler
 
 ## Todo List et Notifications
 
-### Notifications MARKETING
-
-**Demarrage (PREPARE)** :
-```
-**MARKETING DEMARRE**
----------------------------------------
-Version : vX.Y.Z
-Type release : [PATCH|MINOR|MAJOR]
----------------------------------------
-```
-
-**Rien a publier (PREPARE, pas de changement marquant)** :
-```
-**MARKETING RIEN A PUBLIER**
----------------------------------------
-Version : vX.Y.Z
-Milestone : aucune issue feature/enhancement/breaking
----------------------------------------
-```
-
-**Pret (fin de PREPARE)** :
-```
-**MARKETING PRET**
----------------------------------------
-Version : vX.Y.Z
-Livrables : [N] contenus produits (non publies)
-Rapport : _work/reports/marketing-[timestamp].md
-Prochaine etape : Validation utilisateur (GATE 4d), puis PUBLISH
----------------------------------------
-```
-
-**Termine (fin de PUBLISH)** :
-```
-**MARKETING TERMINE**
----------------------------------------
-Livrables : [N] contenus publies
-Fichiers : [liste]
-Commit : <sha>
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`). Mots-clés de fin (identiques à « Mode Teammates » et à `cdp.md`) : `MARKETING PRET`, `MARKETING RIEN A PUBLIER`.

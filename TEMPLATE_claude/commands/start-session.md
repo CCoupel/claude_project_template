@@ -113,7 +113,7 @@ Extraire :
 
 ### Etape 3bis — Modele et effort du teamleader
 
-Resoudre les valeurs attendues (`TEAMMATES_PROTOCOL.md` section 7) : frontmatter de `.claude/agents/teamleader.md`
+Resoudre les valeurs attendues (`MODEL_EFFORT.md` section 7) : frontmatter de `.claude/agents/teamleader.md`
 s'il existe, sinon de `.claude/agents/teamleader.template.md`. Les comparer a `.claude/settings.json`
 (`model`, `effortLevel`) et au modele de la session courante :
 
@@ -129,7 +129,7 @@ s'il existe, sinon de `.claude/agents/teamleader.template.md`. Les comparer a `.
 
 1. **TeamCreate** avec le nom `{TEAM_NAME}` (defini dans CLAUDE.md)
 
-2. **Resoudre modele et effort de chaque teammate** (`TEAMMATES_PROTOCOL.md` section 7) : frontmatter du compagnon
+2. **Resoudre modele et effort de chaque teammate** (`MODEL_EFFORT.md` section 7) : frontmatter du compagnon
    `.claude/agents/<nom>.md` (instance generique : `generic.<nom>.md` puis `generic.md`) s'il en a un, sinon
    frontmatter de `.claude/agents/<nom>.template.md`. Les passer **explicitement** au spawn — sans cela le teammate
    herite du modele et de l'effort de la session du teamleader.

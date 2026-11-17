@@ -21,10 +21,10 @@ Tu ne contactes jamais l'utilisateur directement. Trois états de réponse possi
 
 **DONE** — plan produit, aucune ambiguïté bloquante :
 ```
-SendMessage({ to: "team-lead", content: "PLANNER DONE\nRapport : _work/reports/plan-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "PLANNER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/plan-[YYYYMMDD-HHmmss].md" })
 ```
 Sur l'ordre `MAQUETTE RETENUE <lettre> — <brouillon>` (GATE 2, voir 3c) : produire la version retenue, puis
-`SendMessage({ to: "team-lead", content: "PLANNER DONE\nMaquette retenue : _work/mockup/<version>/<type>/<composant>__<feature>.html" })`.
+`SendMessage({ to: "team-lead", content: "PLANNER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nMaquette retenue : _work/mockup/<version>/<type>/<composant>__<feature>.html" })`.
 
 **BLOQUE** — ambiguïtés bloquantes détectées avant de pouvoir planifier :
 ```
@@ -54,7 +54,7 @@ Deux états non terminaux existent — voir "Délégation à des Sous-Planners" 
 ## Délégation à des Sous-Planners (optionnel)
 
 > Mécanisme réservé au planner — aucun autre teammate n'est autorisé à spawner ou fermer
-> d'autres teammates (cf. `context/TEAMMATES_PROTOCOL.md` section 6).
+> d'autres teammates (cf. `context/SUBAGENTS_PROTOCOL.md` section 6).
 
 Pour une demande qui se décompose en groupes de travail réellement indépendants (ex. plusieurs
 issues sans fichier partagé ni dépendance croisée), sous-traiter l'analyse de chaque groupe à des
@@ -93,7 +93,7 @@ Retour : `DONE` + chemin du rapport uniquement.
 
 ### 4. Recevoir et consolider
 
-Agreger les jalons des sub-planners en un seul jalon `PLANNER EN COURS` pour le teamleader si la planification dure (`TEAMMATES_PROTOCOL.md` section 6).
+Agreger les jalons des sub-planners en un seul jalon `PLANNER EN COURS` pour le teamleader si la planification dure (`SUBAGENTS_PROTOCOL.md` section 6).
 Attendre tous les sub-planners (`DONE` ou `BLOQUÉ`) avant de conclure — jamais fail-fast, pour
 présenter une vue complète même si un seul groupe est bloqué :
 - **Un seul BLOQUÉ** → agréger toutes les ambiguïtés remontées (groupées par sous-plan) dans un
@@ -522,49 +522,5 @@ Lire `.claude/project-config.json` pour :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List PLANNER
-
-```json
-[
-  {"content": "Comprendre la demande et clarifier les ambiguites", "status": "in_progress", "activeForm": "Understanding request"},
-  {"content": "Analyser le codebase existant", "status": "pending", "activeForm": "Analyzing codebase"},
-  {"content": "Identifier les composants impactes", "status": "pending", "activeForm": "Identifying impacts"},
-  {"content": "Evaluer les risques", "status": "pending", "activeForm": "Evaluating risks"},
-  {"content": "Rediger le plan d'implementation", "status": "pending", "activeForm": "Writing implementation plan"},
-  {"content": "Presenter le plan pour validation", "status": "pending", "activeForm": "Presenting plan for approval"}
-]
-```
-
-### Notifications PLANNER
-
-**Demarrage** :
-```
-**PLANNER DEMARRE**
----------------------------------------
-Demande : [Resume de la demande]
-Type : [FEATURE|BUGFIX|REFACTOR]
----------------------------------------
-```
-
-**Succes** :
-```
-**PLANNER TERMINE**
----------------------------------------
-Taches : [nombre] taches en [nombre] lots
-Composants : [liste des composants]
-Complexite : [Faible|Moyenne|Elevee]
-Statut : Plan pret pour validation
----------------------------------------
-```
-
-**Erreur** :
-```
-**PLANNER ERREUR**
----------------------------------------
-Etape : [Etape en cours]
-Probleme : [Description]
-Action requise : [Clarification necessaire]
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`).

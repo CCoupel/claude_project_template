@@ -43,17 +43,17 @@ rapport au teamleader :
 
 ```
 # BUILD
-SendMessage({ to: "team-lead", content: "BUILD DONE\nVersion : [X.Y.Z.a]\nCandidat : [chemin local]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "BUILD DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nVersion : [X.Y.Z.a]\nCandidat : [chemin local]\nSHA : <sha>" })
 
 # PUBLISH QUALIF / PROD
-SendMessage({ to: "team-lead", content: "PUBLISH DONE\nEnvironnement : [QUALIF|PROD]\nVersion : [X.Y.Z.a ou X.Y.Z]\nArtefact : [registre/chemin]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "PUBLISH DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nEnvironnement : [QUALIF|PROD]\nVersion : [X.Y.Z.a ou X.Y.Z]\nArtefact : [registre/chemin]\nSHA : <sha>" })
 
 # DEPLOY PROD
-SendMessage({ to: "team-lead", content: "DEPLOY DONE\nVersion : [X.Y.Z]\nFichiers : [liste]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "DEPLOY DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nVersion : [X.Y.Z]\nFichiers : [liste]\nSHA : <sha>" })
 
 # DEPLOY QUALIF — le binaire a tester DOIT etre inclus, le teamleader le relaie tel quel au GATE 4
 # Chemin toujours relatif a la racine du repo (build/qualif_v.../), jamais a un sous-repertoire
-SendMessage({ to: "team-lead", content: "DEPLOY DONE\nVersion : [X.Y.Z.a]\nBinaire : build/qualif_v[X.Y.Z]/[artefact]-[X.Y.Z.a].[ext]\nSmoke tests : [OK|KO]\nSHA : <sha>" })
+SendMessage({ to: "team-lead", content: "DEPLOY DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nVersion : [X.Y.Z.a]\nBinaire : build/qualif_v[X.Y.Z]/[artefact]-[X.Y.Z.a].[ext]\nSmoke tests : [OK|KO]\nSHA : <sha>" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -104,7 +104,7 @@ reference `commands/context/GITHUB.md` section 9). Deux formes d'ordre :
   5. Rapport avec recapitulatif par issue — le teamleader le compare a la table du plan.
 
 ```
-SendMessage({ to: "team-lead", content: "LABELS DONE\n#12 → PRET, LOT-1\n#15 → PRET, LOT-1\n#18 → PRET, LOT-2.1" })
+SendMessage({ to: "team-lead", content: "LABELS DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\n#12 → PRET, LOT-1\n#15 → PRET, LOT-1\n#18 → PRET, LOT-2.1" })
 SendMessage({ to: "team-lead", content: "LABELS FAILED\nMotif : #18 sans lot dans l'ordre — aucun label pose" })
 ```
 
@@ -547,7 +547,7 @@ En orchestration teamleader (jamais de contact direct utilisateur) : remonter le
 cloture dans le rapport `DEPLOY DONE` au teamleader, qui le presente a l'utilisateur (meme
 principe que GATE 4) :
 ```
-SendMessage({ to: "team-lead", content: "DEPLOY DONE\n...\nMilestone <TITLE> cloture." })
+SendMessage({ to: "team-lead", content: "DEPLOY DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\n...\nMilestone <TITLE> cloture." })
 ```
 
 > La decision de lancer l'agent marketing (`marketing-release`) n'est plus du ressort du
@@ -693,130 +693,5 @@ Lire `.claude/project-config.json` pour :
 
 ## Todo List et Notifications
 
-> **Regles completes** : Voir `context/COMMON.md`
-
-### Exemple Todo List BUILD
-
-```json
-[
-  {"content": "Verifier les prerequis", "status": "in_progress", "activeForm": "Checking prerequisites"},
-  {"content": "Incrementer la version", "status": "pending", "activeForm": "Bumping version"},
-  {"content": "Executer le build", "status": "pending", "activeForm": "Running build"},
-  {"content": "Generer le rapport de build", "status": "pending", "activeForm": "Generating build report"}
-]
-```
-
-### Exemple Todo List PUBLISH
-
-```json
-[
-  {"content": "Verifier qu'un candidat existe", "status": "in_progress", "activeForm": "Checking build candidate"},
-  {"content": "Publier vers l'environnement cible", "status": "pending", "activeForm": "Publishing to target environment"},
-  {"content": "Generer le rapport de publication", "status": "pending", "activeForm": "Generating publish report"}
-]
-```
-
-### Exemple Todo List DEPLOY
-
-```json
-[
-  {"content": "Verifier qu'une publication existe", "status": "in_progress", "activeForm": "Checking published artifact"},
-  {"content": "Installer l'artefact sur l'environnement cible", "status": "pending", "activeForm": "Installing to target"},
-  {"content": "Verifier le rollout / smoke tests", "status": "pending", "activeForm": "Verifying rollout"},
-  {"content": "Generer le rapport de deploiement", "status": "pending", "activeForm": "Generating deploy report"}
-]
-```
-
-### Notifications BUILD
-
-**Demarrage** :
-```
-**BUILD DEMARRE**
----------------------------------------
-Version : [X.Y.Z.a] (connue seulement apres l'increment, etape 2)
-Branche : [branche]
----------------------------------------
-```
-
-**Succes** (relaie `BUILD DONE` — voir Mode Teammates) :
-```
-BUILD DONE
-Version : [X.Y.Z.a]
-Candidat : [chemin local]
-SHA : <sha>
-```
-
-**Erreur** :
-```
-**BUILD ERREUR**
----------------------------------------
-Etape : [Etape en cours]
-Probleme : [Description]
-Action requise : [Fix / Retry]
----------------------------------------
-```
-
-### Notifications PUBLISH
-
-**Demarrage** :
-```
-**PUBLISH DEMARRE**
----------------------------------------
-Environnement : [QUALIF|PROD]
-Version : [X.Y.Z.a] (QUALIF) ou [X.Y.Z] (PROD)
-Branche : [branche]
----------------------------------------
-```
-
-**Succes** (relaie `PUBLISH DONE` — voir Mode Teammates) :
-```
-PUBLISH DONE
-Environnement : [QUALIF|PROD]
-Version : [X.Y.Z.a ou X.Y.Z]
-Artefact : [registre/chemin]
-SHA : <sha>
-```
-
-**Erreur** :
-```
-**PUBLISH ERREUR**
----------------------------------------
-Environnement : [QUALIF|PROD]
-Etape : [Etape en cours]
-Probleme : [Description]
-Action requise : [Fix / Retry]
----------------------------------------
-```
-
-### Notifications DEPLOY
-
-**Demarrage** :
-```
-**DEPLOY DEMARRE**
----------------------------------------
-Environnement : [QUALIF|PROD]
-Version : [X.Y.Z.a] (QUALIF) ou [X.Y.Z] (PROD) — deja publiee
-Branche : [branche]
----------------------------------------
-```
-
-**Succes** (relaie `DEPLOY DONE` — voir Mode Teammates) :
-```
-DEPLOY DONE
-Version : [X.Y.Z] (PROD) ou [X.Y.Z.a] (QUALIF)
-Binaire : build/qualif_v[X.Y.Z]/app-[X.Y.Z.a].tar.gz  (QUALIF uniquement — dossier non gitte, a la racine du repo, SANS `a` dans son nom, artefact AVEC `a`, emplacement impose)
-Smoke tests : [OK|KO]
-Fichiers : [liste]
-SHA : <sha>
-```
-
-**Erreur** :
-```
-**DEPLOY ERREUR**
----------------------------------------
-Environnement : [QUALIF|PROD]
-Etape : [Etape en cours]
-Probleme : [Description]
-Action requise : [Rollback / Fix / Retry]
----------------------------------------
-```
+> Règles : `context/COMMON.md` (todo list `TodoWrite` sans recopie du plan en texte, jalons plafonnés, pas de message
+> de démarrage) et `context/TEAMMATES_PROTOCOL.md` section 3 (`DONE` avec `Verdict :` / `Conformité :`). Mots-clés de fin (identiques à « Mode Teammates » et à `cdp.md`) : `BUILD DONE`, `DEPLOY DONE`, `PUBLISH DONE`.

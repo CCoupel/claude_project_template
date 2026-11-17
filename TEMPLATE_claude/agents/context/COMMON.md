@@ -103,161 +103,61 @@ courante**, hors worktree actif, pour le nettoyage des branches residuelles (`ag
 
 ## Gestion de la Todo List (OBLIGATOIRE)
 
-Vous DEVEZ utiliser le tool `TodoWrite` pour suivre votre progression de maniere visible.
-
-### Au Demarrage
-
-1. **Creer une todo list** avec toutes les etapes de votre travail
-2. Chaque tache doit avoir :
-   - `content` : Description de la tache (forme imperative)
-   - `status` : `pending` (ou `in_progress` pour la premiere)
-   - `activeForm` : Description en forme progressive (anglais)
-
-### Structure d'une Todo List
-
-```json
-[
-  {"content": "Description en francais", "status": "in_progress", "activeForm": "English description"},
-  {"content": "Deuxieme tache", "status": "pending", "activeForm": "Second task"},
-  ...
-]
-```
-
-### Affichage Attendu
-
-Pendant l'execution, afficher visuellement la progression :
-
-```
-Tache [N]/[Total] : [Description]
-   -- [Detail de ce qui est en cours...]
-
-Tache [N]/[Total] terminee
-   -- [Resume du resultat]
-```
-
-### Regles Strictes
-
-| Regle | Description |
-|-------|-------------|
-| **Une seule tache `in_progress`** | Jamais plus d'une tache en cours a la fois |
-| **Mise a jour immediate** | Mettre a jour la todo list apres CHAQUE changement |
-| **Affichage visuel** | Toujours afficher la progression a l'utilisateur |
-| **Jamais continuer sans MAJ** | Ne jamais passer a la tache suivante sans avoir mis a jour le statut |
-
----
-
-## Affichage du Plan de Taches (OBLIGATOIRE)
-
-### Au Demarrage
-
-Afficher le plan COMPLET avec les icones de statut :
-
-```
-## Plan de Taches
-
-1. [pending] Premiere tache
-2. [pending] Deuxieme tache
-3. [pending] Troisieme tache
-```
-
-### A Chaque Changement de Statut
-
-Re-afficher le plan complet avec la progression :
-
-```
-## Plan de Taches [2/5]
-
-1. [completed] Premiere tache
-2. [in_progress] Deuxieme tache
-3. [pending] Troisieme tache
-4. [pending] Quatrieme tache
-5. [pending] Cinquieme tache
-```
-
-### Icones de Statut
-
-| Icone | Statut | Signification |
-|-------|--------|---------------|
-| `[pending]` | pending | En attente |
-| `[in_progress]` | in_progress | En cours |
-| `[completed]` | completed | Termine |
-| `[failed]` | failed | Echoue |
+Suivre sa progression avec l'outil `TodoWrite` (le pane de l'agent l'affiche déjà) : une todo list créée au démarrage
+de la tâche (`content` en français à l'impératif, `activeForm` en anglais), **une seule** tâche `in_progress`, statut
+mis à jour à chaque changement. **Ne pas recopier le plan en texte** dans la conversation (ni au démarrage, ni à
+chaque étape) : la todo list suffit, et chaque recopie est du texte de sortie payé pour rien.
 
 ---
 
 ## Notifications de Progression (OBLIGATOIRE)
 
-### Au Demarrage de la Tache
+Format et cadence : `TEAMMATES_PROTOCOL.md` sections 2 à 4b — en résumé :
 
-Envoyer immediatement via SendMessage au teamleader :
-
-```
-[NOM-AGENT] EN COURS — 0% — demarrage [description courte]
-```
-
-### A la Fin de la Tache
-
-**En cas de succes :**
-```
-[NOM-AGENT] DONE
-Fichiers : chemin/fichier1, chemin/fichier2
-SHA : <commit-sha>
-```
-
-**En cas d'erreur :**
+- **Pas de message au démarrage** d'une tâche (ni `ACTIF`, ni `EN COURS — 0%`) : chaque message réveille le teamleader.
+- **Jalons** `[NOM-AGENT] EN COURS — <unité> i/N (<nom>) — <mesure>, <anomalies>` dès que la tâche compte plusieurs
+  unités, au plus un toutes les 5 min (ou par palier de 25 %), sauf anomalie bloquante.
+- **Fin** : `[NOM-AGENT] DONE` avec les lignes `Verdict :` et `Conformité :` puis les références (fichiers, SHA).
+- **Erreur** :
 ```
 [NOM-AGENT] FAILED
 Raison : [une ligne — cause technique precise]
-Action requise : [ce dont j'ai besoin]
+Action requise : [options concretes]
 ```
 
 > **REGLE questions** : tu ne parles jamais a l'utilisateur. Si une decision ou une information de sa part est
-> necessaire, remonte au teamleader un `BLOQUE` avec des questions fermees et leurs options (2 a 4, consequence
-> par option, defaut « (Recommandé) » — format `TEAMMATES_PROTOCOL.md`) ; il les pose via `AskUserQuestion`.
-> Un `Action requise : [...]` doit donc lister des **options concretes**, pas un simple « Clarification necessaire ».
+> necessaire, remonte au teamleader un `BLOQUE` avec des questions fermees et leurs options (format
+> `TEAMMATES_PROTOCOL.md` section 3) ; il les pose via `AskUserQuestion`.
 
 > **REGLE** : Jamais de contenu de code, de diff, ni d'extraits de fichiers dans les messages SendMessage.
-> Les messages vers le teamleader sont des metadonnees (statut, fichiers, SHA), pas des rapports techniques.
+> Les messages vers le teamleader sont des metadonnees (statut, verdict, fichiers, SHA), pas des rapports techniques.
 
-### Notifications Intermediaires (OBLIGATOIRES des que la tache compte plusieurs unites — voir `TEAMMATES_PROTOCOL.md` 4b)
+---
 
-```
-[NOM-AGENT] EN COURS — X% — [etape courante en < 10 mots]
-```
+## Sorties de Commandes — Economie de Contexte (OBLIGATOIRE)
+
+Tout ce qu'une commande affiche entre dans ton contexte et y reste, relu a chaque tour suivant. Une suite de tests
+verbeuse ou un log de build complet coute facilement 20 000 a 50 000 tokens pour quelques lignes utiles.
+
+- **Runner en mode resume** : options quiet / reporter compact du framework (ex. `go test ./...` sans `-v`,
+  `pytest -q --no-header -rfE`, `vitest run --reporter=dot`, `jest --silent`, `npm ci --no-audit --no-fund
+  --loglevel=error`, `pip install -q`, `docker build --progress=quiet`) — jamais `-v`/`--verbose` par defaut.
+- **Ne lire que la fin ou les echecs** : `<cmd> > _work/tmp/<agent>-<etape>.log 2>&1; echo "exit=$?"; tail -n 40
+  _work/tmp/<agent>-<etape>.log`, puis `grep -n -A 15 -E "FAIL|Error|panic" ...` si echec. Le log complet reste
+  sur disque : on y revient de facon ciblee, jamais avec un `cat` integral.
+- **Lectures de fichiers ciblees** : `Read` avec `offset`/`limit`, `grep -n` pour situer avant de lire ; pas de
+  relecture d'un fichier deja lu et non modifie.
+- **Commandes listant beaucoup** (`git log`, `find`, `ls -R`, `gh ... list`) : toujours bornees (`-n 20`,
+  `--limit 20`, `| head -50`).
+- Exception : un diagnostic qui exige la sortie complete — la lire **dans le fichier**, par morceaux.
 
 ---
 
 ## Regles de Communication
 
-### Langue
-
-- **Francais** : Prefere pour les messages utilisateur et la documentation
-- **Anglais** : Pour le code, les commits, et les champs techniques (`activeForm`)
-
-### Format des Messages
-
-- Utiliser les box drawing characters pour les bordures
-- Garder les messages concis mais informatifs
-
-### Emojis Standards
-
-| Emoji | Signification |
-|-------|---------------|
-| Demarrage | Lancement d'une tache |
-| Succes | Tache terminee |
-| Erreur | Tache echouee |
-| Avertissement | Reserves ou attention |
-| En cours | Tache en progression |
-| Information | Detail principal |
-| Documentation | Fichiers modifies |
-| Version | Package ou release |
-| Statistiques | Metriques |
-| Objectif | Cible atteinte |
-| Fix | Action corrective requise |
-| Branche | Operations Git |
-| Push | Export ou envoi |
-| Tests | Execution de tests |
-| Sauvegarde | Persistance |
+- **Francais** pour les messages et la documentation ; **anglais** pour le code, les commits et `activeForm`.
+- **Concision** : messages et rapports courts et factuels — pas de cadres en caracteres de dessin, pas de
+  bannieres, pas de recapitulatif de ce qui a ete demande, pas de paraphrase d'un fichier deja ecrit.
 
 ---
 

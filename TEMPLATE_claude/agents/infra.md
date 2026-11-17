@@ -21,7 +21,7 @@ L'ordre specifie le changement d'infrastructure necessaire (nouveau service, Doc
 Apres les modifications, tu envoies ton rapport au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "INFRA DONE\nFichiers : [liste]" })
+SendMessage({ to: "team-lead", content: "INFRA DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]" })
 ```
 
 Tu ne contactes jamais l'utilisateur directement.
@@ -275,7 +275,7 @@ d'installation, contournement — section « Outil manquant » de `CLAUDE.md`).
    le dire dans le rapport — la session reste bloquee jusqu'au redemarrage du conteneur.
 4. **Coherence** : la CI, le Dockerfile ou une procedure d'environnement utilisent-ils aussi cet outil ? Ecart →
    le signaler (correction en Mode Modification si le teamleader l'ordonne).
-5. `SendMessage({ to: "team-lead", content: "INFRA DONE\nOutil : <nom> <version> — env.yaml : <cle ajoutee> — conteneur courant : installe|redemarrage requis\nGenerique a la stack : oui|non" })`.
+5. `SendMessage({ to: "team-lead", content: "INFRA DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nOutil : <nom> <version> — env.yaml : <cle ajoutee> — conteneur courant : installe|redemarrage requis\nGenerique a la stack : oui|non" })`.
    « oui » = outil utile a tout projet de cette stack : le teamleader le note pour une evolution du template
    (`templates/launcher/env-yaml.md`).
 
@@ -299,7 +299,7 @@ conformite pour que le planner l'integre au plan. Lecture seule : rien n'est cre
    - **UTILISATEUR** — hors de portee (cle SSH a installer, droit registre, ouverture reseau, acces
      a obtenir de l'administrateur) : action precise, ou commandes exactes a faire executer, a placer
      **en tete** du plan.
-5. `SendMessage({ to: "team-lead", content: "INFRA DONE\nRapport : _work/reports/infra-prep-[YYYYMMDD-HHmmss].md" })`
+5. `SendMessage({ to: "team-lead", content: "INFRA DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/infra-prep-[YYYYMMDD-HHmmss].md" })`
 
 Ce mode ne remplace pas la Validation avant deploy (ci-dessous) : un ecart apparu pendant le
 developpement y est toujours detecte.
@@ -340,10 +340,16 @@ Quand le teamleader appelle en mode validation :
 6. Envoyer la référence au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "INFRA DONE\nRapport : _work/reports/infra-[YYYYMMDD-HHmmss].md" })
+SendMessage({ to: "team-lead", content: "INFRA DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/infra-[YYYYMMDD-HHmmss].md" })
 ```
 
-Format du rapport de validation :
+Format du rapport de validation (sections cochées OK : une ligne de synthèse, pas le détail) :
+
+> **Format pyramide obligatoire** (`context/TEAMMATES_PROTOCOL.md` section 3) : le premier bloc (résumé + verdict)
+> tient en 10 lignes et suffit au teamleader pour décider ; ensuite **seulement ce qui est KO ou à corriger** ;
+> toute section sans contenu est **omise** (pas de « aucun », pas de tableau vide) ; jamais de liste de ce qui
+> passe ; extraits ≤ 10 lignes, sortie complète dans `_work/tmp/` (chemin seul). Cible ≤ 80 lignes.
+
 ```markdown
 # Validation Infra — [QUALIF|PROD]
 
