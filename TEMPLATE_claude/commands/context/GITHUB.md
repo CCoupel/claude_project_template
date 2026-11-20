@@ -191,6 +191,8 @@ a l'ordre `deployer` qu'il envoie a ce moment ; « deployer » = ecrit par `depl
 | GATE 2 valide — cadrage | bloc « Cadrage » + `cadrage → 📋 <intensite> · tests:… review:… qualif:… doc:… — valide au GATE 2` (revision : la raison) | ordre `MILESTONE CADRAGE` |
 | GATE 2 valide, plan avec lots | chaque `LOT-N → ⏳ planifie` | ordre `Labels GATE 2` (deployer, d'apres la table des lots) |
 | Lancement du DEV d'un lot | `LOT-N → ▶ en cours` | ordre labels `→ EN COURS` du lot |
+| Lancement du DEV d'un sous-lot | `LOT-N.M → ▶ en cours` | ordre labels `→ EN COURS` du sous-lot |
+| QA `DONE` d'un sous-lot (sous-lot suivant lance) | `LOT-N.M → ✔ QA validee` (dernier sous-lot : idem, puis le lot parent prend la suite) | ordre labels `→ DONE` du sous-lot |
 | DEPLOY QUALIF reussi | `LOT-N → 🧪 en QUALIF — <X.Y.Z.a>` (sans lots : `milestone → 🧪 en QUALIF`) | deployer (l'ordre QUALIF porte `Lot : LOT-N`) |
 | BUILD seul, cadrage sans QUALIF | `LOT-N → 🧪 en validation locale — <X.Y.Z.a>` (sans lots : `milestone → …`) | deployer (ordre `Cadrage : sans QUALIF`) |
 | Question GATE LOT posee (lot a validation humaine) | `LOT-N → ⏸ a valider` et `milestone → ⏸ LOT-N a valider` (valide : `milestone → ▶ en cours — LOT-N valide`) | ordre labels `→ LOT A VALIDER` (§9.4b) |
@@ -202,6 +204,12 @@ a l'ordre `deployer` qu'il envoie a ce moment ; « deployer » = ecrit par `depl
 | PUBLISH PROD lance (GATE 4 valide) | `milestone → 🚀 mise en prod — vX.Y.Z` | deployer |
 | Echec PROD / rollback | `milestone → ❌ mise en prod en echec — <cause>` | deployer |
 | Cloture (Etape 5 de `deploy.md`, `/milestone close`) | `milestone → ✅ termine — tag vX.Y.Z` puis `state=closed` | deployer |
+
+**Sous-lots** : un sous-lot ne connait que `⏳ planifie`, `▶ en cours`, `✔ QA validee` (et `▶ en cours — correctif`
+apres un refus du GATE LOT qui le concerne). **Jamais** `🧪 en QUALIF`, `⏸ a valider` ni `✅ termine` sur un `LOT-N.M` :
+ces etats sont portes par le **lot parent** `LOT-N`, qui entre dans le tableau a sa QUALIF (apres le dernier sous-lot),
+et l'etat du milestone dit `⏸ LOT-N a valider` (jamais `⏸ LOT-N.M a valider`). Exemple :
+`LOT-1.1 ✔ QA validee` · `LOT-1.2 ✔ QA validee` · `LOT-1 ⏸ a valider` → `LOT-1 ✅ termine`.
 
 La description n'est jamais reecrite en entier : seul le bloc entre marqueurs est regenere.
 
@@ -705,7 +713,8 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE,PLAN A VALIDE
 > demarre **sans question a l'utilisateur**. Apres le **dernier** sous-lot, le deroulement ci-dessous s'applique une
 > seule fois au **lot parent entier** (toutes les issues de ses sous-lots) : QUALIF, GATE LOT (a validation humaine si
 > une issue d'un sous-lot porte `VALID-HUMAINE`, sinon auto-valide), push, CI, fermeture. Un refus au GATE LOT ne
-> renvoie que les issues concernees, dans leur sous-lot.
+> renvoie que les issues concernees, dans leur sous-lot. **Aucune validation utilisateur par sous-lot** (ni CI) : une
+> validation intermediaire se decide au plan (GATE 2), en decoupant en deux lots.
 
 > Cadrage sans QUALIF (`agents/context/MILESTONE_CADRAGE.md` section 5) : « deploye en QUALIF » se lit « BUILD seul,
 > artefact local » — le GATE LOT porte sur cet artefact ; le reste du deroulement est inchange.
@@ -822,7 +831,10 @@ sans validation utilisateur ni push (§9.5b).
 
 Nommage strict `LOT-<entier>` ou `LOT-<entier>.<entier>` (`^LOT-[0-9]+(\.[0-9]+)?$`, sans zero devant) : c'est ce que
 reconnait le panneau `milestone-panel` pour construire l'arbre des lots (sous-lots sous leur lot parent, dans l'ordre de
-livraison). Chaque issue du milestone porte un seul label de lot.
+livraison). Chaque issue du milestone porte un seul label de lot : **le plus fin** — l'issue d'un sous-lot porte
+`LOT-N.M`, **jamais** `LOT-N` ; le label parent `LOT-N` d'un lot decoupe n'est pose sur aucune issue (il porte
+l'objectif du groupe dans le panneau). L'ordre du GATE 2 recopie la table « Lots » du plan telle quelle ; le CDP ne
+regroupe jamais des sous-lots sous leur parent (ni ne demande a `deployer` de le faire).
 
 **Objectif du lot = description du label** : le panneau l'affiche comme titre du lot ou du sous-lot. Les labels
 `LOT-n` sont reutilises d'un milestone a l'autre : `deployer` reecrit leur description a chaque GATE 2
@@ -853,7 +865,22 @@ gh issue edit <numero> --remove-label "VALID-HUMAINE"
 ```
 
 Le label est pose avant l'ordre DEV du lot concerne au plus tard (le test-writer est toujours dispatche en Batch 1) ;
-sans label au GATE LOT, le lot est auto-valide : le CDP verifie donc le `TEST-WRITER DONE` du lot avant d'auto-valider.
+sans label au GATE LOT, le lot est auto-valide.
+
+**Controle avant tout GATE LOT (BLOQUANT, auto-validation comprise)** — le CDP confronte les procedures aux labels,
+sur toutes les issues du lot (sous-lots compris) :
+
+```bash
+# Issues citees par un scenario HUMAIN (colonne « Issues » des procedures)
+grep -rh '^\*\*Validation\*\* : HUMAIN' tests/procedures/ | grep -o '#[0-9]\+' | sort -u
+# Issues du lot portant le label (lot decoupe : une commande par sous-lot LOT-N.M)
+gh issue list --milestone "<milestone>" --label "LOT-N" --label "VALID-HUMAINE" --state all --json number --jq '.[].number'
+```
+
+Une issue du lot citee par un scenario `HUMAIN` sans le label (ou l'inverse) → **GATE LOT bloque** : pas
+d'auto-validation ni de question ; ordre correctif a `deployer` (§9.13, `+`/`-`), `LABELS DONE`, puis seulement
+le GATE LOT. Un `TEST-WRITER DONE` du lot sans ligne `Validation humaine` bloque de meme (DONE renvoye au test-writer).
+Le CDP consigne le controle au compte rendu : `Controle VALID-HUMAINE LOT-N : conforme (#217 #219 | aucune)`.
 
 ### 9.12 Moment des transitions : au retour du teammate ou a la validation
 

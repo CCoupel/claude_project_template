@@ -125,6 +125,10 @@ SendMessage({ to: "test-writer", content: "
   Produire : scripts de tests + procédures manuelles tests/procedures/.
 " })
 
+|-- Chaque TEST-WRITER DONE (ici ou en Batch 1 de la Phase Dev), avant tout autre ordre :
+|     lire sa ligne « Validation humaine : <#num … | aucune> » (absente/texte libre -> DONE renvoyé, rien déduit)
+|     SendMessage({ to: "deployer", content: "Labels validation humaine (GITHUB.md §9.13) : +VALID-HUMAINE #217 #219 ; -VALID-HUMAINE #215" })
+|     attendre LABELS DONE   // ordre envoyé même si « aucune » (retraits éventuels)
 |-- qa_parallelizable != false (défaut) :
 |     Dès réception DONE de test-writer -> appliquer label EN QA + dispatcher qa immédiatement
 |     (sans attendre le verdict code-reviewer) -> voir Phase QA, "Dispatch parallèle"
