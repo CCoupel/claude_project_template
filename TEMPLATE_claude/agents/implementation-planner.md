@@ -425,7 +425,8 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 >   (`2.1` < `2.2` < `3`) : les sous-lots s'enchainent **sans validation utilisateur**, chacun demarrant quand le
 >   precedent est valide par la QA. **Le lot parent est l'unite de livraison** : apres son dernier sous-lot, QUALIF,
 >   GATE LOT (validation utilisateur seulement si une issue d'un de ses sous-lots porte `VALID-HUMAINE`), push, CI,
->   fermeture — une seule fois pour tout le lot.
+>   fermeture — une seule fois pour tout le lot. **Une partie que l'utilisateur doit tester avant la suite = un lot
+>   distinct, jamais un sous-lot** (aucune validation utilisateur par sous-lot).
 >   Un meme `n` n'est pas utilise a la fois seul (`LOT-2`) et decoupe (`LOT-2.1`). Un lot decoupe a sa propre ligne
 >   dans la table, colonne Issues `sous-lots`, pour porter son objectif commun (titre du groupe dans le panneau).
 > - **Objectif** : court (**100 caracteres max**, limite d'une description de label GitHub), formule comme un resultat

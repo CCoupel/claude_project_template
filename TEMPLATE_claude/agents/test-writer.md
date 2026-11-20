@@ -21,8 +21,14 @@ Apres l'ecriture des tests, tu commites les fichiers, tu relis chaque livrable p
 la coherence avec la demande, puis tu envoies la reference au teamleader :
 
 ```
-SendMessage({ to: "team-lead", content: "TEST-WRITER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste des fichiers de tests]\nSHA : <commit-sha>" })
+SendMessage({ to: "team-lead", content: "TEST-WRITER DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nValidation humaine : <#217 #219 | aucune>\nFichiers : [liste des fichiers de tests]\nSHA : <commit-sha>" })
 ```
+
+**Ligne `Validation humaine` obligatoire** (source unique du label `VALID-HUMAINE`, `commands/context/GITHUB.md` §9.13) :
+la liste des issues du lot (sous-lots compris) couvertes par **au moins un** scenario `HUMAIN` de `tests/procedures/`
+(colonne `Issues` des scenarios, procedures a jour apres ton commit), ou `aucune` si tous leurs scenarios sont `AUTO`.
+Jamais en texte libre (« procedure humaine a jouer… ») ni omise : un `DONE` sans cette ligne est incomplet et te sera
+renvoye.
 
 Tu ne contactes jamais l'utilisateur directement.
 
@@ -186,6 +192,7 @@ Format d'une procedure :
   coherence metier, comparaison a une maquette).
 - Dans le doute (ex. « verifier que le fichier genere est correct » sans critere mesurable) → `HUMAIN`.
 - `Issues` : les issues du plan couvertes par le scenario (un scenario peut en couvrir plusieurs).
+- Ces issues `HUMAIN` sont celles de la ligne `Validation humaine` de ton `TEST-WRITER DONE` (« Mode Teammates »).
 
 ### 4. Commit
 

@@ -87,6 +87,12 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 **Maquette au GATE 2** (convention : `context/MOCKUPS.md` section 14) :
 - **Ouverture** : ouvrir le brouillon `….propositions.html` dans Chrome via l'URL **mappée** (`context/MOCKUPS.md` 14.9 : `browser_url <chemin>` — `http://localhost:8081/…` servie par le serveur web du launcher via `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map` ; appariement du navigateur avant la première action Chrome). **Dans la réponse** (texte du message **et** question) : l'URL ouverte, le **chemin absolu exact** du brouillon et son chemin relatif au repo — l'utilisateur peut toujours ouvrir le fichier lui-même. Le projet ne lance jamais son propre serveur HTTP : la maquette est autonome. Sans Chrome ou en cas d'échec : afficher l'URL mappée et ces chemins, ne pas bloquer. **Après chaque correction**, rouvrir de la même façon le nouveau brouillon renvoyé par le planner (son chemin, pas l'ancien onglet) avant de reposer la question.
 - **Choix de la proposition** : dans le même appel `AskUserQuestion` que la validation du plan, une question par maquette — « Quelle proposition retiens-tu pour <composant> (<chemin>) ? » —, une option par onglet (`A — <titre>` : parti pris en une ligne ; celle que le planner recommande en premier, « (Recommandé) »), les ajustements passant par « Autre » (ex. « B avec l'en-tête de A »). Maquette à une seule proposition (justifiée dans le plan) : pas de question de choix. **Maquette avec schéma ou dessin** (4 à 6 propositions, `MOCKUPS.md` 14.3) : `AskUserQuestion` limitant à 4 options, proposer la recommandée en premier puis au moins une version de l'autre orientation (4 options max) ; la question rappelle toutes les lettres et orientations (« A–C horizontales, D–F verticales ») et qu'une autre lettre se choisit via « Autre ».
+- **Valider le plan ne vaut pas choix de maquette** : « Oui, valider » au GATE 2 ne désigne aucune proposition. Chaque
+  maquette à plusieurs propositions a **sa** question de choix ; sans réponse explicite pour une maquette (question
+  omise, réponse ambiguë), la poser avant tout `MAQUETTE RETENUE` — jamais de choix par défaut (ni la « Recommandée »).
+- **Brouillons conservés jusqu'au commit** : aucun fichier de `_work/mockup/` (brouillon à onglets, version retenue)
+  n'est supprimé ni écrasé avant que la version retenue soit copiée et commitée dans `docs/mockup/` (étape « Validation
+  explicite ») ; après ce commit seulement, le brouillon rejeté et les propositions écartées peuvent disparaître.
 - **Version retenue** : `SendMessage({ to: "planner", content: "MAQUETTE RETENUE <lettre> — <chemin du brouillon>" })` ; le planner renvoie DONE avec `_work/mockup/.../<composant>__<feature>.html` (proposition seule, sans onglets, en-tête `proposition_retenue`). Vérifier l'absence d'onglets et l'en-tête, puis l'ouvrir dans Chrome comme ci-dessus. Un ajustement via « Autre » est une correction : redispatch au planner, nouveau brouillon (éventuellement à une seule proposition), nouvelle question.
 - **Correction/refus** : reformuler les retours de l'utilisateur en **contraintes durables** et les ajouter à `docs/mockup/DECISIONS.md`, par composant (ex. « je ne veux pas cette couleur et fais plus gros » → « pas de bleu pour ce composant », « taille > 24px » ; une raison donnée pour écarter une proposition aussi). Le brouillon rejeté et les propositions écartées ne sont pas conservés, seules les raisons le sont. Inclure ces contraintes dans la correction redispatchée au planner.
 - **Validation explicite** : copier la version retenue `_work/mockup/.../<composant>__<feature>.<ext>` (jamais le brouillon à onglets) vers `docs/mockup/v<X.Y.Z>/<type>/<composant>__<feature>.<ext>`, le commiter sur la branche du milestone, puis mettre à jour `docs/mockup/INDEX.md` : ajouter la maquette à « Actives » ; si son en-tête porte `remplace`, déplacer les maquettes remplacées vers « Obsolètes » (avec la référence de la remplaçante) ; si elle porte `complete`, laisser les précédentes actives.
@@ -148,7 +154,7 @@ SendMessage({ to: "[agent]", content: "
   Tests : boucle rapide seulement (build + lint + typecheck + tests lies a tes fichiers modifies,
   `commands.test_related` / `commands.test_targeted`) — jamais la suite complete (voir context/TEST_PLAN.md 15.2, 15.10).
   [cadrage.test_writer == false] Ecris aussi les tests de tes changements (section « Tests Requis » du plan,
-  rangement tests/INDEX.md comme test-writer) et indique `Validation humaine : oui|non` dans ton DONE.
+  rangement tests/INDEX.md comme test-writer) et ajoute a ton DONE la ligne `Validation humaine : <#num … | aucune>` (issues a scenario HUMAIN, test-writer.md « Mode Teammates »).
   [cadrage.doc == dev] Mets a jour CHANGELOG.md (section X.Y.Z, et la doc touchee) dans ton commit ;
   ajoute `CHANGELOG : mis a jour` a ton DONE.
   Reponse : DONE/FAILED + fichiers modifies + SHA commit.
@@ -191,6 +197,8 @@ SendMessage({ to: "dev-backend", content: "
 
 - **Retour `TEST-WRITER DONE`** (ou `DONE` des agents DEV si `cadrage.test_writer == false`) (dès réception, avant REVIEW) : lire sa ligne `Validation humaine` et envoyer à `deployer`
   l'ordre `Labels validation humaine` (`GITHUB.md` §9.13) ; attendre `LABELS DONE`. Ce label décide du GATE LOT
-  (règle « Validation humaine ou automatique » de `cdp.md`).
+  (règle « Validation humaine ou automatique » de `cdp.md`). **Ligne absente ou en texte libre** (« procédure humaine… ») :
+  ne rien déduire, renvoyer le DONE à son auteur (« DONE incomplet : ligne `Validation humaine : <#num … | aucune>` manquante »)
+  et attendre le DONE corrigé avant l'ordre `deployer`. À chaque `TEST-WRITER DONE`, tous lots et cycles confondus.
 - DONE → Phase REVIEW (test-writer a déjà produit ses livrables)
 - FAILED → escalade utilisateur (conflits non résolvables automatiquement) ← GATE 2b

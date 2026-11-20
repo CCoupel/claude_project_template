@@ -319,6 +319,9 @@ La **définition des tests** décide si l'utilisateur doit valider : chaque scé
 ses scénarios est `HUMAIN` (ou si rien n'est marqué : sens sûr) ; elle porte alors le label `VALID-HUMAINE`
 (`commands/context/GITHUB.md` §9.13). Un lot l'est si au moins une de ses issues l'est.
 
+- **Contrôle avant tout GATE LOT (bloquant)** : procédures `tests/procedures/` (scénarios `HUMAIN`, colonne `Issues`)
+  confrontées aux labels `VALID-HUMAINE` du lot ; un écart (ou un `TEST-WRITER DONE` sans ligne `Validation humaine`)
+  bloque le GATE LOT, auto-validation comprise, jusqu'à l'ordre correctif (`commands/context/GITHUB.md` §9.13).
 - **GATE LOT, aucune issue du lot en `VALID-HUMAINE`** : pas de question ni d'ouverture Chrome. Le lot est validé
   par le verdict `qa` (qui a joué les scénarios `AUTO` en automatisé). Le CDP consigne dans son compte rendu
   « Lot LOT-N auto-valide (aucun scenario HUMAIN) » et enchaîne : push, CI, fermeture des issues, lot suivant.
@@ -355,6 +358,11 @@ LOT-N+1 — DEV, mais aussi préparation : tests du `test-writer`, re-plan du `p
   `lots.LOT-N.M.status` = `qa_done`), **sans question à l'utilisateur, sans QUALIF, sans push**. Les préconditions 1-5
   ci-dessus s'appliquent au **lot parent** après son dernier sous-lot (GATE LOT unique, à validation humaine si une
   issue d'un sous-lot porte `VALID-HUMAINE`). Relais : `✅ LOT-N.M validé par la QA → LOT-N.M+1 démarre`.
+  **Jamais de validation utilisateur par sous-lot**, même pour un sous-lot à issue `VALID-HUMAINE` et même sur
+  demande en cours de lot : le sous-lot se termine par la QA seule ; CI verte et validation sont au niveau du lot.
+  Une validation intermédiaire se décide **au plan** (GATE 2 « Ajuster ») en découpant en deux lots.
+  Le verrou complet (préconditions 1-5, validation humaine comprise) s'applique donc **entre lots parents**
+  (`LOT-N` → `LOT-N+1`), le verrou allégé (QA `DONE`) **entre sous-lots** d'un même lot.
 - Un ordre de LOT-N+1 envoyé par erreur avant l'ouverture du verrou : l'annuler aussitôt (`SendMessage` « Annule
   <tâche> — LOT-N pas encore validé, reste IDLE ») et le signaler à l'utilisateur.
 

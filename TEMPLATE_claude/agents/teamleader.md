@@ -103,7 +103,8 @@ issues fermées (sauf `close_on` = `validation`), `lots.LOT-N.status` = `complet
 les teammates restent IDLE. Ouverture relayée : `✅ LOT-N terminé et validé (…) → LOT-N+1 démarre`.
 **Sous-lots** (`LOT-N.M`) : un à la fois, dans l'ordre ; `LOT-N.M+1` démarre dès la QA `DONE` de `LOT-N.M`, **sans
 validation utilisateur** (ni QUALIF, ni push). Ta validation n'intervient qu'au niveau du lot parent, après son
-dernier sous-lot, et seulement si une de ses issues porte `VALID-HUMAINE`.
+dernier sous-lot, et seulement si une de ses issues porte `VALID-HUMAINE`. Pas de validation par sous-lot, même
+demandée en cours de lot : une validation intermédiaire se décide au plan (GATE 2), en découpant en deux lots.
 Préconditions et preuves : `.claude/agents/cdp.template.md` « Verrou de démarrage d'un lot ».
 
 ### Labels d'issues — à chaque changement de phase
