@@ -46,6 +46,13 @@ docs/mockup/
 | Exception : `.md` | **Uniquement si le HTML n'est pas adapté** (ex. maquette purement textuelle : format d'un fichier de configuration, sortie d'une CLI, structure d'un message). Le planner le justifie en une ligne dans le plan |
 | Dernier recours : binaire | Accepté **s'il n'existe aucune autre solution** |
 
+**Identification de l'onglet dans Chrome** (pages HTML ouvertes par le CDP, `context/MOCKUPS.md` 14.3) : un favicon emoji
+inline (`<link rel="icon" href="data:image/svg+xml,…">`, SVG `<text>` de l'emoji) et un bandeau haut de page
+(`border-top: 6px solid var(--type)`) par type — maquette GATE 2 : 🎨 bleu `#2f6fed` ; plan de test (GATE LOT / GATE 4) :
+🧪 vert `#1e8e4e` ; maquette marketing, aperçu local : 📣 orange `#d9822b`. Le `<title>` n'a pas d'emoji et commence par
+l'essentiel (`LOT-N · vX.Y.Z`, ~15 caractères visibles). Procédures `.md` : servies en texte brut, non personnalisables.
+Le favicon est décodé en navigateur ; son affichage dans la barre d'onglets n'a pas pu être vérifié.
+
 **Une maquette présente toujours le composant dans son intégralité**, y compris les parties inchangées. Elle peut néanmoins ne porter que sur une partie d'un composant : dans ce cas elle **complète** les maquettes actives du même composant (voir 14.4).
 
 **Propositions en onglets** — un brouillon HTML présente **2 à 3 propositions** distinctes, sélectionnables par des

@@ -76,7 +76,7 @@ Au GATE LOT / GATE 4, la validation humaine s'appuie sur un **plan de test HTML*
 `tests/procedures/` : un bloc par lot, une section par issue, prérequis succincts, tableau `Action / Résultat attendu`,
 OK / KO + commentaire par scénario `HUMAIN`, bouton « Copier le rapport ». Modèle : `templates/test-plan/plan-de-test.exemple.html`
 (à copier et remplir, pas à réécrire). Fichier généré dans `_work/test-plan/` (non commité) ; rapport reçu dans
-`_work/reports/test-report-<lot>.md`. Titre d'onglet court `🧪 LOT-N · vX.Y.Z`, un seul onglet réutilisé par session puis fermé en fin de GATE. Le rapport n'est lu qu'**après** la réponse de l'utilisateur (`agents/cdp.md`,
+`_work/reports/test-report-<lot>.md`. Titre d'onglet court `LOT-N · vX.Y.Z` (favicon 🧪 + bandeau vert, `MOCKUPS.md` 14.3), un seul onglet réutilisé par session puis fermé en fin de GATE. Le rapport n'est lu qu'**après** la réponse de l'utilisateur (`agents/cdp.md`,
 « GATE de validation par tests »). Contrainte connue : le serveur du launcher sert la page en `sandbox` sans
 `allow-same-origin` — `localStorage` indisponible, la saisie n'est pas conservée à un rechargement.
 

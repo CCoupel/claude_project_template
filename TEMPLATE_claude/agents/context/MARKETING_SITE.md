@@ -330,6 +330,7 @@ rendu**, pas seulement un resume texte :
 validation sans apercu. Ecrire l'apercu dans un fichier HTML autonome `_work/marketing/preview.html`
 (ouvrable localement) et envoyer `MARKETING BLOQUE — apercu Artifact impossible : [raison] — apercu local :
 _work/marketing/preview.html` au teamleader, qui le presente a l'utilisateur au GATE 4d (le GATE reste obligatoire).
+Apercu local : favicon 📣 inline + bandeau haut orange `#d9822b` (`context/MOCKUPS.md` 14.3, « Identification de l'onglet »).
 
 Cet apercu est un outil de validation uniquement — le fichier reel `MARKETING/index.html`
 (document complet, racine de `gh-pages`) reste la seule source publiee lors de `PUBLISH`.

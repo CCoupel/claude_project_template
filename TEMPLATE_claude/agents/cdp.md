@@ -411,8 +411,10 @@ tableau `# / Action / Résultat attendu / Type` — succinct, jamais la procédu
 OK / KO et une zone de commentaire ; le bouton « Copier le rapport » produit un rapport Markdown (résumé, résultat et
 commentaire par scénario, « Décision proposée »). Lots déjà validés : rappel replié. Le plan est ouvert dans Chrome
 (étape 3 ci-dessous) et son chemin absolu exact est donné dans la question.
-**Titre d'onglet court** (Chrome tronque à ~15 caractères dans un groupe) : `<title>` = `🧪 LOT-N · vX.Y.Z` (GATE 4 :
-`🧪 vX.Y.Z · milestone`), l'essentiel d'abord ; le nom du projet n'est que dans le `<h1>` et l'en-tête.
+**Titre d'onglet court** (Chrome tronque à ~15 caractères dans un groupe) : `<title>` = `LOT-N · vX.Y.Z` (GATE 4 :
+`vX.Y.Z · milestone`), sans emoji, l'essentiel d'abord ; le nom du projet n'est que dans le `<h1>` et l'en-tête.
+**Type d'onglet reconnaissable** : favicon emoji + bandeau coloré par type (plan de test 🧪 vert, maquette GATE 2 🎨 bleu,
+maquette marketing locale 📣 orange — `context/MOCKUPS.md` 14.3).
 **Un onglet par plan et par session** : le CDP garde son `tabId` et le renavigue après correction ou republication
 (jamais un nouvel onglet par republication, jamais un `tabId` d'une session précédente) ; il le ferme
 (`tabs_close_mcp`) quand le GATE est clos (Q2 ou Q3 validée). Le nom du groupe d'onglets est fixé par l'extension :
