@@ -2006,6 +2006,7 @@ deplacement est fait a la Finalisation (sous-section « Elements prives »), apr
   },
   "marketing": {
     "site": "auto"
+    // "social": ["twitter", "linkedin"]   <- optionnel, absent par defaut (aucun post reseaux sociaux)
   },
   "milestone": {
     "defaults": { "patch": "leger", "minor": "complet", "major": "complet" }
@@ -2043,6 +2044,7 @@ Valeurs a deriver si elles ne sont pas fournies explicitement :
 | `commands.typecheck` | Frontend TS : `npm run typecheck` / `tsc --noEmit` — vide sinon |
 | `commands.coverage` | Stack : `go test -cover ./...` / `npm run test -- --coverage` / `pytest --cov` |
 | `marketing.site` | Defaut `"auto"` : un site marketing est attendu (branche `gh-pages`, uniquement — `MARKETING/` en est le worktree git, jamais un dossier de la branche de code) ; s'il n'existe pas, l'agent marketing declenche une initialisation (questions de cadrage + maquette). `false` = ordre direct de ne pas avoir de site (le CDP dispatche `PREPARE ... — SANS SITE`) |
+| `marketing.social` | Optionnel, **absent par defaut** : aucun post reseaux sociaux. Liste de canaux parmi `"twitter"`, `"linkedin"`, `"reddit"` ; l'agent marketing ne produit que les canaux listes. Jamais renseigne par `/init-project` de lui-meme : uniquement si l'utilisateur demande explicitement une publication sur un reseau |
 | `issues.close_on` | Etape 7. `ci` (defaut ; absent = `ci`) : issue fermee sur CI verte apres QA ; `validation` : issue laissee ouverte en `DONE` jusqu'a une validation utilisateur qui la couvre (GATE LOT explicite, sinon GATE 4) — `commands/context/GITHUB.md` §9.5 |
 | `progress.interval_min` | Defaut `20` (absent = `20`, aucune question, modifiable a la main ; projet deja initialise : rien a migrer). Cadence en minutes du point d'avancement periodique du teamleader (% et ETA par teammate actif) — `agents/cdp.md` « Point d'avancement periodique » |
 | `docs.mockup_dir` | Defaut `docs/mockup` (dossier des maquettes validees — voir `context/MOCKUPS.md` §14) |

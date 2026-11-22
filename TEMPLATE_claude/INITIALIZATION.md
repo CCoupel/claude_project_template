@@ -441,7 +441,7 @@ Extrait (schema complet et regles de derivation : `init-project.md`, section "1.
   "commands": { "build": "...", "test": "...", "lint": "...", "audit": "...", "ci": "scripts/ci.sh" },
   "docs": { "mockup_dir": "docs/mockup" },
   "browser": { "path_map": { "project_root": "/workspace/app", "launcher_root": "C:\\Users\\moi\\app", "launcher_os": "windows" } },
-  "marketing": { "site": "auto" },
+  "marketing": { "site": "auto" },   // + "social": ["twitter","linkedin"] seulement si explicitement demande (absent = aucun post)
   "milestone": {
     "defaults": { "patch": "leger", "minor": "complet", "major": "complet" }
   },

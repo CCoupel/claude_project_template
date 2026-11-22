@@ -794,8 +794,10 @@ l'utilisateur.
 branche de code (`main`, `milestone/*`, `hotfix/*`). `MARKETING/` n'est pas un dossier de `main` : c'est le
 **worktree git de `gh-pages`** (`git worktree add MARKETING gh-pages`, créé par l'agent s'il est absent). Il
 est exclu par le `.gitignore` posé par `/init-project`, et `PUBLISH` commit + push depuis ce worktree. Les
-release notes et posts, eux, restent sur la branche de code, dans `docs/releases/`. Un projet dont `MARKETING/`
+release notes et posts (s'il y en a), eux, restent sur la branche de code, dans `docs/releases/`. Un projet dont `MARKETING/`
 est déjà suivi par la branche de code se voit proposer une migration par `/init-project`.
+
+**Posts réseaux sociaux : opt-in** — aucun post Twitter/X, LinkedIn ou Reddit n'est produit par défaut. L'agent ne les génère que si le projet les demande explicitement via `marketing.social` dans `.claude/project-config.json` (ex. `"social": ["twitter", "linkedin"]`) ; clé absente ou liste vide = ni livrable, ni mention dans le rapport. `/init-project` ne renseigne jamais cette clé de lui-même.
 
 **Initialisation du site** : un site marketing est la règle (`marketing.site: "auto"`). S'il n'en existe
 aucun (pas de branche `gh-pages` avec un `index.html`) et que le CDP n'a pas donné l'ordre `SANS SITE`
