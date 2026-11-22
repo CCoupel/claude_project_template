@@ -162,6 +162,12 @@ gh release create vX.Y.Z --verify-tag --generate-notes --title vX.Y.Z
 
 Une release par tag, sans exception — ne pas laisser de tag sans release.
 
+**Site (`gh-pages`)** : après la release, évaluer si les changements méritent une communication — la mise à jour
+n'est pas systématique. Nouveauté visible pour un visiteur (nouvelle commande, agent, stack, fonctionnalité de
+workflow, changement de comportement notable) → proposer une maquette (lien/chemin dans la question de validation)
+et attendre la validation avant de pousser sur `gh-pages`. Mécanique interne, correctif, ajustement d'option →
+pas de maquette, le dire en une ligne (« gh-pages : rien à communiquer »).
+
 Une fois la release publiée (et la CI verte pour un repo qui en a une), **nettoyer les branches résiduelles**
 en local et en remote : `git fetch --prune`, puis `git branch -D <b>` et `git push origin --delete <b>` pour
 chaque branche dont la PR est `MERGED`. Ne jamais toucher `main`, `gh-pages`, `gh-pages-update` ; une branche à
