@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOT-3 · v5.12.0</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AA%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1c2330;--mut:#5d6778;--line:#dde1e8;--acc:#2f6fed;--ok:#1e8e4e;--warn:#b7791f;--hum:#8a3ffc;--auto:#5d6778;--type:#1e8e4e}
+@media (prefers-color-scheme:dark){:root{--bg:#12161d;--card:#1b212b;--fg:#e6e9ef;--mut:#9aa4b5;--line:#2c3441;--acc:#6b9bff;--ok:#4cc27f;--warn:#e0a84a;--hum:#b88cff;--auto:#9aa4b5}}
+*{box-sizing:border-box}
+body{margin:0;border-top:6px solid var(--type);background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.4rem;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 16px}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.meta b{display:block;font-size:.75rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.meta code{font-size:.85rem;word-break:break-all}
+.bar{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.prog{flex:1;min-width:160px;height:8px;background:var(--line);border-radius:6px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+details.lot{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:12px 0}
+details.lot>summary{cursor:pointer;padding:12px 14px;font-weight:600;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tag{font-size:.72rem;font-weight:600;border-radius:999px;padding:2px 9px;border:1px solid currentColor;white-space:nowrap}
+.tag.hum{color:var(--hum)}.tag.auto{color:var(--auto)}.tag.last{color:var(--warn)}
+.issue{border-top:1px solid var(--line);padding:12px 14px}
+.issue h3{font-size:1rem;margin:0 0 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pre{margin:6px 0 10px;padding:8px 12px;background:var(--bg);border-left:3px solid var(--acc);border-radius:4px;font-size:.88rem}
+.pre b{color:var(--acc)}
+.pre ul{margin:4px 0 0 18px;padding:0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{text-align:left;padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;border-top:0}
+td.n{width:34px;color:var(--mut)}td.t{width:80px}td.c{width:44px;text-align:center}
+tr.auto td{color:var(--mut)}
+.note{color:var(--mut);font-size:.85rem;margin-top:14px}
+td.r{width:112px;white-space:nowrap}
+.rs{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.rs button{border:0;background:var(--card);color:var(--mut);padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
+.rs button.on-ok{background:var(--ok);color:#fff}.rs button.on-ko{background:#c0392b;color:#fff}
+tr.cm td{border-top:0;padding-top:0}
+tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size:.85rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.act{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:8px;padding:6px 14px;font:inherit;font-size:.88rem;cursor:pointer}
+.btn.sec{background:transparent;color:var(--acc)}
+.sum{font-size:.88rem;color:var(--mut)}.sum b{color:var(--fg)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+@media (max-width:640px){td.t{display:none}th:nth-child(4){display:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>Plan de test — Mon projet · milestone v5.12.0</h1>
+<p class="sub">Scénarios à validation humaine uniquement, regroupés par lot puis par issue. Pour chaque scénario : OK / KO et un commentaire libre. Les scénarios <span class="tag auto">AUTO</span> déjà rejoués par QA sont rappelés en grisé.</p>
+
+<div class="meta">
+  <div><b>Version déployée (QUALIF)</b><code>5.12.0.3</code></div>
+  <div><b>URL QUALIF</b><code>https://qualif.exemple.local</code></div>
+  <div><b>Binaire à tester</b><code>/srv/qualif/app-5.12.0.3</code></div>
+  <div><b>Branche</b><code>milestone/v5.12.0</code></div>
+  <div><b>QA / NR</b><code>VALIDATED — 214/214</code></div>
+  <div><b>Procédures sources</b><code>tests/procedures/lot-3.md</code></div>
+</div>
+
+<div class="bar">
+  <strong id="count">0 / 0 testés</strong>
+  <div class="prog"><i id="pbar"></i></div>
+  <span class="sum" id="sum"></span>
+  <div class="act"><button class="btn" id="copy">Copier le rapport</button><button class="btn sec" id="dl">Télécharger .md</button><button class="btn sec" id="rst">Réinitialiser</button></div>
+</div>
+
+<!-- LOT 3 — dernier lot : validation humaine (Q1) -->
+<details class="lot" open>
+  <summary>LOT-3 — Export et notifications <span class="tag last">dernier lot · Q1</span> <span class="tag hum">👤 2 issues à validation humaine</span></summary>
+
+  <section class="issue">
+    <h3>#41 — Export CSV des rapports <span class="tag hum">VALID-HUMAINE</span></h3>
+    <div class="pre"><b>Prérequis</b>
+      <ul><li>Compte <code>qa-lecteur</code> (droit « rapports »)</li><li>Jeu de données « démo-2026 » chargé (≥ 500 lignes)</li></ul>
+    </div>
+    <table>
+      <thead><tr><th>Résultat</th><th>#</th><th>Action</th><th>Résultat attendu</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr class="sc" data-id="41-1" data-issue="#41 — Export CSV des rapports" data-n="1" data-act="Rapports → bouton « Exporter » → CSV"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">1</td><td>Rapports → bouton « Exporter » → CSV</td><td>Téléchargement en moins de 5 s, fichier <code>rapport-AAAA-MM-JJ.csv</code></td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="cm"><td></td><td colspan="4"><textarea data-c="41-1" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
+        <tr class="sc" data-id="41-2" data-issue="#41 — Export CSV des rapports" data-n="2" data-act="Ouvrir le fichier dans un tableur"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">2</td><td>Ouvrir le fichier dans un tableur</td><td>Accents corrects, séparateur <code>;</code>, 500 lignes + en-tête</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="cm"><td></td><td colspan="4"><textarea data-c="41-2" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
+        <tr class="auto"><td class="r">✔</td><td class="n">3</td><td>Export avec filtre vide (rejoué par QA)</td><td>Fichier avec en-tête seul</td><td class="t"><span class="tag auto">AUTO</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="issue">
+    <h3>#44 — Notification e-mail en fin d'export <span class="tag hum">VALID-HUMAINE</span></h3>
+    <div class="pre"><b>Prérequis</b>
+      <ul><li>Boîte de test <code>qa@exemple.local</code> accessible</li><li>Export #41 fonctionnel</li></ul>
+    </div>
+    <table>
+      <thead><tr><th>Résultat</th><th>#</th><th>Action</th><th>Résultat attendu</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr class="sc" data-id="44-1" data-issue="#44 — Notification e-mail en fin d'export" data-n="1" data-act="Lancer un export de plus de 10 000 lignes"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">1</td><td>Lancer un export de plus de 10 000 lignes</td><td>Message « Export en cours, vous serez notifié »</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="cm"><td></td><td colspan="4"><textarea data-c="44-1" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
+        <tr class="sc" data-id="44-2" data-issue="#44 — Notification e-mail en fin d'export" data-n="2" data-act="Consulter la boîte de test"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">2</td><td>Consulter la boîte de test</td><td>E-mail reçu en moins de 2 min, lien de téléchargement valide 24 h</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="cm"><td></td><td colspan="4"><textarea data-c="44-2" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
+      </tbody>
+    </table>
+  </section>
+</details>
+
+<!-- LOT 2 — déjà validé : rappel -->
+<details class="lot">
+  <summary>LOT-2 — Tableau de bord <span class="tag auto">validé (GATE LOT)</span> <span class="tag auto">rappel</span></summary>
+  <section class="issue">
+    <h3>#37 — Widget « activité 7 jours »</h3>
+    <div class="pre"><b>Prérequis</b> aucun (testé au lot).</div>
+    <table>
+      <thead><tr><th>Résultat</th><th>#</th><th>Action</th><th>Résultat attendu</th><th>Type</th></tr></thead>
+      <tbody><tr class="auto"><td class="r">✔</td><td class="n">1</td><td>Ouvrir le tableau de bord</td><td>Graphique 7 jours affiché, valeurs = jeu de données</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr></tbody>
+    </table>
+  </section>
+</details>
+
+<p class="note">Q1 « Le lot LOT-3 est-il validé ? » porte sur les cases ci-dessus. Q2 (milestone) et Q3 (maquette marketing) suivent. Cliquer « Copier le rapport » et le coller dans le chat en complément de la réponse à Q1 : un KO ou un commentaire d'écart sert de motif de refus. La saisie est conservée dans ce navigateur.</p>
+</main>
+<div id="toast"></div>
+<script>
+(function(){
+  var NL=String.fromCharCode(10),KEY='plan-test-v5.12.0',st={};
+  try{st=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  var rows=[].slice.call(document.querySelectorAll('tr.sc'));
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+  function g(id){return st[id]||(st[id]={v:'',c:''})}
+  function paint(){
+    var ok=0,ko=0;
+    rows.forEach(function(r){var d=g(r.dataset.id);
+      r.querySelectorAll('.rs button').forEach(function(b){b.className=(d.v===b.dataset.v)?'on-'+b.dataset.v:''});
+      if(d.v==='ok')ok++;if(d.v==='ko')ko++;});
+    var done=ok+ko,t=rows.length;
+    document.getElementById('count').textContent=done+' / '+t+' testés';
+    document.getElementById('pbar').style.width=(t?100*done/t:0)+'%';
+    document.getElementById('sum').innerHTML='<b>'+ok+'</b> OK · <b>'+ko+'</b> KO · <b>'+(t-done)+'</b> non testés';
+  }
+  rows.forEach(function(r){
+    r.querySelectorAll('.rs button').forEach(function(b){b.addEventListener('click',function(){var d=g(r.dataset.id);d.v=(d.v===b.dataset.v)?'':b.dataset.v;save();paint()})});
+  });
+  [].slice.call(document.querySelectorAll('textarea[data-c]')).forEach(function(a){
+    a.value=g(a.dataset.c).c;a.addEventListener('input',function(){g(a.dataset.c).c=a.value;save()});});
+  function report(){
+    var ok=0,ko=0,L=[],cur='';
+    rows.forEach(function(r){var d=g(r.dataset.id);if(d.v==='ok')ok++;if(d.v==='ko')ko++;});
+    L.push('# Rapport de test — milestone v5.12.0 — LOT-3','','Version QUALIF : 5.12.0.3 · '+new Date().toISOString().slice(0,16).replace('T',' '),'','**Résumé** : '+ok+' OK · '+ko+' KO · '+(rows.length-ok-ko)+' non testés ('+rows.length+' scénarios HUMAIN)','');
+    rows.forEach(function(r){var d=g(r.dataset.id);
+      if(r.dataset.issue!==cur){if(cur)L.push('');cur=r.dataset.issue;L.push('## '+cur,'')}
+      var res=d.v==='ok'?'OK':d.v==='ko'?'KO':'NON TESTÉ';
+      L.push('- Scénario '+r.dataset.n+' — '+r.dataset.act+' : **'+res+'**');
+      if(d.c.trim()){d.c.trim().split(NL).forEach(function(x){L.push('  > '+x)})}});
+    L.push('','Décision proposée : '+(ko?'REFUS (KO présents)':(ok===rows.length?'VALIDÉ':'INCOMPLET')));
+    return L.join(NL);
+  }
+  function toast(m){var t=document.getElementById('toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},1800)}
+  document.getElementById('copy').addEventListener('click',function(){
+    var txt=report();
+    function fb(){var a=document.createElement('textarea');a.value=txt;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Rapport copié')}catch(e){toast('Copie impossible — utiliser Télécharger')}a.remove()}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast('Rapport copié')},fb)}else fb();
+  });
+  document.getElementById('dl').addEventListener('click',function(){
+    var b=new Blob([report()],{type:'text/markdown'}),a=document.createElement('a');
+    a.href=URL.createObjectURL(b);a.download='test-report-LOT-3.md';a.click();});
+  document.getElementById('rst').addEventListener('click',function(){
+    if(!confirm('Effacer toute la saisie ?'))return;st={};save();
+    [].slice.call(document.querySelectorAll('textarea[data-c]')).forEach(function(a){a.value=''});paint()});
+  paint();
+})();
+</script>
+</body>
+</html>

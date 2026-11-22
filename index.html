@@ -18,6 +18,7 @@
     <ul class="nav-links">
       <li><a href="#problems" data-i18n="nav.problems">Problèmes</a></li>
       <li><a href="#workflow" data-i18n="nav.workflow">Workflow</a></li>
+      <li><a href="#testplan" data-i18n="nav.testplan">Tests</a></li>
       <li><a href="#github"   data-i18n="nav.github">GitHub</a></li>
       <li><a href="#versioning" data-i18n="nav.versioning">Versions</a></li>
       <li><a href="#features" data-i18n="nav.features">Fonctionnalités</a></li>
@@ -249,6 +250,32 @@
   </div>
 </section>
 
+<section id="testplan">
+  <div class="container">
+    <div class="section-header">
+      <h2 data-i18n="testplan.title"></h2>
+      <p data-i18n="testplan.subtitle"></p>
+    </div>
+    <div class="problems-grid">
+      <div class="problem-card"><div class="problem-icon">🗂️</div><h3 data-i18n="testplan.t1.title"></h3><p data-i18n="testplan.t1.desc"></p></div>
+      <div class="problem-card"><div class="problem-icon">✅</div><h3 data-i18n="testplan.t2.title"></h3><p data-i18n="testplan.t2.desc"></p></div>
+      <div class="problem-card"><div class="problem-icon">📋</div><h3 data-i18n="testplan.t3.title"></h3><p data-i18n="testplan.t3.desc"></p></div>
+    </div>
+    <figure class="panel-shot demo-wrap">
+      <iframe class="demo-frame" src="assets/plan-de-test.demo.html" title="Plan de test — démonstration" loading="lazy"></iframe>
+      <figcaption data-i18n="testplan.demo"></figcaption>
+    </figure>
+    <div class="testplan-seq">
+      <h3 data-i18n="testplan.q.title"></h3>
+      <div class="pipeline-gate gate-user"><span class="gate-label">Q1 · GATE LOT</span><span class="gate-desc" data-i18n="testplan.q1"></span></div>
+      <div class="pipeline-gate gate-user"><span class="gate-label">Q2 · GATE 4</span><span class="gate-desc" data-i18n="testplan.q2"></span></div>
+      <div class="pipeline-gate gate-user"><span class="gate-label">Q3 · GATE 4d</span><span class="gate-desc" data-i18n="testplan.q3"></span></div>
+      <div class="pipeline-note" data-i18n="testplan.after"></div>
+      <div class="pipeline-note" data-i18n="testplan.tabs"></div>
+    </div>
+  </div>
+</section>
+
 <section id="github">
   <div class="container">
     <div class="section-header">
@@ -400,6 +427,7 @@
       <div class="feature-card"><div class="feature-icon">⚖️</div><div class="feature-body"><h3><span data-i18n="features.f29.title"></span></h3><p data-i18n="features.f29.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">🙋</div><div class="feature-body"><h3><span data-i18n="features.f30.title"></span></h3><p data-i18n="features.f30.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">🖼️</div><div class="feature-body"><h3><span data-i18n="features.f31.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f31.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">📝</div><div class="feature-body"><h3><span data-i18n="features.f32.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f32.desc"></p></div></div>
     </div>
     <figure class="panel-shot">
       <img src="assets/milestone-panel_V2.png" alt="milestone-panel" loading="lazy">
