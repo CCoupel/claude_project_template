@@ -134,7 +134,8 @@ SendMessage({ to: "doc-updater", content: "
   ci-dessous s'applique au lot parent entier.
   **Milestone avec lots** : pas de push ici — le lot passe d'abord en **Phase 5** (QUALIF, GATE LOT : issues `LOT A VALIDER`
   pendant que l'utilisateur teste et valide, `GITHUB.md` §9.4b), puis le CDP pousse la branche et attend la CI (`GITHUB.md` §9.5b) ; CI verte → issues du lot fermées
-  → lot suivant (retour Phase DEV, `PRET` → `EN COURS`) ; plus de lot → fin du milestone (GATE 4 pour PROD).
+  → lot suivant (retour Phase DEV, `PRET` → `EN COURS`) ; plus de lot → fin du milestone : **dernier lot** = sequence finale (`cdp.md`, « Validation finale du milestone » :
+  GATE LOT Q1 si validation humaine, GATE 4 Q2, maquette Q3), le gel du code intervient a la validation du lot.
   **Milestone sans lots — Push + CI (avant la Phase 5)** : pousser la branche du milestone (`git push origin milestone/vX.Y.Z`) — la CI de
   validation (`infra.md` §3bis, C10) s'execute — puis attendre son verdict (`gh run watch` / `gh run list --branch`) :
   - **CI verte** → `ISSUE_NUMS[]` non vide → commenter puis **fermer toutes les issues** (avec lots : celles du lot ;

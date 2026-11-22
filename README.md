@@ -318,6 +318,8 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
     ├── dev-generic.md            # repli pour une stack sans template (Rust, STM32, Flutter...) — stack dans le compagnon
     ├── environments/             # Templates publish/deploy par mécanisme (promote, rebuild-ci,
     │                             # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
+    ├── test-plan/
+    │   └── plan-de-test.exemple.html  # modèle du plan de test HTML (GATE LOT / GATE 4), copié et rempli par le CDP
     ├── launcher/
     │   ├── env-yaml.md           # stack → .claude-launcher/env-template.yaml (conteneur Claude-Launcher NG2 ≥ v5.5.0)
     │   └── gitconfig             # modèle de PRIVATE/gitconfig (git → gh auth git-credential)
@@ -507,11 +509,11 @@ DOC (brouillon) ─────────────── CHANGELOG + docume
 INFRA validation QUALIF ────── cohérence procédure/infrastructure
     ↓  [GATE 4b] escalade si écart détecté
     ├────────────────────────────────────────┬──────────────────────────────┐
-BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes + README   NR complète (QA) ── toute la suite
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF   DOC (finalize) ── release notes + README   NR complète (QA)   marketing PREPARE (maquette)
     └────────────────────────────────────────┴──────────────────────────────┘
-    ↓  BUILD = compilation seule, incrémente `a` (aucun test rejoué) · GATE 4 attend les TROIS (NR KO → retour DEV sans solliciter l'utilisateur)
-[GATE 4] Validation manuelle ── CDP présente les scénarios à tester (milestone « ⏸ à publier » ; issues encore ouvertes : A PUBLIER)
-    ├─ OUI → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) → clôture du milestone proposée
+    ↓  BUILD = compilation seule, incrémente `a` (aucun test rejoué) · GATE 4 attend les QUATRE (NR KO → retour DEV sans solliciter l'utilisateur)
+[GATE 4] Validation du milestone (Q2) ── CDP présente le récapitulatif (milestone « ⏸ à publier » ; issues encore ouvertes : A PUBLIER)
+    ├─ OUI → [GATE 4d] maquette marketing (Q3) → INFRA validation PROD → PUBLISH PROD → DEPLOY PROD (puis marketing PUBLISH) → clôture du milestone proposée
     │        → branche distante du milestone supprimée une fois PROD réussi
     └─ NON → seules les issues concernées sont rouvertes : label EN COURS (retour DEV) ou PLANNING (retour PLAN) selon l'écart
     ↓  [GATE 4c] escalade si infra PROD incohérente
@@ -534,7 +536,17 @@ PUSH → CI de validation ── verte : issues du lot N fermées (DONE conserv�
                            non verte : label EN COURS + commentaire, retour DEV
 ```
 
-**Validation humaine ou automatique** : le `test-writer` marque chaque scénario `AUTO` (commande/fichier, rejoué par QA) ou `HUMAIN` (jugement) ; les issues à scénario `HUMAIN` portent le label `VALID-HUMAINE` (affiché `👤` dans le panneau). Son `TEST-WRITER DONE` porte obligatoirement la ligne `Validation humaine : #217 #219 | aucune` (absente ou en texte libre : DONE renvoyé) ; à chaque DONE, le teamleader envoie l'ordre `+/-VALID-HUMAINE` à `deployer`, et avant tout GATE LOT il confronte les scénarios `HUMAIN` de `tests/procedures/` aux labels du lot — un écart bloque le GATE LOT, auto-validation comprise (`GITHUB.md` §9.13). Un lot sans `VALID-HUMAINE` est auto-validé (pas de GATE LOT) ; le GATE 4 n'est jamais sauté. À chaque GATE de validation par tests restant (GATE LOT, GATE 4), le CDP affiche une synthèse de ce qu'il faut tester, le chemin de la procédure `tests/procedures/…` et l'ouvre automatiquement dans Chrome (repli : chemin affiché si Chrome est indisponible). Aucune validation n'est demandée après la CI d'un lot. Le GATE 4 (PROD) n'a lieu qu'une fois : après le dernier lot, ou sur « publier le milestone en PROD » (publication anticipée : les lots restants sont déplacés vers un autre milestone). Déroulement : `TEMPLATE_claude/commands/context/GITHUB.md` §9.5b.
+**Validation finale du milestone (dernier lot)** — la validation du dernier lot **gèle** le milestone : plus aucune modification du code, de la documentation (README compris) ni de la maquette marketing, PROD est purement mécanique. Tout est donc prêt avant la première question (QUALIF, NR complète, README, maquette marketing préparée en parallèle en Phase 5). Les questions se posent une par une :
+
+| Question | Gate | Posée si |
+|----------|------|----------|
+| Q1 — « Le lot LOT-N est-il validé ? » | GATE LOT | dernier lot à validation humaine (issue `VALID-HUMAINE`) — Oui : push, CI, code gelé ; sinon retour DEV/PLAN |
+| Q2 — « Le milestone vX.Y.Z est-il validé ? » | GATE 4 | toujours (récapitulatif lots, NR, README) |
+| Q3 — « La maquette marketing est-elle validée ? » | GATE 4d | si une maquette est à publier — un refus ne fait corriger que la maquette |
+
+Dernier lot auto-validé : pas de Q1, seulement Q2 et Q3. Milestone sans lots : Q2 puis Q3. Hors cycle (hotfix, `/deploy prod` direct) : maquette en parallèle du déploiement.
+
+**Validation humaine ou automatique** : le `test-writer` marque chaque scénario `AUTO` (commande/fichier, rejoué par QA) ou `HUMAIN` (jugement) ; les issues à scénario `HUMAIN` portent le label `VALID-HUMAINE` (affiché `👤` dans le panneau). Son `TEST-WRITER DONE` porte obligatoirement la ligne `Validation humaine : #217 #219 | aucune` (absente ou en texte libre : DONE renvoyé) ; à chaque DONE, le teamleader envoie l'ordre `+/-VALID-HUMAINE` à `deployer`, et avant tout GATE LOT il confronte les scénarios `HUMAIN` de `tests/procedures/` aux labels du lot — un écart bloque le GATE LOT, auto-validation comprise (`GITHUB.md` §9.13). Un lot sans `VALID-HUMAINE` est auto-validé (pas de GATE LOT) ; le GATE 4 n'est jamais sauté (au dernier lot à validation humaine, le GATE LOT valide la QUALIF entière, le GATE 4 valide ensuite le milestone). À chaque GATE de validation par tests restant (GATE LOT, GATE 4), le CDP affiche une synthèse de ce qu'il faut tester, le chemin de la procédure `tests/procedures/…` et l'ouvre automatiquement dans Chrome (repli : chemin affiché si Chrome est indisponible). Pour la validation humaine, le CDP fournit un **plan de test HTML** (par lot puis par issue : prérequis succincts, action, résultat attendu, OK / KO et commentaire par scénario, bouton « Copier le rapport » à coller avec la réponse) ; le rapport n'est lu qu'après ta réponse (« Tests terminés, conclure d'après mon rapport » / « Valider sans rapport » / « Refuser »). Les pages ouvertes dans Chrome se reconnaissent à leur favicon et à leur bandeau : 🎨 bleu pour les maquettes du GATE 2, 🧪 vert pour le plan de test, 📣 orange pour l'aperçu marketing local ; le titre d'onglet reste court (`LOT-3 · v5.12.0`). Aucune validation n'est demandée après la CI d'un lot. Le GATE 4 (PROD) n'a lieu qu'une fois : après le dernier lot, ou sur « publier le milestone en PROD » (publication anticipée : les lots restants sont déplacés vers un autre milestone ; le lot validé devient le dernier, README, NR et maquette sont produits ensuite). Déroulement : `TEMPLATE_claude/commands/context/GITHUB.md` §9.5b.
 
 **Points de validation utilisateur (GATES) :**
 
@@ -544,12 +556,12 @@ PUSH → CI de validation ── verte : issues du lot N fermées (DONE conserv�
 | 2 | Après plan | Valider le plan, les contrats API et le cadrage du milestone (options, team) — ou ajuster le cadrage |
 | 1.5 | Planner bloqué ou en échec (ambiguïté) | Lever l'ambiguïté |
 | 2b | Conflits merge non résolvables | Résoudre manuellement |
-| LOT | Milestone avec lots : lot déployé en QUALIF (auto-validé si aucune issue `VALID-HUMAINE`) | Valider le lot (suivant / publier en PROD) ou refuser |
+| LOT | Milestone avec lots : lot déployé en QUALIF (auto-validé si aucune issue `VALID-HUMAINE`) | Valider le lot (suivant / publier en PROD) ou refuser — au dernier lot : Q1 de la validation finale (valider = geler le code, pas de « lot suivant ») |
 | 3 | 3 cycles DEV atteints | Continuer ou abandonner |
-| 4 | BUILD+PUBLISH+DEPLOY QUALIF, DOC (finalize) DONE avec **README du projet à jour** (avec lots : mis à jour au dernier lot uniquement) **et** NR complète VALIDATED — toujours posé | OUI (publish/deploy prod) ou NON (retour DEV ou PLAN) |
+| 4 | BUILD+PUBLISH+DEPLOY QUALIF, DOC (finalize) DONE avec **README du projet à jour** (avec lots : mis à jour au dernier lot uniquement) **et** NR complète VALIDATED **et** maquette marketing prête — toujours posé (Q2, après le GATE LOT du dernier lot) | OUI (puis GATE 4d, puis publish/deploy prod) ou NON (retour DEV ou PLAN) |
 | 4b | Procédure QUALIF incohérente | Corriger avant build/publish/deploy |
 | 4c | Procédure PROD incohérente | Corriger avant publish/deploy |
-| 4d | Maquette de communication prête | Valider la communication de release |
+| 4d | Maquette de communication prête (Q3 : après le GATE 4, avant PROD) | Valider la communication de release |
 | 4e | Aucun site marketing existant | Répondre aux questions de cadrage |
 
 Question et options exactes de chaque gate : `TEMPLATE_claude/agents/cdp.md` (tableau des points de validation).
@@ -593,9 +605,9 @@ DEV ── fix minimal
     ↓  label DONE → push de la branche → CI verte : issues fermées (avec lots : push après validation QUALIF du lot ; non verte : retour DEV)
 DOC (brouillon) ── CHANGELOG (Fixed)
     ↓
-BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ── GATE 4 attend les trois
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ∥ marketing PREPARE ── GATE 4 attend les quatre
     ↓
-[GATE 4] OUI → PUBLISH PROD → DEPLOY PROD (∥ marketing-release systématique) ── installe l'artefact publié par la CI
+[GATE 4] OUI → [GATE 4d] maquette → PUBLISH PROD → DEPLOY PROD (puis marketing PUBLISH) ── installe l'artefact publié par la CI
 ```
 
 ### Hotfix (urgence production)
@@ -624,7 +636,7 @@ DEV ── refactoring (comportement identique obligatoire)
     ↓
 DOC (brouillon) ── CHANGELOG (Changed)
     ↓
-BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ── GATE 4 attend les trois
+BUILD → PUBLISH QUALIF → DEPLOY QUALIF ∥ DOC (finalize) ∥ NR complète ∥ marketing PREPARE ── GATE 4 attend les quatre
 ```
 
 ### Contrats API (contract-first)

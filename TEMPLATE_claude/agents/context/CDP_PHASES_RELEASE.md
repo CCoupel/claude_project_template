@@ -5,6 +5,10 @@
 
 ### Phase 5 — Build + Publish + Deploy QUALIF + Documentation Finalize (parallele)
 
+> **Dernier lot / validation finale** : la sequence de questions (Q1 GATE LOT, Q2 GATE 4, Q3 GATE 4d) et le gel du
+> milestone sont definis dans `cdp.md` (« Validation finale du milestone »). Cette phase prepare tout ce qu'elles
+> presentent : QUALIF, NR complete, README, **maquette marketing**.
+
 > Phase 5 remplace les anciennes Phases 5 (DOC) et 6 (QUALIF) — elles s'executent maintenant en
 > parallele. Le deployer enchaine en interne BUILD (compilation, agnostique a l'environnement)
 > puis PUBLISH QUALIF (mise a disposition, mecanisme `promote`) puis DEPLOY QUALIF
@@ -55,7 +59,8 @@ SendMessage({ to: "deployer", content: "
   Retourne : DONE + version publiee/deployee [X.Y.Z.a] + statut des services + smoke tests OK/KO.
 " })
 
-[Si `testing.full_regression_at` est `qualif` (defaut) ou `build`]
+[Si `testing.full_regression_at` est `qualif` (defaut) ou `build` — milestone avec lots : au DERNIER lot seulement
+ (les lots precedents n'ont que la QA du lot) ; la NR doit etre VALIDATED avant Q1/Q2 : plus rien ne change apres]
 SendMessage({ to: "qa", content: "
   Scope : regression-full sur la branche [branche] (NR complete, precedee de `commands.audit` une
   fois par milestone). Reutilise _work/tests-ledger.md si l'arbre est inchange.
@@ -73,18 +78,32 @@ SendMessage({ to: "doc-updater", content: "
   Ne pas toucher {VERSION_FILE} — `a` est gere exclusivement par deployer.
   Retourne : DONE + fichiers modifies + ligne README (mis a jour | inchange — raison) + SHA commit doc.
 " })
+
+[Dernier lot (ou milestone sans lots) — preparation marketing en parallele, pour que la maquette soit prete avant Q1/Q2]
+SPAWN_OR_CLEAR(marketing)   // ponctuel : spawner (commands/marketing.md, « Agent ») et attendre ACTIF ; deja actif → CLEAR
+SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — anticipe (milestone pas encore en PROD : livrees = issues fermees + issues DONE / LOT A VALIDER du milestone)" })
+// marketing.site == false dans .claude/project-config.json : ajouter « — SANS SITE »
 ```
+
+Reponses de `marketing` : voir Phase 6 (`MARKETING RIEN A PUBLIER`, `MARKETING BLOQUE` GATE 4e, `MARKETING PRET`) —
+elles sont traitees **ici**, des leur arrivee en Phase 5 ; GATE 4e (initialisation du site) se pose a ce moment. La maquette
+`PRET` est un pre-requis de la premiere question de la sequence finale ; la presentation a l'utilisateur (Q3) vient apres Q2.
 
 > **Milestone avec lots** : la Phase 5 s'exécute **pour chaque lot** (BUILD, PUBLISH QUALIF, DEPLOY QUALIF, NR et
 > DOC selon les règles ci-dessous), puis le **GATE LOT** (question et options : tableau des points de validation de
 > `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Juste avant la question du GATE LOT, ordre à `deployer` : issues du lot → `LOT A VALIDER` + `Milestone : LOT-N → ⏸ a valider ; Milestone : milestone → ⏸ LOT-N a valider` (`GITHUB.md` §9.4b) ; validé → `DONE` puis push ; refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le GATE 4 (PROD) n'a lieu qu'une
-> fois : après le dernier lot, ou sur la publication anticipée. Refus du lot : Cas A / Cas B ci-dessous, sans
+> fois : après le dernier lot, ou sur la publication anticipée. Au dernier lot, le GATE LOT est la question Q1 de la
+> sequence finale (`cdp.md`, « Validation finale du milestone ») ; valide, il couvre la QUALIF entiere et gele le
+> code — le GATE 4 qui suit (Q2) ne rouvre pas les scenarios deja testes. Refus du lot : Cas A / Cas B ci-dessous, sans
 > réouverture (issues non encore fermées).
 
 **GATE 4 — s'ouvre uniquement quand TOUT est termine :**
 
+Dernier lot a validation humaine : le **GATE LOT (Q1) est deja valide** (code gele, CI verte) ; dernier lot auto-valide ou
+milestone sans lots : pas de Q1. Le GATE 4 est la question **Q2**, suivie de Q3 (maquette) avant la Phase 6.
+
 Attendre DONE de deployer ET DONE de doc-updater (sauf `cadrage.doc == dev` : DONE de l'agent DEV charge du README)
-ET README a jour (ligne README du rapport du dernier lot : `mis a jour` ou `inchange — raison` ; absente ou `differe` →
+ET `MARKETING PRET` (ou `RIEN A PUBLIER` / sans site) ET README a jour (ligne README du rapport du dernier lot : `mis a jour` ou `inchange — raison` ; absente ou `differe` →
 redemander, GATE 4 ferme) ET (si `testing.full_regression_at` est `qualif` ou `build`)
 le verdict VALIDATED de la NR complete avant de presenter a l'utilisateur. L'utilisateur n'est jamais invite
 a valider une QUALIF dont la NR est KO ou pas encore terminee.
@@ -98,12 +117,13 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 > adaptee au local. Idem pour le GATE LOT.
 
 ```markdown
-## QUALIF deployee + Documentation prete — Validation manuelle requise avant PROD
+## Milestone [X.Y.Z] — QUALIF deployee + Documentation prete — Validation requise avant PROD
 
 **Version deployee (QUALIF)** : [X.Y.Z.a — depuis le rapport deployer]   **Branche** : [branche]   **URL** : [url qualif]
 **Binaire a tester** : [chemin exact — depuis le champ "Binaire" du rapport DEPLOY DONE]
 **Documentation** : finalisee (SHA [sha])
 **README** : [mis a jour | inchange — raison] (prerequis PROD)
+**Lots** : [LOT-N valide par l'utilisateur (Q1) | LOT-N auto-valide (aucun scenario HUMAIN) ; lots precedents valides]   **NR** : VALIDATED
 
 > Tout est pret. Tester les scenarios ci-dessous, puis valider via la question qui suit (`AskUserQuestion`).
 > Apres validation : aucune modification — PROD est purement mecanique.
@@ -131,14 +151,17 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 
 Avant la question : ouvrir la/les procedure(s) a scenarios `HUMAIN` dans Chrome (regle « GATE de validation par tests » de `cdp.md`).
 Ordre a `deployer`, `LABELS DONE` attendu avant la question : `Milestone : milestone → ⏸ a publier` ; `issues.close_on` = `validation` : en plus, issues `DONE` encore ouvertes du milestone → `A PUBLIER` (`GITHUB.md` §9.4b).
-Apres ce resume (texte informatif), poser **via `AskUserQuestion`** : « QUALIF conforme — lancer le deploiement
-PROD ? » — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate :
-retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/deploy prod` reste un equivalent de « Oui ».
+Apres ce resume (texte informatif), poser **via `AskUserQuestion`** (Q2) : « Le milestone v[X.Y.Z] est-il valide ? » —
+Oui, valider le milestone (Recommandé) : tout est fige, PROD = zero modification (apres la maquette) / Non, ecart constate :
+retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/deploy prod` reste un equivalent de « Oui »
+(avec la maquette deja validee, ou sans maquette si `RIEN A PUBLIER`).
 
 **Le deploy PROD reste bloque jusqu'a confirmation explicite.** ← GATE 4
 
 Selon la reponse utilisateur :
-- **Oui / `/deploy prod`** →
+- **Oui / `/deploy prod`** → **Q3 (GATE 4d)** si `MARKETING PRET` : presenter la maquette (voir Phase 6, « GATE 4d » — meme
+  format) et poser « La maquette marketing est-elle validee ? » ; `mockup_ok = true` a « Oui » (« Non » : corrections par
+  `marketing` seulement, Q3 reposee, aucun degel du code). Puis :
   > Les issues sont **deja fermees** (CI verte, Phase 4 ; avec lots : CI verte apres chaque GATE LOT) — aucun changement sur elles.
   > Exception `issues.close_on` = `validation` (`GITHUB.md` §9.5) : ce « Oui » est la validation utilisateur — ordre a
   > `deployer` de repasser a `DONE` puis fermer les issues `A PUBLIER` encore ouvertes du milestone **avant** la Phase 6. La validation du milestone
@@ -208,8 +231,10 @@ SendMessage({ to: "infra", content: "
 complete VALIDATED pour l'arbre courant ; sinon dispatcher `qa` (`Scope : regression-full`) et **refuser
 `/deploy prod`** tant qu'elle n'est pas VALIDATED.
 
-**Dispatch systematique — deploiement + preparation marketing (meme tour), quel que soit le
-type de workflow (y compris Hotfix — voir aussi section "Dispatch selon le Type de Workflow") :**
+**Dispatch systematique du deploiement, quel que soit le type de workflow (y compris Hotfix — voir aussi section
+"Dispatch selon le Type de Workflow"). Preparation marketing : deja faite en Phase 5 du dernier lot (maquette validee a
+Q3, `mockup_ok = true`) — la PROD n'est lancee qu'apres. Hors cycle (hotfix, `/deploy prod` direct : aucune Phase 5
+de milestone), `PREPARE` part dans le meme tour que le deploiement et GATE 4d s'applique en parallele, comme ci-dessous :**
 
 ```
 SendMessage({ to: "deployer", content: "
@@ -221,6 +246,7 @@ SendMessage({ to: "deployer", content: "
   [cadrage.qualif == false] Cadrage : sans QUALIF — l'artefact [X.Y.Z.a] a ete valide en local au GATE 4.
 " })
 
+// Hors cycle SEULEMENT (aucune maquette preparee en Phase 5 pour cette version) :
 // marketing est ponctuel (table « Agents Disponibles ») : absent de la team → le spawner (commands/marketing.md,
 // section « Agent ») et attendre ACTIF ; deja actif (release precedente de la session) → CLEAR(marketing)
 SPAWN_OR_CLEAR(marketing)

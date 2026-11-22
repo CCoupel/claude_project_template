@@ -278,7 +278,7 @@ c) Regenerer la roadmap uniquement
 ## Agent
 
 Agent ponctuel — non spawné au `/start-session`, spawné à la demande. Orchestré par le CDP
-en deux dispatches distincts (`PREPARE` puis `PUBLISH`), en parallèle du déploiement PROD —
+en deux dispatches distincts (`PREPARE` — en Phase 5 du dernier lot, maquette validée avant PROD (Q3) ; hors cycle, en parallèle du déploiement — puis `PUBLISH` après le déploiement PROD) —
 voir `agents/context/CDP_PHASES_RELEASE.md` (Phase 6) et `agents/marketing-release.template.md` pour le détail du protocole :
 
 ```
@@ -295,7 +295,8 @@ Attendre ACTIF, puis envoyer la tâche de préparation :
 
 À réception de `MARKETING RIEN A PUBLIER` → `TaskStop("marketing")`, terminé.
 
-À réception de `MARKETING PRET` → relayer le rapport à l'utilisateur (GATE 4d). Une fois la
+À réception de `MARKETING PRET` → le CDP le retient ; il présente la maquette à l'utilisateur à la question Q3 (GATE 4d,
+après le GATE 4 — `agents/cdp.md`, « Validation finale du milestone »). Une fois la
 maquette validée **et** le déploiement PROD confirmé réussi, envoyer la publication :
 `SendMessage({to: "marketing", content: "PUBLISH"})`
 
