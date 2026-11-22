@@ -21,9 +21,12 @@ taches, dispatchees separement (le cycle ACTIF → DONE → IDLE se repete a cha
 
 ### Tache `PREPARE vX.Y.Z`
 
-Recue systematiquement en parallele de chaque deploiement PROD (tous workflows confondus, y
-compris Hotfix), sans attendre son resultat — le contenu du milestone (issues fermees, labels)
-est deja fige avant le lancement de la CI. Le teamleader ne verifie rien en amont : c'est toi qui
+Recue en **Phase 5 du dernier lot** d'un milestone (preparation anticipee : la maquette est validee avant le
+lancement PROD, ordre `PREPARE vX.Y.Z — anticipe`) ou, hors cycle milestone (Hotfix, `/deploy prod` direct), en
+parallele du deploiement PROD, sans attendre son resultat. Mode anticipe : les issues du milestone ne sont pas toutes
+fermees (CI du dernier lot pas encore passee) — considerer comme livrees les issues **fermees ET les issues ouvertes
+`DONE` / `LOT A VALIDER`** (`--state all`, hors `PRET`, `EN COURS`, `ABANDONNE`). Le contenu est fige des la
+validation du dernier lot. Le teamleader ne verifie rien en amont : c'est toi qui
 resous le milestone et decides seul de la pertinence d'une publication.
 
 1. **Resoudre le milestone** correspondant a la version — matching par **prefixe**, jamais par
@@ -38,7 +41,7 @@ resous le milestone et decides seul de la pertinence d'une publication.
    - **Milestone trouve** — lister ses issues fermees et filtrer sur les labels visibles
      utilisateur :
      ```bash
-     gh issue list --milestone "$TITLE" --state closed \
+     gh issue list --milestone "$TITLE" --state closed \   # mode anticipe : --state all, puis exclure les labels PRET/EN COURS/ABANDONNE
        --json number,title,labels \
        --jq '[.[] | select(.labels[]?.name as $l | ["feature","enhancement","breaking"] | index($l))]
              | .[] | "#" + (.number|tostring) + " — " + .title + " [" + (.labels | map(.name) | join(", ")) + "]"'

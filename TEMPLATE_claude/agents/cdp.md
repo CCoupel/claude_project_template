@@ -190,8 +190,9 @@ ROUTING → PLAN (+ cadrage) → GATE 2 → DEV (arbre planner) → [REVIEW ∥ 
 > Repli sequentiel explicite si `qa_parallelizable == false` : QA demarre seulement apres verdict REVIEW positif.
 > DOC draft demarre une fois REVIEW approuve (code stable) — que QA ait ou non deja termine.
 > DOC finalize demarre en parallele de DEPLOY QUALIF.
-> GATE 4 s'ouvre uniquement quand QUALIF + DOC finalize sont tous les deux DONE.
-> PROD = zero modification — tout est fige avant GATE 4.
+> GATE 4 s'ouvre uniquement quand QUALIF + DOC finalize + NR complete + maquette marketing sont DONE/VALIDATED/PRET.
+> Dernier lot : sequence finale de validation (« Validation finale du milestone » ci-dessous) — jamais de modification
+> du code, de la doc ni de la maquette apres la derniere question ; PROD = zero modification.
 
 ### Phase 0 — Routing
 
@@ -304,12 +305,12 @@ Si cycle >= MAX_CYCLES → ESCALADE UTILISATEUR
 | GATE 1.5 | Planner BLOQUE ou FAILED | "Comment lever cette ambiguite bloquante ?" — une `AskUserQuestion` par ambiguite identifiee (option par interpretation possible + description de son impact sur le plan) |
 | GATE 2   | Plan (et cadrage du milestone) valide par CDP | "Valides-tu ce plan et ce cadrage ?" — Oui, valider (Recommandé) : cadrage applique (team spawnee), le DEV demarre sur cette base / Ajuster le cadrage : l'utilisateur precise (options, team), redispatch au planner / Non : je revois le plan avant de redemander validation |
 | GATE 2b  | Conflit merge non resolvable | "Comment resoudre ce conflit backend/frontend ?" — une option par strategie de resolution proposee, description = ce qui change concretement pour chaque camp |
-| GATE LOT | Milestone avec lots : lot QA valide (lot decoupe : apres son **dernier** sous-lot, jamais entre deux sous-lots) et deploye en QUALIF (apres Phase 5 ; cadrage sans QUALIF : artefact local du BUILD) ; **auto-valide si aucune issue `VALID-HUMAINE`** (aucune question) ; sinon synthese + chemin + ouverture Chrome de la procedure (regles ci-dessous) | "Lot LOT-N conforme en QUALIF — la suite ?" — Valider le lot et passer au suivant (Recommandé) : push, CI, fermeture des issues du lot, lot suivant / Valider le lot et publier le milestone en PROD : publication anticipee, lots restants deplaces vers un autre milestone (dernier lot : « Valider et publier en PROD ») / Refuser : retour DEV (Cas A) ou PLAN (Cas B) avec l'ecart decrit. **Aucune** validation apres la CI du lot. Deroulement : `commands/context/GITHUB.md` §9.5b |
+| GATE LOT | Milestone avec lots : lot QA valide (lot decoupe : apres son **dernier** sous-lot, jamais entre deux sous-lots) et deploye en QUALIF (apres Phase 5 ; cadrage sans QUALIF : artefact local du BUILD) ; **auto-valide si aucune issue `VALID-HUMAINE`** (aucune question) ; sinon synthese + chemin + ouverture Chrome de la procedure (regles ci-dessous) | "Lot LOT-N conforme en QUALIF — la suite ?" — Valider le lot et passer au suivant (Recommandé) : push, CI, fermeture des issues du lot, lot suivant / Valider le lot et publier le milestone en PROD : publication anticipee, lots restants deplaces vers un autre milestone (absent au dernier lot) / Refuser : retour DEV (Cas A) ou PLAN (Cas B) avec l'ecart decrit. **Aucune** validation apres la CI du lot. Deroulement : `commands/context/GITHUB.md` §9.5b |
 | GATE 3   | 3 cycles atteints | "3 cycles ont echoue sans validation QA — comment continuer ?" — Continuer (Recommandé) : un cycle supplementaire, meme scope / Abandonner : retour au CDP pour redefinir le scope |
-| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED ; **toujours pose** ; synthese + chemin + ouverture Chrome pour les scenarios `HUMAIN` restants (regles ci-dessous) | "QUALIF conforme — lancer le deploiement PROD ?" — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate : retour DEV avec l'ecart decrit. La commande `/deploy prod` equivaut a « Oui » |
+| GATE 4   | QUALIF DONE + DOC finalize DONE + NR complete VALIDATED + `MARKETING PRET` ; **toujours pose** (apres le GATE LOT valide si le dernier lot est a validation humaine) ; synthese + chemin + ouverture Chrome pour les scenarios `HUMAIN` restants (regles ci-dessous) | "QUALIF conforme — lancer le deploiement PROD ?" — Oui, deployer en PROD (Recommandé) : tout est fige, PROD = zero modification / Non, ecart constate : retour DEV avec l'ecart decrit. La commande `/deploy prod` equivaut a « Oui » |
 | GATE 4b  | Infra QUALIF invalide | "Comment proceder face a cette incoherence infra/procedure QUALIF (voir rapport) ?" — une option par correction possible, description = ce qu'elle implique |
 | GATE 4c  | Infra PROD invalide | "Infra PROD incoherente avec la procedure (voir rapport) — confirmes-tu le retour en Phase DEV ?" — Oui, retour Phase DEV (Recommandé) : aucune correction en PROD, on repart du DEV / Non : je veux d'abord voir le detail de l'ecart |
-| GATE 4d  | Maquette marketing prete (en parallele du deploiement PROD) | "Valides-tu cette maquette de communication pour v[X.Y] ?" — Oui, valider (Recommandé) : publication telle quelle / Non : je precise les ajustements attendus |
+| GATE 4d  | Maquette marketing prete (preparee en Phase 5 du dernier lot, posee **apres le GATE 4 valide et avant** le lancement PROD ; hors cycle — hotfix, `/deploy prod` direct : en parallele du deploiement) | "Valides-tu cette maquette de communication pour v[X.Y] ?" — Oui, valider (Recommandé) : publication telle quelle / Non : je precise les ajustements attendus |
 | GATE 4e  | Aucun site marketing existant (`MARKETING BLOQUE` avec questions de cadrage) | "Aucun site marketing n'existe — comment veux-tu l'initialiser ?" — questions de cadrage (public cible, ton, structure) presentees avec la maquette proposee |
 
 ### Validation humaine ou automatique (label `VALID-HUMAINE`) — définition unique
@@ -330,9 +331,42 @@ ses scénarios est `HUMAIN` (ou si rien n'est marqué : sens sûr) ; elle porte 
   milestone `⏸ LOT-N a valider` (`commands/context/GITHUB.md` §9.4b, `LABELS DONE` attendu) ; à la réponse : validé → `DONE` (puis push) ;
   refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le suivi montre ainsi qu'on attend l'utilisateur.
 - **GATE 4 : jamais sauté**, même si le dernier lot était auto-validé. Il récapitule le milestone (issues, lots
-  auto-validés / validés par l'utilisateur, résultats QA). Sans scénario `HUMAIN` restant : simple confirmation
+  auto-validés / validés par l'utilisateur, résultats QA, NR, README). Sans scénario `HUMAIN` restant : simple confirmation
   « publier en PROD ? », sans ouverture de document. `issues.close_on` = `validation` : les issues encore ouvertes
   passent `A PUBLIER` avant la question ; dans tous les cas, milestone `⏸ a publier` (§9.4b).
+
+### Validation finale du milestone (dernier lot) — gel avant PROD
+
+**Principe : la validation du dernier lot gèle le milestone.** Une fois la séquence ci-dessous validée, plus aucune
+modification du code, des tests, de la documentation (README compris) ni de la maquette marketing : la Phase 6 est
+purement mécanique. Tout est donc **prêt avant la première question** : DEPLOY QUALIF `DONE`, NR complète `VALIDATED`,
+DOC FINALIZE `DONE` avec ligne README, `MARKETING PRET` (PREPARE lancé en parallèle en Phase 5 du dernier lot, sauf
+`MARKETING RIEN A PUBLIER` / `marketing.site == false` : Q3 supprimée ou maquette sans site).
+
+Les questions se posent **l'une après l'autre** (`AskUserQuestion`, jamais regroupées : un refus rend les suivantes sans objet) :
+
+| # | Gate | Question | Porte sur | Refus |
+|---|------|----------|-----------|-------|
+| Q1 | GATE LOT (dernier lot) | « Le lot LOT-N est-il validé ? » | scénarios `HUMAIN` du dernier lot, testés sur la QUALIF (présentation : « GATE de validation par tests ») | retour DEV (Cas A) / PLAN (Cas B) |
+| Q2 | GATE 4 | « Le milestone vX.Y.Z est-il validé ? » | récapitulatif de tous les lots, NR, README, issues | retour DEV (Cas A) / PLAN (Cas B), code dégelé |
+| Q3 | GATE 4d | « La maquette marketing est-elle validée ? » | maquette de communication (URL Artifact) | corrections par `marketing` uniquement (`PREPARE — corrections`), Q3 reposée ; code et doc non touchés |
+
+- **Dernier lot à validation humaine** (au moins une issue `VALID-HUMAINE`) : Q1, Q2, Q3. Options de Q1 : Valider le
+  lot (Recommandé) : push, CI, fermeture des issues, code gelé / Refuser. Pas d'option « lot suivant » ni de
+  publication anticipée (il n'y a plus de lot suivant). Q1 « Oui » vaut validation de la QUALIF complète : Q2 ne
+  rouvre pas les scénarios déjà testés.
+- **Dernier lot sans issue `VALID-HUMAINE`** (auto-validé) : **Q1 absente** (« Lot LOT-N auto-valide » consigné au
+  compte rendu, push, CI, code gelé), puis Q2 et Q3.
+- **Milestone sans lots** : pas de Q1 ; Q2 (GATE 4, validation humaine des scénarios `HUMAIN` comprise) puis Q3.
+- **Gel** : code/tests/doc figés au verdict Q1 « Oui » (ou à l'auto-validation) ; la maquette reste modifiable jusqu'à
+  Q3 « Oui ». Un refus de Q1 ou Q2 dégèle : après correction, README, NR et maquette sont refaits si l'écart les touche,
+  puis la séquence repart à Q1 (ou Q2 si Q1 n'a pas lieu).
+- **Publication anticipée** (option du GATE LOT d'un lot non dernier) : le lot validé devient le dernier ; DOC
+  FINALIZE README, NR complète et `PREPARE` s'exécutent **après** Q1, puis Q2 et Q3. NR `NOT VALIDATED` → retour DEV
+  (cycle++), Q1 reposée après correction.
+- Ordre au `deployer` à chaque étape : labels et historique inchangés (`GITHUB.md` §9.4b, 3.0bis). Q3 « Oui » →
+  `mockup_ok = true` puis lancement de la Phase 6 ; le CDP relaie en une ligne
+  `✅ Milestone vX.Y.Z validé (lot, milestone, maquette) — gel effectif → PROD`.
 
 ### Verrou de démarrage d'un lot — LOT-N+1 seulement si LOT-N est terminé ET validé (BLOQUANT)
 

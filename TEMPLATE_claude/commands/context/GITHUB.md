@@ -200,7 +200,7 @@ a l'ordre `deployer` qu'il envoie a ce moment ; « deployer » = ecrit par `depl
 | Lot : CI verte, issues fermees | `LOT-N → ✅ termine — CI verte` | ordre de fermeture des issues du lot |
 | Publication anticipee (GATE LOT) | `LOT-N → ⇢ reporte — vers <milestone>` (lots restants) | ordre de deplacement des issues |
 | GATE 4 refuse | `milestone → ▶ en cours — GATE 4 refuse, retour DEV` (ou `retour PLAN`) | ordre labels Cas A / Cas B |
-| Question GATE 4 posee | `milestone → ⏸ a publier` | ordre labels `→ A PUBLIER` (§9.4b), ou ligne `Milestone` seule si aucune issue ouverte |
+| Question GATE 4 posee (Q2 de la sequence finale ; au dernier lot, apres Q1 valide) | `milestone → ⏸ a publier` | ordre labels `→ A PUBLIER` (§9.4b), ou ligne `Milestone` seule si aucune issue ouverte |
 | PUBLISH PROD lance (GATE 4 valide) | `milestone → 🚀 mise en prod — vX.Y.Z` | deployer |
 | Echec PROD / rollback | `milestone → ❌ mise en prod en echec — <cause>` | deployer |
 | Cloture (Etape 5 de `deploy.md`, `/milestone close`) | `milestone → ✅ termine — tag vX.Y.Z` puis `state=closed` | deployer |
@@ -747,10 +747,15 @@ lot (`LOT-N → ▶ en cours`), fermeture apres CI verte (`LOT-N → ✅ termine
 retour DEV|PLAN`), publication anticipee (`LOT-N → ⇢ reporte — vers <milestone>` pour chaque lot restant). Le passage
 `🧪 en QUALIF` est ecrit par `deployer` lui-meme apres DEPLOY QUALIF.
 
-**Publication anticipee** (option du GATE LOT) : les lots restants (issues `PRET`) sont deplaces vers un autre
+**Dernier lot** : le GATE LOT est la question Q1 d'une sequence finale (Q1 lot, Q2 GATE 4 milestone, Q3 GATE 4d
+maquette — `agents/cdp.md`, « Validation finale du milestone »). Q1 « Oui » : push, CI, fermeture des issues (sauf
+`close_on` = `validation`), `LOT-N` `completed`, code et doc **geles** ; pas de « lot suivant », pas de publication
+anticipee. Lot auto-valide : pas de Q1, meme gel apres push et CI verte. Q2 et Q3 suivent avant la Phase 6.
+
+**Publication anticipee** (option du GATE LOT d'un lot non dernier) : les lots restants (issues `PRET`) sont deplaces vers un autre
 milestone (`gh issue edit <numero> --milestone "<TITLE>"` ; le label `LOT-N` les suit) puis le milestone est publie
-avec les seuls lots valides (GATE 4 / Phase 6) — apres la mise a jour du `README.md` sur ces lots, le lot valide
-devenant le dernier (`agents/context/CDP_PHASES_RELEASE.md`, « README avant PROD »).
+avec les seuls lots valides — le lot valide devient le dernier : README (`agents/context/CDP_PHASES_RELEASE.md`,
+« README avant PROD »), NR et maquette marketing sont produits apres Q1, puis Q2 (GATE 4) et Q3 (GATE 4d) avant la Phase 6.
 
 ### 9.6 Rejet à GATE 4 (validation utilisateur refusée)
 
