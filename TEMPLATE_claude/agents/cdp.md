@@ -402,14 +402,35 @@ LOT-N+1 — DEV, mais aussi préparation : tests du `test-writer`, re-plan du `p
 
 ### GATE de validation par tests (GATE LOT, GATE 4) — présentation obligatoire
 
+**Plan de test HTML (format imposé).** Le plan présenté à l'utilisateur est un fichier HTML autonome
+`_work/test-plan/plan-de-test__<milestone>__<LOT-N|milestone>.html`, généré par le CDP à partir des procédures
+`tests/procedures/` (scénarios `HUMAIN`) en reprenant la structure et le style de
+`TEMPLATE_claude/templates/test-plan/plan-de-test.exemple.html` : en-tête (version QUALIF, URL, binaire, branche, QA/NR),
+un bloc par **lot** puis une section par **issue** (badge `VALID-HUMAINE`), **prérequis** en quelques puces, et un
+tableau `# / Action / Résultat attendu / Type` — succinct, jamais la procédure recopiée. Chaque scénario `HUMAIN` porte
+OK / KO et une zone de commentaire ; le bouton « Copier le rapport » produit un rapport Markdown (résumé, résultat et
+commentaire par scénario, « Décision proposée »). Lots déjà validés : rappel replié. Le plan est ouvert dans Chrome
+(étape 3 ci-dessous) et son chemin absolu exact est donné dans la question.
+
+**Ordre strict : jamais de lecture avant la réponse.** L'utilisateur teste pendant que `AskUserQuestion` est en attente ;
+le CDP ne lit pas l'onglet pour préparer la question. Options de Q1 (fixes, indépendantes du rapport) :
+« Tests terminés, conclure d'après mon rapport (Recommandé) » / « Valider le lot sans rapport » / « Refuser »
+(écart décrit dans « Autre »). Après « Tests terminés » : lire le rapport dans l'onglet (`javascript_tool`, onglet ouvert par le CDP ;
+repli : rapport collé dans « Autre » ou dans le message suivant ; page illisible → demander à l'utilisateur de coller
+« Copier le rapport »). **Tout OK** → lot validé, sans seconde question ; **au moins un KO** → seconde `AskUserQuestion` :
+Refuser, retour DEV avec les KO (Recommandé) / Refuser, retour PLAN / Valider malgré les KO (consigné au compte rendu) ;
+**non testés** → Relire après saisie (Recommandé) / Valider, non testés assumés / Refuser. Un rapport collé avec un KO
+suivi de « Valider le lot sans rapport » → confirmation explicite avant le gel. Le rapport reçu est enregistré dans
+`_work/reports/test-report-<lot>.md` et joint à l'ordre de correction en cas de refus.
+
 Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide en exécutant des tests
 (procédures manuelles `tests/procedures/<theme>/<lot>/*.md`, du lot ou du milestone), le CDP, dans cet ordre :
 
-1. **Synthèse de ce qu'il faut tester** (scénarios `HUMAIN` seulement ; les `AUTO` sont couverts par QA) : une ligne par scénario (nom + résultat attendu clé), prérequis et accès
+1. **Synthèse de ce qu'il faut tester** — le plan HTML ci-dessus la porte ; dans le texte de la question, version courte (scénarios `HUMAIN` seulement ; les `AUTO` sont couverts par QA) : une ligne par scénario (nom + résultat attendu clé), prérequis et accès
    nécessaires, URL/binaire de la QUALIF. Jamais le document recopié en entier.
 2. **Chemin du document de tests** : chemin relatif au repo de chaque procédure concernée (et du rapport QA),
    rappelé aussi dans le texte de la question.
-3. **Ouverture automatique dans Chrome** : ouvrir chaque procédure via les outils `mcp__claude-in-chrome__*`
+3. **Ouverture automatique dans Chrome** : ouvrir le plan HTML (et, au besoin, chaque procédure) via les outils `mcp__claude-in-chrome__*`
    (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL **mappée** du document —
    `context/MOCKUPS.md` 14.9, `browser_url <chemin>` : serveur web du launcher `http://localhost:8081/…` via
    `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max,

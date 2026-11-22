@@ -70,6 +70,16 @@ d'acceptation, maquettes), les range par lot et alimente l'index (une ligne par 
 
 Une passe de tests complète n'est **jamais** lancée par un `dev-*`, le `test-writer` ni le `deployer`.
 
+### 15.2b Plan de test HTML du GATE
+
+Au GATE LOT / GATE 4, la validation humaine s'appuie sur un **plan de test HTML** généré par le CDP depuis les procédures
+`tests/procedures/` : un bloc par lot, une section par issue, prérequis succincts, tableau `Action / Résultat attendu`,
+OK / KO + commentaire par scénario `HUMAIN`, bouton « Copier le rapport ». Modèle : `templates/test-plan/plan-de-test.exemple.html`
+(à copier et remplir, pas à réécrire). Fichier généré dans `_work/test-plan/` (non commité) ; rapport reçu dans
+`_work/reports/test-report-<lot>.md`. Le rapport n'est lu qu'**après** la réponse de l'utilisateur (`agents/cdp.md`,
+« GATE de validation par tests »). Contrainte connue : le serveur du launcher sert la page en `sandbox` sans
+`allow-same-origin` — `localStorage` indisponible, la saisie n'est pas conservée à un rechargement.
+
 ### 15.3 Sélection des NR impactées
 
 Le diff du milestone est mappé sur les composants (`testing.components`, clé = composant, valeur = globs de

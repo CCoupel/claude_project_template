@@ -58,6 +58,7 @@ TEMPLATE_claude/             # Racine de tous les composants template
     ├── dev-generic.md        # repli stack « Autre » — stack définie par le compagnon
     ├── environments/         # Templates publish/deploy par mecanisme (promote, rebuild-ci,
     │                         # docker-compose, kubernetes-helm, serverless, vps, paas, cloud-run)
+    ├── test-plan/plan-de-test.exemple.html  # modèle du plan de test HTML des GATE LOT / GATE 4
     ├── launcher/env-yaml.md  # stack → .claude-launcher/env-template.yaml (conteneur Claude-Launcher NG2 ≥ v5.5.0)
     ├── launcher/gitconfig    # modèle de PRIVATE/gitconfig (git → gh)
     └── workflows/
