@@ -647,6 +647,7 @@ seule trace qui survit à un terminal tué. Au GATE 2 validé, il copie le plan 
 `.claude/workflow/plan-<version>.md` (hors `_work/`, qui peut être purgé).
 Règle : toute commande `status` / `resume` / `skip` / `jumpto` doit lire ce fichier en priorité.
 
+Le fichier est **tracké par git** : `WORKFLOW COMMIT` (`deployer`) avant chaque push, état final commité par le RETEX avant la PROD.
 Format complet, règles de mise à jour (dont `status`, `plan`, `lots`) et reprise après interruption :
 `commands/context/CDP_WORKFLOWS.md` section 12. La reprise au redémarrage est déclenchée par `/start-session`
 (étapes 2 et 4bis).

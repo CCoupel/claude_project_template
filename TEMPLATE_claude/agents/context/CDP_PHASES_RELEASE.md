@@ -91,7 +91,7 @@ elles sont traitees **ici**, des leur arrivee en Phase 5 ; GATE 4e (initialisati
 
 > **Milestone avec lots** : la Phase 5 s'exécute **pour chaque lot** (BUILD, PUBLISH QUALIF, DEPLOY QUALIF, NR et
 > DOC selon les règles ci-dessous), puis le **GATE LOT** (question et options : tableau des points de validation de
-> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Juste avant la question du GATE LOT, ordre à `deployer` : issues du lot → `LOT A VALIDER` + `Milestone : LOT-N → ⏸ a valider ; Milestone : milestone → ⏸ LOT-N a valider` (`GITHUB.md` §9.4b) ; validé → `DONE` puis push ; refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le GATE 4 (PROD) n'a lieu qu'une
+> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Juste avant la question du GATE LOT, ordre à `deployer` : issues du lot → `LOT A VALIDER` + `Milestone : LOT-N → ⏸ a valider ; Milestone : milestone → ⏸ LOT-N a valider` (`GITHUB.md` §9.4b) ; validé → `DONE`, `WORKFLOW COMMIT` (`workflow-state.json` tracké, `deploy.md`) puis push ; refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le GATE 4 (PROD) n'a lieu qu'une
 > fois : après le dernier lot, ou sur la publication anticipée. Au dernier lot, le GATE LOT est la question Q1 de la
 > sequence finale (`cdp.md`, « Validation finale du milestone ») ; valide, il couvre la QUALIF entiere et gele le
 > code — le GATE 4 qui suit (Q2) ne rouvre pas les scenarios deja testes. Refus du lot : Cas A / Cas B ci-dessous, sans
@@ -166,6 +166,13 @@ Selon la reponse utilisateur :
   > Exception `issues.close_on` = `validation` (`GITHUB.md` §9.5) : ce « Oui » est la validation utilisateur — ordre a
   > `deployer` de repasser a `DONE` puis fermer les issues `A PUBLIER` encore ouvertes du milestone **avant** la Phase 6. La validation du milestone
   > releve de l'utilisateur : verifier le milestone (100 % des issues fermees)
+  **RETEX — dernier commit avant la PROD** (une fois par milestone ; jamais sur un refus). Le teamleader ecrit
+  l'etat final dans `.claude/workflow-state.json` (`CDP_WORKFLOWS.md` §12), puis ordre a `doc-updater` : `DOC RETEX`
+  (migration MEMORY → documents projet, MEMORY remis a l'etat « livre », commit unique `docs(retex): vX.Y.Z` incluant
+  `MEMORY.md` et `workflow-state.json`) ; `doc: dev` → meme ordre a l'agent DEV. DONE attendu avant la Phase 6.
+  Rubrique `A trancher` non vide → une `AskUserQuestion` par element (migrer vers `<document>` / laisser dans MEMORY),
+  puis ordre de rattrapage dans le meme commit (`git commit --amend` interdit : nouveau commit `docs(retex)` si deja fait).
+  Objectif : **apres la PROD, plus rien a commiter** (`/end-session` n'a plus de documentation ni de memoire a ecrire).
   Phase 6 (PROD) — les branches residuelles (milestone, PR mergees) sont supprimees en local et en remote en fin de deploiement reussi (`deploy.md`, Etape 6)
 - **NON** →
   L'ordre labels de ce rejet porte `Milestone : milestone → ▶ en cours — GATE 4 refuse, retour DEV` (Cas A) ou
@@ -240,7 +247,7 @@ de milestone), `PREPARE` part dans le meme tour que le deploiement et GATE 4d s'
 SendMessage({ to: "deployer", content: "
   Publie puis deploie en PROD la version [X.Y.Z] — l'artefact [X.Y.Z.a] est deja publie et
   valide en QUALIF [cadrage.qualif == false : « valide en local au GATE 4 », voir ligne Cadrage ci-dessous].
-  Enchaine PUBLISH PROD (merge → main → tag officiel vX.Y.Z, declenche le
+  Enchaine PUBLISH PROD (fusion → main par PR ou push selon `release.merge_mode` / `cadrage.merge_mode` → tag officiel vX.Y.Z, declenche le
   rebuild deterministe via CI) puis DEPLOY PROD (installation de l'artefact publie par la CI,
   verification du rollout) sans attendre de nouvel ordre.
   [cadrage.qualif == false] Cadrage : sans QUALIF — l'artefact [X.Y.Z.a] a ete valide en local au GATE 4.

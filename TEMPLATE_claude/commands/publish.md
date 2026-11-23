@@ -18,7 +18,7 @@ $ARGUMENTS
 | Environnement | Mecanisme (`publish.mode`) |
 |----------------|------------------------------|
 | `qualif` | `promote` — copie/push tel quel du candidat BUILD, zero rebuild |
-| `prod` | `rebuild-ci` — merge vers `main` + tag officiel, declenche un rebuild deterministe via CI |
+| `prod` | `rebuild-ci` — fusion vers `main` (PR par defaut, `release.merge_mode`) + tag officiel, declenche un rebuild deterministe via CI |
 
 > La liste des environnements et leur mecanisme sont declares dans
 > `.claude/project-config.json` -> `infrastructure.environments[]` (definis a `/init-project`).

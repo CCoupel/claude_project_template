@@ -26,6 +26,7 @@ l'utilisateur au GATE 2). Les phases ne lisent **que les options**, jamais le no
 | `review` | `false` | `true` | Pas de phase REVIEW : QA seule (`code-reviewer` reste disponible a la demande) |
 | `qualif` | `false` | `true` (si le projet a une QUALIF) | Validation humaine (GATE LOT / GATE 4) sur l'artefact du BUILD, puis PROD sans QUALIF |
 | `doc` | `dev` | `agent` | `dev` : les agents DEV tiennent `CHANGELOG.md` dans leurs commits, pas de `doc-updater` |
+| `merge_mode` | `pr` (defaut projet `release.merge_mode`) | idem | Hors intensite : surcharge **optionnelle** du mode de fusion vers `main` au PUBLISH PROD (`pr` = Pull Request, `direct` = merge + push). Absent = valeur du projet. Refusee si le projet est verifie `pr` impossible (`release.verified.status` ≠ `ok`) |
 
 Valeurs par defaut (niveau projet, `project-config.json`) — ecrites par `/init-project`, modifiables a la main :
 

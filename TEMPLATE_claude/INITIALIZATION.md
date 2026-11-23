@@ -442,6 +442,7 @@ Extrait (schema complet et regles de derivation : `init-project.md`, section "1.
   "docs": { "mockup_dir": "docs/mockup" },
   "browser": { "path_map": { "project_root": "/workspace/app", "launcher_root": "C:\\Users\\moi\\app", "launcher_os": "windows" } },
   "marketing": { "site": "auto" },   // + "social": ["twitter","linkedin"] seulement si explicitement demande (absent = aucun post)
+  "release": { "merge_mode": "pr", "verified": { "status": "ok", "at": "2026-01-01T00:00:00Z", "blockers": [] } },   // Etape 8c : PR vers main par defaut, autorisation verifiee
   "milestone": {
     "defaults": { "patch": "leger", "minor": "complet", "major": "complet" }
   },

@@ -61,6 +61,7 @@ TEMPLATE_claude/             # Racine de tous les composants template
     ├── test-plan/plan-de-test.exemple.html  # modèle du plan de test HTML des GATE LOT / GATE 4
     ├── launcher/env-yaml.md  # stack → .claude-launcher/env-template.yaml (conteneur Claude-Launcher NG2 ≥ v5.5.0)
     ├── launcher/gitconfig    # modèle de PRIVATE/gitconfig (git → gh)
+    ├── rulesets/             # rulesets GitHub de référence (release-main.json, release-tags.json) — /init-project Étape 8c
     └── workflows/
         └── release-go-react.yml  # exemple de référence (le pipeline est audité/généré par infra)
 ```

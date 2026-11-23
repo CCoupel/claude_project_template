@@ -46,12 +46,33 @@ peut differer legerement de celui indique au dispatch, c'est attendu).
 SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]\nREADME : <mis a jour|inchange — raison|differe au dernier lot>\nSHA : <commit-sha>" })
 ```
 
+### Tache `DOC RETEX`
+
+Recue **une seule fois par milestone**, apres Q2 (et Q3) valides et **avant la Phase 6 (PROD)** : c'est le **dernier commit
+du milestone** — apres la PROD, il ne reste plus rien a commiter. Capitaliser le retour d'experience : promouvoir ce
+que `.claude/memory/MEMORY.md` contient de **stable** vers les documents projet, puis remettre MEMORY a l'etat « milestone livre ».
+
+1. **Migrer** (regles de `commands/context-audit.md` §2.4) : regle ou convention permanente, decision d'architecture
+   stabilisee, correction comportementale recurrente → document cible (`CLAUDE.md`, `.claude/agents/context/*.md`
+   compagnon, `docs/`, README...). Evidente et pertinente → migree ; ambigue (permanence, pertinence ou cible incertaine)
+   ou en contradiction avec un document → **non migree**, listee dans le `DONE` (`A trancher`) pour que le teamleader pose la question.
+2. **Retirer de MEMORY** ce qui a migre, ainsi que le travail en cours du milestone (livre) ; y inscrire version livree,
+   decisions encore non stabilisees, points pour la prochaine session. N'inventer aucune valeur absente de l'ordre.
+3. **Commiter en un seul commit** `docs(retex): vX.Y.Z` : documents migres, `.claude/memory/MEMORY.md` et
+   `.claude/workflow-state.json` (que le teamleader a deja ecrit a son etat final avant l'ordre — ne pas le modifier).
+   **Sans push** (le push est fait par `deployer` au merge PROD). Ne pas toucher `{VERSION_FILE}`.
+
+```
+SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nMigré : [élément → document]\nA trancher : [élément — raison | aucun]\nFichiers : [liste]\nSHA : <commit-sha>" })
+```
+
 ### Tache `DOC SESSION`
 
 Recue en fin de session (`/end-session`, ordre dans `_work/tasks/`) : mettre a jour, si l'ordre le demande,
 `CHANGELOG.md` / `docs/` / `README.md`, et **`.claude/memory/MEMORY.md`** avec les valeurs fournies par le
 teamleader (version courante, travail en cours, decisions, issues, points pour la prochaine session — n'inventer
-aucune valeur absente de l'ordre). Commiter (`docs(session): ...`), **sans push**. Ne pas toucher `{VERSION_FILE}`.
+aucune valeur absente de l'ordre). **Milestone deja livre avec `DOC RETEX`** : MEMORY est deja a jour, ne
+rien refaire (arbre propre → `DOC DONE` « rien a commiter »). Commiter (`docs(session): ...`), **sans push**. Ne pas toucher `{VERSION_FILE}`.
 
 ```
 SendMessage({ to: "team-lead", content: "DOC DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nFichiers : [liste]\nSHA : <commit-sha>" })
