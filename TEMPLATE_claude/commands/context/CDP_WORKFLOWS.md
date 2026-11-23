@@ -367,7 +367,7 @@ une sous-section par phase, **à lire à l'entrée de la phase seulement** (avec
 | Clarification | Gaps détectés dans la spec | Répondre aux questions / Continuer tel quel |
 | Plan | Si creation plan | Valider / Modifier / Refuser |
 | Escalade | 3 cycles atteints | Continuer / Abandonner |
-| Deploy PROD | Toujours | Commande explicite `/deploy prod` |
+| Publish + Deploy PROD | Toujours | Cycle milestone : « Oui » au GATE 4 (Q2, Q3), puis RETEX, puis lancement automatique `PUBLISH PROD` → `DEPLOY PROD` ; hors GATE 4 : commande explicite `/deploy prod` |
 
 ---
 

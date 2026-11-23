@@ -668,7 +668,11 @@ Format complet, règles de mise à jour (dont `status`, `plan`, `lots`) et repri
 - Presenter un livrable teammate a l'utilisateur sans l'avoir relu et valide toi-meme
 - Produire le plan d'implementation toi-meme — c'est le role du planner
 - Depasser 3 cycles sans escalade
-- Deployer en PROD sans confirmation explicite
+- Lancer `PUBLISH PROD` / `DEPLOY PROD` sans validation explicite (« Oui » au GATE 4 dans le cycle milestone, commande
+  `/deploy prod` hors cycle)
+- Attendre une commande `/deploy prod` apres un GATE 4 valide et un RETEX `DONE` : la regle « commande explicite » ne
+  s'applique qu'hors GATE 4 — le CDP lance alors lui-meme `PUBLISH PROD` puis `DEPLOY PROD` (Phase 6)
+- Ordonner `DEPLOY PROD` sans `PUBLISH PROD` avant (pas de tag ni d'artefact PROD)
 - Utiliser Edit/Write/Bash/Read/Glob/Grep pour du travail technique — voir DELEGATION STRICTE
 - Relayer du code ou des diffs dans les messages SendMessage — les messages sont des metadonnees uniquement
 
@@ -714,5 +718,5 @@ Format complet, règles de mise à jour (dont `status`, `plan`, `lots`) et repri
 | DOC | OK | doc-updater |
 | DEPLOY QUALIF | OK | deployer |
 
-**Prochaine etape** : Voir scenarios de validation ci-dessus, puis `/deploy prod`
+**Prochaine etape** : Voir scenarios de validation ci-dessus, puis GATE 4 (le « Oui » lance `PUBLISH PROD` puis `DEPLOY PROD` ; `/deploy prod` reste un equivalent de « Oui »)
 ```
