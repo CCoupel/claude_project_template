@@ -3060,7 +3060,7 @@ Commandes disponibles :
 - /build, /publish qualif|prod, /deploy qualif|prod
 - /milestone new/status/close
 - /backlog, /marketing
-- /progression, /context-audit
+- /progression, /context-audit, /cleanup
 - /start-session, /end-session
 - /team-status
 

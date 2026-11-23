@@ -265,6 +265,7 @@ TEMPLATE_claude/                 # Tous les composants livrés aux projets cible
 │   ├── milestone.md
 │   ├── progression.md
 │   ├── context-audit.md
+│   ├── cleanup.md
 │   ├── marketing.md
 │   └── context/
 │       ├── COMMON.md
@@ -856,6 +857,7 @@ Réglages dans `project-config.json` : `testing.components`, `testing.regression
 | `/end-session` | Clôture la session, shutdown propre des agents, met à jour la mémoire — tout délégué : git à `deployer`, tests/build à `qa`, docs + `MEMORY.md` à `doc-updater`, le teamleader ne fait que questionner ; purge sélective de `_work/` si un workflow reste en cours ; classe les branches résiduelles (protégée / sûre / à arbitrer) et propose de supprimer les sûres en local + remote, jamais sans confirmation (classement et suppression délégués à `deployer`) |
 | `/team-status` | État de la team (lecture seule) |
 | `/team-delete [--force]` | Ferme les teammates IDLE, ou tous avec `--force` |
+| `/cleanup [scope]` | Ménage des fichiers du projet : temporaires, anciens builds/releases, caches, `_work/` périmé, répertoires vides. Scan en lecture seule classé `SURE` / `A_ARBITRER` / `SIGNALE`, proposition chiffrée par catégorie, suppression de la seule liste validée (jamais `git clean -fdx`) ; fichiers suivis par git, `.env`, `data/`, `PRIVATE/`, `.claude/` jamais touchés sans accord explicite. Scan et suppression délégués à `deployer` (tâche `CLEANUP`). Lancée automatiquement par `/end-session` (étape 4ter, après le contrôle git, mode `--session` : une seule question, aucun fichier suivi supprimé) ; s'exécute après un push : un fichier suivi supprimé reste récupérable depuis `origin`, sinon les fichiers suivis ne sont que signalés |
 | `/context-audit [scope]` | Audit des fichiers de configuration : doublons, refs cassées, dérive template |
 | `/init-project` | Bootstrap, réinitialisation ou synchronisation du template |
 

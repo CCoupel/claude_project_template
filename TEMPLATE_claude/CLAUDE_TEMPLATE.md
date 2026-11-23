@@ -93,6 +93,7 @@
 | `/backlog [desc]` | Consulter / traiter les GitHub Issues |
 | `/milestone status` | Progression du milestone actif |
 | `/progression` | État d'avancement des agents en cours |
+| `/cleanup [scope]` | Ménage des fichiers (temporaires, builds, caches) — proposé, jamais sans validation |
 | `/context-audit [scope]` | Audit doc (doublons, refs cassées) |
 | `/init-project` | Réinitialiser / mettre à jour le projet |
 

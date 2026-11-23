@@ -158,6 +158,35 @@ teamleader n'execute aucun `Bash` git, il pose les questions ; toi tu classes et
   signaler. Une branche `arbitree` = suppression explicitement validee par l'utilisateur malgre ses commits hors
   `main` : la supprimer (sauf si devenue `PROTEGEE`). Jamais `main`, `gh-pages*`. `BRANCHES DONE` + liste supprimees / ignorees (motif).
 
+## Tache CLEANUP (ordre du teamleader, `/cleanup` et `/end-session` etape 4ter)
+
+Menage des fichiers du projet — le teamleader n'execute aucun `Bash` : il presente et questionne ; toi tu inventories
+puis tu supprimes. Categories, classes (`SURE` / `A_ARBITRER` / `SIGNALE`) et liste de protection : `commands/cleanup.md`
+(source unique — ne pas les recopier). Deux ordres :
+
+- **`CLEANUP SCAN : <scope> [--session]`** : **lecture seule**, aucune ecriture hors `_work/cleanup-plan.md`. Pour chaque
+  categorie du scope, lister `classe | chemin | taille | motif`, les totaux, les anomalies (X). Detection :
+  ```bash
+  # Suivi ou non : un candidat suivi n'est JAMAIS SURE
+  tracked() { git ls-files --error-unmatch -- "$1" >/dev/null 2>&1; }
+  # Ignore par git (regenerable) : git check-ignore -q -- "$1"
+  # Apercu des ignores existants, sans rien supprimer : git clean -ndX
+  # Temporaires : find . -path ./.git -prune -o -type f \( -name '*.tmp' -o -name '*.swp' -o -name '*~' -o -name '*.bak' \
+  #   -o -name '*.orig' -o -name '.DS_Store' -o -name 'Thumbs.db' -o -name 'nohup.out' \) -print
+  ```
+  **PUSH CHECK** en tete du `DONE` (`commands/cleanup.md` « Filet de securite git ») :
+  `git status --short`, `git rev-parse --abbrev-ref @{u}`, `git rev-list --count @{u}..HEAD`. Upstream absent ou
+  commits non pousses → aucun fichier suivi propose (`SIGNALE` « pousser d'abord ») ; fichier suivi modifie non commite → jamais propose.
+  Un chemin de la liste de protection (`cleanup.md`), un lien symbolique sortant du depot ou un fichier non suivi
+  **non ignore** n'est jamais propose. Un fichier modifie depuis moins de 10 minutes est `A_ARBITRER` (probablement
+  utilise). `CLEANUP DONE` + liste + totaux.
+- **`CLEANUP APPLY : <liste de chemins>`** : ne supprimer **que** les chemins de la liste, jamais un motif ni une
+  categorie. Re-verifier chacun juste avant (existe, hors liste de protection, meme statut suivi/ignore, taille et
+  date inchangees depuis le scan) ; ecart → ignorer et signaler. Interdits : `git clean -fdx`, `rm -rf` sur un
+  repertoire non liste, `find -delete` avec motif large. Non suivis/ignores : `rm`. Suivis valides (PUSH CHECK refait avant) : `git rm` puis
+  commit `chore(cleanup): <resume>` **sans push** (`context/COMMON.md` 7.1). `CLEANUP DONE` + supprimes / ignores
+  (motif) + espace libere (`du` avant/apres).
+
 ## Tâches BUILD, PUBLISH, DEPLOY, Rollback — voir `DEPLOY_RELEASE.md`
 
 Prérequis, « Tache BUILD », « Fichiers d'Environnement » (mécanisme concret par tâche × environnement), « Tache
