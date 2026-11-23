@@ -272,6 +272,7 @@ Convention complete : `context/MOCKUPS.md` section 14 (emplacement, nommage, for
 - **Format standard : HTML autonome**, pour les trois types — schemas et dessins integres a la page (SVG inline, ou Mermaid embarque : librairie copiee inline, jamais referencee par URL). `.md` **uniquement si le HTML n'est pas adapte** (maquette purement textuelle), justifie en une ligne dans le plan ; binaire en dernier recours (section 14.3).
 - **2 a 3 propositions** distinctes (vraies alternatives, pas des variations cosmetiques), selectionnables par **onglets** en tete de page : lettre + titre court par onglet, une ligne de parti pris (avantage / inconvenient), un panneau autonome `<section data-proposition="A">` par proposition, chacune presentant le composant entier et respectant `DECISIONS.md`. Une seule proposition uniquement si aucune alternative n'est credible — justifie dans le plan.
 - **Tout schema ou dessin** (`conception`, `architecture`, ou schema/dessin integre a une maquette `ui`) : **2 a 3 versions horizontales + 2 a 3 versions verticales** (4 a 6 propositions), lettres `A`…`F`, orientation en tete du titre (`A — Horizontal · …`, `D — Vertical · …`), onglets en deux groupes « Horizontal » / « Vertical » ; chaque version est une vraie alternative, pas la meme disposition pivotee ; pas d'exception a une seule proposition (section 14.3).
+- **Identifiant de maquette `M<n>`** : numeroter chaque maquette du plan `M1`, `M2`… (ordre de presentation, sans trou), et le **prefixer** partout ou elle s'ouvre ou se cite : `<title>` de la page (`M1 · <composant>` — l'identifiant d'abord, Chrome tronque l'onglet a ~15 caracteres), bandeau de page, champ `id: "M1"` de l'en-tete, bloc « Maquette » du plan, rapport DONE. L'identifiant reste **stable** apres une correction (le nouveau brouillon garde son `M<n>`) ; il n'entre ni dans le nom de fichier ni dans `docs/mockup/` (nommage `<composant>__<feature>` inchange). Le teamleader demande la validation de chaque maquette **separement** (une question par `M<n>`).
 - Brouillon dans `_work/mockup/<version>/<type>/<composant>__<feature>.propositions.html` (jamais directement dans `docs/`), en-tete obligatoire avec `propositions: ["A — …", "B — …"]` (section 14.3).
 - **Apres le choix de l'utilisateur** (ordre `MAQUETTE RETENUE <lettre> — <fichier brouillon>` du teamleader) : produire la **version retenue** `_work/mockup/<version>/<type>/<composant>__<feature>.html` — proposition choisie seule, **sans onglets**, en-tete `proposition_retenue` (+ `complete`/`remplace`) — puis repondre DONE avec son chemin. Le teamleader la commite apres validation.
 
@@ -319,7 +320,8 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 - [ ] `contracts/websocket-actions.md` — <messages a creer/modifier>
 - [ ] `contracts/CHANGELOG.md` — [liste des changements BREAKING/NEW/CHANGED]
 
-## Maquette (si interface, machine a etats ou architecture impactee)
+## Maquette (si interface, machine a etats ou architecture impactee) — un bloc par maquette
+- Identifiant : <M1, M2… — prefixe de la maquette, voir 3c>
 - Type : <ui / conception / architecture>
 - Brouillon : <chemin `_work/mockup/....propositions.html`>
 - Propositions : <A — titre : parti pris ; B — … ; C — …> (ou « une seule : <justification> ») — schema/dessin : <A–C Horizontal · … ; D–F Vertical · …> + recommandee
@@ -327,6 +329,15 @@ Composer la **team** : agents `milestone` dont le plan a besoin — chaque agent
 - Complete / remplace : <maquettes actives referencees, ou "aucune">
 - Contraintes `DECISIONS.md` appliquees : <liste, ou "aucune">
 - Si aucune maquette : <justification en une ligne>
+
+## Points a valider (si applicable)
+[Omettre si aucun. Un point = une decision non bloquante que l'utilisateur doit trancher : hypothese retenue, arbitrage
+de conception, ecart de perimetre, choix entre deux approches. Le teamleader les pose **un par un** (`AskUserQuestion`,
+4 questions max par appel) — ne jamais en grouper plusieurs dans un seul point, ni les noyer dans le resume.]
+- **P1** — <question precise ?>
+  - <option A> (Recommande) : <consequence sur le plan>
+  - <option B> : <consequence sur le plan>
+- **P2** — …
 
 ## Prerequis infra (a fournir par l'utilisateur)
 [Omettre si aucun — voir 3e. Preparation infra]
@@ -499,15 +510,13 @@ Resume :
 - X taches en Y lots
 - Composants : Backend, Frontend
 - Complexite : Moyenne
-- Maquette : <chemin du brouillon + propositions A/B/C (titre court) si interface, machine a etats ou architecture impactee ; sinon justification>
+- Maquettes : <M1 — composant : chemin du brouillon + propositions A/B/C (titre court) ; M2 — … ; ou justification si aucune>
+- Points a valider : <P1 — titre court ; P2 — … ; ou « aucun »>
 - QA parallele a Review : Oui/Non (<raison si Non>)
 - Cadrage : <leger|complet> — options modifiees : <liste ou aucune> — team : <liste>
 
-Voulez-vous :
-a) Valider et lancer l'implementation
-b) Modifier le plan (et/ou la maquette) — le choix de la proposition de maquette est pose a part
-c) Ajouter des details
-d) Annuler
+Pas de validation globale : le teamleader pose chaque point `P<n>` et chaque maquette `M<n>` separement
+(`AskUserQuestion`, 4 questions max par appel), puis la validation du plan et du cadrage en derniere question.
 ```
 
 Si l'utilisateur demande des corrections (plan ou maquette), le teamleader te les redispatch — tu ajustes (nouveau brouillon ; l'ancien n'est pas conserve) et renvoies un nouveau rapport DONE, jusqu'a validation au GATE 2. Le teamleader reformule les retours en contraintes dans `DECISIONS.md` : tu les respectes desormais.

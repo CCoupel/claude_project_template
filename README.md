@@ -456,7 +456,7 @@ Chaque **milestone** est cadré à son lancement :
    « complet » si une issue porte `breaking`/`security` ou si le milestone compte plus de 5 issues.
 2. **Plan** : le planner, qui analyse le code, propose le **cadrage** — options `test_writer`, `review`, `qualif`, `doc`
    (chacune justifiée si elle s'écarte de l'intensité) et la **team** (agents DEV des tâches, + `qa`, + selon options).
-3. **GATE 2** : l'utilisateur valide plan et cadrage en une seule question (ou les ajuste).
+3. **GATE 2** : validation **point par point**, jamais globale — chaque point à valider du plan (`P1`, `P2`…) et chaque maquette (`M1`, `M2`…) fait l'objet de sa propre question `AskUserQuestion`, par lots de 4 questions au plus (limite de l'outil) ; le plan et le cadrage sont validés en dernière question (ou ajustés).
 4. **Application** : cadrage écrit dans `workflow-state.json` et dans un bloc « Cadrage » de la description GitHub du
    milestone ; team spawnée, agents inutiles arrêtés.
 
@@ -489,7 +489,7 @@ applique la même valeur par défaut. Détail complet : `TEMPLATE_claude/command
 PLAN ──────────────────────── contrats API + contracts/CHANGELOG.md + qa_parallelizable
     ↓  (🧵 peut déléguer à des sub-planner-N — groupes d'issues indépendants)
     ↓  label PLANNING (planner au travail), puis PLAN A VALIDER (plan rendu, milestone « ⏸ plan à valider »)
-[GATE 2] Validation plan + cadrage du milestone (+ alerte breaking changes si détectés) → team du milestone spawnée
+[GATE 2] Validation point par point (P<n>, M<n>), puis plan + cadrage du milestone (+ alerte breaking changes si détectés) → team du milestone spawnée
     ↓  label PRET (EN COURS à l'ordre DEV du lot)
     ├──────────────────────────┐
   DEV                     TEST-WRITER ── depuis plan + contrats (TDD)
@@ -675,7 +675,7 @@ docs/mockup/                          # configurable : docs.mockup_dir (project-
 - **Composant en entier** : une maquette montre toujours le composant dans son intégralité, mais peut ne couvrir qu'une partie de sa définition — elle **complète** alors les maquettes actives (`complete`) ou en **remplace** (`remplace`) d'autres, qui passent en « Obsolètes » dans `INDEX.md`.
 - **Immuabilité** : une maquette validée n'est jamais modifiée ; toute évolution est une nouvelle maquette qui référence les précédentes. L'en-tête porte composant, feature, version, type, issue, date de validation, `complete`, `remplace`.
 - **Refus** : les brouillons rejetés ne sont pas conservés, mais leurs raisons le sont, reformulées en contraintes durables dans `DECISIONS.md` (ex. « pas de bleu pour ce composant », « taille > 24px »). Le planner les respecte, QA les vérifie.
-- **Cycle** : le planner lit `INDEX.md` + `DECISIONS.md`, part des maquettes actives du composant et dessine un brouillon dans `_work/mockup/` ; le CDP le présente au GATE 2 en l'ouvrant directement dans Chrome par son URL mappée (serveur web du launcher, voir ci-dessous ; le projet ne lance jamais son propre serveur HTTP) et en donnant son chemin absolu exact — et rouvre le nouveau brouillon après chaque correction —, pose **une question de choix par maquette** (valider le plan ne vaut pas choix de maquette), ne supprime aucun brouillon avant le commit de la version retenue, puis la commite et met à jour l'index à la validation. QA vérifie la conformité à **toutes** les maquettes actives des composants touchés.
+- **Cycle** : le planner lit `INDEX.md` + `DECISIONS.md`, part des maquettes actives du composant et dessine un brouillon dans `_work/mockup/` ; le CDP le présente au GATE 2 en l'ouvrant directement dans Chrome par son URL mappée (serveur web du launcher, voir ci-dessous ; le projet ne lance jamais son propre serveur HTTP) et en donnant son chemin absolu exact — et rouvre le nouveau brouillon après chaque correction —, pose **une question de choix par maquette** (identifiants `M1`, `M2`… posés par le planner et préfixés dans le titre de l'onglet ; valider le plan ne vaut pas choix de maquette), ne supprime aucun brouillon avant le commit de la version retenue, puis la commite et met à jour l'index à la validation. QA vérifie la conformité à **toutes** les maquettes actives des composants touchés.
 - **Projet sans maquette de référence** : le planner dessine directement le nouvel état ; le CDP peut demander une capture d'écran de référence.
 - **Marketing** : les maquettes marketing (GATE 4d) sont distinctes — systématiques mais éphémères (`_work/`, non commitées), toujours basées sur la page publiée en production.
 
