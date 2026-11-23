@@ -38,6 +38,9 @@ verification de l'etat du projet.
 [GIT] --> deployer : SESSION STATE final (arbre propre ; jamais de push pendant le dev, COMMON.md 7.1)
     |
     v
+[NETTOYAGE] --> /cleanup --session : temporaires, builds, caches (apres le controle git, filet = historique pousse)
+    |
+    v
 [BRANCHES] --> deployer : classer les branches residuelles ; supprimer les sures sur confirmation
     |
     v
@@ -61,6 +64,7 @@ que `start-session.md` etape 4), ils sont fermes avec les autres a l'etape 5 :
 | Commiter le travail en attente | `SESSION COMMIT : <message>` | `deployer` |
 | Tests + build de verification | `Scope : session` | `qa` |
 | CHANGELOG, docs, README, `MEMORY.md` | `DOC SESSION` | `doc-updater` |
+| Menage des fichiers (temporaires, builds, caches) | `CLEANUP SCAN` / `CLEANUP APPLY` (via `/cleanup --session`) | `deployer` |
 | Branches residuelles | `BRANCHES CLASSIFY` / `BRANCHES DELETE` | `deployer` |
 | `git stash` (operation HEAD du checkout principal) | — | teamleader (exception HEAD, `agents/context/COMMON.md` « Branche Courante ») |
 
@@ -142,6 +146,20 @@ Ordre a `deployer` : `SESSION STATE` (final). L'arbre doit etre propre apres les
 passage des issues en `DONE`, jamais avant ; tous les agents partagent le meme clone local.
 
 Arbre encore sale (fichiers apparus depuis l'etape 1) → meme question qu'a l'etape 1.
+
+### 4ter. NETTOYAGE — Menage des fichiers du projet
+
+Apres le controle git (etape 4) : le ménage vient après les commits, et un fichier suivi supprimé par erreur reste
+récupérable depuis l'historique poussé (`cleanup.md` « Filet de sécurité git »). `/end-session` ne pousse jamais
+(COMMON.md 7.1) : si des commits locaux ne sont pas poussés, `/cleanup` ne propose que les fichiers non suivis /
+ignorés et signale les fichiers suivis (« pousser d'abord »). Commits locaux non poussés → `AskUserQuestion` :
+`"Commits non poussés — pousser la branche avant le ménage ?"` — options : **Pousser** (ordre `deployer`, exception
+explicite et validée à 7.1, uniquement sur accord) / **Ne pas pousser** (Recommandé : ménage limité aux fichiers
+non suivis / ignorés). Executer `/cleanup --session` en suivant `cleanup.md` :
+pas de categorie `_work/` (purgee a l'etape 6), une seule question (`Tout supprimer (SURE)` Recommande),
+`A_ARBITRER` et `SIGNALE` renvoyes au rapport sans question — donc aucune suppression de fichier suivi en
+fin de session. Rien a nettoyer → passer sans message. Aucune team active → etape non executee, le signaler
+dans le rapport (« menage non fait — relancer `/cleanup` »).
 
 ### 4bis. BRANCHES — Branches residuelles
 
@@ -284,6 +302,7 @@ fi
 - Build : [OK|KO|N/A]
 - Deploy : [PROD vX.Y.Z|staging|non deploye]
 - Branches residuelles : [aucune | N supprimees | <branche> conservee (N commits hors main)]
+- Nettoyage : [rien a nettoyer | N fichiers / X Mo supprimes | non fait — <motif>] ; signale : [aucun | <fichier>]
 ```
 
 ## Exemple
