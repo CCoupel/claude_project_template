@@ -19,6 +19,7 @@
       <li><a href="#problems" data-i18n="nav.problems">Problèmes</a></li>
       <li><a href="#workflow" data-i18n="nav.workflow">Workflow</a></li>
       <li><a href="#testplan" data-i18n="nav.testplan">Tests</a></li>
+      <li><a href="#release" data-i18n="nav.release">Livraison</a></li>
       <li><a href="#github"   data-i18n="nav.github">GitHub</a></li>
       <li><a href="#versioning" data-i18n="nav.versioning">Versions</a></li>
       <li><a href="#features" data-i18n="nav.features">Fonctionnalités</a></li>
@@ -276,6 +277,38 @@
   </div>
 </section>
 
+<section id="release">
+  <div class="container">
+    <div class="section-header">
+      <h2 data-i18n="release.title"></h2>
+      <p data-i18n="release.subtitle"></p>
+    </div>
+    <div class="problems-grid">
+      <div class="problem-card"><div class="problem-icon">🧾</div><h3 data-i18n="release.c1.title"></h3><p data-i18n="release.c1.desc"></p></div>
+      <div class="problem-card"><div class="problem-icon">🔀</div><h3 data-i18n="release.c2.title"></h3><p data-i18n="release.c2.desc"></p></div>
+      <div class="problem-card"><div class="problem-icon">🛡️</div><h3 data-i18n="release.c3.title"></h3><p data-i18n="release.c3.desc"></p></div>
+    </div>
+    <div class="testplan-seq">
+      <h3 data-i18n="release.seq.title"></h3>
+      <div class="pipeline-gate gate-user"><span class="gate-label">GATE 4</span><span class="gate-desc" data-i18n="release.s.gate"></span></div>
+      <div class="pipeline-arrow" style="text-align:center">↓</div>
+      <div class="pipeline-step step-doc"><div class="step-agent">doc-updater</div><div class="step-title" data-i18n="release.s.retex"></div><div class="step-desc" data-i18n="release.s.retex.desc"></div><span class="step-label label-planning">docs(retex): vX.Y.Z</span></div>
+      <div class="pipeline-arrow" style="text-align:center">↓</div>
+      <div class="pipeline-step step-qualif"><div class="step-agent">deployer</div><div class="step-title" data-i18n="release.s.pr"></div><div class="step-desc" data-i18n="release.s.pr.desc"></div></div>
+      <div class="pipeline-arrow" style="text-align:center">↓</div>
+      <div class="pipeline-step step-prod"><div class="step-agent">deployer</div><div class="step-title" data-i18n="release.s.tag"></div><div class="step-desc" data-i18n="release.s.tag.desc"></div></div>
+      <div class="pipeline-note" data-i18n="release.after"></div>
+    </div>
+    <div class="testplan-seq">
+      <h3 data-i18n="release.init.title"></h3>
+      <div class="pipeline-gate"><span class="gate-label">/init-project</span><span class="gate-desc" data-i18n="release.i1"></span></div>
+      <div class="pipeline-gate"><span class="gate-label">✗ → diff</span><span class="gate-desc" data-i18n="release.i2"></span></div>
+      <div class="pipeline-gate gate-user"><span class="gate-label">Accord</span><span class="gate-desc" data-i18n="release.i3"></span></div>
+      <div class="pipeline-note" data-i18n="release.init.note"></div>
+    </div>
+  </div>
+</section>
+
 <section id="github">
   <div class="container">
     <div class="section-header">
@@ -426,8 +459,8 @@
       <div class="feature-card"><div class="feature-icon">🔒</div><div class="feature-body"><h3><span data-i18n="features.f28.title"></span></h3><p data-i18n="features.f28.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">⚖️</div><div class="feature-body"><h3><span data-i18n="features.f29.title"></span></h3><p data-i18n="features.f29.desc"></p></div></div>
       <div class="feature-card"><div class="feature-icon">🙋</div><div class="feature-body"><h3><span data-i18n="features.f30.title"></span></h3><p data-i18n="features.f30.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">🖼️</div><div class="feature-body"><h3><span data-i18n="features.f31.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f31.desc"></p></div></div>
-      <div class="feature-card"><div class="feature-icon">📝</div><div class="feature-body"><h3><span data-i18n="features.f32.title"></span> <span class="badge-new" data-i18n="features.new">Nouveau</span></h3><p data-i18n="features.f32.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">🖼️</div><div class="feature-body"><h3><span data-i18n="features.f31.title"></span></h3><p data-i18n="features.f31.desc"></p></div></div>
+      <div class="feature-card"><div class="feature-icon">📝</div><div class="feature-body"><h3><span data-i18n="features.f32.title"></span></h3><p data-i18n="features.f32.desc"></p></div></div>
     </div>
     <figure class="panel-shot">
       <img src="assets/milestone-panel_V2.png" alt="milestone-panel" loading="lazy">
