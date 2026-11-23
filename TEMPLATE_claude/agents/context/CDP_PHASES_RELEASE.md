@@ -145,11 +145,11 @@ nouvelle Phase 5. `NR VALIDATED` en mode `build` : l'envoyer au deployer pour le
 ### Methode de test
 [Prerequis, donnees de test, acces requis — depuis le fichier de procedure]
 
-**Document de tests** : [chemin(s) absolu(s) exact(s) de `tests/procedures/...` — ouvert(s) automatiquement dans Chrome (URL)]
+**Document de tests** : [chemin absolu exact du plan de test HTML `_work/test-plan/plan-de-test__...html` — ouvert automatiquement dans Chrome (URL) ; jamais un `.md`]
 
 ```
 
-Avant la question : ouvrir la/les procedure(s) a scenarios `HUMAIN` dans Chrome (regle « GATE de validation par tests » de `cdp.md`).
+Avant la question : commander le plan de test HTML au `test-writer` (`PLAN DE TEST`) puis l'ouvrir dans Chrome — le HTML seul, jamais les procedures `.md` (regle « GATE de validation par tests » de `cdp.md`).
 Ordre a `deployer`, `LABELS DONE` attendu avant la question : `Milestone : milestone → ⏸ a publier` ; `issues.close_on` = `validation` : en plus, issues `DONE` encore ouvertes du milestone → `A PUBLIER` (`GITHUB.md` §9.4b).
 Apres ce resume (texte informatif), poser **via `AskUserQuestion`** (Q2) : « Le milestone v[X.Y.Z] est-il valide ? » —
 Oui, valider le milestone (Recommandé) : tout est fige, PROD = zero modification (apres la maquette) / Non, ecart constate :
