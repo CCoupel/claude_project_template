@@ -549,7 +549,10 @@ export function projectExhaustion(kind: string, percentUsed: number, resetsAt: s
   return { exhaustsAt, beforeReset: exhaustsAt < reset }
 }
 
-const EXHAUST_MARGIN_MS = 6 * 3_600_000
+/** Marge avant renew sous laquelle un épuisement projeté après le renew passe en orange : 1 h pour la session (5 h), 5 h pour les fenêtres hebdomadaires (7 j, Fable compris). */
+export function usageMarginMs(kind: string): number {
+  return (usageWindowMs(kind) ?? 0) <= 5 * 3_600_000 ? 3_600_000 : 5 * 3_600_000
+}
 
 /**
  * Texte d'épuisement projeté : « ⚠ épuisé ~14:20 » (`before` = avant la réinitialisation), « épuisé ~14:20 » sinon,
@@ -561,8 +564,8 @@ export function exhaustionInfo(kind: string, percentUsed: number, resetsAt: stri
   const p = projectExhaustion(kind, percentUsed, resetsAt, now)
   if (!p) return { text: 'épuisé ?', before: false, level: null }
   const when = p.exhaustsAt <= now ? '' : ` ~${formatReset(new Date(p.exhaustsAt).toISOString(), now)}`
-  // Couleur de la date de renew : rouge = épuisé avant, orange = épuisé moins de 6 h après (marge faible), vert au-delà.
-  const level = p.beforeReset ? 'red' : p.exhaustsAt < new Date(resetsAt as string).getTime() + EXHAUST_MARGIN_MS ? 'yellow' : 'green'
+  // Couleur de la date de renew : rouge = épuisé avant, orange = épuisé après, mais dans la marge de `usageMarginMs` (1 h session, 5 h hebdo), vert au-delà.
+  const level = p.beforeReset ? 'red' : p.exhaustsAt < new Date(resetsAt as string).getTime() + usageMarginMs(kind) ? 'yellow' : 'green'
   return { text: `${p.beforeReset ? '⚠ ' : ''}épuisé${when}`, before: p.beforeReset, level }
 }
 

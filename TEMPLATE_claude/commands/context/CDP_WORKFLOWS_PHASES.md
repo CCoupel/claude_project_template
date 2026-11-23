@@ -263,7 +263,8 @@ SendMessage({ to: "deployer", content: "
 
 |-- Recevoir DONE + rapport de build/publication/déploiement
 |-- CDP informe l'utilisateur : QUALIF déployée, scénarios de validation fournis
-|-- Publish + Deploy PROD : déclenché uniquement par commande explicite `/deploy prod` (voir
+|-- Publish + Deploy PROD : hors GATE 4 (hotfix, hors cycle), uniquement par commande explicite `/deploy prod` ; dans le
+    cycle milestone, lancé par le CDP dès le GATE 4 validé (Q2, Q3) et le RETEX `DONE`, sans commande utilisateur (voir
     `agents/context/CDP_PHASES_RELEASE.md` Phase 6 — publie via merge + tag officiel, rebuild déterministe via CI,
     puis installe)
 ```

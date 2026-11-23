@@ -461,7 +461,12 @@ test('exhaustionInfo : niveau de couleur de la date de renew', () => {
   const H = 3_600_000
   const reset = new Date(now + 3 * H).toISOString()
   expect(exhaustionInfo('five_hour', 60, reset, now)!.level).toBe('red') // épuisé dans 1h20 < renew
-  expect(exhaustionInfo('five_hour', 30, reset, now)!.level).toBe('yellow') // 2 h × 70/30 = 4h40 → renew + 1h40 < 6 h
+  expect(exhaustionInfo('five_hour', 36, reset, now)!.level).toBe('yellow') // 2 h × 64/36 = 3h33 → renew + 33 min < 1 h (session : marge 1 h)
+  expect(exhaustionInfo('five_hour', 30, reset, now)!.level).toBe('green') // 4h40 → renew + 1h40 > 1 h (session : marge 1 h)
+  const wreset = new Date(now + 5 * 24 * H).toISOString() // hebdo : 2 j écoulés
+  expect(exhaustionInfo('weekly_all', 28, wreset, now)!.level).toBe('yellow') // 2 j × 72/28 = 5j3h26 → renew + 3h26 < 5 h
+  expect(exhaustionInfo('weekly_scoped', 27, wreset, now)!.level).toBe('green') // renew + 9h46 > 5 h
+  expect(exhaustionInfo('weekly_all', 40, wreset, now)!.level).toBe('red') // 3 j < renew
   expect(exhaustionInfo('five_hour', 5, reset, now)!.level).toBe('green') // 38 h → bien au-delà
   expect(exhaustionInfo('five_hour', 0, reset, now)!.level).toBeNull() // projection non fiable
 })

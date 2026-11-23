@@ -156,7 +156,11 @@ Oui, valider le milestone (Recommandé) : tout est fige, PROD = zero modificatio
 retour DEV, l'utilisateur decrit l'ecart (champ « Autre »). La commande `/deploy prod` reste un equivalent de « Oui »
 (avec la maquette deja validee, ou sans maquette si `RIEN A PUBLIER`).
 
-**Le deploy PROD reste bloque jusqu'a confirmation explicite.** ← GATE 4
+**La PROD (`PUBLISH PROD` puis `DEPLOY PROD`) reste bloquee jusqu'a la validation explicite du GATE 4** (Q2, puis Q3 si maquette). ← GATE 4
+
+> **« Deploy PROD = commande explicite `/deploy prod` » ne vaut qu'en dehors du GATE 4** (hotfix, `/deploy prod` direct,
+> hors cycle milestone). Dans le cycle milestone, le « Oui » de Q2 puis de Q3 **est** cette commande : ne jamais demander a
+> l'utilisateur de la taper, ni de confirmer une seconde fois, ni attendre une commande apres le RETEX.
 
 Selon la reponse utilisateur :
 - **Oui / `/deploy prod`** → **Q3 (GATE 4d)** si `MARKETING PRET` : presenter la maquette (voir Phase 6, « GATE 4d » — meme
@@ -174,6 +178,10 @@ Selon la reponse utilisateur :
   puis ordre de rattrapage dans le meme commit (`git commit --amend` interdit : nouveau commit `docs(retex)` si deja fait).
   Objectif : **apres la PROD, plus rien a commiter** (`/end-session` n'a plus de documentation ni de memoire a ecrire).
   Phase 6 (PROD) — les branches residuelles (milestone, PR mergees) sont supprimees en local et en remote en fin de deploiement reussi (`deploy.md`, Etape 6)
+  **Enchainement immediat apres le RETEX `DONE`** — aucune nouvelle question, aucune commande utilisateur : lancer la Phase 6
+  (validation infra, puis ordre `deployer`) = **`PUBLISH PROD`** (fusion vers `main`, tag officiel `vX.Y.Z`, rebuild CI)
+  **puis `DEPLOY PROD`** (installation + verification du rollout). Jamais `DEPLOY PROD` seul : sans `PUBLISH PROD` il n'y a
+  ni tag ni artefact PROD a installer.
 - **NON** →
   L'ordre labels de ce rejet porte `Milestone : milestone → ▶ en cours — GATE 4 refuse, retour DEV` (Cas A) ou
   `— retour PLAN` (Cas B) — historique du milestone, `GITHUB.md` 3.0bis.
