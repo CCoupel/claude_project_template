@@ -57,6 +57,17 @@ export type UsageWindow = {
   resetsAt: string | null
   /** Gravité rapportée par l'endpoint d'utilisation (`normal`, `warning`, `critical`), null via les en-têtes. */
   severity: string | null
+  /** `scope` de l'endpoint (modèle ou surface de la limite hebdomadaire distincte), null sinon. Sert à joindre `usage-levels.json`. */
+  scope?: { model?: { id?: string | null; display_name?: string | null } | null; surface?: string | null } | null
+}
+/** Une fenêtre de `usage-levels.json` (schéma 1, écrit par Claude-Launcher ≥ 6.8.1) : le panneau ne calcule rien. */
+export type UsageLevelWindow = {
+  kind: string
+  scope: unknown
+  resets_at: string | null
+  exhausts_at: string | null
+  level: 'red' | 'yellow' | 'green' | null
+  alert: string | null
 }
 export type Usage = {
   windows: UsageWindow[]
@@ -71,6 +82,6 @@ export type Usage = {
 declare module 'claude-code' {
   interface PluginState {
     /** `expanded` : lots / sous-lots dépliés ou repliés par l'utilisateur, clé `<milestone>|<LOT-n>`. */
-    'milestone-panel': { view: View; usage: Usage; expanded: Record<string, boolean> }
+    'milestone-panel': { view: View; usage: Usage; levels: UsageLevelWindow[] | null; expanded: Record<string, boolean> }
   }
 }

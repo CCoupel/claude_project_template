@@ -1,8 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import type { Issue, Usage, View } from '../types'
-import { CLOSED, FINISHED, PHASES, allocate, buildLotTree, buildPrs, buildUsage, buildView, currentUnit, exhaustionAlert, exhaustionInfo, finishedCount, formatReset, groupByPhase, isExpanded, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
+import type { Issue, Usage, UsageLevelWindow, View } from '../types'
+import { CLOSED, FINISHED, PHASES, allocate, buildLotTree, buildPrs, buildUsage, buildView, currentUnit, finishedCount, formatReset, levelDisplay, matchLevel, groupByPhase, isExpanded, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseUsageLevels, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageLevelsPath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
 import type { Expectation, LotNode, LotStatus, LotUnit } from './lib'
 
 const PANE = 'milestone-panel'
@@ -22,6 +22,9 @@ const USAGE_THROTTLE_MS = 20_000
 let cachePath: string | null | undefined
 let lastUsageAt = 0
 const usage = atom({ plugin: 'milestone-panel', key: 'usage' } as const, noUsage)
+// Niveaux de couleur / épuisement calculés par Claude-Launcher ≥ 6.8.1 (`usage-levels.json`) ; null = sans fichier valide
+// (absent, schéma inconnu, périmé) → date de renew neutre et aucun texte d'épuisement : le panneau ne calcule rien.
+const levels = atom({ plugin: 'milestone-panel', key: 'levels' } as const, null as UsageLevelWindow[] | null)
 
 let pending: { cancel: () => void } | null = null
 let expected: Expectation[] = []
@@ -65,6 +68,23 @@ async function statMtime($: any, path: string) {
 }
 
 async function refreshUsage($: any, isForced = false) {
+  try {
+    await refreshUsageData($, isForced)
+  } finally {
+    await refreshLevels($).catch(() => undefined)
+  }
+}
+
+/** Relit `usage-levels.json` (même dossier que `usage.json`) ; valide seulement si `source_mtime` suit l'mtime de `usage.json`. */
+async function refreshLevels($: any) {
+  const usageAt = cachePath ? await statMtime($, cachePath) : null
+  const parsed = cachePath && usageAt !== null
+    ? await $.fs.read(usageLevelsPath(cachePath)).then((t: string) => parseUsageLevels(JSON.parse(t), usageAt)).catch(() => null)
+    : null
+  await update($, levels, () => parsed)
+}
+
+async function refreshUsageData($: any, isForced = false) {
   const now = await $.clock.now()
   if (!isForced && now - lastUsageAt < USAGE_THROTTLE_MS) return
   lastUsageAt = now
@@ -258,10 +278,15 @@ export const register: Register = (on, options) => {
     $.ui.invalidate('ui.render')
     const v = await read($, view)
     const u = await read($, usage)
+    const lv = await read($, levels)
     const now = await $.clock.now()
+    const levelText = (w: Usage['windows'][number]) => {
+      const m = lv ? matchLevel(lv, w) : null
+      return m ? `, ${levelDisplay(m, now).text}` : ''
+    }
     const conso = u.windows.length === 0
       ? 'consommation : aucune limite rapportée'
-      : `consommation (${u.source === 'account' ? 'compte' : 'en-têtes'}${u.error ? `, dernier échec endpoint compte : ${u.error}` : ''}) : ${u.windows.map(w => `${w.label} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, \`${w.kind}\`${exhaustionAlert(w.kind, w.percentUsed, w.resetsAt, now) ? `, ${exhaustionAlert(w.kind, w.percentUsed, w.resetsAt, now)}` : ''})`).join(', ')}`
+      : `consommation (${u.source === 'account' ? 'compte' : 'en-têtes'}${u.error ? `, dernier échec endpoint compte : ${u.error}` : ''}) : ${u.windows.map(w => `${w.label} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, \`${w.kind}\`${levelText(w)})`).join(', ')}`
     if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error} ; ${conso}.` }
     const what = v.current
       ? `milestone ${v.current}${v.isReleasing ? ' (publication)' : ''}, ${v.issues.length} issue(s) ouverte(s)`
@@ -311,6 +336,7 @@ export const register: Register = (on, options) => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const v = await read($, view)
     const u = await read($, usage)
+    const lv = await read($, levels)
     const now = await $.clock.now()
     // Largeur du corps du panneau (hors cadre), pas celle du terminal : la barre s'adapte à la fenêtre.
     const columns =
@@ -333,15 +359,16 @@ export const register: Register = (on, options) => {
           const c = usageColor(w.percentUsed, warnPercent, w.severity)
           const b = usageBar(w.percentUsed, BAR_W)
           const reset = formatReset(w.resetsAt, now)
-          const ex = exhaustionInfo(w.kind, w.percentUsed, w.resetsAt, now)
+          const m = lv ? matchLevel(lv, w) : null
+          const ex = m ? levelDisplay(m, now) : null
           return (
             <Text wrap="truncate-end">
               <Text bold>{w.label.padEnd(USAGE_W + 1)}</Text>
               <Text color={c}>{'█'.repeat(b.filled)}</Text>
               <Text dimColor>{'░'.repeat(b.empty)}</Text>
               <Text bold color={c}>{` ${String(Math.round(w.percentUsed)).padStart(3)} %`}</Text>
-              {reset !== '' && <Text color={ex?.level ?? undefined} dimColor={!ex?.level}>{`  ${reset}`}</Text>}
-              {ex && <Text bold={ex.before} color={ex.before ? 'red' : undefined} dimColor={!ex.before}>{`  ${ex.text}`}</Text>}
+              {reset !== '' && <Text color={ex?.color} dimColor={!ex?.color}>{`  ${reset}`}</Text>}
+              {ex && <Text bold={ex.alert} color={ex.alert ? 'red' : undefined} dimColor={!ex.alert}>{`  ${ex.text}`}</Text>}
             </Text>
           )
         })}

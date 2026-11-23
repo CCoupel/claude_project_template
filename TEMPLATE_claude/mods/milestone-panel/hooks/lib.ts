@@ -1,4 +1,4 @@
-import type { Issue, MilestoneRow, PullRow, Usage, View } from '../types'
+import type { Issue, MilestoneRow, PullRow, Usage, UsageLevelWindow, View } from '../types'
 
 // Attentes de validation utilisateur (GITHUB.md §8.2) : `PLAN A VALIDER` (GATE 2), `LOT A VALIDER` (GATE LOT),
 // `A PUBLIER` (GATE 4, issue encore ouverte).
@@ -381,6 +381,7 @@ export function parseAccountUsage(json: unknown, now: number): Usage | null {
       percentUsed: Math.max(0, l.percent),
       resetsAt: l.resets_at ?? null,
       severity: l.severity ?? null,
+      scope: l.scope ?? null,
     }))
     .sort((a, b) => (ACCOUNT_RANK[a.kind] ?? 9) - (ACCOUNT_RANK[b.kind] ?? 9) || a.label.localeCompare(b.label))
   return { windows, source: 'account', updatedAt: now, error: null }
@@ -525,54 +526,67 @@ export function formatReset(resetsAt: string | null, now: number): string {
   return `${DAYS_SHORT[t.getDay()]} ${hm}`
 }
 
-/** Durée de la fenêtre de quota d'après son `kind` (session = 5 h, hebdomadaire = 7 j) ; `null` si inconnue (ex. dépense). */
-export function usageWindowMs(kind: string): number | null {
-  const k = kind.toLowerCase()
-  if (k.includes('five_hour') || k.includes('5h') || /(^|[^a-z])session/.test(k)) return 5 * 3_600_000
-  if (k.includes('seven_day') || k.includes('7d') || k.includes('week')) return 7 * 86_400_000
-  return null
+/** Chemin de `usage-levels.json`, voisin de `usage.json` (écrit par Claude-Launcher ≥ 6.8.1, seule source des niveaux). */
+export function usageLevelsPath(cachePath: string): string {
+  return cachePath.replace(/[^/]*$/, 'usage-levels.json')
+}
+
+const LEVEL_TOLERANCE_MS = 1000
+const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null)
+
+/**
+ * Contenu de `usage-levels.json` (schéma 1) ; `null` si le schéma est inconnu, le JSON inexploitable ou le résultat
+ * périmé (`source_mtime` ≠ mtime de `usage.json` à ±1 s). Aucun calcul de repli : sans fichier valide, pas de niveau.
+ */
+export function parseUsageLevels(json: unknown, usageMtimeMs: number): UsageLevelWindow[] | null {
+  const j = json as { schema?: unknown; source_mtime?: unknown; windows?: unknown } | null
+  if (!j || j.schema !== 1 || !Array.isArray(j.windows)) return null
+  const src = typeof j.source_mtime === 'string' ? Date.parse(j.source_mtime) : NaN
+  if (Number.isNaN(src) || Math.abs(src - usageMtimeMs) > LEVEL_TOLERANCE_MS) return null
+  return (j.windows as Array<Record<string, unknown>>)
+    .filter(w => w && typeof w.kind === 'string')
+    .map(w => ({
+      kind: w.kind as string,
+      scope: w.scope ?? null,
+      resets_at: str(w.resets_at),
+      exhausts_at: str(w.exhausts_at),
+      level: w.level === 'red' || w.level === 'yellow' || w.level === 'green' ? w.level : null,
+      alert: str(w.alert),
+    }))
+}
+
+/** Clé d'un `scope` d'endpoint : id du modèle, sinon son nom, sinon la surface ; vide si pas de scope. */
+function scopeKey(s: unknown): string {
+  const x = s as { model?: { id?: string | null; display_name?: string | null } | null; surface?: string | null } | null
+  return x ? (x.model?.id ?? x.model?.display_name ?? x.surface ?? '') : ''
 }
 
 /**
- * Projection linéaire de l'épuisement : rythme moyen depuis le début de la fenêtre (début = `resetsAt` − durée),
- * extrapolé jusqu'à 100 %. `beforeReset` = le quota sera épuisé avant sa réinitialisation. `null` si la projection
- * n'est pas fiable (fenêtre inconnue, conso nulle, fenêtre entamée depuis moins de 10 min ou 5 % de sa durée).
+ * Niveau du launcher pour une fenêtre du panneau : jointure `kind` + `scope`, repli `kind` + `resets_at` ; `null` si
+ * la jointure est ambiguë ou impossible, ou si la fenêtre n'est pas un quota (dépense…).
  */
-export function projectExhaustion(kind: string, percentUsed: number, resetsAt: string | null, now: number): { exhaustsAt: number; beforeReset: boolean } | null {
-  const win = usageWindowMs(kind)
-  const reset = resetsAt ? new Date(resetsAt).getTime() : NaN
-  if (win === null || Number.isNaN(reset) || reset <= now) return null
-  if (percentUsed >= 100) return { exhaustsAt: now, beforeReset: true }
-  const elapsed = win - (reset - now)
-  if (percentUsed <= 0 || elapsed < Math.max(600_000, win * 0.05)) return null
-  const exhaustsAt = now + ((100 - percentUsed) / percentUsed) * elapsed
-  return { exhaustsAt, beforeReset: exhaustsAt < reset }
-}
-
-/** Marge avant renew sous laquelle un épuisement projeté après le renew passe en orange : 1 h pour la session (5 h), 5 h pour les fenêtres hebdomadaires (7 j, Fable compris). */
-export function usageMarginMs(kind: string): number {
-  return (usageWindowMs(kind) ?? 0) <= 5 * 3_600_000 ? 3_600_000 : 5 * 3_600_000
+export function matchLevel(levels: UsageLevelWindow[], w: { kind: string; scope?: unknown; resetsAt: string | null }): UsageLevelWindow | null {
+  if (!/session|weekly|five_hour|seven_day/.test(w.kind)) return null
+  const sameKind = levels.filter(l => l.kind === w.kind)
+  const sameScope = sameKind.filter(l => scopeKey(l.scope) === scopeKey(w.scope))
+  if (sameScope.length === 1) return sameScope[0]
+  const at = (v: string | null) => (v ? Date.parse(v) : NaN)
+  const byReset = (sameScope.length > 1 ? sameScope : sameKind).filter(l => !Number.isNaN(at(l.resets_at)) && at(l.resets_at) === at(w.resetsAt))
+  return byReset.length === 1 ? byReset[0] : null
 }
 
 /**
- * Texte d'épuisement projeté : « ⚠ épuisé ~14:20 » (`before` = avant la réinitialisation), « épuisé ~14:20 » sinon,
- * « épuisé ? » si la projection n'est pas fiable. `null` si la fenêtre n'est pas projetable (dépense…).
- * TEMPORAIRE (test) : affiché en permanence ; la production n'affichera que `before`.
+ * Affichage d'une fenêtre d'après le niveau du launcher : couleur de la date de renew (`level`) et texte d'épuisement
+ * recalculé depuis `exhausts_at` (« ⚠ épuisé ~14:20 » si alerte, « épuisé ~demain 03:10 » sinon, « épuisé ? » sans projection).
  */
-export function exhaustionInfo(kind: string, percentUsed: number, resetsAt: string | null, now: number): { text: string; before: boolean; level: 'red' | 'yellow' | 'green' | null } | null {
-  if (usageWindowMs(kind) === null) return null
-  const p = projectExhaustion(kind, percentUsed, resetsAt, now)
-  if (!p) return { text: 'épuisé ?', before: false, level: null }
-  const when = p.exhaustsAt <= now ? '' : ` ~${formatReset(new Date(p.exhaustsAt).toISOString(), now)}`
-  // Couleur de la date de renew : rouge = épuisé avant, orange = épuisé après, mais dans la marge de `usageMarginMs` (1 h session, 5 h hebdo), vert au-delà.
-  const level = p.beforeReset ? 'red' : p.exhaustsAt < new Date(resetsAt as string).getTime() + usageMarginMs(kind) ? 'yellow' : 'green'
-  return { text: `${p.beforeReset ? '⚠ ' : ''}épuisé${when}`, before: p.beforeReset, level }
-}
-
-/** Texte d'alerte seul : celui d'`exhaustionInfo` si le quota sera épuisé avant sa réinitialisation, sinon chaîne vide. */
-export function exhaustionAlert(kind: string, percentUsed: number, resetsAt: string | null, now: number): string {
-  const i = exhaustionInfo(kind, percentUsed, resetsAt, now)
-  return i?.before ? i.text : ''
+export function levelDisplay(l: UsageLevelWindow, now: number): { color: 'red' | 'yellow' | 'green' | undefined; text: string; alert: boolean } {
+  const alert = l.alert !== null || l.level === 'red'
+  const flag = alert ? '⚠ ' : ''
+  const at = l.exhausts_at ? Date.parse(l.exhausts_at) : NaN
+  const color = l.level ?? undefined
+  if (Number.isNaN(at)) return { color, text: alert ? '⚠ épuisé' : 'épuisé ?', alert }
+  if (at <= now) return { color, text: `${flag}épuisé`, alert }
+  return { color, text: `${flag}épuisé ~${formatReset(l.exhausts_at, now)}`, alert }
 }
 
 /** Couleur de la barre de consommation : bleu, orange au-delà du seuil, rouge à partir de 90 %. */

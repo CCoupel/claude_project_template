@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildPrs, milestoneState, buildUsage, buildLotTree, buildView, exhaustionAlert, exhaustionInfo, projectExhaustion, currentUnit, finishedCount, formatReset, groupByPhase, isExpanded, lotStatus, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageLabel, usageThresholds, usageWaitMessage } from './lib'
+import { allocate, buildPrs, milestoneState, buildUsage, buildLotTree, buildView, levelDisplay, matchLevel, parseUsageLevels, usageLevelsPath, currentUnit, finishedCount, formatReset, groupByPhase, isExpanded, lotStatus, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageLabel, usageThresholds, usageWaitMessage } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -437,36 +437,62 @@ test('commandes gh pr qui changent les PR ouvertes', () => {
   expect(isGhPrCommand('gh issue edit 3 --add-label PRET')).toBe(false)
 })
 
-test('projectExhaustion : projection linéaire de l\'épuisement vs réinitialisation', () => {
-  const now = Date.UTC(2026, 10, 23, 12, 0)
-  const H = 3_600_000
-  // session 5 h : 2 h écoulées (reset dans 3 h), 60 % → 100 % dans ~1h20 : avant le reset
-  const reset = new Date(now + 3 * H).toISOString()
-  const p = projectExhaustion('five_hour', 60, reset, now)!
-  expect(p.beforeReset).toBe(true)
-  expect(Math.round((p.exhaustsAt - now) / 60_000)).toBe(80)
-  // 20 % après 2 h → épuisé dans 8 h, après le reset
-  expect(projectExhaustion('five_hour', 20, reset, now)!.beforeReset).toBe(false)
-  // trop tôt dans la fenêtre, conso nulle, kind inconnu, déjà épuisé
-  expect(projectExhaustion('five_hour', 50, new Date(now + 4.95 * H).toISOString(), now)).toBeNull()
-  expect(projectExhaustion('five_hour', 0, reset, now)).toBeNull()
-  expect(projectExhaustion('spend', 50, reset, now)).toBeNull()
-  expect(projectExhaustion('weekly_all', 100, new Date(now + 24 * H).toISOString(), now)!.exhaustsAt).toBe(now)
-  expect(exhaustionAlert('five_hour', 20, reset, now)).toBe('')
-  expect(exhaustionAlert('five_hour', 60, reset, now)).toMatch(/^⚠ épuisé ~/)
+const MTIME = Date.UTC(2026, 10, 23, 12, 0, 0, 0)
+const win = (o: Record<string, unknown>) => ({ kind: 'session', scope: null, resets_at: null, exhausts_at: null, level: null, alert: null, ...o })
+const levelsFile = (windows: unknown[], over: Record<string, unknown> = {}) =>
+  ({ schema: 1, computed_at: new Date(MTIME).toISOString(), source_mtime: new Date(MTIME).toISOString(), windows, ...over })
+
+test('usageLevelsPath : voisin de usage.json', () => {
+  expect(usageLevelsPath('/cfg/claude-launcher-cache/usage.json')).toBe('/cfg/claude-launcher-cache/usage-levels.json')
 })
 
-test('exhaustionInfo : niveau de couleur de la date de renew', () => {
+test('parseUsageLevels : fichier valide, périmé, schéma inconnu, invalide', () => {
+  const ok = parseUsageLevels(levelsFile([win({ level: 'red', alert: '⚠ épuisé ~14:20', exhausts_at: '2026-11-23T14:20:00.000Z' }), win({ kind: 'x' }), { nope: 1 }]), MTIME)!
+  expect(ok.length).toBe(2)
+  expect(ok[0].level).toBe('red')
+  // tolérance ±1 s, au-delà : périmé
+  expect(parseUsageLevels(levelsFile([win({})]), MTIME + 900)).not.toBeNull()
+  expect(parseUsageLevels(levelsFile([win({})]), MTIME + 1500)).toBeNull()
+  expect(parseUsageLevels(levelsFile([win({})], { schema: 2 }), MTIME)).toBeNull()
+  expect(parseUsageLevels(levelsFile([win({})], { source_mtime: 'n/a' }), MTIME)).toBeNull()
+  expect(parseUsageLevels({ schema: 1, source_mtime: new Date(MTIME).toISOString() }, MTIME)).toBeNull()
+  expect(parseUsageLevels(null, MTIME)).toBeNull()
+  // niveau inconnu → null (neutre)
+  expect(parseUsageLevels(levelsFile([win({ level: 'purple' })]), MTIME)![0].level).toBeNull()
+})
+
+test('matchLevel : kind + scope, repli kind + resets_at, dépense ignorée', () => {
+  const fable = { model: { id: 'm-fable', display_name: 'Fable' }, surface: null }
+  const opus = { model: { id: 'm-opus', display_name: 'Opus' }, surface: null }
+  const L = parseUsageLevels(levelsFile([
+    win({ kind: 'session', level: 'green' }),
+    win({ kind: 'weekly_scoped', scope: fable, resets_at: '2026-11-25T12:00:00Z', level: 'yellow' }),
+    win({ kind: 'weekly_scoped', scope: opus, resets_at: '2026-11-26T12:00:00Z', level: 'red' }),
+  ]), MTIME)!
+  expect(matchLevel(L, { kind: 'session', scope: null, resetsAt: null })!.level).toBe('green')
+  expect(matchLevel(L, { kind: 'weekly_scoped', scope: fable, resetsAt: '2026-11-25T12:00:00Z' })!.level).toBe('yellow')
+  expect(matchLevel(L, { kind: 'weekly_scoped', scope: opus, resetsAt: '2026-11-26T12:00:00Z' })!.level).toBe('red')
+  // scope absent côté panneau : repli sur resets_at
+  expect(matchLevel(L, { kind: 'weekly_scoped', scope: null, resetsAt: '2026-11-26T12:00:00.000Z' })!.level).toBe('red')
+  // ambigu (même kind, pas de scope, pas de reset) → pas de niveau
+  expect(matchLevel(L, { kind: 'weekly_scoped', scope: null, resetsAt: null })).toBeNull()
+  // fenêtre absente du fichier, ou dépense
+  expect(matchLevel(L, { kind: 'weekly_all', scope: null, resetsAt: null })).toBeNull()
+  expect(matchLevel(L, { kind: 'spend', scope: null, resetsAt: null })).toBeNull()
+})
+
+test('levelDisplay : cas rouge / orange / vert / non fiable', () => {
   const now = Date.UTC(2026, 10, 23, 12, 0)
-  const H = 3_600_000
-  const reset = new Date(now + 3 * H).toISOString()
-  expect(exhaustionInfo('five_hour', 60, reset, now)!.level).toBe('red') // épuisé dans 1h20 < renew
-  expect(exhaustionInfo('five_hour', 36, reset, now)!.level).toBe('yellow') // 2 h × 64/36 = 3h33 → renew + 33 min < 1 h (session : marge 1 h)
-  expect(exhaustionInfo('five_hour', 30, reset, now)!.level).toBe('green') // 4h40 → renew + 1h40 > 1 h (session : marge 1 h)
-  const wreset = new Date(now + 5 * 24 * H).toISOString() // hebdo : 2 j écoulés
-  expect(exhaustionInfo('weekly_all', 28, wreset, now)!.level).toBe('yellow') // 2 j × 72/28 = 5j3h26 → renew + 3h26 < 5 h
-  expect(exhaustionInfo('weekly_scoped', 27, wreset, now)!.level).toBe('green') // renew + 9h46 > 5 h
-  expect(exhaustionInfo('weekly_all', 40, wreset, now)!.level).toBe('red') // 3 j < renew
-  expect(exhaustionInfo('five_hour', 5, reset, now)!.level).toBe('green') // 38 h → bien au-delà
-  expect(exhaustionInfo('five_hour', 0, reset, now)!.level).toBeNull() // projection non fiable
+  const at = (min: number) => new Date(now + min * 60_000).toISOString()
+  const red = levelDisplay(win({ level: 'red', alert: '⚠ épuisé ~12:42', exhausts_at: at(42) }) as never, now)
+  expect(red).toEqual({ color: 'red', text: '⚠ épuisé ~42 min', alert: true })
+  const yellow = levelDisplay(win({ level: 'yellow', exhausts_at: at(26 * 60) }) as never, now)
+  expect(yellow.color).toBe('yellow')
+  expect(yellow.alert).toBe(false)
+  expect(yellow.text).toMatch(/^épuisé ~demain /)
+  expect(levelDisplay(win({ level: 'green', exhausts_at: at(5 * 24 * 60) }) as never, now).color).toBe('green')
+  // projection non fiable : neutre, « épuisé ? »
+  expect(levelDisplay(win({}) as never, now)).toEqual({ color: undefined, text: 'épuisé ?', alert: false })
+  // déjà épuisé
+  expect(levelDisplay(win({ level: 'red', alert: '⚠ épuisé', exhausts_at: at(-5) }) as never, now).text).toBe('⚠ épuisé')
 })
