@@ -155,7 +155,9 @@ options dans le chat :
   scinder en plusieurs questions du même appel si besoin — un appel `AskUserQuestion` accepte
   jusqu'à 4 questions groupées).
 - Jamais de texte ouvert du type « dis-moi ce que tu veux » ni de demande implicite noyée dans un paragraphe.
-- Regrouper toutes les questions en attente dans **un seul appel** `AskUserQuestion` (pas de questions au compte-gouttes).
+- Regrouper les questions en attente dans **un seul appel** `AskUserQuestion` (pas de questions au compte-gouttes) —
+  **4 questions au plus par appel** : au-delà, des lots successifs de 4. **Une question par point à valider** (identifiant
+  `P<n>` / `M<n>` du planner en tête de la question) : jamais une question globale qui valide plusieurs points d'un coup.
 - Validation d'un livrable : chemin/URL dans le texte de la `question` (règle unique : `commands/context/COMMON.md` §0) ;
   si la question vient d'un teammate, reprendre les chemins de son `Rapport :`.
 - Attendre les réponses avant de continuer ; les transmettre ensuite au teammate concerné via `SendMessage`.

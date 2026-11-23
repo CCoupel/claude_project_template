@@ -58,9 +58,25 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
   liste exacte des actions/commandes — ce sont les seuls écarts qu'`infra` ne peut pas corriger seul
 - **Avant la question** : ordre à `deployer` — `Labels : issues <ISSUE_NUMS> → PLAN A VALIDER (GITHUB.md §9.0b) ; Milestone :
   milestone → ⏸ plan a valider` ; attendre `LABELS DONE` (le suivi montre que le plan attend l'utilisateur)
-- **Présenter le plan validé à l'utilisateur, avec la maquette si le plan en contient une, et le résumé du cadrage**
-  (intensité, options modifiées, team) ← GATE 2 — question « Valides-tu ce plan et ce cadrage ? »
-  (`context/MILESTONE_CADRAGE.md` 3.3)
+- **Présenter le plan validé à l'utilisateur, avec les maquettes si le plan en contient, et le résumé du cadrage**
+  (intensité, options modifiées, team) ← GATE 2 — **validation point par point** (ci-dessous), puis en dernière question
+  « Valides-tu ce plan et ce cadrage ? » (`context/MILESTONE_CADRAGE.md` 3.3)
+
+**Validation point par point (GATE 2) — jamais une validation globale** :
+- **Inventaire** : chaque point de la section « Points à valider » du plan (`P1`, `P2`…) et chaque maquette (`M1`, `M2`…,
+  identifiants posés par le planner, `MOCKUPS.md` 14.3). Ni regroupement de plusieurs points en une question, ni choix
+  implicite : un point sans réponse explicite est reposé.
+- **Une question par point ou par maquette**, libellée avec son identifiant (`P2 — <question> ?`,
+  `M1 — Quelle proposition retiens-tu pour <composant> (<chemin>) ?`), avec les options du planner (2 à 4, une seule
+  « (Recommandé) », chacune avec sa conséquence).
+- **Par lots de 4 questions au plus** (limite de l'outil `AskUserQuestion`) : un appel par lot, dans l'ordre des
+  identifiants (points `P` puis maquettes `M`) ; attendre les réponses d'un lot avant de poser le suivant. Avant l'appel
+  d'un lot contenant des maquettes, ouvrir leurs brouillons dans Chrome (un onglet par maquette, `<title>` préfixé `M<n>`)
+  et rappeler dans chaque question l'URL ouverte et le chemin exact.
+- **Dernière question, seule dans son appel** : « Valides-tu ce plan et ce cadrage ? » (`MILESTONE_CADRAGE.md` 3.3),
+  posée une fois tous les points tranchés. Sans point à valider ni maquette, c'est la seule question.
+- **Réponse « Autre » ou refus sur un point** : ne bloque pas le reste du lot ; corrections au planner (ci-dessous) pour
+  les **seuls identifiants concernés**, puis ces points seulement sont reposés avant la question finale.
 
 **Corrections demandées au GATE 2 (plan et/ou maquette)** :
 - Recueillir les corrections de l'utilisateur
@@ -86,7 +102,7 @@ sous-traiter (voir `implementation-planner.md` section "Délégation à des Sous
 
 **Maquette au GATE 2** (convention : `context/MOCKUPS.md` section 14) :
 - **Ouverture** : ouvrir le brouillon `….propositions.html` dans Chrome via l'URL **mappée** (`context/MOCKUPS.md` 14.9 : `browser_url <chemin>` — `http://localhost:8081/…` servie par le serveur web du launcher via `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map` ; appariement du navigateur avant la première action Chrome). **Dans la réponse** (texte du message **et** question) : l'URL ouverte, le **chemin absolu exact** du brouillon et son chemin relatif au repo — l'utilisateur peut toujours ouvrir le fichier lui-même. Le projet ne lance jamais son propre serveur HTTP : la maquette est autonome. Sans Chrome ou en cas d'échec : afficher l'URL mappée et ces chemins, ne pas bloquer. **Après chaque correction**, rouvrir de la même façon le nouveau brouillon renvoyé par le planner (son chemin, pas l'ancien onglet) avant de reposer la question.
-- **Choix de la proposition** : dans le même appel `AskUserQuestion` que la validation du plan, une question par maquette — « Quelle proposition retiens-tu pour <composant> (<chemin>) ? » —, une option par onglet (`A — <titre>` : parti pris en une ligne ; celle que le planner recommande en premier, « (Recommandé) »), les ajustements passant par « Autre » (ex. « B avec l'en-tête de A »). Maquette à une seule proposition (justifiée dans le plan) : pas de question de choix. **Maquette avec schéma ou dessin** (4 à 6 propositions, `MOCKUPS.md` 14.3) : `AskUserQuestion` limitant à 4 options, proposer la recommandée en premier puis au moins une version de l'autre orientation (4 options max) ; la question rappelle toutes les lettres et orientations (« A–C horizontales, D–F verticales ») et qu'une autre lettre se choisit via « Autre ».
+- **Choix de la proposition** : une question par maquette, dans les lots de 4 de la « Validation point par point » ci-dessus — « M<n> — Quelle proposition retiens-tu pour <composant> (<chemin>) ? » —, une option par onglet (`A — <titre>` : parti pris en une ligne ; celle que le planner recommande en premier, « (Recommandé) »), les ajustements passant par « Autre » (ex. « B avec l'en-tête de A »). Maquette à une seule proposition (justifiée dans le plan) : pas de question de choix. **Maquette avec schéma ou dessin** (4 à 6 propositions, `MOCKUPS.md` 14.3) : `AskUserQuestion` limitant à 4 options, proposer la recommandée en premier puis au moins une version de l'autre orientation (4 options max) ; la question rappelle toutes les lettres et orientations (« A–C horizontales, D–F verticales ») et qu'une autre lettre se choisit via « Autre ».
 - **Valider le plan ne vaut pas choix de maquette** : « Oui, valider » au GATE 2 ne désigne aucune proposition. Chaque
   maquette à plusieurs propositions a **sa** question de choix ; sans réponse explicite pour une maquette (question
   omise, réponse ambiguë), la poser avant tout `MAQUETTE RETENUE` — jamais de choix par défaut (ni la « Recommandée »).

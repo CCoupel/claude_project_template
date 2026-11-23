@@ -72,7 +72,7 @@ options, `qa` toujours. Format : voir `implementation-planner.md` « Format du P
 ### 3.3 GATE 2
 
 Le resume du cadrage (intensite, options modifiees par rapport a l'intensite de depart, team) est presente avec le
-plan. Une seule question : « Valides-tu ce plan et ce cadrage ? » — Valider (Recommande) / Ajuster le cadrage
+plan, **apres** les questions point par point (`P<n>`, `M<n>` — `CDP_PHASES_PLAN_DEV.md`). Derniere question, seule dans son appel : « Valides-tu ce plan et ce cadrage ? » — Valider (Recommande) / Ajuster le cadrage
 (l'utilisateur precise, champ « Autre » ; redispatch au planner) / Revoir le plan.
 
 ## 4. Application du cadrage (CDP, des la validation du GATE 2 — ou du GATE 1 pour un bugfix sans plan, du routage pour un hotfix, section 6)

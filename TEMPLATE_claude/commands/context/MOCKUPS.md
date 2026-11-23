@@ -50,7 +50,7 @@ docs/mockup/
 inline (`<link rel="icon" href="data:image/svg+xml,…">`, SVG `<text>` de l'emoji) et un bandeau haut de page
 (`border-top: 6px solid var(--type)`) par type — maquette GATE 2 : 🎨 bleu `#2f6fed` ; plan de test (GATE LOT / GATE 4) :
 🧪 vert `#1e8e4e` ; maquette marketing, aperçu local : 📣 orange `#d9822b`. Le `<title>` n'a pas d'emoji et commence par
-l'essentiel (`LOT-N · vX.Y.Z`, ~15 caractères visibles). Procédures `.md` : servies en texte brut, non personnalisables.
+l'essentiel (`LOT-N · vX.Y.Z`, ~15 caractères visibles ; maquette GATE 2 : `M<n> · <composant>`, identifiant posé par le planner : `M1`, `M2`…, stable après correction, absent du nom de fichier). Procédures `.md` : servies en texte brut, non personnalisables.
 Le favicon est décodé en navigateur ; son affichage dans la barre d'onglets n'a pas pu être vérifié.
 
 **Une maquette présente toujours le composant dans son intégralité**, y compris les parties inchangées. Elle peut néanmoins ne porter que sur une partie d'un composant : dans ce cas elle **complète** les maquettes actives du même composant (voir 14.4).
@@ -96,7 +96,7 @@ mockup:
   type: ui
   issue: "#123"
   validee_le: 2026-09-25
-  proposition_retenue: "B — Menu compact"   # brouillon : propositions: ["A — …", "B — …", "C — …"] (schéma : "A — Horizontal · …" … "F — Vertical · …")
+  proposition_retenue: "B — Menu compact"   # brouillon : propositions: ["A — …", "B — …", "C — …"] (schéma : "A — Horizontal · …" … "F — Vertical · …") ; brouillon aussi : id: "M1" (identifiant du plan, absent de la version retenue)
   complete: []                # maquettes complétées (chemins) — les deux restent actives
   remplace: []                # maquettes remplacées (chemins) — les anciennes deviennent obsolètes
 ```
@@ -104,7 +104,7 @@ mockup:
 ### 14.4 Cycle de vie et immuabilité
 
 1. **Brouillon** : produit par le planner dans `_work/mockup/` (non commité), avec ses 2 à 3 propositions en onglets (14.3).
-2. **Choix** (GATE 2) : le CDP ouvre le brouillon dans Chrome (14.9) et fait choisir une proposition à l'utilisateur — **une question par maquette**, distincte de la validation du plan (« Oui, valider » le plan ne choisit aucune proposition). Le planner produit alors la **version retenue** (proposition choisie seule, sans onglets, en-tête `proposition_retenue`) — les propositions écartées ne sont pas conservées, mais **aucun brouillon de `_work/mockup/` n'est supprimé avant le commit de l'étape 3** ; une raison de rejet exprimée par l'utilisateur devient une contrainte de `DECISIONS.md` (14.5).
+2. **Choix** (GATE 2) : le CDP ouvre le brouillon dans Chrome (14.9) et fait choisir une proposition à l'utilisateur — **une question par maquette** (identifiant `M<n>`, par lots de 4 questions max par `AskUserQuestion`), distincte de la validation du plan (« Oui, valider » le plan ne choisit aucune proposition). Le planner produit alors la **version retenue** (proposition choisie seule, sans onglets, en-tête `proposition_retenue`) — les propositions écartées ne sont pas conservées, mais **aucun brouillon de `_work/mockup/` n'est supprimé avant le commit de l'étape 3** ; une raison de rejet exprimée par l'utilisateur devient une contrainte de `DECISIONS.md` (14.5).
 3. **Validation** (GATE 2) : après accord explicite de l'utilisateur, le CDP copie la version retenue à son emplacement définitif, la commite sur la branche du milestone et met à jour `INDEX.md`.
 4. **Immuable** : une maquette validée n'est **jamais modifiée**. Une évolution ultérieure crée une nouvelle maquette (dans le milestone courant) qui référence les précédentes via `complete` ou `remplace`.
 5. **Obsolescence** : quand une maquette en `remplace` une autre, le CDP déplace l'ancienne de la table « Actives » vers la table « Obsolètes » de `INDEX.md`, avec la référence de la remplaçante. Le fichier reste dans git.
