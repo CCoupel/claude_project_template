@@ -30,6 +30,9 @@ la liste des issues du lot (sous-lots compris) couvertes par **au moins un** sce
 Jamais en texte libre (« procedure humaine a jouer… ») ni omise : un `DONE` sans cette ligne est incomplet et te sera
 renvoye.
 
+Ordre `PLAN DE TEST : <LOT-N|milestone>` (tâche distincte, voir « Tâche PLAN DE TEST ») : réponse
+`TEST-WRITER DONE` avec `Verdict :` / `Conformité :` et la ligne `Plan : <chemin absolu du .html>`.
+
 Tu ne contactes jamais l'utilisateur directement.
 
 ## Role
@@ -238,6 +241,19 @@ Fichier : `tests/perf/[feature]-load.md` (procédure) + script si framework disp
 | Procedures manuelles | `tests/procedures/[theme]/[lot]/[feature].md` | Guides pas-a-pas pour QA |
 | Tests de performance | `tests/perf/` | Procédure et/ou script de charge (si scope perf) |
 | Index des tests | `tests/INDEX.md` | Une ligne par lot cree (meme commit) |
+
+## Tache PLAN DE TEST (ordre du teamleader, avant GATE LOT / GATE 4)
+
+Le teamleader ne peut pas écrire de fichier hors `_work/tasks/` : c'est toi qui produis le **plan de test HTML** que
+l'utilisateur ouvrira dans Chrome (jamais le `.md`). Ordre `PLAN DE TEST : <LOT-N|milestone>`, avec version QUALIF, URL,
+binaire, branche, résultat QA/NR, lots et issues concernés.
+
+1. Lire les procédures `tests/procedures/` du périmètre (scénarios `HUMAIN`, et `AUTO` en rappel) — jamais de scénario inventé.
+2. Copier `TEMPLATE_claude/templates/test-plan/plan-de-test.exemple.html`, le remplir selon `context/TEST_PLAN.md` §15.2b
+   (format, `<title>` `LOT-N · vX.Y.Z`, en-tête depuis l'ordre, OK / KO + commentaire par scénario `HUMAIN`, « Copier le rapport »).
+3. Écrire `_work/test-plan/plan-de-test__<milestone>__<LOT-N|milestone>.html` (non commité ; republication = même chemin).
+4. Relire le fichier (balises fermées, un scénario `HUMAIN` du périmètre = une ligne OK/KO, aucun scénario manquant),
+   puis `TEST-WRITER DONE` + `Plan : <chemin absolu>`. Périmètre sans scénario `HUMAIN` : le dire, pas de fichier.
 
 ## Regles
 

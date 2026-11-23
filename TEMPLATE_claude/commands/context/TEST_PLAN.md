@@ -72,13 +72,25 @@ Une passe de tests complète n'est **jamais** lancée par un `dev-*`, le `test-w
 
 ### 15.2b Plan de test HTML du GATE
 
-Au GATE LOT / GATE 4, la validation humaine s'appuie sur un **plan de test HTML** généré par le CDP depuis les procédures
-`tests/procedures/` : un bloc par lot, une section par issue, prérequis succincts, tableau `Action / Résultat attendu`,
-OK / KO + commentaire par scénario `HUMAIN`, bouton « Copier le rapport ». Modèle : `templates/test-plan/plan-de-test.exemple.html`
-(à copier et remplir, pas à réécrire). Fichier généré dans `_work/test-plan/` (non commité) ; rapport reçu dans
-`_work/reports/test-report-<lot>.md`. Titre d'onglet court `LOT-N · vX.Y.Z` (favicon 🧪 + bandeau vert, `MOCKUPS.md` 14.3), un seul onglet réutilisé par session puis fermé en fin de GATE. Le rapport n'est lu qu'**après** la réponse de l'utilisateur (`agents/cdp.md`,
-« GATE de validation par tests »). Contrainte connue : le serveur du launcher sert la page en `sandbox` sans
-`allow-same-origin` — `localStorage` indisponible, la saisie n'est pas conservée à un rechargement.
+Au GATE LOT / GATE 4, la validation humaine s'appuie sur un **plan de test HTML**, seul document présenté à
+l'utilisateur (jamais le `.md` de la procédure, que Chrome afficherait en texte brut). Le `.md` reste la source
+versionnée ; le HTML en est un dérivé, **écrit par le `test-writer`** sur ordre `PLAN DE TEST : <LOT-N|milestone>` du
+teamleader (qui n'a pas le droit de `Write` hors `_work/tasks/`), après le DEPLOY QUALIF. L'ordre fournit ce que seul
+le teamleader connaît : version QUALIF, URL, binaire, branche, résultat QA/NR, lots et issues concernés.
+
+**Format (source unique)** : un bloc par lot, une section par issue (badge `VALID-HUMAINE`), prérequis en quelques puces,
+tableau `# / Action / Résultat attendu / Type` — succinct, jamais la procédure recopiée ; scénarios `AUTO` en rappel
+(rejoués par QA), scénarios `HUMAIN` avec OK / KO et zone de commentaire ; en-tête (version QUALIF, URL, binaire,
+branche, QA/NR) ; bouton « Copier le rapport » (rapport Markdown : résumé, résultat et commentaire par scénario,
+« Décision proposée ») ; lots déjà validés : rappel replié. Modèle : `templates/test-plan/plan-de-test.exemple.html`
+(à copier et remplir, pas à réécrire). `<title>` court `LOT-N · vX.Y.Z` (GATE 4 : `vX.Y.Z · milestone`), favicon 🧪 +
+bandeau vert (`MOCKUPS.md` 14.3).
+
+Fichier : `_work/test-plan/plan-de-test__<milestone>__<LOT-N|milestone>.html` (non commité) ; rapport reçu dans
+`_work/reports/test-report-<lot>.md`. Le teamleader ouvre ce fichier dans Chrome et le rapport n'est lu qu'**après** la
+réponse de l'utilisateur (`agents/cdp.md`, « GATE de validation par tests »). Contrainte connue : le serveur du
+launcher sert la page en `sandbox` sans `allow-same-origin` — `localStorage` indisponible, la saisie n'est pas
+conservée à un rechargement.
 
 ### 15.3 Sélection des NR impactées
 

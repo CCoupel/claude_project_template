@@ -721,7 +721,7 @@ gh issue edit <numero> --add-label "EN COURS" --remove-label "DONE,PLAN A VALIDE
 
 Les lots sont traites **un a la fois**. Quand la QA valide le lot (`DONE`), il est deploye en QUALIF (Phase 5) puis
 presente a l'utilisateur (question et options : point « GATE LOT » du tableau de `agents/cdp.md`, avec le lien de la
-QUALIF et du rapport QA ; **lot sans issue `VALID-HUMAINE` : auto-valide, GATE LOT sans question** ; sinon synthese des tests, chemin de la procedure et ouverture dans Chrome : regle « GATE de validation par tests » de `agents/cdp.md`). Il n'y a **aucune** validation apres la CI du lot.
+QUALIF et du rapport QA ; **lot sans issue `VALID-HUMAINE` : auto-valide, GATE LOT sans question** ; sinon synthese des tests, plan de test HTML (commande `PLAN DE TEST` au `test-writer`) ouvert dans Chrome — jamais le `.md` de la procedure : regle « GATE de validation par tests » de `agents/cdp.md`). Il n'y a **aucune** validation apres la CI du lot.
 
 **Strictement sequentiel** : le code du lot est **commite** sur la branche du milestone pendant le DEV (commits
 atomiques, merges des agents DEV), mais n'est **pousse** qu'apres le GATE LOT. Le CDP n'envoie **aucun ordre** (DEV,

@@ -402,15 +402,17 @@ LOT-N+1 — DEV, mais aussi préparation : tests du `test-writer`, re-plan du `p
 
 ### GATE de validation par tests (GATE LOT, GATE 4) — présentation obligatoire
 
-**Plan de test HTML (format imposé).** Le plan présenté à l'utilisateur est un fichier HTML autonome
-`_work/test-plan/plan-de-test__<milestone>__<LOT-N|milestone>.html`, généré par le CDP à partir des procédures
-`tests/procedures/` (scénarios `HUMAIN`) en reprenant la structure et le style de
-`TEMPLATE_claude/templates/test-plan/plan-de-test.exemple.html` : en-tête (version QUALIF, URL, binaire, branche, QA/NR),
-un bloc par **lot** puis une section par **issue** (badge `VALID-HUMAINE`), **prérequis** en quelques puces, et un
-tableau `# / Action / Résultat attendu / Type` — succinct, jamais la procédure recopiée. Chaque scénario `HUMAIN` porte
-OK / KO et une zone de commentaire ; le bouton « Copier le rapport » produit un rapport Markdown (résumé, résultat et
-commentaire par scénario, « Décision proposée »). Lots déjà validés : rappel replié. Le plan est ouvert dans Chrome
-(étape 3 ci-dessous) et son chemin absolu exact est donné dans la question.
+**Plan de test HTML — seul document présenté (format imposé).** Ce qui est présenté à l'utilisateur est le **plan de
+test HTML** `_work/test-plan/plan-de-test__<milestone>__<LOT-N|milestone>.html` — **jamais** une procédure
+`tests/procedures/*.md` : Chrome l'afficherait en texte brut, sans OK / KO ni rapport. Le `.md` reste la source
+versionnée (lecture teamleader autorisée, pour contrôler le périmètre) mais n'est ni ouvert dans Chrome ni donné comme
+« document de tests ». Le CDP **ne génère pas** le HTML (délégation stricte : pas de `Write` hors `_work/tasks/`) : il le
+**commande au `test-writer`** — ordre `PLAN DE TEST : <LOT-N|milestone>` (tâche définie dans `agents/test-writer.md`,
+format dans `context/TEST_PLAN.md` §15.2b), envoyé **après le DEPLOY QUALIF** et le rapport QA, avec les valeurs que seul
+le CDP connaît : version QUALIF, URL, binaire, branche, résultat QA/NR, lots et issues concernés. Il attend
+`TEST-WRITER DONE` (chemin absolu du HTML), puis l'ouvre directement dans Chrome (étape 3 ci-dessous) et donne ce
+chemin dans la question. **Pas de `DONE` ou HTML absent → pas de question** : relancer l'ordre ; ne jamais retomber
+sur le `.md`.
 **Titre d'onglet court** (Chrome tronque à ~15 caractères dans un groupe) : `<title>` = `LOT-N · vX.Y.Z` (GATE 4 :
 `vX.Y.Z · milestone`), sans emoji, l'essentiel d'abord ; le nom du projet n'est que dans le `<h1>` et l'en-tête.
 **Type d'onglet reconnaissable** : favicon emoji + bandeau coloré par type (plan de test 🧪 vert, maquette GATE 2 🎨 bleu,
@@ -432,18 +434,18 @@ suivi de « Valider le lot sans rapport » → confirmation explicite avant le g
 `_work/reports/test-report-<lot>.md` et joint à l'ordre de correction en cas de refus.
 
 Avant de poser la question `AskUserQuestion` d'un GATE où l'utilisateur valide en exécutant des tests
-(procédures manuelles `tests/procedures/<theme>/<lot>/*.md`, du lot ou du milestone), le CDP, dans cet ordre :
+(procédures manuelles `tests/procedures/<theme>/<lot>/*.md`, du lot ou du milestone — présentées sous forme de plan HTML), le CDP, dans cet ordre :
 
+0. **Plan HTML** — ordre `PLAN DE TEST` au `test-writer`, attendre son `DONE` (chemin absolu du `.html`).
 1. **Synthèse de ce qu'il faut tester** — le plan HTML ci-dessus la porte ; dans le texte de la question, version courte (scénarios `HUMAIN` seulement ; les `AUTO` sont couverts par QA) : une ligne par scénario (nom + résultat attendu clé), prérequis et accès
    nécessaires, URL/binaire de la QUALIF. Jamais le document recopié en entier.
-2. **Chemin du document de tests** : chemin relatif au repo de chaque procédure concernée (et du rapport QA),
-   rappelé aussi dans le texte de la question.
-3. **Ouverture automatique dans Chrome** : ouvrir le plan HTML (et, au besoin, chaque procédure) via les outils `mcp__claude-in-chrome__*`
+2. **Chemin du document de tests** : chemin absolu exact du **plan HTML** (et du rapport QA), rappelé aussi dans le
+   texte de la question. Les procédures `.md` ne sont pas listées comme documents à ouvrir.
+3. **Ouverture automatique dans Chrome** : ouvrir le plan HTML — **et lui seul** — via les outils `mcp__claude-in-chrome__*`
    (`tabs_context_mcp`, puis `tabs_create_mcp` + `navigate` vers l'URL **mappée** du document —
    `context/MOCKUPS.md` 14.9, `browser_url <chemin>` : serveur web du launcher `http://localhost:8081/…` via
-   `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map`). Plusieurs procédures : un onglet chacune (5 max,
-   le reste est seulement listé). Chaque procédure est aussi donnée par son **chemin absolu exact** dans la synthèse
-   (repli : l'utilisateur ouvre le fichier lui-même). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, le dire
+   `CL_BROWSER_PATH_MAP`, repli `file://` par `browser.path_map`). Un seul onglet (le plan couvre tous les lots et issues du GATE) ; son **chemin absolu exact**
+   est aussi donné dans la synthèse (repli : l'utilisateur ouvre le fichier lui-même). Sans accès à Chrome ou en cas d'échec : ne pas bloquer, le dire
    dans la synthèse. Ne jamais ouvrir de fichier hors du repo du projet.
 
 Aucune procédure manuelle pour le périmètre (tests 100 % automatisés) : le préciser dans la synthèse, sans ouverture.
