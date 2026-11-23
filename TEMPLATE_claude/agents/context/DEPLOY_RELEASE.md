@@ -396,6 +396,7 @@ Rollback PUBLISH ci-dessus plutôt que de corriger au niveau DEPLOY.
 
 - [ ] Publication (`X.Y.Z.a`) validee en QUALIF (sauf hotfix)
 - [ ] Pre-validation CI (`ci-branch.yml`, `commands.ci`) verte sur le SHA exact a merger — pas de merge/tag sinon
+- [ ] Mode `pr` : `release.verified.status` = `ok` (autorisation de creer et fusionner la PR verifiee a l'init) — sinon STOP, marche a suivre de `init-project.md` Etape 8c ; jamais de `--admin`
 - [ ] NR complete VALIDATED (`testing.full_regression_at` — `qa`, scope `regression-full`)
 - [ ] Performance acceptable
 - [ ] Securite verifiee

@@ -147,8 +147,8 @@ perf:     Amelioration de performance
 > (section « 7. Publication sur `main` » de `init-project.md` — jamais de merge de la branche milestone).
 > Cette exception inclut sa propre resynchronisation de la branche milestone active si besoin
 > (voir `agents/pr-reviewer.md` Phase D). Pour le cas normal (cycle milestone) — voir
-> `agents/deploy.md` Tache PUBLISH PROD étape 2 pour la commande exacte (`git merge --no-ff`,
-> qui préserve l'historique detaillé de la branche milestone, condition necessaire au
+> `agents/deploy.md` Tache PUBLISH PROD étape 2 pour la commande exacte (PR + merge commit par defaut, `release.merge_mode` ; `git merge --no-ff` en mode `direct` —
+> dans les deux cas un merge commit, qui préserve l'historique detaillé de la branche milestone, condition necessaire au
 > nettoyage des branches sans perte de `agents/deploy.md` Tache DEPLOY PROD Étape 6). Ne pas
 > dupliquer cette commande ici — la source unique de vérité est `agents/deploy.md`, pour
 > éviter toute nouvelle dérive entre les deux fichiers.
