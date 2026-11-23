@@ -1,6 +1,6 @@
 import { test, expect } from 'claude-code/testing'
 
-import { allocate, buildPrs, milestoneState, buildUsage, buildLotTree, buildView, currentUnit, finishedCount, formatReset, groupByPhase, isExpanded, lotStatus, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageLabel, usageThresholds, usageWaitMessage } from './lib'
+import { allocate, buildPrs, milestoneState, buildUsage, buildLotTree, buildView, exhaustionAlert, exhaustionInfo, projectExhaustion, currentUnit, finishedCount, formatReset, groupByPhase, isExpanded, lotStatus, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageLabel, usageThresholds, usageWaitMessage } from './lib'
 
 const lab = (...names: string[]) => names.map(name => ({ name }))
 const ms = [
@@ -435,4 +435,33 @@ test('commandes gh pr qui changent les PR ouvertes', () => {
   expect(isGhPrCommand('git push && gh pr merge 12 --merge')).toBe(true)
   expect(isGhPrCommand('gh pr list --state open')).toBe(false)
   expect(isGhPrCommand('gh issue edit 3 --add-label PRET')).toBe(false)
+})
+
+test('projectExhaustion : projection linéaire de l\'épuisement vs réinitialisation', () => {
+  const now = Date.UTC(2026, 10, 23, 12, 0)
+  const H = 3_600_000
+  // session 5 h : 2 h écoulées (reset dans 3 h), 60 % → 100 % dans ~1h20 : avant le reset
+  const reset = new Date(now + 3 * H).toISOString()
+  const p = projectExhaustion('five_hour', 60, reset, now)!
+  expect(p.beforeReset).toBe(true)
+  expect(Math.round((p.exhaustsAt - now) / 60_000)).toBe(80)
+  // 20 % après 2 h → épuisé dans 8 h, après le reset
+  expect(projectExhaustion('five_hour', 20, reset, now)!.beforeReset).toBe(false)
+  // trop tôt dans la fenêtre, conso nulle, kind inconnu, déjà épuisé
+  expect(projectExhaustion('five_hour', 50, new Date(now + 4.95 * H).toISOString(), now)).toBeNull()
+  expect(projectExhaustion('five_hour', 0, reset, now)).toBeNull()
+  expect(projectExhaustion('spend', 50, reset, now)).toBeNull()
+  expect(projectExhaustion('weekly_all', 100, new Date(now + 24 * H).toISOString(), now)!.exhaustsAt).toBe(now)
+  expect(exhaustionAlert('five_hour', 20, reset, now)).toBe('')
+  expect(exhaustionAlert('five_hour', 60, reset, now)).toMatch(/^⚠ épuisé ~/)
+})
+
+test('exhaustionInfo : niveau de couleur de la date de renew', () => {
+  const now = Date.UTC(2026, 10, 23, 12, 0)
+  const H = 3_600_000
+  const reset = new Date(now + 3 * H).toISOString()
+  expect(exhaustionInfo('five_hour', 60, reset, now)!.level).toBe('red') // épuisé dans 1h20 < renew
+  expect(exhaustionInfo('five_hour', 30, reset, now)!.level).toBe('yellow') // 2 h × 70/30 = 4h40 → renew + 1h40 < 6 h
+  expect(exhaustionInfo('five_hour', 5, reset, now)!.level).toBe('green') // 38 h → bien au-delà
+  expect(exhaustionInfo('five_hour', 0, reset, now)!.level).toBeNull() // projection non fiable
 })

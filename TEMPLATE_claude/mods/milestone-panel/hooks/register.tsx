@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { Issue, Usage, View } from '../types'
-import { CLOSED, FINISHED, PHASES, allocate, buildLotTree, buildPrs, buildUsage, buildView, currentUnit, finishedCount, formatReset, groupByPhase, isExpanded, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
+import { CLOSED, FINISHED, PHASES, allocate, buildLotTree, buildPrs, buildUsage, buildView, currentUnit, exhaustionAlert, exhaustionInfo, finishedCount, formatReset, groupByPhase, isExpanded, isConsistent, isGhPrCommand, isTeammateSession, mergeHeaders, nextUsageWait, parseAccountUsage, parseGhIssueCommand, parseRetryAfter, parseUsageRefreshSec, parseUsageWait, usageBar, usageCacheDecision, usageCachePath, usageColor, usageErrMtime, usageFailureAction, usageThresholds, usageWaitMessage } from './lib'
 import type { Expectation, LotNode, LotStatus, LotUnit } from './lib'
 
 const PANE = 'milestone-panel'
@@ -261,7 +261,7 @@ export const register: Register = (on, options) => {
     const now = await $.clock.now()
     const conso = u.windows.length === 0
       ? 'consommation : aucune limite rapportée'
-      : `consommation (${u.source === 'account' ? 'compte' : 'en-têtes'}${u.error ? `, dernier échec endpoint compte : ${u.error}` : ''}) : ${u.windows.map(w => `${w.label} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, \`${w.kind}\`)`).join(', ')}`
+      : `consommation (${u.source === 'account' ? 'compte' : 'en-têtes'}${u.error ? `, dernier échec endpoint compte : ${u.error}` : ''}) : ${u.windows.map(w => `${w.label} ${Math.round(w.percentUsed)} % (${formatReset(w.resetsAt, now) || '?'}, \`${w.kind}\`${exhaustionAlert(w.kind, w.percentUsed, w.resetsAt, now) ? `, ${exhaustionAlert(w.kind, w.percentUsed, w.resetsAt, now)}` : ''})`).join(', ')}`
     if (v.error) return { text: `Panneau milestone rechargé — erreur de lecture GitHub : ${v.error} ; ${conso}.` }
     const what = v.current
       ? `milestone ${v.current}${v.isReleasing ? ' (publication)' : ''}, ${v.issues.length} issue(s) ouverte(s)`
@@ -333,13 +333,15 @@ export const register: Register = (on, options) => {
           const c = usageColor(w.percentUsed, warnPercent, w.severity)
           const b = usageBar(w.percentUsed, BAR_W)
           const reset = formatReset(w.resetsAt, now)
+          const ex = exhaustionInfo(w.kind, w.percentUsed, w.resetsAt, now)
           return (
             <Text wrap="truncate-end">
               <Text bold>{w.label.padEnd(USAGE_W + 1)}</Text>
               <Text color={c}>{'█'.repeat(b.filled)}</Text>
               <Text dimColor>{'░'.repeat(b.empty)}</Text>
               <Text bold color={c}>{` ${String(Math.round(w.percentUsed)).padStart(3)} %`}</Text>
-              {reset !== '' && <Text dimColor>{`  ${reset}`}</Text>}
+              {reset !== '' && <Text color={ex?.level ?? undefined} dimColor={!ex?.level}>{`  ${reset}`}</Text>}
+              {ex && <Text bold={ex.before} color={ex.before ? 'red' : undefined} dimColor={!ex.before}>{`  ${ex.text}`}</Text>}
             </Text>
           )
         })}

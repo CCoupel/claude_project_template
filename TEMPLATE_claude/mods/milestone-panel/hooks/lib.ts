@@ -525,6 +525,53 @@ export function formatReset(resetsAt: string | null, now: number): string {
   return `${DAYS_SHORT[t.getDay()]} ${hm}`
 }
 
+/** Durée de la fenêtre de quota d'après son `kind` (session = 5 h, hebdomadaire = 7 j) ; `null` si inconnue (ex. dépense). */
+export function usageWindowMs(kind: string): number | null {
+  const k = kind.toLowerCase()
+  if (k.includes('five_hour') || k.includes('5h') || /(^|[^a-z])session/.test(k)) return 5 * 3_600_000
+  if (k.includes('seven_day') || k.includes('7d') || k.includes('week')) return 7 * 86_400_000
+  return null
+}
+
+/**
+ * Projection linéaire de l'épuisement : rythme moyen depuis le début de la fenêtre (début = `resetsAt` − durée),
+ * extrapolé jusqu'à 100 %. `beforeReset` = le quota sera épuisé avant sa réinitialisation. `null` si la projection
+ * n'est pas fiable (fenêtre inconnue, conso nulle, fenêtre entamée depuis moins de 10 min ou 5 % de sa durée).
+ */
+export function projectExhaustion(kind: string, percentUsed: number, resetsAt: string | null, now: number): { exhaustsAt: number; beforeReset: boolean } | null {
+  const win = usageWindowMs(kind)
+  const reset = resetsAt ? new Date(resetsAt).getTime() : NaN
+  if (win === null || Number.isNaN(reset) || reset <= now) return null
+  if (percentUsed >= 100) return { exhaustsAt: now, beforeReset: true }
+  const elapsed = win - (reset - now)
+  if (percentUsed <= 0 || elapsed < Math.max(600_000, win * 0.05)) return null
+  const exhaustsAt = now + ((100 - percentUsed) / percentUsed) * elapsed
+  return { exhaustsAt, beforeReset: exhaustsAt < reset }
+}
+
+const EXHAUST_MARGIN_MS = 6 * 3_600_000
+
+/**
+ * Texte d'épuisement projeté : « ⚠ épuisé ~14:20 » (`before` = avant la réinitialisation), « épuisé ~14:20 » sinon,
+ * « épuisé ? » si la projection n'est pas fiable. `null` si la fenêtre n'est pas projetable (dépense…).
+ * TEMPORAIRE (test) : affiché en permanence ; la production n'affichera que `before`.
+ */
+export function exhaustionInfo(kind: string, percentUsed: number, resetsAt: string | null, now: number): { text: string; before: boolean; level: 'red' | 'yellow' | 'green' | null } | null {
+  if (usageWindowMs(kind) === null) return null
+  const p = projectExhaustion(kind, percentUsed, resetsAt, now)
+  if (!p) return { text: 'épuisé ?', before: false, level: null }
+  const when = p.exhaustsAt <= now ? '' : ` ~${formatReset(new Date(p.exhaustsAt).toISOString(), now)}`
+  // Couleur de la date de renew : rouge = épuisé avant, orange = épuisé moins de 6 h après (marge faible), vert au-delà.
+  const level = p.beforeReset ? 'red' : p.exhaustsAt < new Date(resetsAt as string).getTime() + EXHAUST_MARGIN_MS ? 'yellow' : 'green'
+  return { text: `${p.beforeReset ? '⚠ ' : ''}épuisé${when}`, before: p.beforeReset, level }
+}
+
+/** Texte d'alerte seul : celui d'`exhaustionInfo` si le quota sera épuisé avant sa réinitialisation, sinon chaîne vide. */
+export function exhaustionAlert(kind: string, percentUsed: number, resetsAt: string | null, now: number): string {
+  const i = exhaustionInfo(kind, percentUsed, resetsAt, now)
+  return i?.before ? i.text : ''
+}
+
 /** Couleur de la barre de consommation : bleu, orange au-delà du seuil, rouge à partir de 90 %. */
 export function usageColor(percent: number, warnPercent: number, severity: string | null = null): string {
   if (severity === 'critical' || percent >= 90) return 'red'
