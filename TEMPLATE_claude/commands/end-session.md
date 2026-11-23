@@ -32,6 +32,7 @@ verification de l'etat du projet.
     |
     v
 [DOC + MEMOIRE] --> doc-updater : DOC SESSION (CHANGELOG/docs/README + .claude/memory/MEMORY.md, commit)
+                    milestone livre avec RETEX : deja fait avant la PROD → rien a commiter
     |
     v
 [GIT] --> deployer : SESSION STATE final (arbre propre ; jamais de push pendant le dev, COMMON.md 7.1)
@@ -128,6 +129,9 @@ avec le contenu que seul le teamleader connait :
   - Issues GitHub ouvertes / fermees
   - Points de contexte importants pour la prochaine session
 
+**Apres un milestone livre**, le RETEX (`doc-updater` `DOC RETEX`, avant la PROD — `CDP_PHASES_RELEASE.md`) a deja
+migre la memoire vers les documents projet et commite `MEMORY.md` + `workflow-state.json` : cette etape ne s'applique
+qu'au travail de session **hors** milestone livre (session interrompue, milestone en cours) ; arbre propre → passer.
 `doc-updater` ecrit et commite (`docs(session): ...`), sans push. Le teamleader relit `MEMORY.md` (lecture
 autorisee) pour controler le `DONE` par rapport a l'ordre.
 

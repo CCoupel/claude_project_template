@@ -44,6 +44,7 @@ TEMPLATE_claude/
 # .claude/CLAUDE.md
 # .claude/project-config.json
 # .claude/memory/
+# .claude/workflow-state.json
 # .claude/agents/dev-backend.md
 # .claude/agents/dev-frontend.md
 # .claude/agents/dev-firmware.md
@@ -63,7 +64,8 @@ PRIVATE/
 _work/
 
 # Etat local du workflow en cours (copie du plan valide au GATE 2) — survit a la purge de _work/ pour la reprise
-# apres interruption (/start-session). .claude/workflow-state.json, lui, reste tracke.
+# apres interruption (/start-session). .claude/workflow-state.json, lui, est TRACKE (jamais ignore) :
+# il est commite par le workflow (WORKFLOW COMMIT a chaque frontiere de lot, puis DOC RETEX avant la PROD).
 .claude/workflow/
 
 # Worktrees git de travail (isolation QA, branches paralleles) — toujours DANS le projet, jamais ../ ni /tmp

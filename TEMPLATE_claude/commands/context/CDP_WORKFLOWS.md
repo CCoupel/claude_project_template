@@ -652,7 +652,14 @@ la seule trace qui survit à un terminal tué.
 | Sous-lot (pas le dernier de son lot) : QA `DONE` | Sous-lot `qa_done`, sous-lot suivant `in_progress`, phases DEV et suivantes remises à `pending` (aucune validation, aucun push) |
 | Lot : CI verte après GATE LOT | Lot `completed` + `ci_sha` (lot découpé : tous ses sous-lots `completed` + même `ci_sha`), lot suivant `in_progress`, phases DEV et suivantes remises à `pending` |
 | Échec définitif | Passer à `failed`, noter la raison |
-| Fin du workflow (dernière phase `completed` — ex. GATE 4 PROD validé — ou abandon confirmé par l'utilisateur) | `status: "completed"` (ou `"abandoned"`) — la prochaine session purge `_work/` normalement |
+| Frontière de lot / avant chaque push de la branche | Ordre `WORKFLOW COMMIT` à `deployer` (le fichier est **tracké** : l'état doit voyager avec la branche) |
+| GATE 4 validé (Q2 puis Q3), **juste avant** l'ordre `DOC RETEX` | Écrire l'état **final** : `status: "completed"`, `deploy-prod` laissé `pending` — `doc-updater` le commite avec le RETEX (dernier commit du milestone) ; PROD ne modifie plus aucun fichier tracké |
+| Abandon confirmé par l'utilisateur | `status: "abandoned"` — `WORKFLOW COMMIT` |
+
+> **Fichier tracké** (jamais gitignoré — seuls `.claude/workflow/` et `_work/` le sont) : l'état suit la branche, donc
+> un clone frais ou un autre poste reprend le workflow. `status: "completed"` est écrit **avant** la PROD (ligne
+> ci-dessus) : une PROD interrompue se détecte par git (tag `vX.Y.Z` absent) et non par `status` —
+> `/start-session` rapproche l'état de git et GitHub (étape 4bis).
 
 ### Utilisation par les commandes de contrôle
 
