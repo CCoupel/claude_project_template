@@ -80,9 +80,9 @@ le teamleader connaît : version QUALIF, URL, binaire, branche, résultat QA/NR,
 
 **Format (source unique)** : un bloc par lot, une section par issue (badge `VALID-HUMAINE`), prérequis en quelques puces,
 tableau `# / Action / Résultat attendu / Type` — succinct, jamais la procédure recopiée ; scénarios `AUTO` en rappel
-(rejoués par QA), scénarios `HUMAIN` avec OK / KO et zone de commentaire ; en-tête (version QUALIF, URL, binaire,
+(rejoués par QA), scénarios `HUMAIN` avec OK / KO / N/T (non testable, motif en commentaire — information distincte de « pas fait » = aucun bouton choisi) et zone de commentaire ; en-tête (version QUALIF, URL, binaire,
 branche, QA/NR) ; bouton « Copier le rapport » (rapport Markdown : résumé, résultat et commentaire par scénario,
-« Décision proposée ») ; lots déjà validés : rappel replié. Modèle : `templates/test-plan/plan-de-test.exemple.html`
+« Décision proposée » : REFUS si KO, INCOMPLET si « pas fait », sinon VALIDÉ ou VALIDÉ AVEC NON TESTABLES) ; lots déjà validés : rappel replié. Modèle : `templates/test-plan/plan-de-test.exemple.html`
 (à copier et remplir, pas à réécrire). `<title>` court `LOT-N · vX.Y.Z` (GATE 4 : `vX.Y.Z · milestone`), favicon 🧪 +
 bandeau vert (`MOCKUPS.md` 14.3).
 

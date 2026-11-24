@@ -34,10 +34,10 @@ th{font-size:.75rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04
 td.n{width:34px;color:var(--mut)}td.t{width:80px}td.c{width:44px;text-align:center}
 tr.auto td{color:var(--mut)}
 .note{color:var(--mut);font-size:.85rem;margin-top:14px}
-td.r{width:112px;white-space:nowrap}
+td.r{width:150px;white-space:nowrap}
 .rs{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .rs button{border:0;background:var(--card);color:var(--mut);padding:3px 10px;font:inherit;font-size:.8rem;cursor:pointer}
-.rs button.on-ok{background:var(--ok);color:#fff}.rs button.on-ko{background:#c0392b;color:#fff}
+.rs button.on-ok{background:var(--ok);color:#fff}.rs button.on-ko{background:#c0392b;color:#fff}.rs button.on-nt{background:var(--warn);color:#fff}
 tr.cm td{border-top:0;padding-top:0}
 tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size:.85rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
 .act{display:flex;gap:8px;flex-wrap:wrap}
@@ -52,7 +52,7 @@ tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size
 <body>
 <main>
 <h1>Plan de test — {PROJECT_NAME} · milestone v5.12.0</h1>
-<p class="sub">Scénarios à validation humaine uniquement, regroupés par lot puis par issue. Pour chaque scénario : OK / KO et un commentaire libre. Les scénarios <span class="tag auto">AUTO</span> déjà rejoués par QA sont rappelés en grisé.</p>
+<p class="sub">Scénarios à validation humaine uniquement, regroupés par lot puis par issue. Pour chaque scénario : OK / KO / N/T (non testable : test impossible à jouer, à justifier en commentaire) et un commentaire libre ; aucun bouton choisi = « pas encore fait ». Les scénarios <span class="tag auto">AUTO</span> déjà rejoués par QA sont rappelés en grisé.</p>
 
 <div class="meta">
   <div><b>Version déployée (QUALIF)</b><code>5.12.0.3</code></div>
@@ -82,9 +82,9 @@ tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size
     <table>
       <thead><tr><th>Résultat</th><th>#</th><th>Action</th><th>Résultat attendu</th><th>Type</th></tr></thead>
       <tbody>
-        <tr class="sc" data-id="41-1" data-issue="#41 — Export CSV des rapports" data-n="1" data-act="Rapports → bouton « Exporter » → CSV"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">1</td><td>Rapports → bouton « Exporter » → CSV</td><td>Téléchargement en moins de 5 s, fichier <code>rapport-AAAA-MM-JJ.csv</code></td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="sc" data-id="41-1" data-issue="#41 — Export CSV des rapports" data-n="1" data-act="Rapports → bouton « Exporter » → CSV"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button><button type="button" data-v="nt" title="Non testable : impossible de jouer ce test (préciser pourquoi en commentaire)">N/T</button></span></td><td class="n">1</td><td>Rapports → bouton « Exporter » → CSV</td><td>Téléchargement en moins de 5 s, fichier <code>rapport-AAAA-MM-JJ.csv</code></td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
         <tr class="cm"><td></td><td colspan="4"><textarea data-c="41-1" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
-        <tr class="sc" data-id="41-2" data-issue="#41 — Export CSV des rapports" data-n="2" data-act="Ouvrir le fichier dans un tableur"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">2</td><td>Ouvrir le fichier dans un tableur</td><td>Accents corrects, séparateur <code>;</code>, 500 lignes + en-tête</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="sc" data-id="41-2" data-issue="#41 — Export CSV des rapports" data-n="2" data-act="Ouvrir le fichier dans un tableur"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button><button type="button" data-v="nt" title="Non testable : impossible de jouer ce test (préciser pourquoi en commentaire)">N/T</button></span></td><td class="n">2</td><td>Ouvrir le fichier dans un tableur</td><td>Accents corrects, séparateur <code>;</code>, 500 lignes + en-tête</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
         <tr class="cm"><td></td><td colspan="4"><textarea data-c="41-2" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
         <tr class="auto"><td class="r">✔</td><td class="n">3</td><td>Export avec filtre vide (rejoué par QA)</td><td>Fichier avec en-tête seul</td><td class="t"><span class="tag auto">AUTO</span></td></tr>
       </tbody>
@@ -99,9 +99,9 @@ tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size
     <table>
       <thead><tr><th>Résultat</th><th>#</th><th>Action</th><th>Résultat attendu</th><th>Type</th></tr></thead>
       <tbody>
-        <tr class="sc" data-id="44-1" data-issue="#44 — Notification e-mail en fin d'export" data-n="1" data-act="Lancer un export de plus de 10 000 lignes"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">1</td><td>Lancer un export de plus de 10 000 lignes</td><td>Message « Export en cours, vous serez notifié »</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="sc" data-id="44-1" data-issue="#44 — Notification e-mail en fin d'export" data-n="1" data-act="Lancer un export de plus de 10 000 lignes"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button><button type="button" data-v="nt" title="Non testable : impossible de jouer ce test (préciser pourquoi en commentaire)">N/T</button></span></td><td class="n">1</td><td>Lancer un export de plus de 10 000 lignes</td><td>Message « Export en cours, vous serez notifié »</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
         <tr class="cm"><td></td><td colspan="4"><textarea data-c="44-1" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
-        <tr class="sc" data-id="44-2" data-issue="#44 — Notification e-mail en fin d'export" data-n="2" data-act="Consulter la boîte de test"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button></span></td><td class="n">2</td><td>Consulter la boîte de test</td><td>E-mail reçu en moins de 2 min, lien de téléchargement valide 24 h</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
+        <tr class="sc" data-id="44-2" data-issue="#44 — Notification e-mail en fin d'export" data-n="2" data-act="Consulter la boîte de test"><td class="r"><span class="rs"><button type="button" data-v="ok">OK</button><button type="button" data-v="ko">KO</button><button type="button" data-v="nt" title="Non testable : impossible de jouer ce test (préciser pourquoi en commentaire)">N/T</button></span></td><td class="n">2</td><td>Consulter la boîte de test</td><td>E-mail reçu en moins de 2 min, lien de téléchargement valide 24 h</td><td class="t"><span class="tag hum">HUMAIN</span></td></tr>
         <tr class="cm"><td></td><td colspan="4"><textarea data-c="44-2" placeholder="Commentaire (constat, écart, capture…)"></textarea></td></tr>
       </tbody>
     </table>
@@ -132,14 +132,14 @@ tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size
   function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
   function g(id){return st[id]||(st[id]={v:'',c:''})}
   function paint(){
-    var ok=0,ko=0;
+    var ok=0,ko=0,nt=0;
     rows.forEach(function(r){var d=g(r.dataset.id);
       r.querySelectorAll('.rs button').forEach(function(b){b.className=(d.v===b.dataset.v)?'on-'+b.dataset.v:''});
-      if(d.v==='ok')ok++;if(d.v==='ko')ko++;});
-    var done=ok+ko,t=rows.length;
+      if(d.v==='ok')ok++;if(d.v==='ko')ko++;if(d.v==='nt')nt++;});
+    var done=ok+ko+nt,t=rows.length;
     document.getElementById('count').textContent=done+' / '+t+' testés';
     document.getElementById('pbar').style.width=(t?100*done/t:0)+'%';
-    document.getElementById('sum').innerHTML='<b>'+ok+'</b> OK · <b>'+ko+'</b> KO · <b>'+(t-done)+'</b> non testés';
+    document.getElementById('sum').innerHTML='<b>'+ok+'</b> OK · <b>'+ko+'</b> KO · <b>'+nt+'</b> non testables · <b>'+(t-done)+'</b> pas faits';
   }
   rows.forEach(function(r){
     r.querySelectorAll('.rs button').forEach(function(b){b.addEventListener('click',function(){var d=g(r.dataset.id);d.v=(d.v===b.dataset.v)?'':b.dataset.v;save();paint()})});
@@ -147,15 +147,15 @@ tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size
   [].slice.call(document.querySelectorAll('textarea[data-c]')).forEach(function(a){
     a.value=g(a.dataset.c).c;a.addEventListener('input',function(){g(a.dataset.c).c=a.value;save()});});
   function report(){
-    var ok=0,ko=0,L=[],cur='';
-    rows.forEach(function(r){var d=g(r.dataset.id);if(d.v==='ok')ok++;if(d.v==='ko')ko++;});
-    L.push('# Rapport de test — milestone v5.12.0 — LOT-3','','Version QUALIF : 5.12.0.3 · '+new Date().toISOString().slice(0,16).replace('T',' '),'','**Résumé** : '+ok+' OK · '+ko+' KO · '+(rows.length-ok-ko)+' non testés ('+rows.length+' scénarios HUMAIN)','');
+    var ok=0,ko=0,nt=0,L=[],cur='';
+    rows.forEach(function(r){var d=g(r.dataset.id);if(d.v==='ok')ok++;if(d.v==='ko')ko++;if(d.v==='nt')nt++;});
+    L.push('# Rapport de test — milestone v5.12.0 — LOT-3','','Version QUALIF : 5.12.0.3 · '+new Date().toISOString().slice(0,16).replace('T',' '),'','**Résumé** : '+ok+' OK · '+ko+' KO · '+nt+' NON TESTABLES · '+(rows.length-ok-ko-nt)+' PAS FAITS ('+rows.length+' scénarios HUMAIN)','');
     rows.forEach(function(r){var d=g(r.dataset.id);
       if(r.dataset.issue!==cur){if(cur)L.push('');cur=r.dataset.issue;L.push('## '+cur,'')}
-      var res=d.v==='ok'?'OK':d.v==='ko'?'KO':'NON TESTÉ';
+      var res=d.v==='ok'?'OK':d.v==='ko'?'KO':d.v==='nt'?'NON TESTABLE':'PAS FAIT';
       L.push('- Scénario '+r.dataset.n+' — '+r.dataset.act+' : **'+res+'**');
       if(d.c.trim()){d.c.trim().split(NL).forEach(function(x){L.push('  > '+x)})}});
-    L.push('','Décision proposée : '+(ko?'REFUS (KO présents)':(ok===rows.length?'VALIDÉ':'INCOMPLET')));
+    L.push('','Décision proposée : '+(ko?'REFUS (KO présents)':(ok+nt<rows.length?'INCOMPLET (scénarios pas faits)':(nt?'VALIDÉ AVEC NON TESTABLES (à arbitrer)':'VALIDÉ'))));
     return L.join(NL);
   }
   function toast(m){var t=document.getElementById('toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},1800)}
