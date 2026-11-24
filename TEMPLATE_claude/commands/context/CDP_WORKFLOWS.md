@@ -215,21 +215,23 @@ Enchaîner directement sur la phase suivante sans autre attente.
 
 | Transition | Label à ajouter | Labels à retirer |
 |------------|----------------|-----------------|
-| Entrée Phase Plan (FEATURE) ; GATE 2 « Ajuster » / « Non » | `PLANNING` | `PRET`, `EN COURS`, `EN REVIEW`, `EN QA`, `PLAN A VALIDER`, `LOT A VALIDER`, `A PUBLIER`, `DONE` |
+| Entrée Phase Plan (FEATURE) ; GATE 2 « Ajuster » / « Non » | `PLANNING` | `PRET`, `EN COURS`, `EN REVIEW`, `EN QA`, `PLAN A VALIDER`, `LOT A VALIDER`, `VALIDE`, `A PUBLIER`, `DONE` |
 | Planner `DONE`, question GATE 2 posée | `PLAN A VALIDER` (avant la question) | `PLANNING` |
 | GATE 2 validé (plan accepté, DEV pas encore lancé) | `PRET` | `PLANNING`, `PLAN A VALIDER` |
-| Ordre DEV du lot (Phase Dev) | `EN COURS` | `PLANNING`, `PRET`, `EN REVIEW`, `EN QA`, `PLAN A VALIDER`, `LOT A VALIDER`, `A PUBLIER`, `DONE` |
+| Ordre DEV du lot (Phase Dev) | `EN COURS` | `PLANNING`, `PRET`, `EN REVIEW`, `EN QA`, `PLAN A VALIDER`, `LOT A VALIDER`, `VALIDE`, `A PUBLIER`, `DONE` |
 | Retour Phase Dev (cycle REVIEW ou QA) | `EN COURS` | `EN REVIEW`, `EN QA` |
 | Retour DEV `DONE` (entrée Phase Review) | `EN REVIEW` | `EN COURS`, `PLANNING`, `PRET`, `EN QA`, `DONE` |
 | Entrée Phase QA — mode parallèle (`qa_parallelizable` != false, dès TEST-WRITER DONE) | `EN QA` | `EN COURS`, `PLANNING`, `PRET`, `DONE` (garder `EN REVIEW`) |
 | Entrée Phase QA — mode séquentiel (après verdict Review positif) | `EN QA` | `EN REVIEW`, `EN COURS`, `PLANNING`, `PRET`, `DONE` |
 | QA VALIDATED (et Review déjà approuvée) | `DONE` — puis push de la branche et CI | `EN QA`, `EN REVIEW`, `EN COURS`, `PLANNING`, `PRET` |
 | Lot déployé en QUALIF, question GATE LOT posée (lot à issue `VALID-HUMAINE` ; lot auto-validé : aucune transition) | `LOT A VALIDER` (avant la question) | `DONE` |
-| Lot validé en QUALIF par l'utilisateur (GATE LOT, avec lots) | `DONE` — puis push de la branche et CI | `LOT A VALIDER` |
-| GATE LOT refusé | issues concernées : `EN COURS` (Cas A) / `PLANNING` (Cas B) ; autres issues du lot : `DONE` | `LOT A VALIDER` |
+| Issue validée au GATE LOT (avec lots) ; lot auto-validé : au push (`DONE` → `VALIDE`) | `VALIDE` — le push de la branche (lot entier) et la CI suivent quand **toutes** les issues du lot sont `VALIDE` | `LOT A VALIDER` (lot auto-validé : `DONE`) |
+| GATE LOT refusé (validation partielle) | issues concernées : `EN COURS` (Cas A) / `PLANNING` (Cas B) ; autres issues du lot : `VALIDE` (elles attendent, pas de push partiel, le lot reste le lot courant) | `LOT A VALIDER` |
+| Correctif du lot à risque de régression sur une issue `VALIDE` (décision du CDP d'après le diff et la ligne `Risque regression` de la QA) | `LOT A VALIDER` (avant le nouveau GATE LOT, limité aux issues revenues + celle-ci) | `VALIDE` |
+| CI verte du lot (avec lots) | `DONE` (puis fermeture si `issues.close_on` = `ci`) | `VALIDE` |
 | Question GATE 4 posée (`issues.close_on` = `validation`, issues encore ouvertes ; sinon : état du milestone seul) | `A PUBLIER` (avant la question) | `DONE` |
 | CI verte sur la branche poussée | — (`issues.close_on` = `ci` : issues fermées, `DONE` conservé ; `validation` : issues laissées ouvertes jusqu'à la validation utilisateur) ; avec lots : lot suivant → `EN COURS` à son ordre DEV | — |
-| CI non verte (rouge, orange, annulée) | `EN COURS` | `DONE`, `LOT A VALIDER`, `A PUBLIER` |
+| CI non verte (rouge, orange, annulée) | `EN COURS` | `DONE`, `LOT A VALIDER`, `VALIDE`, `A PUBLIER` |
 | Rejet GATE 4 (issues concernées seulement) | `EN COURS` (Cas A) ou `PLANNING` (Cas B), issue rouverte si fermée ; autres issues encore ouvertes en `A PUBLIER` → `DONE` | `DONE`, `A PUBLIER` (et `PRET`) |
 | Validation GATE 4 | — (issues déjà fermées ; `issues.close_on` = `validation` : issues encore ouvertes `A PUBLIER` → `DONE` puis fermées, §9.4b/§9.5) ; déploiement PROD | `A PUBLIER` |
 
@@ -242,7 +244,7 @@ SendMessage({ to: "deployer", content: "Labels : issues #12 #15 → EN REVIEW (G
 
 CI verte — selon `project-config.json` → `issues.close_on` (`GITHUB.md` §9.5) : `ci` (défaut) → fermer les issues
 suivies (avec lots : celles du lot) ; `validation` → commentaire « CI verte — en attente de validation », issues
-**laissées ouvertes** (`DONE`, puis `LOT A VALIDER` / `A PUBLIER` pendant la question) jusqu'à une validation utilisateur qui les couvre (GATE LOT explicite, sinon GATE 4).
+**laissées ouvertes** (`DONE` après la CI verte, puis `A PUBLIER` pendant la question du GATE 4) jusqu'à une validation utilisateur qui les couvre (GATE LOT explicite, sinon GATE 4).
 Le milestone, lui, reste lié au GATE 4 :
 ```
 SendMessage({ to: "deployer", content: "CI verte : issues #12 #15 — fermeture selon issues.close_on (GITHUB.md §9.5)" })

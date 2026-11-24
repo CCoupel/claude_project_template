@@ -328,8 +328,13 @@ ses scénarios est `HUMAIN` (ou si rien n'est marqué : sens sûr) ; elle porte 
   « Lot LOT-N auto-valide (aucun scenario HUMAIN) » et enchaîne : push, CI, fermeture des issues, lot suivant.
 - **GATE LOT, au moins une issue en `VALID-HUMAINE`** : GATE LOT classique, avec la présentation ci-dessous
   limitée aux scénarios `HUMAIN`. **Avant la question**, ordre à `deployer` : issues du lot → `LOT A VALIDER`,
-  milestone `⏸ LOT-N a valider` (`commands/context/GITHUB.md` §9.4b, `LABELS DONE` attendu) ; à la réponse : validé → `DONE` (puis push) ;
-  refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le suivi montre ainsi qu'on attend l'utilisateur.
+  milestone `⏸ LOT-N a valider` (`commands/context/GITHUB.md` §9.4b, `LABELS DONE` attendu) ; à la réponse : issues validées → `VALIDE` ;
+  refusées → Cas A / Cas B, autres → `VALIDE`. Le suivi montre ainsi qu'on attend l'utilisateur.
+  **Push et CI seulement quand toutes les issues du lot sont `VALIDE`** (pas de push partiel, le lot reste le lot courant, Cas B
+  compris) ; CI verte → `VALIDE` → `DONE`. Issue refusée corrigée : nouveau GATE LOT limité aux issues revenues, nouveau plan de
+  test HTML (`PLAN DE TEST`) qui liste les issues déjà `VALIDE` comme « déjà validées, non retestées ». **Risque de régression** :
+  d'après le diff du correctif et la ligne `Risque regression` du rapport QA, le CDP repasse en `LOT A VALIDER` toute issue `VALIDE`
+  concernée (doute = repasser) ; elle est retestée dans ce nouveau plan (`GITHUB.md` §9.5b).
 - **GATE 4 : jamais sauté**, même si le dernier lot était auto-validé. Il récapitule le milestone (issues, lots
   auto-validés / validés par l'utilisateur, résultats QA, NR, README). Sans scénario `HUMAIN` restant : simple confirmation
   « publier en PROD ? », sans ouverture de document. `issues.close_on` = `validation` : les issues encore ouvertes

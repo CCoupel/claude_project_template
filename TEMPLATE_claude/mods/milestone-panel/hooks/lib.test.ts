@@ -92,7 +92,7 @@ test('PRET est une phase : classée entre PLANNING et EN COURS', () => {
   expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['EN COURS', 'PRET', 'PLANNING'])
 })
 
-test('attentes de validation : PLAN A VALIDER après PLANNING, LOT A VALIDER et A PUBLIER entre EN QA et DONE', () => {
+test('attentes de validation : PLAN A VALIDER après PLANNING, LOT A VALIDER, VALIDE et A PUBLIER entre EN QA et DONE', () => {
   const m = { title: 'v1' }
   const issues = [
     { number: 1, title: 'a', labels: lab('LOT-1', 'DONE'), milestone: m },
@@ -100,9 +100,10 @@ test('attentes de validation : PLAN A VALIDER après PLANNING, LOT A VALIDER et 
     { number: 3, title: 'c', labels: lab('LOT-3', 'EN QA'), milestone: m },
     { number: 4, title: 'd', labels: lab('LOT-4', 'PLAN A VALIDER'), milestone: m },
     { number: 5, title: 'e', labels: lab('LOT-5', 'A PUBLIER'), milestone: m },
+    { number: 6, title: 'f', labels: lab('LOT-6', 'VALIDE'), milestone: m },
   ]
-  const v = buildView([{ title: 'v1', due_on: '2026-11-01', open_issues: 5, closed_issues: 0 }], issues, 0)
-  expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['DONE', 'A PUBLIER', 'LOT A VALIDER', 'EN QA', 'PLAN A VALIDER'])
+  const v = buildView([{ title: 'v1', due_on: '2026-11-01', open_issues: 6, closed_issues: 0 }], issues, 0)
+  expect(groupByPhase(v.issues).map(g => g.phase)).toEqual(['DONE', 'A PUBLIER', 'VALIDE', 'LOT A VALIDER', 'EN QA', 'PLAN A VALIDER'])
 })
 
 test('sans due date, des issues seulement en PLAN A VALIDER ne démarrent pas le milestone', () => {

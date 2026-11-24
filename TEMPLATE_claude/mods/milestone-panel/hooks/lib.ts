@@ -1,12 +1,13 @@
 import type { Issue, MilestoneRow, PullRow, Usage, UsageLevelWindow, View } from '../types'
 
 // Attentes de validation utilisateur (GITHUB.md §8.2) : `PLAN A VALIDER` (GATE 2), `LOT A VALIDER` (GATE LOT),
-// `A PUBLIER` (GATE 4, issue encore ouverte).
-export const PHASES = ['PLANNING', 'PLAN A VALIDER', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'LOT A VALIDER', 'A PUBLIER', 'DONE'] as const
+// `A PUBLIER` (GATE 4, issue encore ouverte). `VALIDE` = validée par l'utilisateur, en attente du push
+// du lot entier puis de la CI verte (pas une attente de l'utilisateur).
+export const PHASES = ['PLANNING', 'PLAN A VALIDER', 'PRET', 'EN COURS', 'EN REVIEW', 'EN QA', 'LOT A VALIDER', 'VALIDE', 'A PUBLIER', 'DONE'] as const
 /** Phases où l'équipe a fini et où la validation de l'utilisateur est attendue. */
 export const AWAITING_USER = ['PLAN A VALIDER', 'LOT A VALIDER', 'A PUBLIER'] as const
 /** Phases comptées comme terminées dans la barre d'avancement (travail de l'équipe fini). */
-export const FINISHED = ['LOT A VALIDER', 'A PUBLIER', 'DONE'] as const
+export const FINISHED = ['LOT A VALIDER', 'VALIDE', 'A PUBLIER', 'DONE'] as const
 /** État d'affichage d'une issue fermée (pas un label GitHub) : la plus avancée. */
 export const CLOSED = 'FERMÉE'
 
