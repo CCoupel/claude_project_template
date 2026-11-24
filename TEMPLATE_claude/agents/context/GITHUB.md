@@ -474,5 +474,5 @@ fix(scope): Description (#38)
 
 ## 9. Gestion des Labels de Phase
 
-Transitions de statut (`PLANNING` → `PLAN A VALIDER` (GATE 2) → `PRET` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE` → push + CI verte → fermeture (avec lots : `LOT A VALIDER` pendant le GATE LOT, push apres validation QUALIF du lot ; `A PUBLIER` au GATE 4 sur issue encore ouverte) ; `BLOQUE` et `ABANDONNE`), responsabilites
+Transitions de statut (`PLANNING` → `PLAN A VALIDER` (GATE 2) → `PRET` → `EN COURS` → `EN REVIEW` / `EN QA` → `DONE` → push + CI verte → fermeture (avec lots : `LOT A VALIDER` pendant le GATE LOT, `VALIDE` une fois validee, push du lot entier quand toutes ses issues sont `VALIDE`, puis `DONE` a la CI verte ; `A PUBLIER` au GATE 4 sur issue encore ouverte) ; `BLOQUE` et `ABANDONNE`), responsabilites
 et commandes `gh` : voir `commands/context/GITHUB.md` sections 8.2 et 9 (**source unique**, non recopiee ici).

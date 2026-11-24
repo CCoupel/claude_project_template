@@ -533,10 +533,13 @@ PUBLISH PROD → DEPLOY PROD ─── merge → tag officiel (déclenche un reb
 BUILD → PUBLISH QUALIF → DEPLOY QUALIF ── le lot N est testé en QUALIF
     ↓
     ↓  label LOT A VALIDER, milestone « ⏸ LOT-N à valider » (lot à issue VALID-HUMAINE ; lot auto-validé : reste DONE)
-[GATE LOT] l'utilisateur teste et valide ── lot suivant / publier le milestone en PROD / refuser
-    ↓  OUI → label DONE
-PUSH → CI de validation ── verte : issues du lot N fermées (DONE conservé) → lot N+1 (PRET → EN COURS)
-                           non verte : label EN COURS + commentaire, retour DEV
+[GATE LOT] l'utilisateur teste et valide, issue par issue ── lot suivant / publier le milestone en PROD / refuser
+    ↓  issue validée → label VALIDE (elle attend) ; issue refusée → EN COURS (Cas A) / PLANNING (Cas B),
+    ↓  corrigée puis nouveau GATE LOT limité aux issues revenues (plan de test HTML dédié) ; une issue VALIDE
+    ↓  à risque de régression repasse LOT A VALIDER
+    ↓  toutes les issues du lot VALIDE → PUSH (un seul, jamais partiel)
+CI de validation ── verte : VALIDE → DONE, issues du lot N fermées → lot N+1 (PRET → EN COURS)
+                    non verte : label EN COURS + commentaire, retour DEV
 ```
 
 **Validation finale du milestone (dernier lot)** — la validation du dernier lot **gèle** le milestone : plus aucune modification du code, de la documentation (README compris) ni de la maquette marketing, PROD est purement mécanique. Tout est donc prêt avant la première question (QUALIF, NR complète, README, maquette marketing préparée en parallèle en Phase 5). Les questions se posent une par une :
@@ -700,21 +703,22 @@ Un seul label de phase à la fois (sauf `EN REVIEW` + `EN QA` pendant la parall�
 | `EN COURS` | Développement à faire ou en cours | CDP | Ordre DEV du lot ; cycle correctif (REVIEW refusé / QA échoue) ; rejet GATE 4 dans le scope (Cas A) |
 | `EN REVIEW` | Revue à faire ou en cours | CDP | Retour DONE de tous les dev de l'issue |
 | `EN QA` | QA à faire ou en cours | CDP | Retour DONE des TEST-WRITER si parallèle au REVIEW (défaut), sinon après le verdict REVIEW |
-| `DONE` | QA validée ; branche poussée, CI en cours puis verte | CDP | QA validée — push immédiat de la branche ; CI non verte → retour `EN COURS` ; ou ta validation (`LOT A VALIDER`, `A PUBLIER`) |
-| `LOT A VALIDER` | Lot terminé et déployé en QUALIF, **en attente de ton test et de ta validation** (GATE LOT) | CDP | Juste avant la question du GATE LOT d'un lot à issue `VALID-HUMAINE` (un lot auto-validé n'y passe pas) ; validé → `DONE` puis push/CI, refusé → `EN COURS` / `PLANNING` (issues concernées), les autres → `DONE` |
+| `DONE` | QA validée ; sans lots : branche poussée, CI en cours puis verte ; avec lots : aussi l'état final après la CI verte du lot | CDP | QA validée — sans lots, push immédiat de la branche ; avec lots, CI verte du lot (depuis `VALIDE`) ; CI non verte → retour `EN COURS` ; ou ton « Oui » au GATE 4 (`A PUBLIER` → `DONE`) |
+| `LOT A VALIDER` | Issue du lot terminée et déployée en QUALIF, **en attente de ton test et de ta validation** (GATE LOT) | CDP | Juste avant la question du GATE LOT d'un lot à issue `VALID-HUMAINE` (un lot auto-validé n'y passe pas) ; ou issue `VALIDE` à risque de régression après un correctif du lot ; validée → `VALIDE`, refusée → `EN COURS` / `PLANNING` (issues concernées), les autres → `VALIDE` |
+| `VALIDE` | Issue **validée** (par toi au GATE LOT ; par la QA pour un lot auto-validé), **en attente du push du lot entier puis de la CI verte** — avec lots uniquement, ce n'est pas une attente de ta décision | CDP | Ta réponse « valide » au GATE LOT, pour chaque issue validée (y compris celles non concernées par un refus) ; CI verte → `DONE` (puis fermeture), CI non verte → `EN COURS` |
 | `A PUBLIER` | Prête pour la PROD, **en attente de ton « Oui »** (GATE 4) | CDP | Juste avant la question du GATE 4, sur les issues encore ouvertes (`issues.close_on` = `validation`) ; sinon les issues sont fermées et seul l'état du milestone porte l'attente |
 | `BLOQUE` | Avancement impossible — s'ajoute à la phase courante (conservée) | CDP | Blocage constaté (cause en commentaire) ; retiré à la levée du blocage |
 | `ABANDONNE` | Ne sera pas traitée (terminal) | CDP | Sur décision de l'utilisateur uniquement ; l'issue est fermée `not planned` |
-| *(issue fermée)* | QA OK + CI verte (garde `DONE`) — la validation du milestone reste à l'utilisateur (GATE 4) | CDP | CI verte après le push de la branche (avec lots : après validation QUALIF du lot, GATE LOT) ; rouverte si GATE 4 refusé pour cette issue |
+| *(issue fermée)* | QA OK + CI verte (garde `DONE`) — la validation du milestone reste à l'utilisateur (GATE 4) | CDP | CI verte après le push de la branche (avec lots : issues `VALIDE`, après validation de **tout** le lot au GATE LOT et push du lot entier) ; rouverte si GATE 4 refusé pour cette issue |
 
-**Attente de ta décision** : `PLAN A VALIDER`, `LOT A VALIDER` et `A PUBLIER` sont posés juste avant la question du GATE 2, du GATE LOT et du GATE 4, et retirés à ta réponse. Le milestone porte la même attente dans sa ligne « Etat » (`⏸ plan a valider`, `⏸ LOT-N a valider`, `⏸ a publier`), seule trace quand plus aucune issue n'est ouverte ; le panneau l'affiche en jaune après le titre du milestone. Le GATE 4d (maquette marketing) n'a pas d'état. Le label `A VALIDER` de la v5.4.0 est renommé `LOT A VALIDER` par `/init-project`.
+**Attente de ta décision** : `PLAN A VALIDER`, `LOT A VALIDER` et `A PUBLIER` sont posés juste avant la question du GATE 2, du GATE LOT et du GATE 4, et retirés à ta réponse. **Validation partielle d'un lot** : les issues validées passent `VALIDE` et attendent — pas de push partiel, le lot reste le lot courant (Cas A comme Cas B) tant que toutes ses issues ne sont pas `VALIDE` ; le nouveau plan de test ne couvre que les issues revenues (les autres y figurent comme « déjà validées, non retestées »), et une issue `VALIDE` dont le code est touché par un correctif (risque de régression signalé par la QA, décidé par le CDP) repasse `LOT A VALIDER`. Le milestone porte la même attente dans sa ligne « Etat » (`⏸ plan a valider`, `⏸ LOT-N a valider`, `⏸ a publier`), seule trace quand plus aucune issue n'est ouverte ; le panneau l'affiche en jaune après le titre du milestone. Le GATE 4d (maquette marketing) n'a pas d'état. Le label `A VALIDER` de la v5.4.0 est renommé `LOT A VALIDER` par `/init-project`.
 
 Les labels sont posés par `deployer`, sur ordre du teamleader (qui n'a ni `Bash` ni outil GitHub), avec
 `gh issue edit --add-label … --remove-label …` — à chaque changement de phase, avant l'ordre de la phase suivante
 (règle aussi présente dans le bloc `TEAMLEADER_PROTOCOL` de `CLAUDE.md`).
 
 **Fermeture configurable** — `project-config.json` → `issues.close_on` (question de l'Étape 7 de `/init-project`) :
-`ci` (défaut) ferme l'issue sur CI verte ; `validation` la laisse ouverte en `DONE` (`LOT A VALIDER` / `A PUBLIER` pendant la question) jusqu'à une validation
+`ci` (défaut) ferme l'issue sur CI verte ; `validation` la laisse ouverte en `DONE` après la CI verte (`A PUBLIER` pendant la question du GATE 4) jusqu'à une validation
 utilisateur qui la couvre (GATE LOT explicite, sinon « Oui » au GATE 4, avant le déploiement PROD).
 
 Définition de référence (transitions, labels retirés, commandes `gh`) :

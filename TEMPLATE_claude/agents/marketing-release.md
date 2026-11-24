@@ -25,7 +25,7 @@ Recue en **Phase 5 du dernier lot** d'un milestone (preparation anticipee : la m
 lancement PROD, ordre `PREPARE vX.Y.Z — anticipe`) ou, hors cycle milestone (Hotfix, `/deploy prod` direct), en
 parallele du deploiement PROD, sans attendre son resultat. Mode anticipe : les issues du milestone ne sont pas toutes
 fermees (CI du dernier lot pas encore passee) — considerer comme livrees les issues **fermees ET les issues ouvertes
-`DONE` / `LOT A VALIDER`** (`--state all`, hors `PRET`, `EN COURS`, `ABANDONNE`). Le contenu est fige des la
+`DONE` / `LOT A VALIDER` / `VALIDE`** (`--state all`, hors `PRET`, `EN COURS`, `ABANDONNE`). Le contenu est fige des la
 validation du dernier lot. Le teamleader ne verifie rien en amont : c'est toi qui
 resous le milestone et decides seul de la pertinence d'une publication.
 

@@ -81,7 +81,7 @@ SendMessage({ to: "doc-updater", content: "
 
 [Dernier lot (ou milestone sans lots) — preparation marketing en parallele, pour que la maquette soit prete avant Q1/Q2]
 SPAWN_OR_CLEAR(marketing)   // ponctuel : spawner (commands/marketing.md, « Agent ») et attendre ACTIF ; deja actif → CLEAR
-SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — anticipe (milestone pas encore en PROD : livrees = issues fermees + issues DONE / LOT A VALIDER du milestone)" })
+SendMessage({ to: "marketing", content: "PREPARE v[X.Y.Z] — anticipe (milestone pas encore en PROD : livrees = issues fermees + issues DONE / LOT A VALIDER / VALIDE du milestone)" })
 // marketing.site == false dans .claude/project-config.json : ajouter « — SANS SITE »
 ```
 
@@ -91,7 +91,7 @@ elles sont traitees **ici**, des leur arrivee en Phase 5 ; GATE 4e (initialisati
 
 > **Milestone avec lots** : la Phase 5 s'exécute **pour chaque lot** (BUILD, PUBLISH QUALIF, DEPLOY QUALIF, NR et
 > DOC selon les règles ci-dessous), puis le **GATE LOT** (question et options : tableau des points de validation de
-> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Juste avant la question du GATE LOT, ordre à `deployer` : issues du lot → `LOT A VALIDER` + `Milestone : LOT-N → ⏸ a valider ; Milestone : milestone → ⏸ LOT-N a valider` (`GITHUB.md` §9.4b) ; validé → `DONE`, `WORKFLOW COMMIT` (`workflow-state.json` tracké, `deploy.md`) puis push ; refusé → issues concernées Cas A / Cas B, autres → `DONE`. Le GATE 4 (PROD) n'a lieu qu'une
+> `cdp.md` ; déroulement : `GITHUB.md` §9.5b) remplace le GATE 4 intermédiaire (sauf lot sans issue `VALID-HUMAINE` : lot auto-validé, pas de GATE LOT — règle « Validation humaine ou automatique » de `cdp.md`). Juste avant la question du GATE LOT, ordre à `deployer` : issues du lot → `LOT A VALIDER` + `Milestone : LOT-N → ⏸ a valider ; Milestone : milestone → ⏸ LOT-N a valider` (`GITHUB.md` §9.4b) ; issues validées → `VALIDE`, puis (toutes les issues du lot `VALIDE`) `WORKFLOW COMMIT` (`workflow-state.json` tracké, `deploy.md`) et push, `DONE` à la CI verte ; refusé → issues concernées Cas A / Cas B, autres → `VALIDE` (pas de push partiel, le lot reste le lot courant ; nouveau GATE LOT limité aux issues revenues, issue `VALIDE` repassée `LOT A VALIDER` si risque de régression — `cdp.md`, `GITHUB.md` §9.5b). Le GATE 4 (PROD) n'a lieu qu'une
 > fois : après le dernier lot, ou sur la publication anticipée. Au dernier lot, le GATE LOT est la question Q1 de la
 > sequence finale (`cdp.md`, « Validation finale du milestone ») ; valide, il couvre la QUALIF entiere et gele le
 > code — le GATE 4 qui suit (Q2) ne rouvre pas les scenarios deja testes. Refus du lot : Cas A / Cas B ci-dessous, sans
@@ -193,7 +193,7 @@ Selon la reponse utilisateur :
   > destination dépend de la nature de la correction (jamais `EN COURS` par défaut) :
 
   **Cas A — correction dans le scope (bug, régression, précision) → retour Phase DEV :**
-  > issues concernees → reset label `EN COURS` (`--add-label "EN COURS" --remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,A PUBLIER"`)
+  > issues concernees → reset label `EN COURS` (`--add-label "EN COURS" --remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,VALIDE,A PUBLIER"`)
   > Agents hors cadrage (`test-writer`, `code-reviewer`, `doc-updater` selon `cadrage`) : ni CLEAR ni redispatch —
   > leur part revient aux agents DEV (tests, CHANGELOG) ou n'a pas lieu (REVIEW), `context/MILESTONE_CADRAGE.md` section 5.
   - dev-* et test-writer : **pas de CLEAR** — leur contexte est la carte exacte de ce qu'ils ont construit
@@ -204,7 +204,7 @@ Selon la reponse utilisateur :
     Jugement laxiste — en cas de doute sur l'impact doc, redispatcher (voir `deploy.md` étape 1ter).
 
   **Cas B — scope invalide (approche erronée, exigences changées) → retour Phase 1 :**
-  > issues concernees → reset label `PLANNING` (`--add-label "PLANNING" --remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,A PUBLIER"`)
+  > issues concernees → reset label `PLANNING` (`--add-label "PLANNING" --remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,VALIDE,A PUBLIER"`)
   - CLEAR(planner) → nouveau plan (avec cadrage révisable, transmis comme cadrage en vigueur) → GATE 2
   - Cadrage modifié au GATE 2 → le réappliquer (`context/MILESTONE_CADRAGE.md` section 4 : état, `MILESTONE CADRAGE`,
     spawn / arrêt des agents)

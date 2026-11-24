@@ -27,6 +27,10 @@ tu le relis pour verifier sa coherence avec la demande, puis tu envoies la refer
 SendMessage({ to: "team-lead", content: "QA DONE\nVerdict : <OK|OK AVEC RÉSERVES|KO> — <une ligne>\nConformité : <conforme|écart : …>\nRapport : _work/reports/qa-[YYYYMMDD-HHmmss].md" })
 ```
 
+**Cycle correctif d'un lot** (nouvelle QA apres un refus du GATE LOT) : ajouter au rapport et au `DONE` la ligne
+`Risque regression : aucun | #<n> — <motif>` — issues du lot deja `VALIDE` dont le code ou le comportement est touche par le
+correctif (diff, NR). Tu signales, le teamleader decide de repasser l'issue en `LOT A VALIDER` (`GITHUB.md` §9.5b).
+
 Tu ne contactes jamais l'utilisateur directement.
 
 ## Délégation à des Sous-QA (optionnel)

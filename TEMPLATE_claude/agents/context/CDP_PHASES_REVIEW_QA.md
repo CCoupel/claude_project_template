@@ -133,7 +133,7 @@ SendMessage({ to: "doc-updater", content: "
   sur le sous-lot suivant (`PRET` → `EN COURS`), sans question à l'utilisateur. **Dernier sous-lot** : la suite
   ci-dessous s'applique au lot parent entier.
   **Milestone avec lots** : pas de push ici — le lot passe d'abord en **Phase 5** (QUALIF, GATE LOT : issues `LOT A VALIDER`
-  pendant que l'utilisateur teste et valide, `GITHUB.md` §9.4b), puis le CDP pousse la branche et attend la CI (`GITHUB.md` §9.5b) ; CI verte → issues du lot fermées
+  pendant que l'utilisateur teste et valide, puis `VALIDE` ; `GITHUB.md` §9.4b), puis le CDP pousse la branche **quand toutes les issues du lot sont `VALIDE`** et attend la CI (`GITHUB.md` §9.5b) ; CI verte → `VALIDE` → `DONE`, issues du lot fermées
   → lot suivant (retour Phase DEV, `PRET` → `EN COURS`) ; plus de lot → fin du milestone : **dernier lot** = sequence finale (`cdp.md`, « Validation finale du milestone » :
   GATE LOT Q1 si validation humaine, GATE 4 Q2, maquette Q3), le gel du code intervient a la validation du lot.
   **Milestone sans lots — Push + CI (avant la Phase 5)** : pousser la branche du milestone (`git push origin milestone/vX.Y.Z`) — la CI de
@@ -145,7 +145,7 @@ SendMessage({ to: "doc-updater", content: "
     Sans lots : Phase BUILD + PUBLISH QUALIF + DEPLOY QUALIF (automatique). Avec lots : aucune validation
     utilisateur après la CI — lot suivant directement
   - **CI non verte** (rouge, orange, annulee, en erreur) → jamais de fermeture : cycle++ (`tests/METRICS.md`),
-    `ISSUE_NUMS[]` non vide → commentaire (job en echec + lien du run) + reset label `EN COURS` (`--remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,A PUBLIER"`),
+    `ISSUE_NUMS[]` non vide → commentaire (job en echec + lien du run) + reset label `EN COURS` (`--remove-label "DONE,PLAN A VALIDER,LOT A VALIDER,VALIDE,A PUBLIER"`),
     retour Phase DEV avec le rapport CI, puis REVIEW + QA, `DOC` si besoin, nouveau push. Si cycle > 3 : **Escalade
     utilisateur** ← GATE 3
 - FAILED → renvoyer au doc-updater avec correction avant de continuer

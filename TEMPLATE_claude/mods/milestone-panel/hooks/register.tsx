@@ -403,7 +403,7 @@ export const register: Register = (on, options) => {
       const total = segs.reduce((a, x) => a + x.n, 0)
       const width = Math.max(8, Math.min(30, columns - 16))
       const cells = allocate(segs.map(x => x.n), width)
-      // DONE = QA validée, issue fermée dès la CI verte ; LOT A VALIDER / A PUBLIER = travail fini, validation attendue.
+      // DONE = QA validée, issue fermée dès la CI verte ; LOT A VALIDER / A PUBLIER = travail fini, validation attendue ; VALIDE = validée, push + CI à venir.
       const finished = closed + FINISHED.reduce((a, p) => a + (byPhase[p] ?? 0), 0)
       const pct = total === 0 ? 0 : Math.round((finished / total) * 100)
       return (
