@@ -429,7 +429,7 @@ le CDP ne lit pas l'onglet pour préparer la question. Options de Q1 (fixes, ind
 repli : rapport collé dans « Autre » ou dans le message suivant ; page illisible → demander à l'utilisateur de coller
 « Copier le rapport »). **Tout OK** → lot validé, sans seconde question ; **au moins un KO** → seconde `AskUserQuestion` :
 Refuser, retour DEV avec les KO (Recommandé) / Refuser, retour PLAN / Valider malgré les KO (consigné au compte rendu) ;
-**non testés** → Relire après saisie (Recommandé) / Valider, non testés assumés / Refuser. Un rapport collé avec un KO
+**pas faits** (aucun bouton choisi : oubli, distinct de « non testable ») → Relire après saisie (Recommandé) / Valider, non testés assumés / Refuser ; **non testables** (`N/T`, test impossible à jouer, motif en commentaire) sans KO ni « pas fait » → seconde `AskUserQuestion` : Valider, non testables consignés au compte rendu / Refuser, retour PLAN (test à rendre jouable) / Refuser, retour DEV. Un rapport collé avec un KO
 suivi de « Valider le lot sans rapport » → confirmation explicite avant le gel. Le rapport reçu est enregistré dans
 `_work/reports/test-report-<lot>.md` et joint à l'ordre de correction en cas de refus.
 

@@ -250,9 +250,9 @@ binaire, branche, résultat QA/NR, lots et issues concernés.
 
 1. Lire les procédures `tests/procedures/` du périmètre (scénarios `HUMAIN`, et `AUTO` en rappel) — jamais de scénario inventé.
 2. Copier `TEMPLATE_claude/templates/test-plan/plan-de-test.exemple.html`, le remplir selon `context/TEST_PLAN.md` §15.2b
-   (format, `<title>` `LOT-N · vX.Y.Z`, en-tête depuis l'ordre, OK / KO + commentaire par scénario `HUMAIN`, « Copier le rapport »).
+   (format, `<title>` `LOT-N · vX.Y.Z`, en-tête depuis l'ordre, OK / KO / N/T + commentaire par scénario `HUMAIN`, « Copier le rapport »).
 3. Écrire `_work/test-plan/plan-de-test__<milestone>__<LOT-N|milestone>.html` (non commité ; republication = même chemin).
-4. Relire le fichier (balises fermées, un scénario `HUMAIN` du périmètre = une ligne OK/KO, aucun scénario manquant),
+4. Relire le fichier (balises fermées, un scénario `HUMAIN` du périmètre = une ligne OK/KO/N/T, aucun scénario manquant),
    puis `TEST-WRITER DONE` + `Plan : <chemin absolu>`. Périmètre sans scénario `HUMAIN` : le dire, pas de fichier.
 
 ## Regles
