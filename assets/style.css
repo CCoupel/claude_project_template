@@ -197,6 +197,7 @@ nav {
 .badge-qa       { background: rgba(249,115,22,.15); color: var(--orange); border: 1px solid rgba(249,115,22,.3); }
 .badge-avalider { background: rgba(234,179,8,.15); color: #facc15; border: 1px solid rgba(234,179,8,.35); }
 .badge-apublier { background: rgba(167,139,250,.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,.4); }
+.badge-valide   { background: rgba(99,102,241,.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,.4); }
 .badge-done     { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
 .badge-closed   { background: rgba(139,148,158,.12); color: var(--muted); border: 1px solid var(--border); }
 .badge-dev      { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
@@ -329,6 +330,9 @@ footer a { color: var(--accent2); }
 .flow-box p { font-size: .74rem; color: var(--muted); }
 .flow-box-title { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text); }
 .flow-back { border-left: 3px solid var(--red); }
+.flow-event.flow-ret { color: var(--red); border-left-color: rgba(239,68,68,.5); flex-wrap: wrap; gap: .35rem; }
+.flow-loop { border-left: 3px solid #a5b4fc; }
+.flow-loop p { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
 .badge-bloque    { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.35); }
 .badge-abandonne { background: rgba(139,148,158,.12); color: var(--muted); border: 1px solid var(--border); }
 .badge-human     { background: rgba(234,179,8,.10); color: #fde68a; border: 1px solid rgba(234,179,8,.3); }

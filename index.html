@@ -223,7 +223,12 @@
         <div class="flow-state"><span class="phase-badge badge-done">DONE</span><span class="flow-desc" data-i18n="flow.s.done"></span></div>
         <div class="flow-event flow-user"><span class="flow-arrow">↓</span><span data-i18n="flow.e.ask"></span></div>
         <div class="flow-state"><span class="phase-badge badge-avalider">LOT A VALIDER</span><span class="flow-desc" data-i18n="flow.s.avalider"></span></div>
+        <div class="flow-event flow-ret"><span class="flow-arrow">↑</span><span data-i18n="flow.e.refuse1"></span><span class="phase-badge badge-encours">EN COURS</span></div>
+        <div class="flow-event flow-ret"><span class="flow-arrow">↑</span><span data-i18n="flow.e.refuse2"></span><span class="phase-badge badge-planning">PLANNING</span></div>
         <div class="flow-event flow-user"><span class="flow-arrow">↓</span><span data-i18n="flow.e.ok"></span></div>
+        <div class="flow-state"><span class="phase-badge badge-valide">VALIDE</span><span class="flow-desc" data-i18n="flow.s.valide"></span></div>
+        <div class="flow-event flow-ret"><span class="flow-arrow">↑</span><span data-i18n="flow.e.regress"></span><span class="phase-badge badge-avalider">LOT A VALIDER</span></div>
+        <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.lotok"></span></div>
         <div class="flow-state"><span class="phase-badge badge-done">DONE</span><span class="flow-desc" data-i18n="flow.s.done2"></span></div>
         <div class="flow-event"><span class="flow-arrow">↓</span><span data-i18n="flow.e.ci"></span></div>
         <div class="flow-state"><span class="phase-badge badge-closed">✓ closed</span><span class="flow-desc" data-i18n="flow.s.closed"></span></div>
@@ -231,6 +236,14 @@
         <div class="flow-state"><span class="phase-badge badge-apublier">A PUBLIER</span><span class="flow-desc" data-i18n="flow.s.apublier"></span></div>
         <div class="flow-event flow-user"><span class="flow-arrow">↓</span><span data-i18n="flow.e.gate4"></span></div>
         <div class="flow-state"><span class="phase-badge badge-prod">🚀 PROD</span><span class="flow-desc" data-i18n="flow.s.prod"></span></div>
+      </div>
+      <div class="flow-box flow-loop">
+        <div class="flow-box-title" data-i18n="flow.loop.title"></div>
+        <p><span class="phase-badge badge-avalider">LOT A VALIDER</span> <span data-i18n="flow.loop.1"></span></p>
+        <p><span class="phase-badge badge-encours">EN COURS</span> <span class="flow-par">/</span> <span class="phase-badge badge-planning">PLANNING</span> <span data-i18n="flow.loop.2"></span></p>
+        <p><span class="phase-badge badge-valide">VALIDE</span> <span data-i18n="flow.loop.3"></span></p>
+        <p><span class="phase-badge badge-avalider">LOT A VALIDER</span> <span data-i18n="flow.loop.4"></span></p>
+        <p><span class="phase-badge badge-avalider">LOT A VALIDER</span> <span data-i18n="flow.loop.5"></span></p>
       </div>
       <div class="flow-box flow-back">
         <div class="flow-box-title" data-i18n="flow.back.title"></div>
@@ -336,6 +349,10 @@
           <div class="label-step"><span class="phase-badge badge-done">DONE</span><span class="label-step-desc" data-i18n="github.l5"></span></div>
           <div class="label-arrow">→</div>
           <div class="label-step"><span class="phase-badge badge-avalider">LOT A VALIDER</span><span class="label-step-desc" data-i18n="github.lv"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-valide">VALIDE</span><span class="label-step-desc" data-i18n="github.lvalide"></span></div>
+          <div class="label-arrow">→</div>
+          <div class="label-step"><span class="phase-badge badge-done">DONE</span><span class="label-step-desc" data-i18n="github.l5b"></span></div>
           <div class="label-arrow">→</div>
           <div class="label-step"><span class="phase-badge badge-closed">✓ closed</span><span class="label-step-desc" data-i18n="github.l6"></span></div>
           <div class="label-arrow">→</div>
