@@ -430,7 +430,10 @@ non modifiable.
 **Ordre strict : jamais de lecture avant la réponse.** L'utilisateur teste pendant que `AskUserQuestion` est en attente ;
 le CDP ne lit pas l'onglet pour préparer la question. Options de Q1 (fixes, indépendantes du rapport) :
 « Tests terminés, conclure d'après mon rapport (Recommandé) » / « Valider le lot sans rapport » / « Refuser »
-(écart décrit dans « Autre »). Après « Tests terminés » : lire le rapport dans l'onglet (`javascript_tool`, onglet ouvert par le CDP ;
+(écart décrit dans « Autre »). Après « Tests terminés » : lire le rapport dans l'onglet ouvert par le CDP (même `tabId`) : `mcp__claude-in-chrome__javascript_tool` avec l'expression
+`window.__planTestReport()` (renvoie le rapport Markdown complet : OK / KO / N/T / pas fait + commentaires) — pas `get_page_text`/`read_page`, qui
+ne rendent pas l'état des boutons ni le texte des zones de commentaire ; fonction absente (plan ancien) : lire le DOM
+(`tr.sc` → bouton `.rs button[class^=on-]`, `textarea[data-c]`) ;
 repli : rapport collé dans « Autre » ou dans le message suivant ; page illisible → demander à l'utilisateur de coller
 « Copier le rapport »). **Tout OK** → lot validé, sans seconde question ; **au moins un KO** → seconde `AskUserQuestion` :
 Refuser, retour DEV avec les KO (Recommandé) / Refuser, retour PLAN / Valider malgré les KO (consigné au compte rendu) ;
