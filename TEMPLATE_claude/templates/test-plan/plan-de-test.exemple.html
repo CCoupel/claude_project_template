@@ -158,6 +158,7 @@ tr.cm textarea{width:100%;min-height:44px;resize:vertical;font:inherit;font-size
     L.push('','Décision proposée : '+(ko?'REFUS (KO présents)':(ok+nt<rows.length?'INCOMPLET (scénarios pas faits)':(nt?'VALIDÉ AVEC NON TESTABLES (à arbitrer)':'VALIDÉ'))));
     return L.join(NL);
   }
+  window.__planTestReport=report; /* lu par le teamleader via javascript_tool — ne pas retirer */
   function toast(m){var t=document.getElementById('toast');t.textContent=m;t.className='show';setTimeout(function(){t.className=''},1800)}
   document.getElementById('copy').addEventListener('click',function(){
     var txt=report();

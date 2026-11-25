@@ -88,7 +88,7 @@ bandeau vert (`MOCKUPS.md` 14.3).
 
 Fichier : `_work/test-plan/plan-de-test__<milestone>__<LOT-N|milestone>.html` (non commité) ; rapport reçu dans
 `_work/reports/test-report-<lot>.md`. Le teamleader ouvre ce fichier dans Chrome et le rapport n'est lu qu'**après** la
-réponse de l'utilisateur (`agents/cdp.md`, « GATE de validation par tests »). Contrainte connue : le serveur du
+réponse de l'utilisateur (`agents/cdp.md`, « GATE de validation par tests »). Le script du plan expose `window.__planTestReport()` (rapport Markdown complet), que le teamleader lit via `javascript_tool` après la réponse ; ne pas le retirer du modèle. Contrainte connue : le serveur du
 launcher sert la page en `sandbox` sans `allow-same-origin` — `localStorage` indisponible, la saisie n'est pas
 conservée à un rechargement.
 
